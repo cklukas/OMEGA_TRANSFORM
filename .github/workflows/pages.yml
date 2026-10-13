@@ -1,0 +1,66 @@
+# Copyright (c) 2026 by C. Klukas
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# Publishes the documentation site (ckdocs.yml, docs/) to
+# https://cklukas.github.io/OMEGA_TRANSFORM/, the same site the private ck-git
+# server publishes (.ckgit/ci.yml). ckdocs is compiled from the ck-git-hosting
+# sources at the commit .ckgit/ci.yml pins, so both sites are built by the
+# same version. The benchmark page is regenerated from the committed results
+# in bench/, and `--strict` fails on a broken link before anything deploys.
+
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build the site
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Find the pinned ck-git-hosting commit
+        id: pin
+        run: |
+          echo "ref=$(sed -n 's/^ *ref: *//p' .ckgit/ci.yml | head -1)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v5
+        with:
+          repository: cklukas/ck-git-hosting
+          ref: ${{ steps.pin.outputs.ref }}
+          path: ck-git-hosting
+      - name: Build ckdocs
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential
+          make -C ck-git-hosting BUILD_ROOT="$RUNNER_TEMP" BUILD_DIR="$RUNNER_TEMP/ckdocs" client
+      - name: Build the site
+        run: |
+          python3 -m omega_transform report
+          "$RUNNER_TEMP/ckdocs/bin/ckdocs" build --root "$PWD" --out "$RUNNER_TEMP/site" --strict
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: ${{ runner.temp }}/site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v5
