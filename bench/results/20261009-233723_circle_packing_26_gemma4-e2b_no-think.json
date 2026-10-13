@@ -1,5 +1,5 @@
 {
- "schema": 1,
+ "schema": 2,
  "example": "circle_packing_26",
  "model": "gemma4:e2b",
  "variant": "no-think",
@@ -68,5 +68,40 @@
  "gen_tokens_per_s": 56.7,
  "mean_prompt_tokens": 3816,
  "mean_gen_tokens": 396,
- "stopped_calls": 1
+ "stopped_calls": 1,
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.67,
+   "score": 1.0207164243323668,
+   "model": "gemma4:e2b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Refine the initial center placement to better approximate a hexagonal packing structure, which is known to be superior for circle packing density."
+  },
+  {
+   "minutes": 2.62,
+   "score": 1.3102332510672472,
+   "model": "gemma4:e2b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Adjust the center placement to use a more standard hexagonal packing layout to better approximate the optimal density, which should lead to a higher sum of radii."
+  },
+  {
+   "minutes": 2.62,
+   "score": 1.638989330784242,
+   "model": "gemma4:e2b",
+   "mode": "sweep/exploit/diff/refine",
+   "status": "ok",
+   "idea": "tuned cols=5, rows=8 on top of: Adjust the center placement to use a more standard hexagonal packing layout to better approximate the optimal density, which should lead to a higher sum of radii."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -7,12 +7,18 @@\n # OMEGA-BLOCK-START\n def construct_packing(n=26):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n-    cols = math.ceil(math.sqrt(n))\n-    rows = math.ceil(n / cols)\n+    # Aim for a more hexagonal arrangement for denser packing.\n+    # For n=26, a 5x6 or 6x5 arrangement is more suitable. We choose a layout that is more elongated than a square grid.\n+    cols = 5\n+    rows = 8\n     centers = []\n-    for k in range(n):\n-        i, j = k % cols, k // cols\n-        centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n+    for i in range(rows):\n+        for j in range(cols):\n+            if i * cols + j < n:\n+                # Hexagonal packing placement\n+                x = (j + 0.5) * (1.0 / cols)\n+                y = (i + 0.5) * (math.sqrt(3.0) / 2.0) * (1.0 / cols)\n+                centers.append((x, y))\n     radii = max_radii(centers)\n     return [(x, y, r) for (x, y), r in zip(centers, radii)]\n \n"
 }

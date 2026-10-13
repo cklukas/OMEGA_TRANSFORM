@@ -1,5 +1,5 @@
 {
- "schema": 1,
+ "schema": 2,
  "example": "circle_packing_26",
  "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
  "variant": "think",
@@ -72,5 +72,32 @@
  "mean_gen_tokens": 4908,
  "stopped_calls": 1,
  "provider": "openrouter",
- "cost_usd": 0
+ "cost_usd": 0,
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 12.98,
+   "score": 2.31014500920588,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "explore/diff/refine",
+   "status": "ok",
+   "idea": "Replace the simple grid initialization with a hexagonal grid and an exact maximal-radius solver, then add a hill-climbing optimization on circle centers to increase the sum of radii."
+  },
+  {
+   "minutes": 12.98,
+   "score": 2.4050739767565696,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "sweep/explore/diff/refine",
+   "status": "ok",
+   "idea": "tuned OPT_STEPS=4245, PERTURB=0.04072, HEX_OFFSET=0.666 on top of: Replace the simple grid initialization with a hexagonal grid and an exact maximal-radius solver, then add a hill-climbing optimization on circle centers to increase the sum of radii."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -5,29 +5,79 @@\n import math\n \n # OMEGA-BLOCK-START\n+import random\n+import math\n+\n+# Optimization parameters (can be swept)\n+OPT_STEPS = 4245\n+PERTURB = 0.040722928880520474\n+HEX_OFFSET = 0.666  # horizontal offset for alternate rows in hexagonal grid\n+\n+def max_radii(centers, tol=1e-9, max_iter=1000):\n+    \"\"\"Exact maximal radii for fixed centers via iterative constraint propagation.\"\"\"\n+    n = len(centers)\n+    walls = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n+    radii = walls[:]\n+    for _ in range(max_iter):\n+        max_change = 0.0\n+        for i in range(n):\n+            limit = walls[i]\n+            xi, yi = centers[i]\n+            for j in range(n):\n+                if i == j:\n+                    continue\n+                xj, yj = centers[j]\n+                d = math.hypot(xi - xj, yi - yj)\n+                limit = min(limit, d - radii[j])\n+            if limit < 0:\n+                limit = 0.0\n+            change = abs(radii[i] - limit)\n+            if change > max_change:\n+                max_change = change\n+            radii[i] = limit\n+        if max_change < tol:\n+            break\n+    return radii\n+\n+\n def construct_packing(n=26):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n+    # Hexagonal grid initialization\n     cols = math.ceil(math.sqrt(n))\n     rows = math.ceil(n / cols)\n     centers = []\n     for k in range(n):\n         i, j = k % cols, k // cols\n-        centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n-    radii = max_radii(centers)\n-    return [(x, y, r) for (x, y), r in zip(centers, radii)]\n-\n-\n-def max_radii(centers):\n-    \"\"\"Largest radii for fixed centers: limit by walls, then shrink overlapping pairs.\"\"\"\n-    radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n-    for a in range(len(centers)):\n-        for b in range(a + 1, len(centers)):\n-            d = math.dist(centers[a], centers[b])\n-            if radii[a] + radii[b] > d:\n-                s = d / (radii[a] + radii[b])\n-                radii[a] *= s\n-                radii[b] *= s\n-    return radii\n+        # Hexagonal offset: shift every other row by half a column\n+        x = (i + 0.5 + (j % 2) * HEX_OFFSET) / cols\n+        y = (j + 0.5) / rows\n+        # Clamp to unit square\n+        x = max(0.0, min(1.0, x))\n+        y = max(0.0, min(1.0, y))\n+        centers.append((x, y))\n+    \n+    # Hill-climbing optimization on centers\n+    best_centers = centers[:]\n+    best_radii = max_radii(best_centers)\n+    best_sum = sum(best_radii)\n+    \n+    for step in range(OPT_STEPS):\n+        idx = random.randrange(n)\n+        x, y = best_centers[idx]\n+        nx = x + random.uniform(-PERTURB, PERTURB)\n+        ny = y + random.uniform(-PERTURB, PERTURB)\n+        nx = max(0.0, min(1.0, nx))\n+        ny = max(0.0, min(1.0, ny))\n+        new_centers = best_centers[:]\n+        new_centers[idx] = (nx, ny)\n+        new_radii = max_radii(new_centers)\n+        new_sum = sum(new_radii)\n+        if new_sum > best_sum:\n+            best_sum = new_sum\n+            best_centers = new_centers\n+            best_radii = new_radii\n+    \n+    return [(x, y, r) for (x, y), r in zip(best_centers, best_radii)]\n # OMEGA-BLOCK-END\n \n \n"
 }

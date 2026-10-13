@@ -1,5 +1,5 @@
 {
- "schema": 1,
+ "schema": 2,
  "example": "matmul_f32",
  "model": "gemma4:e2b",
  "variant": "no-think",
@@ -67,5 +67,24 @@
  "gen_tokens_per_s": 58.1,
  "mean_prompt_tokens": 3445,
  "mean_gen_tokens": 426,
- "stopped_calls": 0
+ "stopped_calls": 0,
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4879,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.16,
+   "score": 1.65962,
+   "model": "gemma4:e2b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Implement loop tiling with a block size optimized for cache utilization and NEON vectorization to improve data locality and leverage SIMD instructions."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -17,12 +17,23 @@\n // Computes C = A * B. C is NOT zeroed by the caller. Any number of threads may be\n // used (std::thread is available); n is any size from 1 to 2048.\n void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+    constexpr int BLOCK_SIZE = 32;\n+    for (int ii = 0; ii < n; ii += BLOCK_SIZE) {\n+        for (int jj = 0; jj < n; jj += BLOCK_SIZE) {\n+            int i_end = std::min(ii + BLOCK_SIZE, n);\n+            int j_end = std::min(jj + BLOCK_SIZE, n);\n+\n+            for (int i = ii; i < i_end; ++i) {\n+                for (int j = jj; j < j_end; ++j) {\n+                    float sum = 0.0f;\n+                    for (int k = 0; k < n; ++k) {\n+                        sum += A[i * n + k] * B[k * n + j];\n+                    }\n+                    C[i * n + j] = sum;\n+                }\n+            }\n         }\n+    }\n }\n // OMEGA-BLOCK-END\n \n"
 }

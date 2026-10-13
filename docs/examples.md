@@ -10,26 +10,26 @@ Each example is a complete problem: a starting program with its editable region,
 python3 -m omega_transform run examples/<name> --minutes 15
 ```
 
-They double as the [model benchmark](benchmarking.md)'s workload and as templates for [your own problems](defining-problems.md).
+They double as the [model benchmark](benchmarking.md)'s workload and as templates for [your own problems](defining-problems.md). Each example's own page shows its starting program and, once benchmarked, the best result and how the model got there.
 
 | Example | Category | Language | Score |
 |---|---|---|---|
-| [circle_packing](#circle_packing) | Mathematical constructions | python | score = sum of radii |
-| [circles_in_circle](#circles_in_circle) | Mathematical constructions | python | score = sum of radii (higher is better) |
-| [heilbronn](#heilbronn) | Mathematical constructions | python | score = min_area, the smallest triangle area (higher is better) |
-| [tammes](#tammes) | Mathematical constructions | python | score = min_angle_deg, the smallest angle in degrees between any two points (higher is better) |
-| [bin_packing](#bin_packing) | Algorithms and heuristics | python | score = mean over the three instances of (lower bound / bins used), where the lower bound is ceil(sum(sizes) / capacity) |
-| [max_cut](#max_cut) | Algorithms and heuristics | python | score = mean over the three graphs of (cut weight / total edge weight) |
-| [tsp](#tsp) | Algorithms and heuristics | python | score = mean over the three instances of (nearest-neighbour tour length / your tour length) |
-| [float_parse_cpp](#float_parse_cpp) | Performance (C++) | cpp | score = MB of text parsed per CPU-second on the 2'000'000-number text (best of 7 runs) |
-| [matmul_cpp](#matmul_cpp) | Performance (C++) | cpp | score = GFLOPS at n = 1024 (best of 3 runs) |
-| [matmul_st_cpp](#matmul_st_cpp) | Performance (C++) | cpp | score = GFLOPS per CPU-second at n = 768 (best of 5 runs): 2*n^3 / CPU seconds / 1e9 |
-| [prefix_sum_cpp](#prefix_sum_cpp) | Performance (C++) | cpp | score = GB of input (8 bytes per element) processed per CPU-second at n = 10'000'000 (best of 30 runs) |
-| [sort_u32_cpp](#sort_u32_cpp) | Performance (C++) | cpp | score = total throughput over the five distributions: all elements sorted divided by the total CPU time, in million elements per CPU-second, at n = 1'000'000 per distribution (best of 5 runs per distribution, each run on freshly generated data) |
-| [compressor](#compressor) | Data and modelling | python | score = compression ratio = original bytes / compressed bytes of the main log (higher is better) |
-| [feature_engineering](#feature_engineering) | Data and modelling | python | score = test accuracy of the fixed classifier on 1000 held-out rows (0..1, higher is better) |
-| [symbolic_regression](#symbolic_regression) | Data and modelling | python | score = mean of R^2 on the in-range test rows and R^2 on the extrapolation rows, each clipped to [0, 1] (higher is better, 1.0 = perfect; the noise limits it to about 0.998) |
-| [toy](#toy) | Testing | python |  |
+| [circle_packing](examples/circle_packing.md) | Mathematical constructions | python | score = sum of radii |
+| [circles_in_circle](examples/circles_in_circle.md) | Mathematical constructions | python | score = sum of radii (higher is better) |
+| [heilbronn](examples/heilbronn.md) | Mathematical constructions | python | score = min_area, the smallest triangle area (higher is better) |
+| [tammes](examples/tammes.md) | Mathematical constructions | python | score = min_angle_deg, the smallest angle in degrees between any two points (higher is better) |
+| [bin_packing](examples/bin_packing.md) | Algorithms and heuristics | python | score = mean over the three instances of (lower bound / bins used), where the lower bound is ceil(sum(sizes) / capacity) |
+| [max_cut](examples/max_cut.md) | Algorithms and heuristics | python | score = mean over the three graphs of (cut weight / total edge weight) |
+| [tsp](examples/tsp.md) | Algorithms and heuristics | python | score = mean over the three instances of (nearest-neighbour tour length / your tour length) |
+| [float_parse_cpp](examples/float_parse_cpp.md) | Performance (C++) | cpp | score = MB of text parsed per CPU-second on the 2'000'000-number text (best of 7 runs) |
+| [matmul_cpp](examples/matmul_cpp.md) | Performance (C++) | cpp | score = GFLOPS at n = 1024 (best of 3 runs) |
+| [matmul_st_cpp](examples/matmul_st_cpp.md) | Performance (C++) | cpp | score = GFLOPS per CPU-second at n = 768 (best of 5 runs): 2*n^3 / CPU seconds / 1e9 |
+| [prefix_sum_cpp](examples/prefix_sum_cpp.md) | Performance (C++) | cpp | score = GB of input (8 bytes per element) processed per CPU-second at n = 10'000'000 (best of 30 runs) |
+| [sort_u32_cpp](examples/sort_u32_cpp.md) | Performance (C++) | cpp | score = total throughput over the five distributions: all elements sorted divided by the total CPU time, in million elements per CPU-second, at n = 1'000'000 per distribution (best of 5 runs per distribution, each run on freshly generated data) |
+| [compressor](examples/compressor.md) | Data and modelling | python | score = compression ratio = original bytes / compressed bytes of the main log (higher is better) |
+| [feature_engineering](examples/feature_engineering.md) | Data and modelling | python | score = test accuracy of the fixed classifier on 1000 held-out rows (0..1, higher is better) |
+| [symbolic_regression](examples/symbolic_regression.md) | Data and modelling | python | score = mean of R^2 on the in-range test rows and R^2 on the extrapolation rows, each clipped to [0, 1] (higher is better, 1.0 = perfect; the noise limits it to about 0.998) |
+| [toy](examples/toy.md) | Testing | python |  |
 
 ## Mathematical constructions
 
@@ -39,6 +39,7 @@ Place 26 non-overlapping circles inside the unit square [0,1]x[0,1] so that the 
 
 - **Score:** score = sum of radii. Metrics: ratio_to_best_known (1.0 = the best known 2.635), min_radius/max_radius, seconds = CPU time of construct_packing.
 - **Language:** python; program `examples/circle_packing/initial.py`, evaluator stages: main
+- **Details:** [starting program and best results](examples/circle_packing.md)
 
 ### circles_in_circle
 
@@ -46,6 +47,7 @@ Place 21 non-overlapping circles inside the unit circle (center (0,0), radius 1)
 
 - **Score:** score = sum of radii (higher is better). Metrics: min_radius/max_radius; area_fraction = sum of r^2, the fraction of the container covered; seconds = CPU time of construct(21).
 - **Language:** python; program `examples/circles_in_circle/initial.py`, evaluator stages: main
+- **Details:** [starting program and best results](examples/circles_in_circle.md)
 
 ### heilbronn
 
@@ -53,6 +55,7 @@ Heilbronn triangle problem: place 13 points in the closed unit square [0,1]x[0,1
 
 - **Score:** score = min_area, the smallest triangle area (higher is better). Metrics: normalized_min_area_n2 = min_area * 13^2; near_min_triangles = how many triangles are within a relative 1e-6 of the minimum (good configurations balance many of them); min_point_distance = closest pair of points; bounding_box_area = area of the box spanned by the points; seconds = CPU time of construct(13). The feedback names the smallest triangle and the next smallest areas.
 - **Language:** python; program `examples/heilbronn/initial.py`, evaluator stages: main
+- **Details:** [starting program and best results](examples/heilbronn.md)
 
 ### tammes
 
@@ -60,6 +63,7 @@ Tammes problem (spherical code): place 30 points on the unit sphere so that the 
 
 - **Score:** score = min_angle_deg, the smallest angle in degrees between any two points (higher is better). Metrics: contact_pairs = pairs within 1e-6 degrees of the minimum (optimal configurations have many equal shortest distances); mean_nearest_neighbor_deg and nearest_neighbor_spread_deg = mean and range of each point's nearest-neighbor angle (a small spread means a uniform layout); seconds = CPU time of construct(30).
 - **Language:** python; program `examples/tammes/initial.py`, evaluator stages: main
+- **Details:** [starting program and best results](examples/tammes.md)
 
 ## Algorithms and heuristics
 
@@ -69,6 +73,7 @@ Write a heuristic for one-dimensional bin packing. pack(sizes, capacity) gets a 
 
 - **Score:** score = mean over the three instances of (lower bound / bins used), where the lower bound is ceil(sum(sizes) / capacity). Higher is better; 1.0 would meet the bound on every instance (it may not be reachable everywhere). The initial next-fit program scores about 0.8, first-fit decreasing about 0.95. Metrics per instance: <name>_bins, <name>_lower_bound, <name>_ratio, <name>_cpu_s.
 - **Language:** python; program `examples/bin_packing/initial.py`, evaluator stages: main
+- **Details:** [starting program and best results](examples/bin_packing.md)
 
 ### max_cut
 
@@ -76,6 +81,7 @@ Write a heuristic for weighted max-cut. cut(n, edges) gets the number of nodes n
 
 - **Score:** score = mean over the three graphs of (cut weight / total edge weight). Higher is better; a random or alternating split gets about 0.5 (the initial program scores about 0.51), simple one-flip local search about 0.7. Metrics per graph: <name>_cut, <name>_total, <name>_ratio, <name>_cpu_s.
 - **Language:** python; program `examples/max_cut/initial.py`, evaluator stages: main
+- **Details:** [starting program and best results](examples/max_cut.md)
 
 ### tsp
 
@@ -83,6 +89,7 @@ Write a fast heuristic for the Euclidean traveling salesman problem. solve(point
 
 - **Score:** score = mean over the three instances of (nearest-neighbour tour length / your tour length). The reference is the nearest-neighbour tour from city 0, so the initial program scores 1.0; good local search reaches about 1.2 to 1.25. Metrics per instance: <name>_length (your tour), <name>_nn_length (reference), <name>_ratio, <name>_cpu_s.
 - **Language:** python; program `examples/tsp/initial.py`, evaluator stages: main
+- **Details:** [starting program and best results](examples/tsp.md)
 
 ## Performance (C++)
 
@@ -92,6 +99,7 @@ Make the C++ function parse_doubles(buf, len, out), which parses a text of decim
 
 - **Score:** score = MB of text parsed per CPU-second on the 2'000'000-number text (best of 7 runs). ns_per_number is the same time per number. Correctness is checked first on texts of 0, 1, 7, 30, 1001 and 20011 numbers (the hard cases come first in every text), and on every benchmark run; one value that is not bit-identical to std::strtod, a wrong count, or a write past the end of out makes the program invalid.
 - **Language:** cpp; program `examples/float_parse_cpp/parse.cpp`, evaluator stages: check, bench; new bests are re-measured
+- **Details:** [starting program and best results](examples/float_parse_cpp.md)
 
 ### matmul_cpp
 
@@ -99,6 +107,7 @@ Make the C++ function matmul(n, A, B, C) (single precision, row-major, C = A*B) 
 
 - **Score:** score = GFLOPS at n = 1024 (best of 3 runs). Correctness is checked first on n = 1, 7, 64, 131, 257; any wrong result makes the program invalid.
 - **Language:** cpp; program `examples/matmul_cpp/matmul.cpp`, evaluator stages: check, bench (timed alone); new bests are re-measured
+- **Details:** [starting program and best results](examples/matmul_cpp.md)
 
 ### matmul_st_cpp
 
@@ -106,6 +115,7 @@ Make the C++ function matmul(n, A, B, C) (single precision, row-major, C = A*B) 
 
 - **Score:** score = GFLOPS per CPU-second at n = 768 (best of 5 runs): 2*n^3 / CPU seconds / 1e9. Correctness is checked first on n = 1, 7, 64, 131, 257; any wrong result makes the program invalid.
 - **Language:** cpp; program `examples/matmul_st_cpp/matmul.cpp`, evaluator stages: check, bench; new bests are re-measured
+- **Details:** [starting program and best results](examples/matmul_st_cpp.md)
 
 ### prefix_sum_cpp
 
@@ -113,6 +123,7 @@ Make the C++ function scan_and_histogram(in, out, n, hist) use as little CPU tim
 
 - **Score:** score = GB of input (8 bytes per element) processed per CPU-second at n = 10'000'000 (best of 30 runs). ns_per_element is the same time per element. Correctness is checked first on n = 0, 1, 7, 1001, 65537, and on every benchmark run; any wrong out element, wrong bin, or write past the end of out or hist[255] makes the program invalid.
 - **Language:** cpp; program `examples/prefix_sum_cpp/scan.cpp`, evaluator stages: check, bench; new bests are re-measured
+- **Details:** [starting program and best results](examples/prefix_sum_cpp.md)
 
 ### sort_u32_cpp
 
@@ -120,6 +131,7 @@ Make the C++ function sort_u32(a, n), which sorts an array of n uint32_t values 
 
 - **Score:** score = total throughput over the five distributions: all elements sorted divided by the total CPU time, in million elements per CPU-second, at n = 1'000'000 per distribution (best of 5 runs per distribution, each run on freshly generated data). The metrics show the rate per distribution. Correctness is checked first on n = 0, 1, 2, 7, 100, 1001, 65537 for every distribution, and again on every benchmark run; any element differing from std::sort makes the program invalid.
 - **Language:** cpp; program `examples/sort_u32_cpp/sort.cpp`, evaluator stages: check, bench; new bests are re-measured
+- **Details:** [starting program and best results](examples/sort_u32_cpp.md)
 
 ## Data and modelling
 
@@ -129,6 +141,7 @@ Write a LOSSLESS compressor for web-server access logs. The program defines comp
 
 - **Score:** score = compression ratio = original bytes / compressed bytes of the main log (higher is better). The initial zlib level 1 reaches about 11. Reference ratios of general-purpose compressors on the same log: zlib9_ratio, bz2_ratio and lzma_ratio (strong field-aware schemes should beat all three). other_log_ratio = your ratio on the small log made with another seed (not scored). compress_cpu_s / decompress_cpu_s = CPU time on the main log.
 - **Language:** python; program `examples/compressor/initial.py`, evaluator stages: main
+- **Details:** [starting program and best results](examples/compressor.md)
 
 ### feature_engineering
 
@@ -136,6 +149,7 @@ Design features for a FIXED linear classifier. The program defines features(row)
 
 - **Score:** score = test accuracy of the fixed classifier on 1000 held-out rows (0..1, higher is better). The raw inputs reach about 0.62; the classes are balanced (majority_baseline about 0.51) and the label noise limits the best possible accuracy to roughly 0.97. Metrics: train_accuracy (a large gap to test means overfitting), num_features, feature_cpu_s. The feedback lists the largest standardized weights (f0 = first feature); features with near-zero weight carry no usable signal for the linear model.
 - **Language:** python; program `examples/feature_engineering/initial.py`, evaluator stages: main
+- **Details:** [starting program and best results](examples/feature_engineering.md)
 
 ### symbolic_regression
 
@@ -143,6 +157,7 @@ Find the formula behind hidden data: y = f(x1, x2, x3) + Gaussian noise (sigma 0
 
 - **Score:** score = mean of R^2 on the in-range test rows and R^2 on the extrapolation rows, each clipped to [0, 1] (higher is better, 1.0 = perfect; the noise limits it to about 0.998). The initial linear model scores about 0.31. Metrics: r2_test, rmse_test, r2_extrapolation, rmse_extrapolation (the noise alone gives RMSE 0.1), cpu_s. The feedback lists the five worst extrapolation rows with true and predicted y.
 - **Language:** python; program `examples/symbolic_regression/initial.py`, evaluator stages: main
+- **Details:** [starting program and best results](examples/symbolic_regression.md)
 
 ## Testing
 
@@ -152,3 +167,4 @@ Make value() return a larger number (at most 100).
 
 - **Score:** see the evaluator
 - **Language:** python; program `examples/toy/initial.py`, evaluator stages: main
+- **Details:** [starting program and best results](examples/toy.md)

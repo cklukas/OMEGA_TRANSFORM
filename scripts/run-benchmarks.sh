@@ -6,12 +6,13 @@
 # Ollama model (does it load, answer, follow the edit format, and how fast is
 # it?) and writes bench/model-check.json. Then every model marked ok runs on
 # every example, once without and once with its reasoning mode ("thinking";
-# models without one are skipped in that pass). Finally docs/benchmarks.md is
+# models without one are skipped in that pass). Finally docs/benchmarks.md and
+# the example pages (docs/examples/, with each example's best result) are
 # regenerated.
 #
 # Rerun it after changing the engine, the prompts or the examples, or after
 # pulling new models. Every run adds result files to bench/results/; commit
-# them together with docs/benchmarks.md to publish the tables and charts.
+# them together with the regenerated pages to publish the tables and charts.
 #
 # Usage:
 #   scripts/run-benchmarks.sh [extra omega bench options]
@@ -117,6 +118,7 @@ for mode in $MODES; do
 done
 
 "$PYTHON" -m omega_transform report | tee -a "$log"
+"$PYTHON" -m omega_transform docs | tee -a "$log"
 echo "done ($(date)); log: $log" | tee -a "$log"
-echo "to publish: git add bench/results bench/model-check.json docs/benchmarks.md && git commit" \
+echo "to publish: git add bench/results bench/model-check.json docs && git commit" \
   | tee -a "$log"

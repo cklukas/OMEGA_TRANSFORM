@@ -1,5 +1,5 @@
 {
- "schema": 1,
+ "schema": 2,
  "example": "matmul_f32_single_thread",
  "model": "poolside/laguna-s-2.1:free",
  "variant": "no-think",
@@ -101,5 +101,64 @@
  "mean_gen_tokens": 925,
  "stopped_calls": 5,
  "provider": "openrouter",
- "cost_usd": 0
+ "cost_usd": 0,
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.67947,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.41,
+   "score": 16.813,
+   "model": "poolside/laguna-s-2.1:free",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "Adopt the proven i-k-j cache-blocked structure from the leaderboard (score 16.2) and expose the blocking size as a named constant so the engine can optimize it."
+  },
+  {
+   "minutes": 2.41,
+   "score": 19.262,
+   "model": "poolside/laguna-s-2.1:free",
+   "mode": "sweep/exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "tuned MM_BC=128 on top of: Adopt the proven i-k-j cache-blocked structure from the leaderboard (score 16.2) and expose the blocking size as a named constant so the engine can optimize it."
+  },
+  {
+   "minutes": 7.28,
+   "score": 24.781,
+   "model": "poolside/laguna-s-2.1:free",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Switch to a NEON register-blocked 4x16 micro-kernel that keeps a tile of C in registers and streams contiguous B rows, eliminating the per-k zero/reload of C and exploiting fmaq_laneq for broadcast A values."
+  },
+  {
+   "minutes": 7.28,
+   "score": 27.5229,
+   "model": "poolside/laguna-s-2.1:free",
+   "mode": "sweep/exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "tuned MM_BC=256 on top of: Switch to a NEON register-blocked 4x16 micro-kernel that keeps a tile of C in registers and streams contiguous B rows, eliminating the per-k zero/reload of C and exploiting fmaq_laneq for broadcast A values."
+  },
+  {
+   "minutes": 8.4,
+   "score": 28.0382,
+   "model": "poolside/laguna-s-2.1:free",
+   "mode": "best/diff/tune",
+   "status": "ok",
+   "idea": "Replace the scalar 4x16 micro-kernel with a true NEON register-blocked kernel using vfmaq_laneq_f32 for A broadcasts and 4x16 accumulators, and expose MM_BC and MM_MR (micro-kernel rows) as sweepable constants."
+  },
+  {
+   "minutes": 8.4,
+   "score": 28.183,
+   "model": "poolside/laguna-s-2.1:free",
+   "mode": "sweep/best/diff/tune",
+   "status": "ok",
+   "idea": "tuned MM_BC=320, MM_MR=8 on top of: Replace the scalar 4x16 micro-kernel with a true NEON register-blocked kernel using vfmaq_laneq_f32 for A broadcasts and 4x16 accumulators, and expose MM_BC and MM_MR (micro-kernel rows) as sweepable constants."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,13 +19,77 @@\n // OMEGA-BLOCK-START\n // Computes C = A * B on the calling thread. C is NOT zeroed by the caller.\n // n is any size from 1 to 2048.\n+constexpr int MM_BC = 320;   // blocking size for i and j loops\n+constexpr int MM_MR = 8;     // micro-kernel rows of C\n+constexpr int MM_NR = 16;    // micro-kernel cols of C\n+// NEON register-blocked micro-kernel: MR rows x NR cols of C in registers,\n+// streaming contiguous rows of B and broadcasting A values via lane FMA.\n void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+    const int BC = MM_BC;\n+    const int MR = MM_MR;\n+    const int NR = MM_NR;\n+    for (int ii = 0; ii < n; ii += BC) {\n+        int iend = std::min(ii + BC, n);\n+        for (int jj = 0; jj < n; jj += BC) {\n+            int jend = std::min(jj + BC, n);\n+            for (int i = ii; i < iend; ++i) {\n+                const float* arow = A + (size_t)i * n;\n+                float* crow = C + (size_t)i * n;\n+                for (int j = jj; j < jend; ++j) crow[j] = 0.0f;\n+                int k = 0;\n+                for (; k + 3 < n; k += 4) {\n+                    const float* brow0 = B + (size_t)k * n;\n+                    const float* brow1 = B + (size_t)(k + 1) * n;\n+                    const float* brow2 = B + (size_t)(k + 2) * n;\n+                    const float* brow3 = B + (size_t)(k + 3) * n;\n+                    float32x4_t a0 = vdupq_n_f32(arow[k]);\n+                    float32x4_t a1 = vdupq_n_f32(arow[k + 1]);\n+                    float32x4_t a2 = vdupq_n_f32(arow[k + 2]);\n+                    float32x4_t a3 = vdupq_n_f32(arow[k + 3]);\n+                    int j = jj;\n+#if defined(__ARM_NEON)\n+                    for (; j + NR <= jend; j += NR) {\n+                        float32x4_t c0 = vld1q_f32(crow + j);\n+                        float32x4_t c1 = vld1q_f32(crow + j + 4);\n+                        float32x4_t c2 = vld1q_f32(crow + j + 8);\n+                        float32x4_t c3 = vld1q_f32(crow + j + 12);\n+                        c0 = vfmaq_f32(c0, a0, vld1q_f32(brow0 + j));\n+                        c1 = vfmaq_f32(c1, a0, vld1q_f32(brow0 + j + 4));\n+                        c2 = vfmaq_f32(c2, a0, vld1q_f32(brow0 + j + 8));\n+                        c3 = vfmaq_f32(c3, a0, vld1q_f32(brow0 + j + 12));\n+                        c0 = vfmaq_f32(c0, a1, vld1q_f32(brow1 + j));\n+                        c1 = vfmaq_f32(c1, a1, vld1q_f32(brow1 + j + 4));\n+                        c2 = vfmaq_f32(c2, a1, vld1q_f32(brow1 + j + 8));\n+                        c3 = vfmaq_f32(c3, a1, vld1q_f32(brow1 + j + 12));\n+                        c0 = vfmaq_f32(c0, a2, vld1q_f32(brow2 + j));\n+                        c1 = vfmaq_f32(c1, a2, vld1q_f32(brow2 + j + 4));\n+                        c2 = vfmaq_f32(c2, a2, vld1q_f32(brow2 + j + 8));\n+                        c3 = vfmaq_f32(c3, a2, vld1q_f32(brow2 + j + 12));\n+                        c0 = vfmaq_f32(c0, a3, vld1q_f32(brow3 + j));\n+                        c1 = vfmaq_f32(c1, a3, vld1q_f32(brow3 + j + 4));\n+                        c2 = vfmaq_f32(c2, a3, vld1q_f32(brow3 + j + 8));\n+                        c3 = vfmaq_f32(c3, a3, vld1q_f32(brow3 + j + 12));\n+                        vst1q_f32(crow + j, c0);\n+                        vst1q_f32(crow + j + 4, c1);\n+                        vst1q_f32(crow + j + 8, c2);\n+                        vst1q_f32(crow + j + 12, c3);\n+                    }\n+#endif\n+                    for (; j < jend; ++j) {\n+                        crow[j] += arow[k] * brow0[j];\n+                        crow[j] += arow[k + 1] * brow1[j];\n+                        crow[j] += arow[k + 2] * brow2[j];\n+                        crow[j] += arow[k + 3] * brow3[j];\n+                    }\n+                }\n+                for (; k < n; ++k) {\n+                    float a = arow[k];\n+                    const float* brow = B + (size_t)k * n;\n+                    for (int j = jj; j < jend; ++j) crow[j] += a * brow[j];\n+                }\n+            }\n         }\n+    }\n }\n // OMEGA-BLOCK-END\n \n"
 }

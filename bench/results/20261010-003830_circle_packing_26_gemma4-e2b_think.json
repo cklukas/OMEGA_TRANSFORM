@@ -1,5 +1,5 @@
 {
- "schema": 1,
+ "schema": 2,
  "example": "circle_packing_26",
  "model": "gemma4:e2b",
  "variant": "think",
@@ -62,5 +62,16 @@
  "gen_tokens_per_s": 62.0,
  "mean_prompt_tokens": 1797,
  "mean_gen_tokens": 2737,
- "stopped_calls": 3
+ "stopped_calls": 3,
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  }
+ ],
+ "best_diff": ""
 }

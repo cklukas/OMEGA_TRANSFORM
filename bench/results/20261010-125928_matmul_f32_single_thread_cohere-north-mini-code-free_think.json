@@ -1,5 +1,5 @@
 {
- "schema": 1,
+ "schema": 2,
  "example": "matmul_f32_single_thread",
  "model": "cohere/north-mini-code:free",
  "variant": "think",
@@ -62,5 +62,16 @@
  "mean_gen_tokens": 4886,
  "stopped_calls": 7,
  "provider": "openrouter",
- "cost_usd": 0
+ "cost_usd": 0,
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.54957,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  }
+ ],
+ "best_diff": ""
 }

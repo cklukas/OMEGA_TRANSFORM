@@ -1,5 +1,5 @@
 {
- "schema": 1,
+ "schema": 2,
  "example": "matmul_f32_single_thread",
  "model": "gpt-oss:20b",
  "variant": "no-think",
@@ -70,5 +70,24 @@
  "mean_gen_tokens": 4683,
  "stopped_calls": 0,
  "provider": "ollama",
- "cost_usd": 0
+ "cost_usd": 0,
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.38651,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 6.68,
+   "score": 18.6383,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Use NEON vectorized i\u2011k\u2011j loop with per\u2011row zeroing to accelerate compute while preserving correctness."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -22,11 +22,32 @@\n // Computes C = A * B on the calling thread. C is NOT zeroed by the caller.\n // n is any size from 1 to 2048.\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n+#if defined(__ARM_NEON)\n+    for (int i = 0; i < n; ++i) {\n+        float* Ci = C + i * n;\n+        // zero C row\n+        for (int j = 0; j < n; ++j) Ci[j] = 0.0f;\n+        const float* Ai = A + i * n;\n+        for (int k = 0; k < n; ++k) {\n+            float aik = Ai[k];\n+            const float* Bk = B + k * n;\n+            int j = 0;\n+            for (; j + 3 < n; j += 4) {\n+                float32x4_t bvec = vld1q_f32(Bk + j);\n+                float32x4_t cvec = vld1q_f32(Ci + j);\n+                cvec = vfmaq_f32(cvec, bvec, vdupq_n_f32(aik));\n+                vst1q_f32(Ci + j, cvec);\n+            }\n+            for (; j < n; ++j) Ci[j] += aik * Bk[j];\n+        }\n+    }\n+#else\n     for (int i = 0; i < n; ++i)\n         for (int j = 0; j < n; ++j) {\n             float s = 0.0f;\n             for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n             C[i * n + j] = s;\n         }\n+#endif\n }\n // OMEGA-BLOCK-END\n"
 }

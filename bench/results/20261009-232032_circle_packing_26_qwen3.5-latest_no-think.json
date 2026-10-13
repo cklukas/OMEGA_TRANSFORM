@@ -1,5 +1,5 @@
 {
- "schema": 1,
+ "schema": 2,
  "example": "circle_packing_26",
  "model": "qwen3.5:latest",
  "variant": "no-think",
@@ -67,5 +67,32 @@
  "gen_tokens_per_s": 29.1,
  "mean_prompt_tokens": 2085,
  "mean_gen_tokens": 758,
- "stopped_calls": 2
+ "stopped_calls": 2,
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.45,
+   "score": 0.9566666666666669,
+   "model": "qwen3.5:latest",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the naive linear overlap reduction with a projected gradient step that scales all circles uniformly by the minimum allowable ratio derived from wall constraints and pairwise overlaps, which better preserves circle sizes and improves packing density."
+  },
+  {
+   "minutes": 15.34,
+   "score": 2.053030303030303,
+   "model": "qwen3.5:latest",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the naive uniform scaling approach with an iterative greedy resolution that resolves overlaps sequentially by shrinking only the pair involved in the most critical conflict, which prevents unnecessary reduction of non-conflicting circles and allows the packing to fill gaps more effectively."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -18,15 +18,48 @@\n \n \n def max_radii(centers):\n-    \"\"\"Largest radii for fixed centers: limit by walls, then shrink overlapping pairs.\"\"\"\n+    \"\"\"Largest radii for fixed centers: limit by walls and pairwise overlaps via iterative relaxation.\"\"\"\n+    n = len(centers)\n     radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n-    for a in range(len(centers)):\n-        for b in range(a + 1, len(centers)):\n-            d = math.dist(centers[a], centers[b])\n-            if radii[a] + radii[b] > d:\n-                s = d / (radii[a] + radii[b])\n-                radii[a] *= s\n-                radii[b] *= s\n+    # Iteratively resolve overlaps: find the pair with the most severe overlap and shrink them.\n+    # Repeat until no overlaps exist (within tolerance).\n+    max_iter = 50\n+    tol = 1e-9\n+    for _ in range(max_iter):\n+        min_ratio = 2.0\n+        conflict_idx = -1\n+        for a in range(n):\n+            for b in range(a + 1, n):\n+                d = math.dist(centers[a], centers[b])\n+                req = radii[a] + radii[b]\n+                if req > d + tol:  # Overlap detected (within tolerance)\n+                    ratio = d / req\n+                    if ratio < min_ratio:\n+                        min_ratio = ratio\n+                        conflict_idx = a\n+        if conflict_idx == -1 or min_ratio >= 1.0:\n+            break\n+        # Shrink both circles in the most critical pair by the minimum allowable ratio\n+        a, b = conflict_idx, (conflict_idx + 1) % n if conflict_idx == n - 1 else (conflict_idx + 1)\n+        # Actually, we need to find the specific 'b' that caused min_ratio. \n+        # To keep it simple and robust, let's re-find the pair for this iteration or use a simpler greedy step:\n+        # Re-scan to get exact indices for the current worst conflict\n+        worst_a, worst_b = -1, -1\n+        worst_ratio = 2.0\n+        for a in range(n):\n+            for b in range(a + 1, n):\n+                d = math.dist(centers[a], centers[b])\n+                req = radii[a] + radii[b]\n+                if req > d + tol:\n+                    ratio = d / req\n+                    if ratio < worst_ratio:\n+                        worst_ratio = ratio\n+                        worst_a, worst_b = a, b\n+        \n+        if worst_a != -1:\n+            s = worst_ratio\n+            radii[worst_a] *= s\n+            radii[worst_b] *= s\n     return radii\n # OMEGA-BLOCK-END\n \n"
 }

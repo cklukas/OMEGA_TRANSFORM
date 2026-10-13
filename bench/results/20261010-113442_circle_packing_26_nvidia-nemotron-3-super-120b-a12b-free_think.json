@@ -1,5 +1,5 @@
 {
- "schema": 1,
+ "schema": 2,
  "example": "circle_packing_26",
  "model": "nvidia/nemotron-3-super-120b-a12b:free",
  "variant": "think",
@@ -80,5 +80,48 @@
  "mean_gen_tokens": 4438,
  "stopped_calls": 1,
  "provider": "openrouter",
- "cost_usd": 0
+ "cost_usd": 0,
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.62,
+   "score": 2.4681939993962376,
+   "model": "nvidia/nemotron-3-super-120b-a12b:free",
+   "mode": "explore/rewrite/bold",
+   "status": "ok",
+   "idea": "Use deterministic hill climbing where each circle moves away from its closest constraint (wall or nearest neighbor) to increase its radius, iterating with decreasing step size to reach a locally optimal non\u2011overlapping packing that should yield a higher sum of radii than the initial grid."
+  },
+  {
+   "minutes": 7.87,
+   "score": 2.4681939993962376,
+   "model": "nvidia/nemotron-3-super-120b-a12b:free",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Expose hill\u2011climbing step size, decay, minimum step, and wall\u2011vs\u2011neighbour balance as sweepable constants to let the optimizer find better parameters for higher sum of radii."
+  },
+  {
+   "minutes": 10.66,
+   "score": 2.4681939993962376,
+   "model": "nvidia/nemotron-3-super-120b-a12b:free",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Expose the initial offset of the grid points as a tunable constant to allow the optimizer to find a better starting layout that can increase the sum of radii."
+  },
+  {
+   "minutes": 10.66,
+   "score": 2.5045046722293836,
+   "model": "nvidia/nemotron-3-super-120b-a12b:free",
+   "mode": "sweep/exploit/diff/tune",
+   "status": "ok",
+   "idea": "tuned INITIAL_STEP=0.07883, STEP_DECAY=0.9843, MIN_STEP=0.0001, INITIAL_OFFSET=0.09298 on top of: Expose the initial offset of the grid points as a tunable constant to allow the optimizer to find a better starting layout that can increase the sum of radii."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -5,16 +5,103 @@\n import math\n \n # OMEGA-BLOCK-START\n+import math\n+import random\n+\n+# hill\u2011climbing parameters (can be swept)\n+INITIAL_STEP = 0.07883083297290819\n+STEP_DECAY = 0.9843098851016777\n+MIN_STEP = 0.0001\n+WALL_NN_FACTOR = 0.5\n+INITIAL_OFFSET = 0.09298369605234769\n+\n def construct_packing(n=26):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n+    # deterministic seed for reproducibility\n+    random.seed(42)\n+    # initialise points on a grid\n     cols = math.ceil(math.sqrt(n))\n     rows = math.ceil(n / cols)\n-    centers = []\n+    pts = []\n     for k in range(n):\n         i, j = k % cols, k // cols\n-        centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n-    radii = max_radii(centers)\n-    return [(x, y, r) for (x, y), r in zip(centers, radii)]\n+        pts.append([((i + INITIAL_OFFSET) / cols), ((j + INITIAL_OFFSET) / rows)])\n+    \n+    # hill\u2011climbing parameters (can be swept)\n+    \n+    step = INITIAL_STEP\n+    while step > MIN_STEP:\n+        for p in pts:\n+            x, y = p\n+            # distance to walls\n+            d_left = x\n+            d_right = 1.0 - x\n+            d_bottom = y\n+            d_top = 1.0 - y\n+            d_wall = min(d_left, d_right, d_bottom, d_top)\n+            # wall giving the minimum\n+            if d_wall == d_left:\n+                wall_dir = (1.0, 0.0)   # move right\n+            elif d_wall == d_right:\n+                wall_dir = (-1.0, 0.0)  # move left\n+            elif d_wall == d_bottom:\n+                wall_dir = (0.0, 1.0)   # move up\n+            else:\n+                wall_dir = (0.0, -1.0)  # move down\n+            \n+            # distance to nearest neighbour\n+            nn_dist = float('inf')\n+            nn_vec = (0.0, 0.0)\n+            for q in pts:\n+                if q is p:\n+                    continue\n+                dx = p[0] - q[0]\n+                dy = p[1] - q[1]\n+                d = math.hypot(dx, dy)\n+                if d < nn_dist:\n+                    nn_dist = d\n+                    nn_vec = (dx, dy)\n+            if nn_dist == float('inf'):  # only one point\n+                nn_dist = float('inf')\n+                nn_dir = (0.0, 0.0)\n+            else:\n+                nn_dir = (nn_vec[0] / nn_dist, nn_vec[1] / nn_dist)  # away from neighbour\n+            \n+            # decide which constraint is active\n+            if d_wall <= WALL_NN_FACTOR * nn_dist:\n+                gx, gy = wall_dir\n+            else:\n+                gx, gy = nn_dir\n+            \n+            # take a step\n+            p[0] += gx * step\n+            p[1] += gy * step\n+            # keep inside [0,1]\n+            if p[0] < 0.0:\n+                p[0] = 0.0\n+            elif p[0] > 1.0:\n+                p[0] = 1.0\n+            if p[1] < 0.0:\n+                p[1] = 0.0\n+            elif p[1] > 1.0:\n+                p[1] = 1.0\n+        step *= STEP_DECAY\n+    \n+    # compute final radii\n+    radii = [0.0] * n\n+    for i in range(n):\n+        x, y = pts[i]\n+        d_wall = min(x, 1.0 - x, y, 1.0 - y)\n+        d_nn = float('inf')\n+        for j in range(n):\n+            if i == j:\n+                continue\n+            d = math.dist(pts[i], pts[j])\n+            if d < d_nn:\n+                d_nn = d\n+        radii[i] = min(d_wall, 0.5 * d_nn)\n+    \n+    return [(pts[i][0], pts[i][1], radii[i]) for i in range(n)]\n \n \n def max_radii(centers):\n@@ -28,6 +115,10 @@\n                 radii[a] *= s\n                 radii[b] *= s\n     return radii\n+\n+\n+def run():\n+    return construct_packing(26)\n # OMEGA-BLOCK-END\n \n \n"
 }

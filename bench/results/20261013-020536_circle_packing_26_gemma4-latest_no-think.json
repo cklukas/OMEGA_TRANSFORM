@@ -1,5 +1,5 @@
 {
- "schema": 1,
+ "schema": 2,
  "example": "circle_packing_26",
  "model": "gemma4:latest",
  "variant": "no-think",
@@ -72,5 +72,32 @@
  "mean_gen_tokens": 571,
  "stopped_calls": 1,
  "provider": "ollama",
- "cost_usd": 0
+ "cost_usd": 0,
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 8.25,
+   "score": null,
+   "model": "gemma4:latest",
+   "mode": "exploit/diff/bold",
+   "status": "invalid",
+   "idea": "Implement a hexagonal grid initialization for the centers to achieve a denser initial packing, which should lead to larger radii."
+  },
+  {
+   "minutes": 11.4,
+   "score": 1.94012723633162,
+   "model": "gemma4:latest",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Restrict the number of generated circles to exactly 26 by trimming the generated list based on a density metric derived from the current radii."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -10,9 +10,20 @@\n     cols = math.ceil(math.sqrt(n))\n     rows = math.ceil(n / cols)\n     centers = []\n-    for k in range(n):\n-        i, j = k % cols, k // cols\n-        centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n+    row_spacing = 1.0 / rows\n+    col_spacing = 1.0 / cols\n+    centers_list = []\n+    for j in range(rows):\n+        for i in range(cols):\n+            stagger = col_spacing / 2 if j % 2 != 0 else 0\n+            center = (i * col_spacing + col_spacing / 2 + stagger, j * row_spacing + row_spacing / 2)\n+            # Initial radii estimate based on center location (before overlap checks)\n+            r_est = min(center[0], center[1], 1 - center[0], 1 - center[1])\n+            centers_list.append((center, r_est))\n+\n+    # Sort by estimated radius to keep the densest centers first\n+    centers_list.sort(key=lambda x: x[1], reverse=True)\n+    centers = [c[0] for c in centers_list[:n]]\n     radii = max_radii(centers)\n     return [(x, y, r) for (x, y), r in zip(centers, radii)]\n \n"
 }

@@ -1,5 +1,5 @@
 {
- "schema": 1,
+ "schema": 2,
  "example": "matmul_f32_single_thread",
  "model": "cohere/north-mini-code:free",
  "variant": "no-think",
@@ -82,5 +82,40 @@
  "mean_gen_tokens": 1715,
  "stopped_calls": 1,
  "provider": "openrouter",
- "cost_usd": 0
+ "cost_usd": 0,
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.74962,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 7.27,
+   "score": 15.3079,
+   "model": "cohere/north-mini-code:free",
+   "mode": "explore/diff/refine",
+   "status": "ok",
+   "idea": "Replace the naive triple loop with an i\u2011k\u2011j ordered, register\u2011blocked micro\u2011kernel using NEON FMA intrinsics and panel packing to reduce memory traffic and increase arithmetic intensity."
+  },
+  {
+   "minutes": 7.77,
+   "score": 27.0964,
+   "model": "cohere/north-mini-code:free",
+   "mode": "explore/diff/refine",
+   "status": "ok",
+   "idea": "Reduce the number of accumulator conditionals and improve panel packing efficiency by switching to an unrolled micro\u2011kernel that processes 8\u00d78 tiles with fewer bounds checks and better NEON utilization."
+  },
+  {
+   "minutes": 8.5,
+   "score": 27.776,
+   "model": "cohere/north-mini-code:free",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Increase arithmetic intensity by switching to a wider 16\u00d78 register tile (two NEON registers per C element) to halve memory traffic and better utilize FMA pipelines."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -20,12 +20,158 @@\n // Computes C = A * B on the calling thread. C is NOT zeroed by the caller.\n // n is any size from 1 to 2048.\n void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+    // Register\u2011blocked micro\u2011kernel constants (tuned for L1/L2)\n+    constexpr int MR = 16;   // rows per panel\n+    constexpr int NR = 8;    // columns per panel\n+    constexpr int KC   = 128; // inner dimension block size\n+\n+    // Allocate static panel buffers (must fit worst\u2011case block sizes)\n+    alignas(16) float A_panel[MR][KC];\n+    alignas(16) float B_panel[KC][NR];\n+    alignas(16) float C_tile[MR][NR];\n+\n+    for (int ii = 0; ii < n; ii += MR) {\n+        for (int jj = 0; jj < n; jj += NR) {\n+            // Initialise C_tile to zero\n+            for (int i = 0; i < MR; ++i) {\n+                for (int j = 0; j < NR; ++j) {\n+                    C_tile[i][j] = 0.0f;\n+                }\n+            }\n+\n+            // Compute the extent of the current block\n+            const int i_end = (ii + MR < n) ? ii + MR : n;\n+            const int j_end = (jj + NR < n) ? jj + NR : n;\n+\n+            for (int kk = 0; kk < n; kk += KC) {\n+                const int k_end = (kk + KC < n) ? kk + KC : n;\n+                const int k_block = k_end - kk;\n+\n+                // Pack a panel of A (rows ii..i_end-1, columns kk..k_end-1)\n+                for (int i = 0; i < MR; ++i) {\n+                    const int i_idx = ii + i;\n+                    if (i_idx >= i_end) break;\n+                    for (int k = 0; k < k_block; ++k) {\n+                        A_panel[i][k] = A[i_idx * n + kk + k];\n+                    }\n+                }\n+\n+                // Pack a panel of B (rows kk..k_end-1, columns jj..j_end-1)\n+                for (int k = 0; k < k_block; ++k) {\n+                    const int k_idx = kk + k;\n+                    for (int j = 0; j < NR; ++j) {\n+                        const int j_idx = jj + j;\n+                        if (j_idx >= j_end) break;\n+                        B_panel[k][j] = B[k_idx * n + j_idx];\n+                    }\n+                }\n+\n+                // Register\u2011blocked micro\u2011kernel: i\u2011k\u2011j order with NEON FMA, fully unrolled 16x8\n+                for (int k = 0; k < k_block; ++k) {\n+                    // Load all 16 A rows as separate vectors (two per register per output element)\n+                    const float32x4_t a0 = vld1q_dup_f32(&A_panel[0][k]);\n+                    const float32x4_t a1 = vld1q_dup_f32(&A_panel[1][k]);\n+                    const float32x4_t a2 = vld1q_dup_f32(&A_panel[2][k]);\n+                    const float32x4_t a3 = vld1q_dup_f32(&A_panel[3][k]);\n+                    const float32x4_t a4 = vld1q_dup_f32(&A_panel[4][k]);\n+                    const float32x4_t a5 = vld1q_dup_f32(&A_panel[5][k]);\n+                    const float32x4_t a6 = vld1q_dup_f32(&A_panel[6][k]);\n+                    const float32x4_t a7 = vld1q_dup_f32(&A_panel[7][k]);\n+                    const float32x4_t a8 = vld1q_dup_f32(&A_panel[8][k]);\n+                    const float32x4_t a9 = vld1q_dup_f32(&A_panel[9][k]);\n+                    const float32x4_t a10= vld1q_dup_f32(&A_panel[10][k]);\n+                    const float32x4_t a11= vld1q_dup_f32(&A_panel[11][k]);\n+                    const float32x4_t a12= vld1q_dup_f32(&A_panel[12][k]);\n+                    const float32x4_t a13= vld1q_dup_f32(&A_panel[13][k]);\n+                    const float32x4_t a14= vld1q_dup_f32(&A_panel[14][k]);\n+                    const float32x4_t a15= vld1q_dup_f32(&A_panel[15][k]);\n+\n+                    // Process 4 columns at a time (NR = 8)\n+                    for (int j = 0; j < NR; j += 4) {\n+                        const float32x4_t b_vec = vld1q_f32(&B_panel[k][j]);\n+\n+                        // Unrolled accumulation for each of the 16 rows (two registers per element)\n+                        // First register per element\n+                        {\n+                            float32x4_t &c = *reinterpret_cast<float32x4_t*>(&C_tile[0][j]);\n+                            c = vfmaq_f32(c, a0, b_vec);\n+                        }\n+                        {\n+                            float32x4_t &c = *reinterpret_cast<float32x4_t*>(&C_tile[1][j]);\n+                            c = vfmaq_f32(c, a1, b_vec);\n+                        }\n+                        {\n+                            float32x4_t &c = *reinterpret_cast<float32x4_t*>(&C_tile[2][j]);\n+                            c = vfmaq_f32(c, a2, b_vec);\n+                        }\n+                        {\n+                            float32x4_t &c = *reinterpret_cast<float32x4_t*>(&C_tile[3][j]);\n+                            c = vfmaq_f32(c, a3, b_vec);\n+                        }\n+                        {\n+                            float32x4_t &c = *reinterpret_cast<float32x4_t*>(&C_tile[4][j]);\n+                            c = vfmaq_f32(c, a4, b_vec);\n+                        }\n+                        {\n+                            float32x4_t &c = *reinterpret_cast<float32x4_t*>(&C_tile[5][j]);\n+                            c = vfmaq_f32(c, a5, b_vec);\n+                        }\n+                        {\n+                            float32x4_t &c = *reinterpret_cast<float32x4_t*>(&C_tile[6][j]);\n+                            c = vfmaq_f32(c, a6, b_vec);\n+                        }\n+                        {\n+                            float32x4_t &c = *reinterpret_cast<float32x4_t*>(&C_tile[7][j]);\n+                            c = vfmaq_f32(c, a7, b_vec);\n+                        }\n+                        {\n+                            float32x4_t &c = *reinterpret_cast<float32x4_t*>(&C_tile[8][j]);\n+                            c = vfmaq_f32(c, a8, b_vec);\n+                        }\n+                        {\n+                            float32x4_t &c = *reinterpret_cast<float32x4_t*>(&C_tile[9][j]);\n+                            c = vfmaq_f32(c, a9, b_vec);\n+                        }\n+                        {\n+                            float32x4_t &c = *reinterpret_cast<float32x4_t*>(&C_tile[10][j]);\n+                            c = vfmaq_f32(c, a10, b_vec);\n+                        }\n+                        {\n+                            float32x4_t &c = *reinterpret_cast<float32x4_t*>(&C_tile[11][j]);\n+                            c = vfmaq_f32(c, a11, b_vec);\n+                        }\n+                        {\n+                            float32x4_t &c = *reinterpret_cast<float32x4_t*>(&C_tile[12][j]);\n+                            c = vfmaq_f32(c, a12, b_vec);\n+                        }\n+                        {\n+                            float32x4_t &c = *reinterpret_cast<float32x4_t*>(&C_tile[13][j]);\n+                            c = vfmaq_f32(c, a13, b_vec);\n+                        }\n+                        {\n+                            float32x4_t &c = *reinterpret_cast<float32x4_t*>(&C_tile[14][j]);\n+                            c = vfmaq_f32(c, a14, b_vec);\n+                        }\n+                        {\n+                            float32x4_t &c = *reinterpret_cast<float32x4_t*>(&C_tile[15][j]);\n+                            c = vfmaq_f32(c, a15, b_vec);\n+                        }\n+                    }\n+                }\n+\n+                // Store accumulated C_tile back to C\n+                for (int i = 0; i < MR; ++i) {\n+                    const int i_idx = ii + i;\n+                    if (i_idx >= i_end) break;\n+                    for (int j = 0; j < NR; ++j) {\n+                        const int j_idx = jj + j;\n+                        if (j_idx >= j_end) break;\n+                        C[i_idx * n + j_idx] = C_tile[i][j];\n+                    }\n+                }\n+            }\n         }\n+    }\n }\n // OMEGA-BLOCK-END\n \n"
 }

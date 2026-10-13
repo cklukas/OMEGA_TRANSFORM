@@ -1,5 +1,5 @@
 {
- "schema": 1,
+ "schema": 2,
  "example": "circle_packing_26",
  "model": "qwen3.5:latest",
  "variant": "think",
@@ -61,5 +61,16 @@
  "gen_tokens_per_s": 32.5,
  "mean_prompt_tokens": 2166,
  "mean_gen_tokens": 1394,
- "stopped_calls": 0
+ "stopped_calls": 0,
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  }
+ ],
+ "best_diff": ""
 }

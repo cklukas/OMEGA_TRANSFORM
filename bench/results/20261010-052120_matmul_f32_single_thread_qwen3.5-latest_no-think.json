@@ -1,5 +1,5 @@
 {
- "schema": 1,
+ "schema": 2,
  "example": "matmul_f32_single_thread",
  "model": "qwen3.5:latest",
  "variant": "no-think",
@@ -61,5 +61,16 @@
  "gen_tokens_per_s": 32.0,
  "mean_prompt_tokens": 2215,
  "mean_gen_tokens": 959,
- "stopped_calls": 5
+ "stopped_calls": 5,
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.75046,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  }
+ ],
+ "best_diff": ""
 }

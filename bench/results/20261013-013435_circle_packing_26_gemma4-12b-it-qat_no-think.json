@@ -1,5 +1,5 @@
 {
- "schema": 1,
+ "schema": 2,
  "example": "circle_packing_26",
  "model": "gemma4:12b-it-qat",
  "variant": "no-think",
@@ -71,5 +71,24 @@
  "mean_gen_tokens": 683,
  "stopped_calls": 0,
  "provider": "ollama",
- "cost_usd": 0
+ "cost_usd": 0,
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 7.02,
+   "score": 1.9176321516785666,
+   "model": "gemma4:12b-it-qat",
+   "mode": "explore/rewrite/bold",
+   "status": "ok",
+   "idea": "Use a greedy \"largest-circle-first\" placement strategy with a randomized heuristic to find a dense packing, which typically yields a much higher sum of radii than a fixed grid."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -7,27 +7,68 @@\n # OMEGA-BLOCK-START\n def construct_packing(n=26):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n-    cols = math.ceil(math.sqrt(n))\n-    rows = math.ceil(n / cols)\n-    centers = []\n-    for k in range(n):\n-        i, j = k % cols, k // cols\n-        centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n-    radii = max_radii(centers)\n-    return [(x, y, r) for (x, y), r in zip(centers, radii)]\n+    import random\n+    \n+    # Greedy approach: try to place the largest possible circle at a random point\n+    # and repeat until n circles are placed. To maximize sum of radii, \n+    # we want the largest circles to be as large as possible.\n+    \n+    circles = []\n+    # Try many iterations to find a good packing\n+    # Because we want a high sum of radii, we favor larger radii.\n+    # We use a 'greedy with multiple restarts' logic.\n+    \n+    best_sum = -1\n+    best_circles = []\n \n+    # Optimization: Instead of full random, we can use a set of candidate \n+    # positions or just a few high-quality random trials.\n+    # Since we have a time limit, 100 iterations is safe.\n+    for _ in range(100):\n+        current_circles = []\n+        # Try to place circles one by one\n+        # To maximize sum, we want larger radii first. \n+        # We can try to place circles with radii in descending order.\n+        # However, we don't know the optimal radii.\n+        # A better greedy: place a circle at a random (x,y) with the \n+        # maximum possible radius such that it doesn't overlap existing ones.\n+        \n+        for _ in range(n):\n+            # Try 50 random spots for the next circle\n+            best_r = -1\n+            best_pos = None\n+            \n+            for _ in range(50):\n+                tx, ty = random.random(), random.random()\n+                # Max radius allowed by boundaries\n+                tr = min(tx, ty, 1 - tx, 1 - ty)\n+                \n+                # Shrink tr based on existing circles\n+                for cx, cy, cr in current_circles:\n+                    dist = math.sqrt((tx - cx)**2 + (ty - cy)**2)\n+                    tr = min(tr, dist - cr)\n+                \n+                if tr > best_r:\n+                    best_r = tr\n+                    best_pos = (tx, ty, tr)\n+            \n+            if best_pos and best_pos[2] > 0:\n+                current_circles.append(best_pos)\n+            else:\n+                # If we can't place a circle, this trial is a failure\n+                break\n+        \n+        if len(current_circles) == n:\n+            s = sum(c[2] for c in current_circles)\n+            if s > best_sum:\n+                best_sum = s\n+                best_circles = current_circles\n+                \n+    return [(c[0], c[1], c[2]) for c in best_circles]\n \n def max_radii(centers):\n-    \"\"\"Largest radii for fixed centers: limit by walls, then shrink overlapping pairs.\"\"\"\n-    radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n-    for a in range(len(centers)):\n-        for b in range(a + 1, len(centers)):\n-            d = math.dist(centers[a], centers[b])\n-            if radii[a] + radii[b] > d:\n-                s = d / (radii[a] + radii[b])\n-                radii[a] *= s\n-                radii[b] *= s\n-    return radii\n+    # This function is no longer used by the new construct_packing\n+    return []\n # OMEGA-BLOCK-END\n \n \n"
 }

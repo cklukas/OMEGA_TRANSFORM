@@ -1,5 +1,5 @@
 {
- "schema": 1,
+ "schema": 2,
  "example": "matmul_f32_single_thread",
  "model": "qwen2.5-coder:7b",
  "variant": "no-think",
@@ -68,5 +68,24 @@
  "mean_gen_tokens": 594,
  "stopped_calls": 0,
  "provider": "ollama",
- "cost_usd": 0
+ "cost_usd": 0,
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.31594,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.27,
+   "score": 5.25547,
+   "model": "qwen2.5-coder:7b",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Use loop unrolling to reduce the overhead of the inner loop."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -22,11 +22,20 @@\n // Computes C = A * B on the calling thread. C is NOT zeroed by the caller.\n // n is any size from 1 to 2048.\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+    for (int i = 0; i < n; ++i) {\n+        for (int j = 0; j < n; j += 4) {\n+            float s0 = 0.0f, s1 = 0.0f, s2 = 0.0f, s3 = 0.0f;\n+            for (int k = 0; k < n; ++k) {\n+                s0 += A[i * n + k] * B[k * n + j + 0];\n+                s1 += A[i * n + k] * B[k * n + j + 1];\n+                s2 += A[i * n + k] * B[k * n + j + 2];\n+                s3 += A[i * n + k] * B[k * n + j + 3];\n+            }\n+            C[i * n + j + 0] = s0;\n+            C[i * n + j + 1] = s1;\n+            C[i * n + j + 2] = s2;\n+            C[i * n + j + 3] = s3;\n         }\n+    }\n }\n // OMEGA-BLOCK-END\n"
 }

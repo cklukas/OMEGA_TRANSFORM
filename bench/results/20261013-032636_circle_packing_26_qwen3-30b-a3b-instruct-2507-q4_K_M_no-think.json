@@ -1,5 +1,5 @@
 {
- "schema": 1,
+ "schema": 2,
  "example": "circle_packing_26",
  "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
  "variant": "no-think",
@@ -71,5 +71,32 @@
  "mean_gen_tokens": 437,
  "stopped_calls": 0,
  "provider": "ollama",
- "cost_usd": 0
+ "cost_usd": 0,
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 11.54,
+   "score": 1.3906580167644704,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Replace the square grid layout with a hexagonal packing pattern using optimized spacing and offset to reduce wasted space and allow larger radii, especially in the interior, while ensuring exactly 26 circles and maintaining feasibility."
+  },
+  {
+   "minutes": 11.54,
+   "score": 1.6228307808133748,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "sweep/exploit/diff/tune",
+   "status": "ok",
+   "idea": "tuned cols=5, rows=6, offset=0.02819 on top of: Replace the square grid layout with a hexagonal packing pattern using optimized spacing and offset to reduce wasted space and allow larger radii, especially in the interior, while ensuring exactly 26 circles and maintaining feasibility."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -7,12 +7,18 @@\n # OMEGA-BLOCK-START\n def construct_packing(n=26):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n-    cols = math.ceil(math.sqrt(n))\n-    rows = math.ceil(n / cols)\n+    # Hexagonal layout: staggered rows to reduce gaps\n+    cols = 5\n+    rows = 6\n     centers = []\n+    offset = 0.02819392371559424\n     for k in range(n):\n         i, j = k % cols, k // cols\n-        centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n+        x = (i + 0.5) / cols\n+        if j % 2 == 1:\n+            x += offset\n+        y = (j + 0.5) / rows\n+        centers.append((x, y))\n     radii = max_radii(centers)\n     return [(x, y, r) for (x, y), r in zip(centers, radii)]\n \n"
 }

@@ -1,5 +1,5 @@
 {
- "schema": 1,
+ "schema": 2,
  "example": "circle_packing_26",
  "model": "qwen3.8:27b-mtp-q4_K_M",
  "variant": "no-think",
@@ -70,5 +70,32 @@
  "mean_gen_tokens": 1136,
  "stopped_calls": 0,
  "provider": "ollama",
- "cost_usd": 0
+ "cost_usd": 0,
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 14.18,
+   "score": 2.276549468283922,
+   "model": "qwen3.8:27b-mtp-q4_K_M",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Replace the grid layout with a dense 26-circle candidate (one central, a 5-inner and 10-outer ring, 10 corners), then jointly optimize centers and radii with a penalty-based gradient-free hill-climbing loop, finishing with exact feasible radii."
+  },
+  {
+   "minutes": 14.18,
+   "score": 2.3069559084775424,
+   "model": "qwen3.8:27b-mtp-q4_K_M",
+   "mode": "sweep/explore/diff/bold",
+   "status": "ok",
+   "idea": "tuned MAX_ITERS=16000, BASE_STEP=0.02 on top of: Replace the grid layout with a dense 26-circle candidate (one central, a 5-inner and 10-outer ring, 10 corners), then jointly optimize centers and radii with a penalty-based gradient-free hill-climbing loop, finishing with exact feasible radii."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -5,29 +5,77 @@\n import math\n \n # OMEGA-BLOCK-START\n-def construct_packing(n=26):\n-    \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n-    cols = math.ceil(math.sqrt(n))\n-    rows = math.ceil(n / cols)\n-    centers = []\n-    for k in range(n):\n-        i, j = k % cols, k // cols\n-        centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n-    radii = max_radii(centers)\n-    return [(x, y, r) for (x, y), r in zip(centers, radii)]\n+import random\n+\n+N = 26\n+MAX_ITERS = 16000\n+PENALTY = 2000.0\n+BASE_STEP = 0.02\n \n \n-def max_radii(centers):\n-    \"\"\"Largest radii for fixed centers: limit by walls, then shrink overlapping pairs.\"\"\"\n-    radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n-    for a in range(len(centers)):\n-        for b in range(a + 1, len(centers)):\n-            d = math.dist(centers[a], centers[b])\n-            if radii[a] + radii[b] > d:\n-                s = d / (radii[a] + radii[b])\n-                radii[a] *= s\n-                radii[b] *= s\n-    return radii\n+def _feasible_radii(centers):\n+    \"\"\"Largest mutually feasible radii for fixed centers (walls + pairwise).\"\"\"\n+    r = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n+    m = len(centers)\n+    for _ in range(30):\n+        changed = False\n+        for a in range(m):\n+            for b in range(a + 1, m):\n+                dx = centers[a][0] - centers[b][0]\n+                dy = centers[a][1] - centers[b][1]\n+                d = math.hypot(dx, dy)\n+                s = r[a] + r[b]\n+                if s > d:\n+                    t = d / s\n+                    r[a] *= t\n+                    r[b] *= t\n+                    changed = True\n+        if not changed:\n+            break\n+    return r\n+\n+\n+def _score(centers):\n+    r = _feasible_radii(centers)\n+    return sum(r), r\n+\n+\n+def _init():\n+    centers = [(0.5, 0.5)]\n+    for k in range(5):\n+        a = 2 * math.pi * k / 5\n+        centers.append((0.5 + 0.30 * math.cos(a), 0.5 + 0.30 * math.sin(a)))\n+    for k in range(10):\n+        a = 2 * math.pi * (k + 0.5) / 10\n+        centers.append((0.5 + 0.55 * math.cos(a), 0.5 + 0.55 * math.sin(a)))\n+    for cx, cy in [(0.06, 0.06), (0.94, 0.06), (0.06, 0.94), (0.94, 0.94),\n+                   (0.5, 0.05), (0.5, 0.95), (0.05, 0.5), (0.95, 0.5),\n+                   (0.2, 0.2), (0.8, 0.8)]:\n+        centers.append((cx, cy))\n+    return centers\n+\n+\n+def _step(centers, radii, rng):\n+    i = rng.randrange(len(centers))\n+    x = centers[i][0] + (rng.random() - 0.5) * 2 * BASE_STEP\n+    y = centers[i][1] + (rng.random() - 0.5) * 2 * BASE_STEP\n+    x = min(1.0, max(0.0, x))\n+    y = min(1.0, max(0.0, y))\n+    new = centers[:]\n+    new[i] = (x, y)\n+    return new\n+\n+\n+def construct_packing(n=26):\n+    rng = random.Random(1)\n+    centers = _init()\n+    best_c, best_r, best_s = centers, _feasible_radii(centers), _score(centers)[0]\n+    for _ in range(MAX_ITERS):\n+        cand = _step(best_c, best_r, rng)\n+        s, r = _score(cand)\n+        if s > best_s:\n+            best_c, best_r, best_s = cand, r, s\n+    return [(x, y, rr) for (x, y), rr in zip(best_c, best_r)]\n # OMEGA-BLOCK-END\n \n \n"
 }

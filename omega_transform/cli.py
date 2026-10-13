@@ -309,6 +309,14 @@ def cmd_sandbox(a) -> int:
     return 0
 
 
+def cmd_bench_details(a) -> int:
+    """Add the best program's lineage and diff to older benchmark result files."""
+    from .bench import add_details
+    changed = add_details(Path(a.results), Path(a.runs))
+    print(f"updated {len(changed)} result file(s); regenerate the pages with: omega docs")
+    return 0
+
+
 def cmd_report(a) -> int:
     from .report import write_report
     path = write_report(Path(a.results), Path(a.output))
@@ -493,6 +501,12 @@ def build_parser() -> argparse.ArgumentParser:
                     help="only models marked ok in this `omega models` result file")
     bn.add_argument("--dry-run", action="store_true", help="only list what would run")
     bn.set_defaults(fn=cmd_bench)
+
+    bd = sub.add_parser("bench-details", help="add the best program's lineage and diff to "
+                        "benchmark result files written before they were recorded")
+    bd.add_argument("--results", default="bench/results", help="result JSON directory")
+    bd.add_argument("--runs", default="bench/runs", help="the run directories behind them")
+    bd.set_defaults(fn=cmd_bench_details)
 
     mc = sub.add_parser("models", help="quick check whether installed models load and work")
     mc.add_argument("--models", nargs="+", help="only these models (default: all installed)")

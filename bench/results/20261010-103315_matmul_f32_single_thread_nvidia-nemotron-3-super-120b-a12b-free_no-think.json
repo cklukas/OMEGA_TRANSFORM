@@ -1,5 +1,5 @@
 {
- "schema": 1,
+ "schema": 2,
  "example": "matmul_f32_single_thread",
  "model": "nvidia/nemotron-3-super-120b-a12b:free",
  "variant": "no-think",
@@ -105,5 +105,64 @@
  "mean_gen_tokens": 1149,
  "stopped_calls": 13,
  "provider": "openrouter",
- "cost_usd": 0
+ "cost_usd": 0,
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.69859,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 0.33,
+   "score": null,
+   "model": "nvidia/nemotron-3-super-120b-a12b:free",
+   "mode": "exploit/rewrite/tune",
+   "status": "invalid",
+   "idea": "Change loop order to i-k-j to improve cache reuse of A and enable efficient streaming of B and C rows, reducing memory latency and increasing FLOP/s."
+  },
+  {
+   "minutes": 0.96,
+   "score": 25.9011,
+   "model": "nvidia/nemotron-3-super-120b-a12b:free",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Initialize C to zero before accumulation to fix incorrect results caused by uninitialized values, while maintaining the i-k-j loop order for cache efficiency."
+  },
+  {
+   "minutes": 1.56,
+   "score": 21.1039,
+   "model": "nvidia/nemotron-3-super-120b-a12b:free",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Use cache blocking (tiling) with i-k-j loop order within tiles to improve data reuse and reduce memory bandwidth pressure, with BLOCK_SIZE set to 64 as a starting point for tuning."
+  },
+  {
+   "minutes": 1.56,
+   "score": 28.5723,
+   "model": "nvidia/nemotron-3-super-120b-a12b:free",
+   "mode": "sweep/exploit/diff/bold",
+   "status": "ok",
+   "idea": "tuned BLOCK_SIZE=128 on top of: Use cache blocking (tiling) with i-k-j loop order within tiles to improve data reuse and reduce memory bandwidth pressure, with BLOCK_SIZE set to 64 as a starting point for tuning."
+  },
+  {
+   "minutes": 13.05,
+   "score": 46.3578,
+   "model": "nvidia/nemotron-3-super-120b-a12b:free",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Increase UNROLL factor to 8 and add NEON vectorization of the inner j-loop to process 4 columns per iteration, improving instruction-level parallelism and memory throughput while maintaining correctness via proper tail handling."
+  },
+  {
+   "minutes": 13.05,
+   "score": 49.1573,
+   "model": "nvidia/nemotron-3-super-120b-a12b:free",
+   "mode": "sweep/explore/diff/bold",
+   "status": "ok",
+   "idea": "tuned BLOCK_SIZE=112, UNROLL=8 on top of: Increase UNROLL factor to 8 and add NEON vectorization of the inner j-loop to process 4 columns per iteration, improving instruction-level parallelism and memory throughput while maintaining correctness via proper tail handling."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -20,12 +20,71 @@\n // Computes C = A * B on the calling thread. C is NOT zeroed by the caller.\n // n is any size from 1 to 2048.\n void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n+    for (int i = 0; i < n; ++i) {\n         for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+            C[i * n + j] = 0.0f;\n         }\n+    }\n+    constexpr int BLOCK_SIZE = 112;\n+    constexpr int UNROLL = 8;\n+    for (int i0 = 0; i0 < n; i0 += BLOCK_SIZE)\n+        for (int k0 = 0; k0 < n; k0 += BLOCK_SIZE)\n+            for (int j0 = 0; j0 < n; j0 += BLOCK_SIZE) {\n+                const int i1 = std::min(i0 + BLOCK_SIZE, n);\n+                const int k1 = std::min(k0 + BLOCK_SIZE, n);\n+                const int j1 = std::min(j0 + BLOCK_SIZE, n);\n+                for (int i = i0; i < i1; ++i) {\n+                    int k = k0;\n+                    for (; k + UNROLL <= k1; k += UNROLL) {\n+                        float a0 = A[i * n + k];\n+                        float a1 = A[i * n + k + 1];\n+                        float a2 = A[i * n + k + 2];\n+                        float a3 = A[i * n + k + 3];\n+                        float a4 = A[i * n + k + 4];\n+                        float a5 = A[i * n + k + 5];\n+                        float a6 = A[i * n + k + 6];\n+                        float a7 = A[i * n + k + 7];\n+                        int j = j0;\n+                        for (; j + 4 <= j1; j += 4) {\n+                            float32x4_t c_vec = vld1q_f32(&C[i * n + j]);\n+                            float32x4_t b0_vec = vld1q_f32(&B[k * n + j]);\n+                            float32x4_t b1_vec = vld1q_f32(&B[(k + 1) * n + j]);\n+                            float32x4_t b2_vec = vld1q_f32(&B[(k + 2) * n + j]);\n+                            float32x4_t b3_vec = vld1q_f32(&B[(k + 3) * n + j]);\n+                            float32x4_t b4_vec = vld1q_f32(&B[(k + 4) * n + j]);\n+                            float32x4_t b5_vec = vld1q_f32(&B[(k + 5) * n + j]);\n+                            float32x4_t b6_vec = vld1q_f32(&B[(k + 6) * n + j]);\n+                            float32x4_t b7_vec = vld1q_f32(&B[(k + 7) * n + j]);\n+                            c_vec = vfmaq_f32(c_vec, b0_vec, vdupq_n_f32(a0));\n+                            c_vec = vfmaq_f32(c_vec, b1_vec, vdupq_n_f32(a1));\n+                            c_vec = vfmaq_f32(c_vec, b2_vec, vdupq_n_f32(a2));\n+                            c_vec = vfmaq_f32(c_vec, b3_vec, vdupq_n_f32(a3));\n+                            c_vec = vfmaq_f32(c_vec, b4_vec, vdupq_n_f32(a4));\n+                            c_vec = vfmaq_f32(c_vec, b5_vec, vdupq_n_f32(a5));\n+                            c_vec = vfmaq_f32(c_vec, b6_vec, vdupq_n_f32(a6));\n+                            c_vec = vfmaq_f32(c_vec, b7_vec, vdupq_n_f32(a7));\n+                            vst1q_f32(&C[i * n + j], c_vec);\n+                        }\n+                        for (; j < j1; ++j) {\n+                            float* c_ptr = &C[i * n + j];\n+                            const float* b_ptr = &B[k * n + j];\n+                            *c_ptr += a0 * b_ptr[0];\n+                            *c_ptr += a1 * b_ptr[n];\n+                            *c_ptr += a2 * b_ptr[2 * n];\n+                            *c_ptr += a3 * b_ptr[3 * n];\n+                            *c_ptr += a4 * b_ptr[4 * n];\n+                            *c_ptr += a5 * b_ptr[5 * n];\n+                            *c_ptr += a6 * b_ptr[6 * n];\n+                            *c_ptr += a7 * b_ptr[7 * n];\n+                        }\n+                    }\n+                    for (; k < k1; ++k) {\n+                        float a = A[i * n + k];\n+                        for (int j = j0; j < j1; ++j)\n+                            C[i * n + j] += a * B[k * n + j];\n+                    }\n+                }\n+            }\n }\n // OMEGA-BLOCK-END\n \n"
 }

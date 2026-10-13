@@ -23,6 +23,24 @@ nav:
     pages:
       - docs/getting-started.md
       - docs/examples.md
+      - title: Example problems
+        pages:
+          - docs/examples/circle_packing.md
+          - docs/examples/circles_in_circle.md
+          - docs/examples/heilbronn.md
+          - docs/examples/tammes.md
+          - docs/examples/bin_packing.md
+          - docs/examples/max_cut.md
+          - docs/examples/tsp.md
+          - docs/examples/float_parse_cpp.md
+          - docs/examples/matmul_cpp.md
+          - docs/examples/matmul_st_cpp.md
+          - docs/examples/prefix_sum_cpp.md
+          - docs/examples/sort_u32_cpp.md
+          - docs/examples/compressor.md
+          - docs/examples/feature_engineering.md
+          - docs/examples/symbolic_regression.md
+          - docs/examples/toy.md
       - docs/defining-problems.md
   - title: Concepts
     pages:

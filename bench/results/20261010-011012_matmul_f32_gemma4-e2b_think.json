@@ -1,5 +1,5 @@
 {
- "schema": 1,
+ "schema": 2,
  "example": "matmul_f32",
  "model": "gemma4:e2b",
  "variant": "think",
@@ -62,5 +62,16 @@
  "gen_tokens_per_s": 54.3,
  "mean_prompt_tokens": 2529,
  "mean_gen_tokens": 2967,
- "stopped_calls": 1
+ "stopped_calls": 1,
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.55072,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  }
+ ],
+ "best_diff": ""
 }

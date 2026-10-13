@@ -141,43 +141,162 @@ def _paragraph(text: str) -> str:
 
 def examples_page(root: Path) -> str:
     """The example gallery, from every examples/*/omega.toml."""
+    examples = _examples(root)
+    out = [HDR.format(src="examples/*/omega.toml"), "# Examples\n\n",
+           "Each example is a complete problem: a starting program with its editable "
+           "region, an evaluator, and `omega.toml`. Run one with:\n\n"
+           "```bash\npython3 -m omega_transform run examples/<name> --minutes 15\n```\n\n"
+           "They double as the [model benchmark](benchmarking.md)'s workload and as "
+           "templates for [your own problems](defining-problems.md). Each example's own "
+           "page shows its starting program and, once benchmarked, the best result and "
+           "how the model got there.\n\n"
+           "| Example | Category | Language | Score |\n|---|---|---|---|\n"]
+    for name, cat, cfg in examples:
+        score = _paragraph(cfg.metrics_help).split(". ")[0].rstrip(".")
+        out.append(f"| [{name}](examples/{name}.md) | {cat} | {cfg.lang_tag} | "
+                   f"{score.replace('|', '/')} |\n")
+    last = None
+    for name, cat, cfg in examples:
+        if cat != last:
+            out.append(f"\n## {cat}\n")
+            last = cat
+        stages = ", ".join(s.name + (" (timed alone)" if s.exclusive else "")
+                           for s in cfg.evaluator.stages)
+        out.append(f"\n### {name}\n\n{_paragraph(cfg.description)}\n\n"
+                   f"- **Score:** {_paragraph(cfg.metrics_help) or 'see the evaluator'}\n"
+                   f"- **Language:** {cfg.lang_tag}; program `examples/{name}/{cfg.initial}`, "
+                   f"evaluator stages: {stages}"
+                   + ("; new bests are re-measured" if cfg.evaluator.confirm_runs else "")
+                   + f"\n- **Details:** [starting program and best results](examples/{name}.md)\n")
+    return "".join(out)
+
+
+def _examples(root: Path) -> list[tuple[str, str, object]]:
+    """(directory name, category, config) of every example, in gallery order."""
     from .config import load_config
     groups: dict[str, list] = {}
     for toml in sorted((root / "examples").glob("*/omega.toml")):
         cfg = load_config(toml)
         groups.setdefault(cfg.category or "Other", []).append((toml.parent.name, cfg))
     order = [c for c in CATEGORY_ORDER if c in groups] + sorted(set(groups) - set(CATEGORY_ORDER))
-    out = [HDR.format(src="examples/*/omega.toml"), "# Examples\n\n",
-           "Each example is a complete problem: a starting program with its editable "
-           "region, an evaluator, and `omega.toml`. Run one with:\n\n"
-           "```bash\npython3 -m omega_transform run examples/<name> --minutes 15\n```\n\n"
-           "They double as the [model benchmark](benchmarking.md)'s workload and as "
-           "templates for [your own problems](defining-problems.md).\n\n"
-           "| Example | Category | Language | Score |\n|---|---|---|---|\n"]
-    for cat in order:
-        for name, cfg in groups[cat]:
-            score = _paragraph(cfg.metrics_help).split(". ")[0].rstrip(".")
-            out.append(f"| [{name}](#{name}) | {cat} | {cfg.lang_tag} | "
-                       f"{score.replace('|', '/')} |\n")
-    for cat in order:
-        out.append(f"\n## {cat}\n")
-        for name, cfg in groups[cat]:
-            stages = ", ".join(s.name + (" (timed alone)" if s.exclusive else "")
-                               for s in cfg.evaluator.stages)
-            out.append(f"\n### {name}\n\n{_paragraph(cfg.description)}\n\n"
-                       f"- **Score:** {_paragraph(cfg.metrics_help) or 'see the evaluator'}\n"
-                       f"- **Language:** {cfg.lang_tag}; program `examples/{name}/{cfg.initial}`, "
-                       f"evaluator stages: {stages}"
-                       + ("; new bests are re-measured" if cfg.evaluator.confirm_runs else "")
-                       + "\n")
+    return [(name, cat, cfg) for cat in order for name, cfg in groups[cat]]
+
+
+PROVIDER_NAMES = {"openrouter": "OpenRouter", "ollama": "Ollama"}
+
+
+def step_kind(mode: str) -> str:
+    """What produced a program, from its search mode (e.g. "sweep/exploit/diff/refine")."""
+    if mode == "initial":
+        return "start"
+    if mode.startswith("sweep/"):
+        return "parameter sweep"
+    if mode.startswith("retry/"):
+        return "fix-up"
+    return "rewrite" if "/rewrite/" in f"/{mode}/" else "edit"
+
+
+def _fence(text: str) -> str:
+    """A code fence long enough not to be closed by backticks inside ``text``."""
+    longest = max((len(m) for m in re.findall(r"`+", text)), default=0)
+    return "`" * max(3, longest + 1)
+
+
+def example_page(name: str, category: str, cfg, results: list[dict]) -> str:
+    """One example: the problem, its starting program, and the best benchmark result
+    with the path that led there."""
+    from .prompt import fmt_score
+    from .report import label, latest_per_model, shorten
+    lang = "cpp" if cfg.language in ("cpp", "c++", "c") else cfg.language
+    code = cfg.initial_path.read_text()
+    stages = ", ".join(s.name + (" (timed alone)" if s.exclusive else "")
+                       for s in cfg.evaluator.stages)
+    out = [HDR.format(src=f"examples/{name}/ and bench/results/*.json"), f"# {name}\n\n",
+           f"{category} · {cfg.lang_tag} · problem `{cfg.name}` · "
+           "[all examples](../examples.md)\n\n",
+           "## The problem\n\n", _paragraph(cfg.description), "\n\n",
+           f"- **Score:** {_paragraph(cfg.metrics_help) or 'see the evaluator'}\n",
+           f"- **Files:** `examples/{name}/omega.toml`, the program `{cfg.initial}`, "
+           f"evaluator stages: {stages}"
+           + ("; new bests are re-measured" if cfg.evaluator.confirm_runs else "") + "\n\n",
+           "Run it with:\n\n```bash\n"
+           f"python3 -m omega_transform run examples/{name} --minutes 15\n```\n\n",
+           "## The starting program\n\n"
+           "The model may change only the code between the `OMEGA-BLOCK` markers.\n\n",
+           f"{_fence(code)}{lang}\n{code.rstrip()}\n{_fence(code)}\n"]
+    mine = [r for r in results if r.get("example") == cfg.name]
+    out.append("\n## Benchmark results\n\n")
+    if not mine:
+        out.append("This example has not been benchmarked yet. See "
+                   "[Benchmarking models](../benchmarking.md) for how to run it.\n")
+        return "".join(out)
+    ok = [r for r in mine if not r.get("error") and r.get("best_score") is not None]
+    if ok:
+        best = max(ok, key=lambda r: (r["best_score"], -len(r.get("best_lineage") or [])))
+        where = "locally with Ollama" if best.get("provider", "ollama") == "ollama" \
+            else f"through {PROVIDER_NAMES.get(best['provider'], best['provider'])}"
+        gain = f" (×{best['improvement']:.2f} the starting program's " \
+               f"{fmt_score(best.get('initial_score'))})" if best.get("improvement") else ""
+        mtb = best.get("minutes_to_best")
+        out.append(
+            f"The best result so far comes from **{label(best)}**, run {where} on "
+            f"{best.get('started', '')[:10]}: a score of **{fmt_score(best['best_score'])}**"
+            f"{gain}, reached after "
+            + (f"{mtb:g} of {best.get('minutes_budget', 0):g} minutes" if mtb is not None
+               else "no improvement")
+            + f" with {best.get('llm_calls', 0)} model requests.\n")
+        steps = best.get("best_lineage") or []
+        if len(steps) > 1:
+            out.append("\n### How it got there\n\n"
+                       "The best program's ancestry, from the starting program on. "
+                       "\"Edit\" and \"rewrite\" are the model's changes; a parameter sweep "
+                       "is the engine trying values for the constants the model exposed.\n\n"
+                       "| Step | Minute | Score | Kind | Idea |\n|--:|--:|--:|---|---|\n")
+            for i, s in enumerate(steps):
+                idea = shorten(s.get("idea") or "", 260).replace("|", "/")
+                score = fmt_score(s.get("score")) if s.get("score") is not None else \
+                    (s.get("status") or "-").replace("_", " ")
+                out.append(f"| {i} | {s.get('minutes', 0):.1f} | {score} "
+                           f"| {step_kind(s.get('mode', ''))} | {idea} |\n")
+        diff = best.get("best_diff") or ""
+        if diff:
+            out.append("\n### The best program\n\nWhat changed compared with the starting "
+                       "program:\n\n" f"{_fence(diff)}diff\n{diff.rstrip()}\n{_fence(diff)}\n")
+        elif len(steps) == 1:
+            out.append("\nNo model improved on the starting program.\n")
+        elif not steps:
+            out.append("\nThe path to this result was not recorded (its run predates it).\n")
+    rows = sorted(latest_per_model(mine).get(cfg.name, {}).values(),
+                  key=lambda r: -(r.get("best_score") if r.get("best_score") is not None
+                                  else float("-inf")))
+    out.append("\n### All models\n\nThe latest run per model and reasoning mode; the "
+               f"[model benchmarks](../benchmarks.md#{cfg.name}) page has speed, memory and "
+               "progress over time.\n\n"
+               "| Model | Where | Best | Gain | Minutes to best | New bests |\n"
+               "|---|---|--:|--:|--:|--:|\n")
+    for r in rows:
+        where = "local" if r.get("provider", "ollama") == "ollama" else "cloud"
+        if r.get("error"):
+            out.append(f"| {label(r)} | {where} | | | | failed: "
+                       f"{shorten(r['error'], 60).replace('|', '/')} |\n")
+            continue
+        gain = f"×{r['improvement']:.2f}" if r.get("improvement") else "-"
+        mtb = r.get("minutes_to_best")
+        out.append(f"| {label(r)} | {where} | {fmt_score(r.get('best_score'))} | {gain} | "
+                   f"{'-' if mtb is None else f'{mtb:.1f}'} | {r.get('improvements', 0)} |\n")
     return "".join(out)
 
 
 def pages() -> dict[str, str]:
     from .cli import build_parser
     root = Path(__file__).resolve().parent.parent
-    return {"docs/configuration.md": configuration_page(), "docs/cli.md": cli_page(build_parser()),
-            "docs/examples.md": examples_page(root)}
+    from .report import load_results
+    out = {"docs/configuration.md": configuration_page(), "docs/cli.md": cli_page(build_parser()),
+           "docs/examples.md": examples_page(root)}
+    results = load_results(root / "bench" / "results")
+    for name, cat, cfg in _examples(root):
+        out[f"docs/examples/{name}.md"] = example_page(name, cat, cfg, results)
+    return out
 
 
 def write_pages(root: Path) -> list[Path]:

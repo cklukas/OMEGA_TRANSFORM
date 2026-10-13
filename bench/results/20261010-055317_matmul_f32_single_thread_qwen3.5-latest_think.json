@@ -1,5 +1,5 @@
 {
- "schema": 1,
+ "schema": 2,
  "example": "matmul_f32_single_thread",
  "model": "qwen3.5:latest",
  "variant": "think",
@@ -69,5 +69,24 @@
  "gen_tokens_per_s": 33.2,
  "mean_prompt_tokens": 2263,
  "mean_gen_tokens": 2325,
- "stopped_calls": 0
+ "stopped_calls": 0,
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.72654,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 18.22,
+   "score": 25.5246,
+   "model": "qwen3.5:latest",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Initialize C to zero using memset and reorder loops to i-k-j to stream memory access patterns, allowing the compiler to auto-vectorize with NEON for high performance while ensuring correctness for all n."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -20,12 +20,18 @@\n // Computes C = A * B on the calling thread. C is NOT zeroed by the caller.\n // n is any size from 1 to 2048.\n void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+    // Zero out C to allow accumulation into memory (+=) and ensure correctness for small n\n+    std::fill(C, C + (size_t)n * n, 0.0f);\n+    // Use i-k-j loop order: inner loop streams rows of B and C sequentially,\n+    // enabling better cache reuse for B and auto-vectorization opportunities.\n+    for (int i = 0; i < n; ++i) {\n+        float* C_row = C + (size_t)i * n;\n+        for (int k = 0; k < n; ++k) {\n+            float a = A[(size_t)i * n + k];\n+            const float* B_row = B + (size_t)k * n;\n+            for (int j = 0; j < n; ++j) C_row[j] += a * B_row[j];\n         }\n+    }\n }\n // OMEGA-BLOCK-END\n \n"
 }

@@ -1,5 +1,5 @@
 {
- "schema": 1,
+ "schema": 2,
  "example": "matmul_f32_single_thread",
  "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
  "variant": "think",
@@ -80,5 +80,48 @@
  "mean_gen_tokens": 2969,
  "stopped_calls": 0,
  "provider": "openrouter",
- "cost_usd": 0
+ "cost_usd": 0,
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.52545,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.07,
+   "score": null,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "explore/diff/bold",
+   "status": "compile_error",
+   "idea": "Replace naive triple loop with cache-blocked, NEON-vectorized micro-kernel (4x4) using column-major A-panel and row-major B-panel packing, with loop order j-NC, i-MC, k-KC for better memory locality and register reuse."
+  },
+  {
+   "minutes": 7.25,
+   "score": 33.708,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Fix the NEON micro-kernel by broadcasting scalar values from float32x2_t to float32x4_t using vdupq_lane_f32 before passing to vfmaq_laneq_f32, which requires a float32x4_t as its third argument."
+  },
+  {
+   "minutes": 13.14,
+   "score": 34.3014,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "explore/diff/refine",
+   "status": "ok",
+   "idea": "Replace vfmaq_laneq_f32 with vfmaq_n_f32 in the micro-kernel to eliminate explicit broadcast instructions; vfmaq_n_f32 takes a scalar directly (extracted via vgetq_lane_f32), reducing instruction count per k-iteration from ~12 to ~8 while computing the same 4x4 outer product."
+  },
+  {
+   "minutes": 16.08,
+   "score": 35.3384,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Unroll the inner k-loop in the 4x4 micro-kernel by a factor of 4 to reduce loop overhead and improve instruction-level parallelism, while handling remainder iterations."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -17,15 +17,155 @@\n #endif\n \n // OMEGA-BLOCK-START\n+#include <arm_neon.h>\n+#include <algorithm>\n+\n+// Micro-kernel tile sizes (must be multiples of 4 for NEON)\n+constexpr int MR = 4;\n+constexpr int NR = 4;\n+// Cache blocking parameters (tuned for Apple Silicon L1/L2)\n+constexpr int MC = 64;\n+constexpr int NC = 64;\n+constexpr int KC = 64;\n+\n+// Packing buffers (static to avoid repeated allocation, single-threaded use)\n+static float packA[MC * KC];\n+static float packB[KC * NC];\n+\n+// NEON micro-kernel for 4x4 tile (mr=4, nr=4)\n+static inline void micro_kernel_4x4(int kb, const float* A, int lda, const float* B, int ldb, float* C, int ldc) {\n+    float32x4_t c0 = vld1q_f32(C + 0 * ldc);\n+    float32x4_t c1 = vld1q_f32(C + 1 * ldc);\n+    float32x4_t c2 = vld1q_f32(C + 2 * ldc);\n+    float32x4_t c3 = vld1q_f32(C + 3 * ldc);\n+\n+    int k = 0;\n+    for (; k + 3 < kb; k += 4) {\n+        float32x4_t a_col0 = vld1q_f32(A + (k + 0) * lda);\n+        float32x4_t a_col1 = vld1q_f32(A + (k + 1) * lda);\n+        float32x4_t a_col2 = vld1q_f32(A + (k + 2) * lda);\n+        float32x4_t a_col3 = vld1q_f32(A + (k + 3) * lda);\n+        float32x4_t b_row0 = vld1q_f32(B + (k + 0) * ldb);\n+        float32x4_t b_row1 = vld1q_f32(B + (k + 1) * ldb);\n+        float32x4_t b_row2 = vld1q_f32(B + (k + 2) * ldb);\n+        float32x4_t b_row3 = vld1q_f32(B + (k + 3) * ldb);\n+\n+        c0 = vfmaq_n_f32(c0, b_row0, vgetq_lane_f32(a_col0, 0));\n+        c1 = vfmaq_n_f32(c1, b_row0, vgetq_lane_f32(a_col0, 1));\n+        c2 = vfmaq_n_f32(c2, b_row0, vgetq_lane_f32(a_col0, 2));\n+        c3 = vfmaq_n_f32(c3, b_row0, vgetq_lane_f32(a_col0, 3));\n+\n+        c0 = vfmaq_n_f32(c0, b_row1, vgetq_lane_f32(a_col1, 0));\n+        c1 = vfmaq_n_f32(c1, b_row1, vgetq_lane_f32(a_col1, 1));\n+        c2 = vfmaq_n_f32(c2, b_row1, vgetq_lane_f32(a_col1, 2));\n+        c3 = vfmaq_n_f32(c3, b_row1, vgetq_lane_f32(a_col1, 3));\n+\n+        c0 = vfmaq_n_f32(c0, b_row2, vgetq_lane_f32(a_col2, 0));\n+        c1 = vfmaq_n_f32(c1, b_row2, vgetq_lane_f32(a_col2, 1));\n+        c2 = vfmaq_n_f32(c2, b_row2, vgetq_lane_f32(a_col2, 2));\n+        c3 = vfmaq_n_f32(c3, b_row2, vgetq_lane_f32(a_col2, 3));\n+\n+        c0 = vfmaq_n_f32(c0, b_row3, vgetq_lane_f32(a_col3, 0));\n+        c1 = vfmaq_n_f32(c1, b_row3, vgetq_lane_f32(a_col3, 1));\n+        c2 = vfmaq_n_f32(c2, b_row3, vgetq_lane_f32(a_col3, 2));\n+        c3 = vfmaq_n_f32(c3, b_row3, vgetq_lane_f32(a_col3, 3));\n+    }\n+    for (; k < kb; ++k) {\n+        float32x4_t a_col = vld1q_f32(A + k * lda);\n+        float32x4_t b_row = vld1q_f32(B + k * ldb);\n+\n+        c0 = vfmaq_n_f32(c0, b_row, vgetq_lane_f32(a_col, 0));\n+        c1 = vfmaq_n_f32(c1, b_row, vgetq_lane_f32(a_col, 1));\n+        c2 = vfmaq_n_f32(c2, b_row, vgetq_lane_f32(a_col, 2));\n+        c3 = vfmaq_n_f32(c3, b_row, vgetq_lane_f32(a_col, 3));\n+    }\n+\n+    vst1q_f32(C + 0 * ldc, c0);\n+    vst1q_f32(C + 1 * ldc, c1);\n+    vst1q_f32(C + 2 * ldc, c2);\n+    vst1q_f32(C + 3 * ldc, c3);\n+}\n+\n+// Scalar fallback for remainder tiles (mr < 4 or nr < 4)\n+static inline void micro_kernel_scalar(int kb, int mr, int nr, const float* A, int lda, const float* B, int ldb, float* C, int ldc) {\n+    for (int i = 0; i < mr; ++i) {\n+        for (int j = 0; j < nr; ++j) {\n+            float sum = C[i * ldc + j];\n+            for (int k = 0; k < kb; ++k) {\n+                sum += A[k * lda + i] * B[k * ldb + j];\n+            }\n+            C[i * ldc + j] = sum;\n+        }\n+    }\n+}\n+\n // Computes C = A * B on the calling thread. C is NOT zeroed by the caller.\n // n is any size from 1 to 2048.\n void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+    for (int j = 0; j < n; j += NC) {\n+        int jb = std::min(NC, n - j);\n+        for (int i = 0; i < n; i += MC) {\n+            int ib = std::min(MC, n - i);\n+\n+            // Zero the C tile (ib x jb)\n+            for (int ii = 0; ii < ib; ++ii) {\n+                std::fill(C + (i + ii) * n + j, C + (i + ii) * n + j + jb, 0.0f);\n+            }\n+\n+            for (int k = 0; k < n; k += KC) {\n+                int kb = std::min(KC, n - k);\n+\n+                // Pack A panel (ib x kb) into packA (column-major: MC x KC)\n+                for (int kk = 0; kk < kb; ++kk) {\n+                    for (int ii = 0; ii < ib; ++ii) {\n+                        packA[kk * MC + ii] = A[(i + ii) * n + (k + kk)];\n+                    }\n+                    for (int ii = ib; ii < MC; ++ii) {\n+                        packA[kk * MC + ii] = 0.0f;\n+                    }\n+                }\n+                for (int kk = kb; kk < KC; ++kk) {\n+                    for (int ii = 0; ii < MC; ++ii) {\n+                        packA[kk * MC + ii] = 0.0f;\n+                    }\n+                }\n+\n+                // Pack B panel (kb x jb) into packB (row-major: KC x NC)\n+                for (int kk = 0; kk < kb; ++kk) {\n+                    for (int jj = 0; jj < jb; ++jj) {\n+                        packB[kk * NC + jj] = B[(k + kk) * n + (j + jj)];\n+                    }\n+                    for (int jj = jb; jj < NC; ++jj) {\n+                        packB[kk * NC + jj] = 0.0f;\n+                    }\n+                }\n+                for (int kk = kb; kk < KC; ++kk) {\n+                    for (int jj = 0; jj < NC; ++jj) {\n+                        packB[kk * NC + jj] = 0.0f;\n+                    }\n+                }\n+\n+                // Micro-kernel over packed panels\n+                for (int ii = 0; ii < ib; ii += MR) {\n+                    int mr = std::min(MR, ib - ii);\n+                    for (int jj = 0; jj < jb; jj += NR) {\n+                        int nr = std::min(NR, jb - jj);\n+                        if (mr == MR && nr == NR) {\n+                            micro_kernel_4x4(kb,\n+                                             &packA[ii], MC,\n+                                             &packB[jj], NC,\n+                                             &C[(i + ii) * n + (j + jj)], n);\n+                        } else {\n+                            micro_kernel_scalar(kb, mr, nr,\n+                                                &packA[ii], MC,\n+                                                &packB[jj], NC,\n+                                                &C[(i + ii) * n + (j + jj)], n);\n+                        }\n+                    }\n+                }\n+            }\n         }\n+    }\n }\n // OMEGA-BLOCK-END\n \n"
 }

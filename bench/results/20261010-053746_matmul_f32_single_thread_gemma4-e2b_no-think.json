@@ -1,5 +1,5 @@
 {
- "schema": 1,
+ "schema": 2,
  "example": "matmul_f32_single_thread",
  "model": "gemma4:e2b",
  "variant": "no-think",
@@ -75,5 +75,40 @@
  "gen_tokens_per_s": 67.5,
  "mean_prompt_tokens": 4018,
  "mean_gen_tokens": 456,
- "stopped_calls": 0
+ "stopped_calls": 0,
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.68853,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 0.82,
+   "score": 2.4274,
+   "model": "gemma4:e2b",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Restructure the matrix multiplication to exploit cache locality by transposing matrix B before multiplication, which improves access patterns for row-major storage, potentially aiding NEON vectorization."
+  },
+  {
+   "minutes": 6.87,
+   "score": null,
+   "model": "gemma4:e2b",
+   "mode": "exploit/diff/bold",
+   "status": "invalid",
+   "idea": "Transpose matrix A before multiplication to ensure that the innermost loop accesses contiguous memory for $A$ when using the $i-j-k$ loop order, potentially improving cache performance for the $A$ accesses."
+  },
+  {
+   "minutes": 7.96,
+   "score": 2.54484,
+   "model": "gemma4:e2b",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "The transpose of $B$ is used directly in the innermost loop to ensure contiguous memory access for $B$'s columns, improving cache usage for the $i-k-j$ order."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -20,12 +20,21 @@\n // Computes C = A * B on the calling thread. C is NOT zeroed by the caller.\n // n is any size from 1 to 2048.\n void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n+    float* B_T = (float*)malloc(n * n * sizeof(float));\n+    for (int j = 0; j < n; ++j) {\n+        for (int i = 0; i < n; ++i) {\n+            B_T[j * n + i] = B[i * n + j];\n+        }\n+    }\n+    \n+    for (int j = 0; j < n; ++j) {\n+        for (int i = 0; i < n; ++i) {\n             float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n+            for (int k = 0; k < n; ++k) s += A[i * n + k] * B_T[j * n + k];\n             C[i * n + j] = s;\n         }\n+    }\n+    free(B_T);\n }\n // OMEGA-BLOCK-END\n \n"
 }

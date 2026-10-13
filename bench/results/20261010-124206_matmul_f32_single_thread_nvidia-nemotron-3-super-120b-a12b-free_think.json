@@ -1,5 +1,5 @@
 {
- "schema": 1,
+ "schema": 2,
  "example": "matmul_f32_single_thread",
  "model": "nvidia/nemotron-3-super-120b-a12b:free",
  "variant": "think",
@@ -81,5 +81,56 @@
  "mean_gen_tokens": 5738,
  "stopped_calls": 1,
  "provider": "openrouter",
- "cost_usd": 0
+ "cost_usd": 0,
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.57117,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 0.78,
+   "score": 19.9022,
+   "model": "nvidia/nemotron-3-super-120b-a12b:free",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Change loop order to i-k-j, add 64x64 blocking for cache efficiency, zero C once, and use NEON SIMD (float32x4) to accumulate rows of B and C in the inner loop."
+  },
+  {
+   "minutes": 3.99,
+   "score": 20.7065,
+   "model": "nvidia/nemotron-3-super-120b-a12b:free",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Use a micro-kernel that processes multiple rows per k-block, loading a panel of A and reusing loaded B segments across those rows with NEON, increasing data reuse and reducing memory traffic."
+  },
+  {
+   "minutes": 3.99,
+   "score": 25.5203,
+   "model": "nvidia/nemotron-3-super-120b-a12b:free",
+   "mode": "sweep/exploit/diff/bold",
+   "status": "ok",
+   "idea": "tuned IM=16, BK=32 on top of: Use a micro-kernel that processes multiple rows per k-block, loading a panel of A and reusing loaded B segments across those rows with NEON, increasing data reuse and reducing memory traffic."
+  },
+  {
+   "minutes": 7.81,
+   "score": 13.9072,
+   "model": "nvidia/nemotron-3-super-120b-a12b:free",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Replace the current panel\u2011update microkernel with a 2D blocked microkernel that computes a small IM\u00d7JM tile of C using registers, reloading a panel of A and B for each k\u2011block and accumulating the outer product, which increases data reuse and reduces memory traffic for both A and B."
+  },
+  {
+   "minutes": 7.81,
+   "score": 31.1191,
+   "model": "nvidia/nemotron-3-super-120b-a12b:free",
+   "mode": "sweep/explore/diff/bold",
+   "status": "ok",
+   "idea": "tuned IM=8, JM=8, BK=64 on top of: Replace the current panel\u2011update microkernel with a 2D blocked microkernel that computes a small IM\u00d7JM tile of C using registers, reloading a panel of A and B for each k\u2011block and accumulating the outer product, which increases data reuse and reduces memory traffic"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -20,12 +20,56 @@\n // Computes C = A * B on the calling thread. C is NOT zeroed by the caller.\n // n is any size from 1 to 2048.\n void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+    constexpr int IM = 8;   // microkernel rows\n+    constexpr int JM = 8;   // microkernel cols\n+    constexpr int BK = 64;  // block size for k dimension\n+\n+    // Zero output matrix once\n+    for (size_t i = 0; i < (size_t)n * n; ++i) C[i] = 0.0f;\n+\n+    for (int i0 = 0; i0 < n; i0 += IM) {\n+        for (int j0 = 0; j0 < n; j0 += JM) {\n+            // accumulator block IM x JM\n+            float acc[IM][JM];\n+            for (int ii = 0; ii < IM; ++ii)\n+                for (int jj = 0; jj < JM; ++jj)\n+                    acc[ii][jj] = 0.0f;\n+            for (int k0 = 0; k0 < n; k0 += BK) {\n+                int k1 = (k0 + BK < n) ? k0 + BK : n;\n+                for (int k = k0; k < k1; ++k) {\n+                    // load A panel (IM rows) at column k\n+                    float Avec[IM];\n+                    for (int ii = 0; ii < IM; ++ii) {\n+                        int i = i0 + ii;\n+                        Avec[ii] = (i < n) ? A[i * n + k] : 0.0f;\n+                    }\n+                    // load B panel (JM cols) at row k\n+                    float Bvec[JM];\n+                    for (int jj = 0; jj < JM; ++jj) {\n+                        int j = j0 + jj;\n+                        Bvec[jj] = (j < n) ? B[k * n + j] : 0.0f;\n+                    }\n+                    // outer product update accumulator\n+                    for (int ii = 0; ii < IM; ++ii) {\n+                        float a = Avec[ii];\n+                        for (int jj = 0; jj < JM; ++jj) {\n+                            acc[ii][jj] += a * Bvec[jj];\n+                        }\n+                    }\n+                }\n+            }\n+            // store accumulator block to C\n+            for (int ii = 0; ii < IM; ++ii) {\n+                int i = i0 + ii;\n+                if (i >= n) continue;\n+                for (int jj = 0; jj < JM; ++jj) {\n+                    int j = j0 + jj;\n+                    if (j >= n) continue;\n+                    C[i * n + j] += acc[ii][jj];\n+                }\n+            }\n         }\n+    }\n }\n // OMEGA-BLOCK-END\n \n"
 }

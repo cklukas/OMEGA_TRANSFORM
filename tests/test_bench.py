@@ -27,6 +27,38 @@ class BenchTest(unittest.TestCase):
         self.assertGreaterEqual(s["attempts"], 10)
         self.assertEqual(s["progress"][0][1], 1)
         self.assertEqual(s["progress"][-1][1], s["best_score"])
+        # How the best program came about: from the initial program to the best one.
+        steps = s["best_lineage"]
+        self.assertEqual(steps[0]["mode"], "initial")
+        self.assertEqual(steps[-1]["score"], s["best_score"])
+        self.assertTrue(all("status" in st and "minutes" in st for st in steps))
+        self.assertTrue(s["best_diff"].startswith("--- initial\n+++ best\n"))
+        self.assertIn("+", s["best_diff"])
+
+    def test_details_are_added_to_older_result_files(self):
+        import json
+        from omega_transform.bench import add_details, run_dir_of
+        cfg = load_config(TOY)
+        cfg.search.iterations = 6
+        with tempfile.TemporaryDirectory() as tmp:
+            results, runs = Path(tmp) / "results", Path(tmp) / "runs"
+            results.mkdir()
+            f = results / "20260101-000000_toy_m_no-think.json"
+            old = {"schema": 1, "example": cfg.name, "model": "m", "variant": "no-think",
+                   "best_score": 3}
+            f.write_text(json.dumps(old))
+            run_dir = run_dir_of(f, runs, old)
+            self.assertEqual(run_dir, runs / "20260101-000000" / "toy" / "m_no-think")
+            with Engine(cfg, run_dir, llm=ScriptedLLM(incrementer), log=lambda s: None) as eng:
+                eng.run()
+                best = summarize(eng.db)["best_score"]
+            self.assertEqual(add_details(results, runs, log=lambda s: None), [f])
+            r = json.loads(f.read_text())
+            self.assertEqual(r["schema"], 2)
+            self.assertEqual(r["best_lineage"][-1]["score"], best)
+            self.assertTrue(r["best_diff"])
+            # Files that have them already are left alone.
+            self.assertEqual(add_details(results, runs, log=lambda s: None), [])
 
     def test_inference_summary(self):
         from omega_transform.bench import inference_summary

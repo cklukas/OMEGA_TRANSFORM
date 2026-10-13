@@ -10,6 +10,7 @@ local.
 """
 from __future__ import annotations
 
+import difflib
 import json
 import platform
 import re
@@ -25,7 +26,9 @@ from .database import Database
 from .memory import wait_until_fits
 from .modelcheck import unload
 
-RESULT_SCHEMA = 1
+RESULT_SCHEMA = 2  # 2: best_lineage and best_diff
+# The best program's diff is cut after this many lines (a rewrite can be long).
+MAX_DIFF_LINES = 400
 
 
 def installed_models(base_url: str) -> list[dict]:
@@ -157,6 +160,10 @@ class BenchResult:
     minutes_to_best: float | None = None
     best_idea: str = ""
     progress: list = field(default_factory=list)  # [[minutes, best score], ...]
+    # How the best program came about: its ancestors from the initial program on,
+    # [{minutes, score, model, mode, status, idea}, ...], and its diff to the initial program.
+    best_lineage: list = field(default_factory=list)
+    best_diff: str = ""
     error: str = ""
     # inference: how fast the model is and what it costs in memory
     model_memory_gb: float | None = None
@@ -210,7 +217,56 @@ def summarize(db: Database) -> dict:
         "minutes_to_best": progress[-1][0] if len(progress) > 1 else None,
         "best_idea": (best_prog.idea if best_prog else "")[:200],
         "progress": progress,
+        **best_details(db, best_prog, root, t0),
     }
+
+
+def best_details(db: Database, best, root, t0: float) -> dict:
+    """The path from the initial program to the best one, and what changed."""
+    if best is None:
+        return {"best_lineage": [], "best_diff": ""}
+    steps = [{"minutes": round((p.created - t0) / 60, 2), "score": p.score,
+              "model": p.model, "mode": p.mode, "status": p.status,
+              "idea": " ".join(p.idea.split())[:400]}
+             for p in db.lineage(best.id, limit=500)]
+    diff = ""
+    if root is not None and best.id != root.id:
+        lines = list(difflib.unified_diff(root.code.splitlines(), best.code.splitlines(),
+                                          "initial", "best", lineterm=""))
+        if len(lines) > MAX_DIFF_LINES:
+            lines = lines[:MAX_DIFF_LINES] + [f"... ({len(lines) - MAX_DIFF_LINES} more lines)"]
+        diff = "\n".join(lines) + "\n"
+    return {"best_lineage": steps, "best_diff": diff}
+
+
+def run_dir_of(result_file: Path, runs_dir: Path, result: dict) -> Path:
+    """Where ``run_bench`` kept the full run behind a result file."""
+    stamp = result_file.name.split("_", 1)[0]
+    return (runs_dir / stamp / slug(result["example"])
+            / f"{slug(result['model'])}_{result.get('variant', 'default')}")
+
+
+def add_details(results_dir: Path, runs_dir: Path, log=print) -> list[Path]:
+    """Give result files from before schema 2 the best program's lineage and diff,
+    from the run databases that are still there; returns the files changed."""
+    changed = []
+    for path in sorted(results_dir.glob("*.json")):
+        r = json.loads(path.read_text())
+        if "best_lineage" in r:
+            continue
+        db_path = run_dir_of(path, runs_dir, r) / "omega.sqlite"
+        if not db_path.exists():
+            log(f"  {path.name}: no run database at {db_path}")
+            continue
+        with Database(db_path, islands=1, features=[]) as db:
+            s = summarize(db)
+        r["best_lineage"], r["best_diff"] = s["best_lineage"], s["best_diff"]
+        r["schema"] = max(r.get("schema", 1), RESULT_SCHEMA)
+        path.write_text(json.dumps(r, indent=1) + "\n")
+        changed.append(path)
+        log(f"  {path.name}: {len(r['best_lineage'])} steps, "
+            f"{r['best_diff'].count(chr(10))} diff lines")
+    return changed
 
 
 def slug(text: str) -> str:

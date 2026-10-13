@@ -107,6 +107,9 @@ Each run writes `bench/results/<time>_<example>_<model>.json` with:
 - the outcome of every answer (valid, edit not applicable, compile error,
   crash, timeout, runaway answer stopped);
 - the best score over time, the number of new bests, and the best idea;
+- how the best program came about: its ancestry from the initial program on
+  (minute, score, outcome, kind of change and idea per step), and its diff
+  to the initial program;
 - the settings, the OMEGA TRANSFORM version and commit, and the machine.
 
 The full run directories go to `bench/runs/`, which is not committed. They
@@ -122,6 +125,23 @@ by hand:
 
 ```bash
 python3 -m omega_transform report
+```
+
+Each example's own page (`docs/examples/<name>.md`, linked from the
+[example gallery](examples.md)) shows the best result across all models, the
+path that led there, and the best program as a diff. These pages are
+generated with the reference pages and checked by the tests, so regenerate
+them after committing new results:
+
+```bash
+python3 -m omega_transform docs
+```
+
+Result files written before the ancestry and the diff were recorded can get
+them from their run directories, as long as `bench/runs/` still holds them:
+
+```bash
+python3 -m omega_transform bench-details
 ```
 
 ## Comparing settings without a full run

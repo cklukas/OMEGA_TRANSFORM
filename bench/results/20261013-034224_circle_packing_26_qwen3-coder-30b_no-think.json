@@ -1,5 +1,5 @@
 {
- "schema": 1,
+ "schema": 2,
  "example": "circle_packing_26",
  "model": "qwen3-coder:30b",
  "variant": "no-think",
@@ -70,5 +70,24 @@
  "mean_gen_tokens": 833,
  "stopped_calls": 0,
  "provider": "ollama",
- "cost_usd": 0
+ "cost_usd": 0,
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 6.63,
+   "score": 1.6187506738466753,
+   "model": "qwen3-coder:30b",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Replace the uniform grid layout with a hexagonal packing pattern that better utilizes space and allows for larger total radius sum, similar to the high-performing programs."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -7,12 +7,24 @@\n # OMEGA-BLOCK-START\n def construct_packing(n=26):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n-    cols = math.ceil(math.sqrt(n))\n-    rows = math.ceil(n / cols)\n+    # Use hexagonal packing pattern for better density\n+    rows = int(math.ceil(math.sqrt(n / (math.sqrt(3)/2))))\n+    cols = int(math.ceil(n / rows))\n+    \n     centers = []\n-    for k in range(n):\n-        i, j = k % cols, k // cols\n-        centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n+    row_height = 1.0 / rows\n+    col_width = 1.0 / cols\n+    \n+    for j in range(rows):\n+        row_offset = (j % 2) * col_width / 2\n+        for i in range(cols):\n+            x = (i + 0.5 + row_offset) / cols\n+            y = (j + 0.5) / rows\n+            if len(centers) < n:\n+                centers.append((x, y))\n+    \n+    # Trim to exactly n circles\n+    centers = centers[:n]\n     radii = max_radii(centers)\n     return [(x, y, r) for (x, y), r in zip(centers, radii)]\n \n@@ -20,13 +32,19 @@\n def max_radii(centers):\n     \"\"\"Largest radii for fixed centers: limit by walls, then shrink overlapping pairs.\"\"\"\n     radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n-    for a in range(len(centers)):\n-        for b in range(a + 1, len(centers)):\n-            d = math.dist(centers[a], centers[b])\n-            if radii[a] + radii[b] > d:\n-                s = d / (radii[a] + radii[b])\n-                radii[a] *= s\n-                radii[b] *= s\n+    changed = True\n+    while changed:\n+        changed = False\n+        for a in range(len(centers)):\n+            for b in range(a + 1, len(centers)):\n+                d = math.dist(centers[a], centers[b])\n+                if radii[a] + radii[b] > d + 1e-9:\n+                    s = d / (radii[a] + radii[b])\n+                    old_a, old_b = radii[a], radii[b]\n+                    radii[a] *= s\n+                    radii[b] *= s\n+                    if abs(radii[a] - old_a) > 1e-12 or abs(radii[b] - old_b) > 1e-12:\n+                        changed = True\n     return radii\n # OMEGA-BLOCK-END\n \n"
 }

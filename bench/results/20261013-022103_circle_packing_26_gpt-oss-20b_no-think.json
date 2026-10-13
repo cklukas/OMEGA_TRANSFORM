@@ -1,5 +1,5 @@
 {
- "schema": 1,
+ "schema": 2,
  "example": "circle_packing_26",
  "model": "gpt-oss:20b",
  "variant": "no-think",
@@ -66,5 +66,24 @@
  "mean_gen_tokens": 2840,
  "stopped_calls": 0,
  "provider": "ollama",
- "cost_usd": 0
+ "cost_usd": 0,
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 8.24,
+   "score": 2.166666666666667,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Refine radius shrinkage by iteratively reducing only the larger radius in overlapping pairs, which preserves more total radius and improves packing efficiency."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -18,15 +18,28 @@\n \n \n def max_radii(centers):\n-    \"\"\"Largest radii for fixed centers: limit by walls, then shrink overlapping pairs.\"\"\"\n+    \"\"\"Largest radii for fixed centers: limit by walls, then iteratively shrink overlapping pairs.\"\"\"\n     radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n-    for a in range(len(centers)):\n-        for b in range(a + 1, len(centers)):\n-            d = math.dist(centers[a], centers[b])\n-            if radii[a] + radii[b] > d:\n-                s = d / (radii[a] + radii[b])\n-                radii[a] *= s\n-                radii[b] *= s\n+    max_iter = 10\n+    for _ in range(max_iter):\n+        changed = False\n+        for a in range(len(centers)):\n+            for b in range(a + 1, len(centers)):\n+                d = math.dist(centers[a], centers[b])\n+                if radii[a] + radii[b] > d:\n+                    # shrink only the larger radius\n+                    if radii[a] >= radii[b]:\n+                        new_a = max(0.0, d - radii[b])\n+                        if new_a < radii[a]:\n+                            radii[a] = new_a\n+                            changed = True\n+                    else:\n+                        new_b = max(0.0, d - radii[a])\n+                        if new_b < radii[b]:\n+                            radii[b] = new_b\n+                            changed = True\n+        if not changed:\n+            break\n     return radii\n # OMEGA-BLOCK-END\n \n"
 }

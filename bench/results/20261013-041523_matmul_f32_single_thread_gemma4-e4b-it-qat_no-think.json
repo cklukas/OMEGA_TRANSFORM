@@ -1,5 +1,5 @@
 {
- "schema": 1,
+ "schema": 2,
  "example": "matmul_f32_single_thread",
  "model": "gemma4:e4b-it-qat",
  "variant": "no-think",
@@ -69,5 +69,24 @@
  "mean_gen_tokens": 606,
  "stopped_calls": 0,
  "provider": "ollama",
- "cost_usd": 0
+ "cost_usd": 0,
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.36176,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 4.24,
+   "score": 1.50204,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Implement loop tiling (cache blocking) for better data locality, specifically targeting the access patterns of A and B to improve cache reuse on the CPU."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -22,11 +22,27 @@\n // Computes C = A * B on the calling thread. C is NOT zeroed by the caller.\n // n is any size from 1 to 2048.\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+    constexpr int TILE_SIZE = 32; // Block size, chosen to fit L1/L2 cache well\n+    for (int ii = 0; ii < n; ii += TILE_SIZE) {\n+        for (int jj = 0; jj < n; jj += TILE_SIZE) {\n+            // Load C tile into registers/cache block (C_tile)\n+            // This is conceptually complex for a simple loop structure,\n+            // so we compute C[i][j] directly using the block structure to maximize locality.\n+            for (int i = ii; i < std::min(ii + TILE_SIZE, n); ++i) {\n+                for (int j = jj; j < std::min(jj + TILE_SIZE, n); ++j) {\n+                    float sum = 0.0f;\n+                    for (int k = 0; k < n; ++k) {\n+                        // Access pattern: A[i][k] (row-major, good locality for i)\n+                        // B[k][j] (column access, bad locality)\n+                        // C[i][j] (write)\n+                        // Tiling helps reuse A[i][k] across different j's, but B[k][j] remains a bottleneck unless we tile B as well.\n+                        // Since we are targeting ARM/NEON, we stick to the structure but apply tiling to reduce outer loop overhead and improve temporal locality for A.\n+                        sum += A[i * n + k] * B[k * n + j];\n+                    }\n+                    C[i * n + j] = sum;\n+                }\n+            }\n         }\n+    }\n }\n // OMEGA-BLOCK-END\n"
 }

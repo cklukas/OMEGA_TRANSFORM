@@ -1,5 +1,5 @@
 {
- "schema": 1,
+ "schema": 2,
  "example": "circle_packing_26",
  "model": "qwen2.5-coder:7b",
  "variant": "no-think",
@@ -68,5 +68,24 @@
  "mean_gen_tokens": 408,
  "stopped_calls": 0,
  "provider": "ollama",
- "cost_usd": 0
+ "cost_usd": 0,
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 7.68,
+   "score": 1.6040642515667702,
+   "model": "qwen2.5-coder:7b",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Expose the number of columns in the initial layout as a named constant and let the engine find the optimal value."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -5,9 +5,11 @@\n import math\n \n # OMEGA-BLOCK-START\n+COLS = 5  # Initial guess based on the square root of 26\n+\n def construct_packing(n=26):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n-    cols = math.ceil(math.sqrt(n))\n+    cols = math.ceil(COLS)\n     rows = math.ceil(n / cols)\n     centers = []\n     for k in range(n):\n"
 }

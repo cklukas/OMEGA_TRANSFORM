@@ -113,6 +113,19 @@ omega bench [-h] [--examples EXAMPLES [EXAMPLES ...]] [--models MODELS [MODELS .
 | `--feasible` | only models marked ok in this `omega models` result file |
 | `--dry-run` | only list what would run |
 
+## `bench-details`
+
+Add the best program's lineage and diff to benchmark result files written before they were recorded.
+
+```text
+omega bench-details [-h] [--results RESULTS] [--runs RUNS]
+```
+
+| Argument | Meaning |
+|---|---|
+| `--results` | result JSON directory Default: `bench/results`. |
+| `--runs` | the run directories behind them Default: `bench/runs`. |
+
 ## `models`
 
 Quick check whether installed models load and work.
