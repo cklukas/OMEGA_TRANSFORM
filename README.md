@@ -12,9 +12,18 @@ and no code or data leaves the machine; cloud models through OpenRouter are an
 explicit option (docs/cloud-models.md). The documentation in [docs/](docs/index.md) explains how
 the engine works; it is published as the project's Pages site.
 
-The engine is standard-library Python only (3.11+).
+The engine is standard-library Python only (3.11+). The source is on GitHub:
+<https://github.com/cklukas/OMEGA_TRANSFORM>.
 
 ## Quick start
+
+```bash
+git clone https://github.com/cklukas/OMEGA_TRANSFORM.git
+```
+
+```bash
+cd OMEGA_TRANSFORM
+```
 
 ```bash
 python3 -m omega_transform check examples/circle_packing

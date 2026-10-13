@@ -16,6 +16,8 @@ key, and no code or data leaves the machine. Cloud models through OpenRouter
 are an explicit option ([Cloud models](cloud-models.md)).
 [How it works](how-it-works.md) explains the loop.
 
+The source is on GitHub: <https://github.com/cklukas/OMEGA_TRANSFORM>.
+
 ```mermaid
 flowchart LR
     P["Your program<br/>with OMEGA-BLOCK regions"] --> E["Engine"]

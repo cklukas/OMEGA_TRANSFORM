@@ -11,6 +11,9 @@ site:
   title: OMEGA TRANSFORM
   logo: docs/assets/omega-icon.svg
   description: Evolutionary program optimization with local language models for Python and C/C++, entirely on your own machine.
+  links:
+    - title: GitHub
+      url: https://github.com/cklukas/OMEGA_TRANSFORM
   footer: "© 2026 C. Klukas · GPL-3.0-only (interface LGPL-3.0-only, examples MIT)"
 search: true
 nav:

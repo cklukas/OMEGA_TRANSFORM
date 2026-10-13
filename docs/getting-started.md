@@ -16,6 +16,16 @@ on Linux (see [Robustness and safety](robustness.md)).
 
 ## Install
 
+The source is on [GitHub](https://github.com/cklukas/OMEGA_TRANSFORM):
+
+```bash
+git clone https://github.com/cklukas/OMEGA_TRANSFORM.git
+```
+
+```bash
+cd OMEGA_TRANSFORM
+```
+
 Use the repository directly:
 
 ```bash
