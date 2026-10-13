@@ -1,0 +1,79 @@
+{
+ "schema": 1,
+ "example": "matmul_f32_single_thread",
+ "model": "gemma4:26b-a4b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 15.6,
+ "model_params": "25.2B",
+ "started": "2026-10-13T06:01:53",
+ "minutes_budget": 15.0,
+ "wall_minutes": 17.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "7ceb65c",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.37405,
+ "best_score": 21.4446,
+ "improvement": 15.606855645718861,
+ "llm_calls": 14,
+ "mean_llm_seconds": 67.3,
+ "attempts": 14,
+ "ok": 12,
+ "statuses": {
+  "ok": 12,
+  "edit_error": 1,
+  "compile_error": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 3,
+ "minutes_to_best": 7.33,
+ "best_idea": "Change loop order to i-k-j to allow contiguous access of B and C, improving cache efficiency and vectorization potential.",
+ "progress": [
+  [
+   0.0,
+   1.37405
+  ],
+  [
+   6.2,
+   19.9993
+  ],
+  [
+   6.89,
+   20.9487
+  ],
+  [
+   7.33,
+   21.4446
+  ]
+ ],
+ "error": "",
+ "model_memory_gb": 15.2,
+ "model_gpu_memory_gb": 15.2,
+ "context_length": 32768,
+ "load_seconds": 304.6,
+ "median_call_seconds": 48.3,
+ "p90_call_seconds": 88.5,
+ "prompt_tokens_per_s": 308.8,
+ "gen_tokens_per_s": 24.1,
+ "mean_prompt_tokens": 3298,
+ "mean_gen_tokens": 553,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

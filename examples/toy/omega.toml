@@ -1,0 +1,14 @@
+# Copyright (c) 2026 by C. Klukas
+# SPDX-License-Identifier: MIT
+[problem]
+name = "toy"
+language = "python"
+initial = "initial.py"
+category = "Testing"
+description = "Make value() return a larger number (at most 100)."
+
+[search]
+iterations = 10
+islands = 2
+migration_interval = 4
+insights_interval = 0

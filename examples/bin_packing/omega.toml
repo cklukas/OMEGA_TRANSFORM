@@ -1,0 +1,53 @@
+# Copyright (c) 2026 by C. Klukas
+# SPDX-License-Identifier: MIT
+[problem]
+name = "bin_packing_1d"
+language = "python"
+initial = "initial.py"
+category = "Algorithms and heuristics"
+description = """
+Write a heuristic for one-dimensional bin packing. pack(sizes, capacity) gets a list of
+integer item sizes (each between 1 and capacity) and the integer bin capacity (1000) and
+must return a list of bins, each a list of item indices: every index exactly once, the
+sizes in each bin summing to at most capacity, no empty bins. The goal is to use as FEW
+BINS as possible. It is run on three fixed instances: 300 items of size 100-700, 1000
+items of size 150-450, and 1000 items of size 250-500 (mostly three items per bin, hard
+for simple greedy rules). The time limit is 2.0 CPU seconds per instance, measured with
+time.process_time() around the call; using more than 1.5 x the limit (3.0 s) makes the
+program invalid, so check time.process_time() regularly and return the best packing
+found when time runs out. Only the Python standard library may be used (no numpy)."""
+metrics_help = """
+score = mean over the three instances of (lower bound / bins used), where the lower
+bound is ceil(sum(sizes) / capacity). Higher is better; 1.0 would meet the bound on every
+instance (it may not be reachable everywhere). The initial next-fit program scores about
+0.8, first-fit decreasing about 0.95. Metrics per instance: <name>_bins,
+<name>_lower_bound, <name>_ratio, <name>_cpu_s."""
+hints = """
+Known levers, roughly in order of payoff: sort items by decreasing size and use first
+fit or best fit (FFD/BFD); fill bins one at a time with the subset that fills them best
+(minimum bin slack, MBS: search for the best-filling pair or triple of remaining items);
+for the 250-500 instance, think in triples whose sizes sum to exactly or nearly the
+capacity; improve a packing by local search: empty the least-filled bin and re-insert
+its items into other bins, swapping items between bins (1-1, 1-2, 2-2 swaps) to make
+room, and accept the move when it reduces the number of bins or increases the sum of
+squared bin loads (which pushes items together); repeat with randomized restarts or
+perturbations until the time is up, keeping the best valid packing."""
+
+[evaluator]
+command = ["{python}", "evaluate.py", "{candidate}"]
+stages = [{ name = "main", timeout = 60 }]
+concurrency = 4
+
+[llm]
+models = ["qwen3.5:latest"]
+think = false
+
+[search]
+iterations = 150
+islands = 3
+migration_interval = 30
+insights_interval = 20
+features = [
+  { name = "code_size", min = 0.25, max = 6.0, bins = 6, log = true },
+  { name = "time_used", min = 0.0, max = 1.0, bins = 4 },
+]

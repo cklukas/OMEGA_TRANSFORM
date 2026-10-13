@@ -1,0 +1,78 @@
+{
+ "schema": 1,
+ "example": "matmul_f32_single_thread",
+ "model": "qwen3.5:27b",
+ "variant": "no-think",
+ "model_size_gb": 17.4,
+ "model_params": "27.8B",
+ "started": "2026-10-13T06:18:59",
+ "minutes_budget": 15.0,
+ "wall_minutes": 18.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "7ceb65c",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.60018,
+ "best_score": 27.9923,
+ "improvement": 17.49321951280481,
+ "llm_calls": 5,
+ "mean_llm_seconds": 204.2,
+ "attempts": 5,
+ "ok": 3,
+ "statuses": {
+  "ok": 3,
+  "edit_error": 2
+ },
+ "sweeps": 2,
+ "sweep_variants": 7,
+ "improvements": 3,
+ "minutes_to_best": 17.78,
+ "best_idea": "Implement a manual NEON micro-kernel with register blocking (8x16) and i-k-j tiling to maximize vector unit utilization and avoid cache pollution, while handling non-tile-aligned boundaries safely.",
+ "progress": [
+  [
+   0.0,
+   1.60018
+  ],
+  [
+   5.7,
+   12.3072
+  ],
+  [
+   5.7,
+   25.9419
+  ],
+  [
+   17.78,
+   27.9923
+  ]
+ ],
+ "error": "",
+ "model_memory_gb": 18.4,
+ "model_gpu_memory_gb": 18.4,
+ "context_length": 32768,
+ "load_seconds": 226.1,
+ "median_call_seconds": 156.7,
+ "p90_call_seconds": 346.9,
+ "prompt_tokens_per_s": 95.8,
+ "gen_tokens_per_s": 9.8,
+ "mean_prompt_tokens": 3308,
+ "mean_gen_tokens": 1140,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

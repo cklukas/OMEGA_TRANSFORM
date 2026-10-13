@@ -1,0 +1,54 @@
+# Copyright (c) 2026 by C. Klukas
+# SPDX-License-Identifier: MIT
+[problem]
+name = "feature_engineering"
+language = "python"
+initial = "initial.py"
+category = "Data and modelling"
+description = """
+Design features for a FIXED linear classifier. The program defines
+features(row) -> list of floats. row is [x1, x2, x3, x4, x5, x6]: x1, x2, x6 are
+standard-normal-like, x3 is positive and right-skewed (lognormal-like), x4 and x5 are
+uniform in [-2, 2]. The binary label is a hidden NONLINEAR function of some of the
+inputs plus noise; not every input matters. The evaluator computes the features of 2000
+fixed rows and trains its own model, which cannot be changed: features standardized
+with the training mean and standard deviation, a bias added, then a ridge-regularized
+least-squares classifier (targets -1/+1) fitted on the first 1000 rows; the prediction
+is the sign of the weighted sum. Score = accuracy on the other 1000 rows. Rules: 1 to 30
+features, the same number for every row, all finite (guard logs, divisions and powers);
+computing all features takes at most 5 CPU seconds. Only the Python standard library
+(no numpy)."""
+metrics_help = """
+score = test accuracy of the fixed classifier on 1000 held-out rows (0..1, higher is
+better). The raw inputs reach about 0.62; the classes are balanced (majority_baseline
+about 0.51) and the label noise limits the best possible accuracy to roughly 0.97.
+Metrics: train_accuracy (a large gap to test means overfitting), num_features,
+feature_cpu_s. The feedback lists the largest standardized weights (f0 = first feature);
+features with near-zero weight carry no usable signal for the linear model."""
+hints = """
+A linear model can only draw a straight boundary in feature space, so the features must
+make the hidden rule linear. Typical transformations: pairwise products (x_i * x_j) for
+XOR-like or quadrant patterns, and their signs (sign(x_i * x_j)) when only the
+quadrant matters; squares and radii (x_i^2 + x_j^2) for circular regions; log of skewed
+positive inputs; indicator or threshold features (1 if v > t else 0) and soft versions
+(tanh or a logistic of (v - t) / s) when the effect is a step rather than a slope; bins
+of an input (one-hot over a few intervals) to let a linear model fit any monotone or
+non-monotone 1-D shape. Probe the inputs one at a time: add a candidate transformation
+and see whether the test accuracy and its weight rise. Drop noise inputs; with only
+1000 training rows, many useless features cost accuracy. Thresholds such as a radius
+cut-off or a log cut-off can be found by trying several bin edges."""
+
+[evaluator]
+command = ["{python}", "evaluate.py", "{candidate}"]
+stages = [{ name = "main", timeout = 120 }]
+concurrency = 4
+
+[llm]
+models = ["qwen3.5:latest"]
+think = false
+
+[search]
+iterations = 150
+islands = 3
+migration_interval = 30
+insights_interval = 20

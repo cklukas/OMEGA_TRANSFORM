@@ -1,0 +1,84 @@
+{
+ "schema": 1,
+ "example": "matmul_f32_single_thread",
+ "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-10-10T13:16:52",
+ "minutes_budget": 15.0,
+ "wall_minutes": 17.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "9180a69",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.52545,
+ "best_score": 35.3384,
+ "improvement": 23.165885476416797,
+ "llm_calls": 12,
+ "mean_llm_seconds": 80.1,
+ "attempts": 12,
+ "ok": 8,
+ "statuses": {
+  "ok": 8,
+  "compile_error": 1,
+  "invalid": 1,
+  "duplicate": 2
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 4,
+ "minutes_to_best": 16.08,
+ "best_idea": "Unroll the inner k-loop in the 4x4 micro-kernel by a factor of 4 to reduce loop overhead and improve instruction-level parallelism, while handling remainder iterations.",
+ "progress": [
+  [
+   0.0,
+   1.52545
+  ],
+  [
+   0.47,
+   24.339
+  ],
+  [
+   7.25,
+   33.708
+  ],
+  [
+   13.14,
+   34.3014
+  ],
+  [
+   16.08,
+   35.3384
+  ]
+ ],
+ "error": "",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 58.7,
+ "p90_call_seconds": 165.0,
+ "prompt_tokens_per_s": 2162.3,
+ "gen_tokens_per_s": 37.8,
+ "mean_prompt_tokens": 3420,
+ "mean_gen_tokens": 2969,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

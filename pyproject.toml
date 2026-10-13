@@ -1,0 +1,25 @@
+# Copyright (c) 2026 by C. Klukas
+# SPDX-License-Identifier: GPL-3.0-only
+[project]
+name = "omega-transform"
+version = "0.1.0"
+description = "LLM-driven evolutionary optimization of Python and C/C++ programs with local models (Ollama)"
+requires-python = ">=3.11"
+# The framework is GPL-3.0-only; its evaluator interface (harness.py,
+# candidate_runner.py) is LGPL-3.0-only. The examples (not packaged) are MIT.
+license = {text = "GPL-3.0-only AND LGPL-3.0-only"}
+classifiers = [
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
+]
+dependencies = []
+
+[project.scripts]
+omega = "omega_transform.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["omega_transform"]

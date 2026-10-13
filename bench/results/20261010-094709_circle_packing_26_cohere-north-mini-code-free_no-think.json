@@ -1,0 +1,97 @@
+{
+ "schema": 1,
+ "example": "circle_packing_26",
+ "model": "cohere/north-mini-code:free",
+ "variant": "no-think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-10-10T09:47:09",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "968c400",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 1.7595309604298066,
+ "improvement": 1.1808124423279769,
+ "llm_calls": 81,
+ "mean_llm_seconds": 10.5,
+ "attempts": 81,
+ "ok": 47,
+ "statuses": {
+  "ok": 47,
+  "invalid": 16,
+  "duplicate": 11,
+  "edit_error": 5,
+  "llm_error": 2
+ },
+ "sweeps": 21,
+ "sweep_variants": 203,
+ "improvements": 7,
+ "minutes_to_best": 14.59,
+ "best_idea": "tuned JITTER_MAG=0.012, R0_SCALE_FACTOR=1.05 on top of: Replace the third gradient\u2011based local optimization with a fast vectorized radius\u2011only shrink loop to reduce runtime and improve packing density",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   0.35,
+   1.4953706747061049
+  ],
+  [
+   1.26,
+   1.4971846892841068
+  ],
+  [
+   3.43,
+   1.6040642515667705
+  ],
+  [
+   11.33,
+   1.668843424430323
+  ],
+  [
+   11.33,
+   1.6732688885899563
+  ],
+  [
+   11.64,
+   1.7053095776912952
+  ],
+  [
+   14.59,
+   1.7595309604298066
+  ]
+ ],
+ "error": "",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 8.5,
+ "p90_call_seconds": 20.6,
+ "prompt_tokens_per_s": 8768.9,
+ "gen_tokens_per_s": 115.8,
+ "mean_prompt_tokens": 4755,
+ "mean_gen_tokens": 1154,
+ "stopped_calls": 2,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

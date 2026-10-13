@@ -1,0 +1,66 @@
+{
+ "schema": 1,
+ "example": "matmul_f32_single_thread",
+ "model": "cohere/north-mini-code:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-10-10T12:59:28",
+ "minutes_budget": 15.0,
+ "wall_minutes": 17.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "9180a69",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.54957,
+ "best_score": 1.54957,
+ "improvement": 1.0,
+ "llm_calls": 9,
+ "mean_llm_seconds": 110.2,
+ "attempts": 9,
+ "ok": 0,
+ "statuses": {
+  "llm_error": 7,
+  "invalid": 2
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 0,
+ "minutes_to_best": null,
+ "best_idea": "initial program",
+ "progress": [
+  [
+   0.0,
+   1.54957
+  ]
+ ],
+ "error": "",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 96.7,
+ "p90_call_seconds": 221.7,
+ "prompt_tokens_per_s": 4535.7,
+ "gen_tokens_per_s": 113.0,
+ "mean_prompt_tokens": 2120,
+ "mean_gen_tokens": 4886,
+ "stopped_calls": 7,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

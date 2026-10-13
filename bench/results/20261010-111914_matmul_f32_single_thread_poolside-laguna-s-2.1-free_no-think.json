@@ -1,0 +1,105 @@
+{
+ "schema": 1,
+ "example": "matmul_f32_single_thread",
+ "model": "poolside/laguna-s-2.1:free",
+ "variant": "no-think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-10-10T11:19:14",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "d4dad68",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.67947,
+ "best_score": 28.183,
+ "improvement": 16.780889209095726,
+ "llm_calls": 24,
+ "mean_llm_seconds": 37.7,
+ "attempts": 24,
+ "ok": 11,
+ "statuses": {
+  "invalid": 2,
+  "ok": 11,
+  "edit_error": 1,
+  "duplicate": 4,
+  "llm_error": 6
+ },
+ "sweeps": 10,
+ "sweep_variants": 130,
+ "improvements": 9,
+ "minutes_to_best": 8.4,
+ "best_idea": "tuned MM_BC=320, MM_MR=8 on top of: Replace the scalar 4x16 micro-kernel with a true NEON register-blocked kernel using vfmaq_laneq_f32 for A broadcasts and 4x16 accumulators, and expose MM_BC and MM_",
+ "progress": [
+  [
+   0.0,
+   1.67947
+  ],
+  [
+   1.57,
+   16.1896
+  ],
+  [
+   2.41,
+   16.813
+  ],
+  [
+   2.41,
+   19.262
+  ],
+  [
+   3.37,
+   20.3575
+  ],
+  [
+   3.37,
+   20.5189
+  ],
+  [
+   6.38,
+   26.1373
+  ],
+  [
+   7.28,
+   27.5229
+  ],
+  [
+   8.4,
+   28.0382
+  ],
+  [
+   8.4,
+   28.183
+  ]
+ ],
+ "error": "",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 26.8,
+ "p90_call_seconds": 76.9,
+ "prompt_tokens_per_s": 4055.5,
+ "gen_tokens_per_s": 46.3,
+ "mean_prompt_tokens": 4300,
+ "mean_gen_tokens": 925,
+ "stopped_calls": 5,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

@@ -1,0 +1,48 @@
+# Copyright (c) 2026 by C. Klukas
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# The self-hosted ck-git-hosting lane: every push to main runs the test suite,
+# regenerates the model-benchmark page from the committed results in
+# bench/results/, builds the documentation site with ckdocs, and `pages:`
+# publishes it on this server's Pages once every step has passed.
+#
+# The benchmarks themselves never run here: they need Ollama and hours of
+# compute. They run on a workstation (`omega bench`), and only their result
+# files are committed, so the published tables and charts always come from
+# committed numbers. The engine is standard-library Python, so the sandbox
+# needs no network and no packages.
+#
+# ckdocs is compiled from the ck-git-hosting sister project at a pinned commit.
+# `--strict` fails the run on a broken link or heading fragment before
+# `pages:` ever sees "public". The checkout comes from `git archive` and has no
+# .git, so ckdocs walks the tree rather than listing tracked files.
+version: 1
+on:
+  branches: [main]
+sisters:
+  - name: ck-git-hosting
+    ref: 2397fbd02bc71dbaf1c71bfecd9f8a45cc9605c2
+jobs:
+  - name: docs
+    steps:
+      - name: test
+        script: |
+          python3 --version
+          python3 -m omega_transform sandbox
+          # OMEGA_EXAMPLE_TESTS also evaluates every example's starting program,
+          # so a broken example cannot be published; C/C++ examples whose
+          # compiler this host lacks are skipped.
+          OMEGA_EXAMPLE_TESTS=1 python3 -m unittest discover -s tests
+      - name: reference
+        script: |
+          # The generated reference pages must match the code (also a test).
+          python3 -m omega_transform docs --check
+      - name: benchmarks
+        script: |
+          python3 -m omega_transform report
+      - name: site
+        script: |
+          make -C ../ck-git-hosting BUILD_ROOT="$TMPDIR" BUILD_DIR="$TMPDIR/ckdocs" client
+          "$TMPDIR/ckdocs/bin/ckdocs" build --root "$PWD" --out "$PWD/public" --strict
+pages:
+  path: public

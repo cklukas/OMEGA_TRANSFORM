@@ -1,0 +1,74 @@
+{
+ "schema": 1,
+ "example": "circle_packing_26",
+ "model": "gemma4:e4b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 6.1,
+ "model_params": "7.5B",
+ "started": "2026-10-13T01:03:53",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "7ceb65c",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 2.1666666666666665,
+ "improvement": 1.4540391819830936,
+ "llm_calls": 22,
+ "mean_llm_seconds": 41.1,
+ "attempts": 22,
+ "ok": 12,
+ "statuses": {
+  "invalid": 10,
+  "ok": 12
+ },
+ "sweeps": 2,
+ "sweep_variants": 18,
+ "improvements": 2,
+ "minutes_to_best": 13.87,
+ "best_idea": "Introduce a more aggressive initial radii scaling and switch the iterative overlap constraint application from a simple sequential update to a relaxation method that re-evaluates all radii simultaneou",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   7.06,
+   1.8651867705027732
+  ],
+  [
+   13.87,
+   2.1666666666666665
+  ]
+ ],
+ "error": "",
+ "model_memory_gb": 5.5,
+ "model_gpu_memory_gb": 5.5,
+ "context_length": 32768,
+ "load_seconds": 177.2,
+ "median_call_seconds": 36.0,
+ "p90_call_seconds": 62.9,
+ "prompt_tokens_per_s": 577.6,
+ "gen_tokens_per_s": 25.7,
+ "mean_prompt_tokens": 2494,
+ "mean_gen_tokens": 728,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

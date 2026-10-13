@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="OMEGA TRANSFORM">
+  <!-- Copyright (c) 2026 by C. Klukas -->
+  <!-- SPDX-License-Identifier: GPL-3.0-only -->
+  <title>OMEGA TRANSFORM</title>
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="42%" r="70%">
+      <stop offset="0" stop-color="#1b1f4a"/>
+      <stop offset="0.6" stop-color="#0c0f2b"/>
+      <stop offset="1" stop-color="#05060f"/>
+    </radialGradient>
+    <linearGradient id="omega" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3ef0ff"/>
+      <stop offset="0.5" stop-color="#7b6cff"/>
+      <stop offset="1" stop-color="#ff4fd8"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#3ef0ff" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#ff4fd8" stop-opacity="0.25"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="5" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <pattern id="grid" width="16" height="16" patternUnits="userSpaceOnUse">
+      <path d="M16 0H0V16" fill="none" stroke="#3ef0ff" stroke-opacity="0.07" stroke-width="1"/>
+    </pattern>
+    <clipPath id="tile"><rect x="8" y="8" width="240" height="240" rx="52"/></clipPath>
+  </defs>
+
+  <g clip-path="url(#tile)">
+    <rect x="8" y="8" width="240" height="240" fill="url(#bg)"/>
+    <rect x="8" y="8" width="240" height="240" fill="url(#grid)"/>
+    <!-- orbit of islands: the MAP-Elites population around the program -->
+    <ellipse cx="128" cy="132" rx="100" ry="38" fill="none" stroke="url(#ring)" stroke-width="1.5" stroke-dasharray="2 5" transform="rotate(-18 128 132)"/>
+    <ellipse cx="128" cy="132" rx="100" ry="38" fill="none" stroke="url(#ring)" stroke-width="1.5" stroke-dasharray="2 5" transform="rotate(22 128 132)"/>
+  </g>
+  <rect x="8.75" y="8.75" width="238.5" height="238.5" rx="51.5" fill="none" stroke="#7b6cff" stroke-opacity="0.45" stroke-width="1.5"/>
+
+  <!-- the omega -->
+  <g filter="url(#glow)" fill="none" stroke="url(#omega)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M62 190 H98 V176 A56 56 0 1 1 158 176 V190 H194" stroke-width="15"/>
+  </g>
+
+  <!-- evolving candidates on the orbits -->
+  <g filter="url(#glow)">
+    <circle cx="36" cy="160" r="5" fill="#3ef0ff"/>
+    <circle cx="214" cy="96" r="4" fill="#ff4fd8"/>
+    <circle cx="206" cy="182" r="5.5" fill="#b18cff"/>
+    <circle cx="52" cy="84" r="3.5" fill="#7b6cff"/>
+  </g>
+  <!-- the current best: a spark at the crown -->
+  <g transform="translate(128 52)" filter="url(#glow)">
+    <path d="M0 -11 L2.6 -2.6 L11 0 L2.6 2.6 L0 11 L-2.6 2.6 L-11 0 L-2.6 -2.6 Z" fill="#ffffff"/>
+  </g>
+</svg>

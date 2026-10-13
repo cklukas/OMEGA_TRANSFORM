@@ -1,0 +1,61 @@
+# Copyright (c) 2026 by C. Klukas
+# SPDX-License-Identifier: MIT
+[problem]
+name = "sort_u32_single_thread"
+language = "cpp"
+initial = "sort.cpp"
+category = "Performance (C++)"
+context_files = ["harness.cpp"]
+description = """
+Make the C++ function sort_u32(a, n), which sorts an array of n uint32_t values ascending
+in place, use as little CPU time as possible on ONE core of this machine (Apple Silicon,
+ARM NEON available via <arm_neon.h>). The time is measured with the process CPU clock, so
+extra threads do not help: their CPU time adds up. The result must be EXACTLY the same as
+std::sort for every input: any n from 0 to 2'000'000 and any values, including many
+duplicates and inputs that are already (nearly) sorted or reverse sorted. Extra memory
+may be allocated freely. The benchmark sorts n = 1'000'000 elements from five input
+distributions: uniform random 32-bit, many duplicates (values below 1000), already
+sorted, reverse sorted, and nearly sorted (about 1% of elements swapped)."""
+metrics_help = """
+score = total throughput over the five distributions: all elements sorted divided by
+the total CPU time, in million elements per CPU-second, at n = 1'000'000 per distribution (best of 5 runs per distribution, each run on freshly
+generated data). The metrics show the rate per distribution. Correctness is checked
+first on n = 0, 1, 2, 7, 100, 1001, 65537 for every distribution, and again on every
+benchmark run; any element differing from std::sort makes the program invalid."""
+hints = """
+Known levers: LSD radix sort (e.g. 3 passes of 11 bits or 4 passes of 8 bits, all
+histograms computed in one counting pass, a pass skipped when all keys share that digit,
+ping-pong between the array and one scratch buffer); MSD radix or American-flag sort;
+detecting already-sorted and reverse-sorted runs in one O(n) scan; a good comparison
+sort (introsort/pdqsort with median-of-three pivots, branchless partitioning, insertion
+sort for small partitions) for small n; avoiding allocation per call for small n;
+NEON (vld1q_u32, vminq_u32/vmaxq_u32 sorting networks) or code the compiler
+auto-vectorizes for the counting pass."""
+
+[evaluator]
+# Separate compilation: the candidate is compiled on its own (without read access to this
+# directory), may define only sort_u32 globally, and is then linked with harness.cpp.
+compile = ["clang++", "-O3", "-march=native", "-std=c++20", "-c", "{candidate}", "-o", "{object}"]
+link = ["clang++", "-O3", "-march=native", "-std=c++20", "{object}", "{problem_dir}/harness.cpp", "-o", "{binary}"]
+exports = ["sort_u32"]
+command = ["{python}", "evaluate.py", "{binary}", "{stage}"]
+# CPU time is robust to other programs taking turns on the cores, so the benchmark
+# stage may run beside other evaluations; confirm_runs guards the remaining noise
+# (shared caches and memory bandwidth).
+stages = [
+  { name = "check", timeout = 60 },
+  { name = "bench", timeout = 120 },
+]
+concurrency = 4
+confirm_runs = 2
+
+[llm]
+models = ["qwen3.5:latest"]
+think = false
+num_ctx = 32768
+
+[search]
+iterations = 150
+islands = 3
+migration_interval = 30
+insights_interval = 20

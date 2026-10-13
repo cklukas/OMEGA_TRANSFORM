@@ -1,0 +1,82 @@
+{
+ "schema": 1,
+ "example": "matmul_f32_single_thread",
+ "model": "gemma4:e2b",
+ "variant": "no-think",
+ "model_size_gb": 7.2,
+ "model_params": "5.1B",
+ "started": "2026-10-13T05:09:55",
+ "minutes_budget": 15.0,
+ "wall_minutes": 17.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "7ceb65c",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.33579,
+ "best_score": 1.36975,
+ "improvement": 1.025423157831695,
+ "llm_calls": 29,
+ "mean_llm_seconds": 31.1,
+ "attempts": 29,
+ "ok": 4,
+ "statuses": {
+  "compile_error": 17,
+  "invalid": 2,
+  "edit_error": 3,
+  "duplicate": 1,
+  "llm_error": 2,
+  "ok": 4
+ },
+ "sweeps": 2,
+ "sweep_variants": 6,
+ "improvements": 3,
+ "minutes_to_best": 13.8,
+ "best_idea": "Implement cache blocking with a block size optimized for NEON vectorization and use FMA intrinsics to maximize performance by improving data reuse and SIMD capabilities for significant speedup.",
+ "progress": [
+  [
+   0.0,
+   1.33579
+  ],
+  [
+   10.79,
+   1.36402
+  ],
+  [
+   10.79,
+   1.36955
+  ],
+  [
+   13.8,
+   1.36975
+  ]
+ ],
+ "error": "",
+ "model_memory_gb": 1.8,
+ "model_gpu_memory_gb": 1.8,
+ "context_length": 32768,
+ "load_seconds": 39.6,
+ "median_call_seconds": 25.8,
+ "p90_call_seconds": 57.3,
+ "prompt_tokens_per_s": 849.4,
+ "gen_tokens_per_s": 28.4,
+ "mean_prompt_tokens": 3512,
+ "mean_gen_tokens": 707,
+ "stopped_calls": 2,
+ "provider": "ollama",
+ "cost_usd": 0
+}

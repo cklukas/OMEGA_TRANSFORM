@@ -1,0 +1,86 @@
+{
+ "schema": 1,
+ "example": "matmul_f32_single_thread",
+ "model": "cohere/north-mini-code:free",
+ "variant": "no-think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-10-10T10:48:27",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "d4dad68",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.74962,
+ "best_score": 27.776,
+ "improvement": 15.87544723997211,
+ "llm_calls": 75,
+ "mean_llm_seconds": 11.7,
+ "attempts": 75,
+ "ok": 12,
+ "statuses": {
+  "edit_error": 11,
+  "invalid": 27,
+  "compile_error": 18,
+  "llm_error": 1,
+  "ok": 12,
+  "duplicate": 6
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 4,
+ "minutes_to_best": 8.5,
+ "best_idea": "Increase arithmetic intensity by switching to a wider 16\u00d78 register tile (two NEON registers per C element) to halve memory traffic and better utilize FMA pipelines.",
+ "progress": [
+  [
+   0.0,
+   1.74962
+  ],
+  [
+   5.7,
+   15.2251
+  ],
+  [
+   6.9,
+   26.2015
+  ],
+  [
+   7.77,
+   27.0964
+  ],
+  [
+   8.5,
+   27.776
+  ]
+ ],
+ "error": "",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 9.6,
+ "p90_call_seconds": 21.6,
+ "prompt_tokens_per_s": 10660.9,
+ "gen_tokens_per_s": 150.6,
+ "mean_prompt_tokens": 4723,
+ "mean_gen_tokens": 1715,
+ "stopped_calls": 1,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

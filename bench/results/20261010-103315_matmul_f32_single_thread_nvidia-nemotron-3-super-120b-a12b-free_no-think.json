@@ -1,0 +1,109 @@
+{
+ "schema": 1,
+ "example": "matmul_f32_single_thread",
+ "model": "nvidia/nemotron-3-super-120b-a12b:free",
+ "variant": "no-think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-10-10T10:33:15",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "d4dad68",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.69859,
+ "best_score": 49.1573,
+ "improvement": 28.940062051466214,
+ "llm_calls": 88,
+ "mean_llm_seconds": 10.1,
+ "attempts": 88,
+ "ok": 22,
+ "statuses": {
+  "invalid": 16,
+  "duplicate": 33,
+  "llm_error": 13,
+  "ok": 22,
+  "edit_error": 4
+ },
+ "sweeps": 12,
+ "sweep_variants": 118,
+ "improvements": 10,
+ "minutes_to_best": 13.05,
+ "best_idea": "tuned BLOCK_SIZE=112, UNROLL=8 on top of: Increase UNROLL factor to 8 and add NEON vectorization of the inner j-loop to process 4 columns per iteration, improving instruction-level parallelism and mem",
+ "progress": [
+  [
+   0.0,
+   1.69859
+  ],
+  [
+   0.85,
+   26.0224
+  ],
+  [
+   1.2,
+   29.3546
+  ],
+  [
+   3.47,
+   37.5267
+  ],
+  [
+   4.46,
+   43.977
+  ],
+  [
+   6.36,
+   45.4029
+  ],
+  [
+   6.87,
+   45.5444
+  ],
+  [
+   8.01,
+   46.2867
+  ],
+  [
+   8.17,
+   46.5938
+  ],
+  [
+   10.99,
+   47.7429
+  ],
+  [
+   13.05,
+   49.1573
+  ]
+ ],
+ "error": "",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 7.8,
+ "p90_call_seconds": 23.1,
+ "prompt_tokens_per_s": 6520.6,
+ "gen_tokens_per_s": 140.4,
+ "mean_prompt_tokens": 5685,
+ "mean_gen_tokens": 1149,
+ "stopped_calls": 13,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

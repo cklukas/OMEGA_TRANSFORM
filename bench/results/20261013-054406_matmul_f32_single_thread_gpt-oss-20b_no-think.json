@@ -1,0 +1,74 @@
+{
+ "schema": 1,
+ "example": "matmul_f32_single_thread",
+ "model": "gpt-oss:20b",
+ "variant": "no-think",
+ "model_size_gb": 13.8,
+ "model_params": "20.9B",
+ "started": "2026-10-13T05:44:06",
+ "minutes_budget": 15.0,
+ "wall_minutes": 17.8,
+ "omega_version": "0.1.0",
+ "omega_commit": "7ceb65c",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.38651,
+ "best_score": 18.6383,
+ "improvement": 13.442600486112616,
+ "llm_calls": 5,
+ "mean_llm_seconds": 200.2,
+ "attempts": 5,
+ "ok": 3,
+ "statuses": {
+  "ok": 3,
+  "edit_error": 2
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 2,
+ "minutes_to_best": 6.68,
+ "best_idea": "Use NEON vectorized i\u2011k\u2011j loop with per\u2011row zeroing to accelerate compute while preserving correctness.",
+ "progress": [
+  [
+   0.0,
+   1.38651
+  ],
+  [
+   5.07,
+   18.2457
+  ],
+  [
+   6.68,
+   18.6383
+  ]
+ ],
+ "error": "",
+ "model_memory_gb": 12.8,
+ "model_gpu_memory_gb": 12.8,
+ "context_length": 32768,
+ "load_seconds": 79.1,
+ "median_call_seconds": 172.5,
+ "p90_call_seconds": 322.1,
+ "prompt_tokens_per_s": 568.2,
+ "gen_tokens_per_s": 26.3,
+ "mean_prompt_tokens": 2828,
+ "mean_gen_tokens": 4683,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

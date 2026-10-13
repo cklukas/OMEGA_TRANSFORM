@@ -1,0 +1,79 @@
+# Copyright (c) 2026 by C. Klukas
+# SPDX-License-Identifier: MIT
+[problem]
+name = "float_parse_single_thread"
+language = "cpp"
+initial = "parse.cpp"
+category = "Performance (C++)"
+context_files = ["harness.cpp"]
+description = """
+Make the C++ function parse_doubles(buf, len, out), which parses a text of decimal
+numbers into doubles and returns how many it found, use as little CPU time as possible
+on ONE core of this machine (Apple Silicon, ARM NEON available via <arm_neon.h>). The
+time is measured with the process CPU clock, so extra threads do not help: their CPU
+time adds up.
+
+Input: buf[0..len) holds numbers, each followed by exactly one '\\n'; buf[len] is '\\0'.
+A number is: an optional '-', one or more digits, optionally '.' and one or more digits,
+optionally 'e' or 'E' with an optional '+' or '-' and one or more digits. There are no
+spaces, no leading '+', no inf/nan/hex. Mantissas may have more than 19 significant
+digits and leading zeros; values range from subnormals (about 5e-324) to near
+1.8e308. out has room for exactly the number of numbers in the text.
+
+Correctness is EXACT: every value must be bit-identical to what std::strtod returns
+(the correctly rounded double, round-half-to-even), including -0.0, subnormals and
+long mantissas exactly halfway between two doubles. Approximate results such as
+mantissa * pow(10, exp) are wrong for many inputs and make the program invalid. The
+benchmark text has 2'000'000 numbers (about 28 MB) in mixed formats: integers, fixed
+decimals, prices, %.17g and %.15g output, scientific notation like 1.5e-7 or
+-4.10331589e+168, and some long mantissas."""
+metrics_help = """
+score = MB of text parsed per CPU-second on the 2'000'000-number text (best of 7 runs).
+ns_per_number is the same time per number. Correctness is checked first on texts of
+0, 1, 7, 30, 1001 and 20011 numbers (the hard cases come first in every text), and on
+every benchmark run; one value that is not bit-identical to std::strtod, a wrong count,
+or a write past the end of out makes the program invalid."""
+hints = """
+Most important: correctness is exact, so build speed in safe steps. Keep std::strtod as
+the fallback for every number your fast path does not handle with certainty, and grow
+the fast path one case at a time (first plain integers, then short decimals within
+Clinger's limits). A slower but exact parser beats a fast one that fails one case.
+Any table (powers of ten or five) must be written inline in the editable region.
+Known levers: parse the line directly instead of calling strtod (no locale, no
+whitespace skipping, the terminator is known); accumulate up to 19 significant digits
+into a uint64_t mantissa and track the decimal exponent; Clinger's fast path (mantissa
+below 2^53 and |exponent| <= 22: one exact multiplication or division by an exact
+power of ten in a table gives the correctly rounded result); the Eisel-Lemire
+algorithm (128-bit product of the mantissa with a table of 128-bit powers of five,
+as in the fast_float library) covers almost all other cases; fall back to std::strtod
+only for the rare cases these cannot decide (more than 19 digits, ambiguous rounding,
+out-of-range exponents). Process 8 digits at a time with SWAR tricks on a uint64_t
+load, or NEON; avoid branches on the format."""
+
+[evaluator]
+# Separate compilation: the candidate is compiled on its own (without read access to this
+# directory), may define only parse_doubles globally, and is then linked with harness.cpp.
+compile = ["clang++", "-O3", "-march=native", "-std=c++20", "-c", "{candidate}", "-o", "{object}"]
+link = ["clang++", "-O3", "-march=native", "-std=c++20", "{object}", "{problem_dir}/harness.cpp", "-o", "{binary}"]
+exports = ["parse_doubles"]
+command = ["{python}", "evaluate.py", "{binary}", "{stage}"]
+# CPU time is robust to other programs taking turns on the cores, so the benchmark
+# stage may run beside other evaluations; confirm_runs guards the remaining noise
+# (shared caches and memory bandwidth).
+stages = [
+  { name = "check", timeout = 60 },
+  { name = "bench", timeout = 120 },
+]
+concurrency = 4
+confirm_runs = 2
+
+[llm]
+models = ["qwen3.5:latest"]
+think = false
+num_ctx = 32768
+
+[search]
+iterations = 150
+islands = 3
+migration_interval = 30
+insights_interval = 20

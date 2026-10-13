@@ -1,0 +1,72 @@
+{
+ "schema": 1,
+ "example": "circle_packing_26",
+ "model": "poolside/laguna-s-2.1:free",
+ "variant": "no-think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-10-10T10:17:12",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "968c400",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 1.6389893307842416,
+ "improvement": 1.0999175565288632,
+ "llm_calls": 21,
+ "mean_llm_seconds": 45.4,
+ "attempts": 21,
+ "ok": 3,
+ "statuses": {
+  "edit_error": 5,
+  "llm_error": 7,
+  "invalid": 6,
+  "ok": 3
+ },
+ "sweeps": 2,
+ "sweep_variants": 21,
+ "improvements": 1,
+ "minutes_to_best": 12.34,
+ "best_idea": "tuned HEX_RADIUS=0.1 on top of: Replace the naive grid layout with a fixed-radius hexagonal lattice packing optimized for 26 circles, which yields a much larger sum of radii by using uniform circles i",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   12.34,
+   1.6389893307842416
+  ]
+ ],
+ "error": "",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 32.9,
+ "p90_call_seconds": 59.3,
+ "prompt_tokens_per_s": 2485.5,
+ "gen_tokens_per_s": 53.1,
+ "mean_prompt_tokens": 1660,
+ "mean_gen_tokens": 1125,
+ "stopped_calls": 3,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

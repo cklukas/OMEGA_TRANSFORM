@@ -1,0 +1,76 @@
+{
+ "schema": 1,
+ "example": "circle_packing_26",
+ "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-10-10T12:05:17",
+ "minutes_budget": 15.0,
+ "wall_minutes": 18.7,
+ "omega_version": "0.1.0",
+ "omega_commit": "58b0c5a",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 2.4050739767565696,
+ "improvement": 1.614033137433207,
+ "llm_calls": 10,
+ "mean_llm_seconds": 112.2,
+ "attempts": 10,
+ "ok": 3,
+ "statuses": {
+  "invalid": 5,
+  "ok": 3,
+  "edit_error": 1,
+  "llm_error": 1
+ },
+ "sweeps": 3,
+ "sweep_variants": 36,
+ "improvements": 2,
+ "minutes_to_best": 12.98,
+ "best_idea": "tuned OPT_STEPS=4245, PERTURB=0.04072, HEX_OFFSET=0.666 on top of: Replace the simple grid initialization with a hexagonal grid and an exact maximal-radius solver, then add a hill-climbing optimizatio",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   12.98,
+   2.31014500920588
+  ],
+  [
+   12.98,
+   2.4050739767565696
+  ]
+ ],
+ "error": "",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 71.1,
+ "p90_call_seconds": 300.4,
+ "prompt_tokens_per_s": 1992.9,
+ "gen_tokens_per_s": 54.5,
+ "mean_prompt_tokens": 2391,
+ "mean_gen_tokens": 4908,
+ "stopped_calls": 1,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

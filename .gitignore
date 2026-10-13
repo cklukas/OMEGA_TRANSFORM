@@ -1,0 +1,15 @@
+# Copyright (c) 2026 by C. Klukas
+# SPDX-License-Identifier: GPL-3.0-only
+# Search runs: databases, prompts, job directories (large, machine-specific)
+runs/
+examples/*/runs/
+bench/runs/
+bench/explore/
+logs/
+# Built documentation site
+public/
+# Python
+__pycache__/
+*.egg-info/
+build/
+.DS_Store

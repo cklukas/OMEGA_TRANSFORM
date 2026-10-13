@@ -1,0 +1,76 @@
+{
+ "schema": 1,
+ "example": "circle_packing_26",
+ "model": "gemma4:latest",
+ "variant": "no-think",
+ "model_size_gb": 9.5,
+ "model_params": "",
+ "started": "2026-10-13T02:05:36",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "7ceb65c",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 1.94012723633162,
+ "improvement": 1.302009701380961,
+ "llm_calls": 45,
+ "mean_llm_seconds": 19.6,
+ "attempts": 45,
+ "ok": 28,
+ "statuses": {
+  "ok": 28,
+  "llm_error": 1,
+  "invalid": 12,
+  "edit_error": 4
+ },
+ "sweeps": 2,
+ "sweep_variants": 32,
+ "improvements": 2,
+ "minutes_to_best": 11.4,
+ "best_idea": "Restrict the number of generated circles to exactly 26 by trimming the generated list based on a density metric derived from the current radii.",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   9.29,
+   1.4912952213588033
+  ],
+  [
+   11.4,
+   1.94012723633162
+  ]
+ ],
+ "error": "",
+ "model_memory_gb": 14.4,
+ "model_gpu_memory_gb": 14.4,
+ "context_length": 32768,
+ "load_seconds": 146.2,
+ "median_call_seconds": 15.2,
+ "p90_call_seconds": 28.9,
+ "prompt_tokens_per_s": 838.5,
+ "gen_tokens_per_s": 49.6,
+ "mean_prompt_tokens": 3296,
+ "mean_gen_tokens": 571,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

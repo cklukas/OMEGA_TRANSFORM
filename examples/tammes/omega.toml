@@ -1,0 +1,50 @@
+# Copyright (c) 2026 by C. Klukas
+# SPDX-License-Identifier: MIT
+[problem]
+name = "tammes_30"
+language = "python"
+initial = "initial.py"
+category = "Mathematical constructions"
+description = """
+Tammes problem (spherical code): place 30 points on the unit sphere so that the MINIMUM
+ANGLE between any two points is as large as possible. run() returns construct(30): a
+list of 30 (x, y, z) tuples. The evaluator normalizes every vector onto the sphere, so
+only directions matter; zero, infinite or NaN vectors are rejected. Only the Python
+standard library is available (numpy may be missing). The program may run an
+optimization, but must finish well within the time limit (aim for at most 60 seconds of
+CPU time)."""
+metrics_help = """
+score = min_angle_deg, the smallest angle in degrees between any two points (higher is
+better). Metrics: contact_pairs = pairs within 1e-6 degrees of the minimum (optimal
+configurations have many equal shortest distances); mean_nearest_neighbor_deg and
+nearest_neighbor_spread_deg = mean and range of each point's nearest-neighbor angle (a
+small spread means a uniform layout); seconds = CPU time of construct(30)."""
+hints = """
+A Fibonacci (golden-spiral) sphere is a good uniform start. Then minimize a repulsion
+energy: sum over pairs of 1/d^s for the chord distance d, increasing s step by step
+(s = 1 is the Thomson problem; large s approaches the max-min objective), moving each
+point along the negative gradient projected onto the tangent plane and renormalizing.
+Finish with a max-min polish: repeatedly push apart only the closest pairs (those within
+a small margin of the current minimum) with a shrinking step size, or use simulated
+annealing on the minimum angle. Several restarts from different seeds and keeping the
+best result help. Compute the score yourself with the same formula and keep the best
+configuration seen. Use a fixed random seed so the result is reproducible."""
+
+[evaluator]
+command = ["{python}", "evaluate.py", "{candidate}"]
+stages = [{ name = "main", timeout = 120 }]
+concurrency = 4
+
+[llm]
+models = ["qwen3.5:latest"]
+think = false   # true: slower, more deliberate answers
+
+[search]
+iterations = 150
+islands = 4
+migration_interval = 30
+insights_interval = 20
+features = [
+  { name = "code_size", min = 0.25, max = 8.0, bins = 6, log = true },
+  { name = "nearest_neighbor_spread_deg", min = 0.0, max = 30.0, bins = 6 },
+]

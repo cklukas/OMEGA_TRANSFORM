@@ -1,0 +1,23 @@
+<!-- Copyright (c) 2026 by C. Klukas -->
+<!-- SPDX-License-Identifier: GPL-3.0-only -->
+
+# Robustness and safety
+
+Small local models fail in characteristic ways, and the code they write runs
+on your machine. These mechanisms keep a search productive and contained;
+each was added after it was observed in a live run.
+
+| Mechanism | Setting | Why |
+|---|---|---|
+| **Fix-up retry**: a candidate that crashes or fails to compile gets one immediate LLM retry with its error, keeping the idea | `search.fix_retries` (1) | Small models often have the right idea with a small bug |
+| **Edit salvage**: blank-line-tolerant SEARCH matching; a REPLACE containing the whole marked region becomes a rewrite; of restated edits, the last one counts; a full-file rewrite that lost one marker is cut out using the fixed code around the region | always on | Recovered 4 of 5 failed edits in a live run |
+| **Runaway guard**: answers are streamed and stopped beyond 2 × program size + 8000 characters, when they start repeating, or when reasoning exceeds 4 × that budget; closing the stream stops the server too | `llm.max_answer_chars` (auto) | Small models "think" in code comments until the token limit: 28–43k-character answers took about 5 minutes each and could not be applied |
+| **Adaptive strategy**: Thompson sampling over prompt styles and edit modes; configured ratios act as priors | `search.adaptive` (true) | The best mix depends on the problem and model |
+| **Confirm new bests**: re-evaluate an apparent new best (and every sweep winner) and keep the median | `evaluator.confirm_runs` (0; 2 for timing) | Benchmark noise of ±5% otherwise creates false bests |
+| **Quiet benchmarks**: `exclusive` stages hold every LLM slot | always on | Inference on the same machine halved measured GFLOPS |
+| **Sandbox**: macOS `sandbox-exec` or Linux bubblewrap (`bwrap`); build and run processes may write only inside their job dir (TMPDIR too) and have no network. On Linux the problem directory is hidden from candidate code behind an empty tmpfs; macOS refuses reading it | `evaluator.sandbox` (auto) | LLM-written code runs on your machine |
+| **Separate compilation (C/C++)**: the candidate is its own translation unit, compiled without read access to the problem directory; before linking with the harness, its global symbols are checked against `exports` | `evaluator.compile`, `link`, `exports` | In one file, macros from the editable region reached the harness (faking its timing), and a candidate could replace library functions the harness uses |
+| **Candidate isolation**: a Python candidate runs in its own process, started by the engine with a stricter sandbox that cannot read the problem directory; the evaluator calls its functions through `omega_transform.harness` | `evaluator.isolate` (on for Python) | Otherwise a candidate could read the evaluator and its hidden data (a formula, labels, a reference) and score without solving the problem |
+| **Model memory guard**: before a model is loaded (`run`, `check`, `models`, and before every benchmark run), its loaded size is estimated (weights × 1.1 + 1 GB) and compared with the memory free right now, which includes what other applications use, minus a reserve; a model that would not fit is not loaded. Benchmark runs unload their model when they finish | `--reserve-gb` (6) | Ollama decides only by its own estimate and ignores other applications: an 18.6 GB model on a busy 32 GB machine pushed it into 20 GB of swap |
+| **Memory limit**: the job's whole process group is polled; jobs above the limit are killed | `evaluator.max_memory_mb` (4096) | macOS does not enforce memory rlimits |
+| **Deadline**: a worker whose turn comes after `max_minutes` gives up its iteration | always on | A queued slow call could overrun the time limit by tens of minutes |

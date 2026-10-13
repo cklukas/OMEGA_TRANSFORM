@@ -1,0 +1,84 @@
+{
+ "schema": 1,
+ "example": "circle_packing_26",
+ "model": "nvidia/nemotron-3-super-120b-a12b:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-10-10T11:34:42",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "d4dad68",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 2.5045046722293836,
+ "improvement": 1.6807605807144228,
+ "llm_calls": 23,
+ "mean_llm_seconds": 38.6,
+ "attempts": 23,
+ "ok": 19,
+ "statuses": {
+  "ok": 19,
+  "invalid": 2,
+  "llm_error": 1,
+  "edit_error": 1
+ },
+ "sweeps": 10,
+ "sweep_variants": 130,
+ "improvements": 4,
+ "minutes_to_best": 10.66,
+ "best_idea": "tuned INITIAL_STEP=0.07883, STEP_DECAY=0.9843, MIN_STEP=0.0001, INITIAL_OFFSET=0.09298 on top of: Expose the initial offset of the grid points as a tunable constant to allow the optimizer to find a be",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   2.27,
+   1.9651417291555742
+  ],
+  [
+   3.62,
+   2.4681939993962376
+  ],
+  [
+   7.87,
+   2.4931456551935853
+  ],
+  [
+   10.66,
+   2.5045046722293836
+  ]
+ ],
+ "error": "",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 35.7,
+ "p90_call_seconds": 56.9,
+ "prompt_tokens_per_s": 5062.0,
+ "gen_tokens_per_s": 115.7,
+ "mean_prompt_tokens": 4061,
+ "mean_gen_tokens": 4438,
+ "stopped_calls": 1,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

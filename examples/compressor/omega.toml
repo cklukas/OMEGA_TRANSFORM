@@ -1,0 +1,57 @@
+# Copyright (c) 2026 by C. Klukas
+# SPDX-License-Identifier: MIT
+[problem]
+name = "log_compressor"
+language = "python"
+initial = "initial.py"
+category = "Data and modelling"
+description = """
+Write a LOSSLESS compressor for web-server access logs. The program defines
+compress(data: bytes) -> bytes and decompress(blob: bytes) -> bytes. The evaluator
+compresses a fixed ~440 KB access log (2000 lines, Apache "combined" format):
+  IP - - [DD/Mon/YYYY:HH:MM:SS +0000] "METHOD PATH HTTP/1.1" STATUS SIZE "REFERER" "USER-AGENT"
+Timestamps increase, clients come in sessions (the same IP and user agent for several
+consecutive lines), a few hundred IPs and about ten user agents with skewed popularity,
+paths like /static/..., /products/<category>/<id>, /search?q=..&page=.., /api/v1/cart/<id>.
+decompress(compress(d)) must equal d EXACTLY, byte for byte. This is also checked on
+other inputs (b"", random bytes, a repetitive string, a log made with another seed), so
+the code must handle ANY bytes: a field-aware format needs a safe fallback (for example
+a flag byte plus plain lzma) for input that does not parse or does not round-trip.
+Compress plus decompress of the main log must take at most 20 CPU seconds
+(time.process_time in the program's process). Only the Python standard library may be used (zlib, lzma, bz2,
+struct, re, ...; no numpy)."""
+metrics_help = """
+score = compression ratio = original bytes / compressed bytes of the main log (higher is
+better). The initial zlib level 1 reaches about 11. Reference ratios of general-purpose
+compressors on the same log: zlib9_ratio, bz2_ratio and lzma_ratio (strong field-aware
+schemes should beat all three). other_log_ratio = your ratio on the small log made with
+another seed (not scored). compress_cpu_s / decompress_cpu_s = CPU time on the main log."""
+hints = """
+Plain zlib at a higher level or lzma/bz2 with the best settings is the first easy step
+(try lzma with preset 9 | lzma.PRESET_EXTREME, or a raw LZMA2 filter with lc/lp/pb tuned
+and no container header, FORMAT_RAW, to save header bytes). The big gains come from
+modelling the structure: parse each line into fields and store the fields as separate
+COLUMNS (all IPs, all timestamps, all paths, ...), each compressed on its own, because
+similar values then sit next to each other. Encode timestamps as deltas to the previous
+line (mostly 0-10 seconds) instead of text; IPs, user agents and referers via a small
+dictionary of distinct values plus an index per line, or as "same as previous line" flags
+(sessions repeat them); status codes as a small index; sizes as numbers (static files
+have fixed sizes per path, 304/301 responses have "-"); split paths into a template plus
+numbers. Write numbers as varints or fixed-width bytes and let lzma or bz2 squeeze each
+column. Always verify the round trip inside compress() and fall back to a generic mode
+(flag byte + lzma of the raw data) when parsing fails or the line format differs."""
+
+[evaluator]
+command = ["{python}", "evaluate.py", "{candidate}"]
+stages = [{ name = "main", timeout = 120 }]
+concurrency = 4
+
+[llm]
+models = ["qwen3.5:latest"]
+think = false
+
+[search]
+iterations = 150
+islands = 3
+migration_interval = 30
+insights_interval = 20

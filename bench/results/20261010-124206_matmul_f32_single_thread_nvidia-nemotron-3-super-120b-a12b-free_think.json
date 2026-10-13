@@ -1,0 +1,85 @@
+{
+ "schema": 1,
+ "example": "matmul_f32_single_thread",
+ "model": "nvidia/nemotron-3-super-120b-a12b:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-10-10T12:42:06",
+ "minutes_budget": 15.0,
+ "wall_minutes": 17.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "ce441b2",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.57117,
+ "best_score": 31.1191,
+ "improvement": 19.80632267673135,
+ "llm_calls": 20,
+ "mean_llm_seconds": 48.5,
+ "attempts": 20,
+ "ok": 12,
+ "statuses": {
+  "ok": 12,
+  "invalid": 1,
+  "compile_error": 4,
+  "llm_error": 1,
+  "duplicate": 2
+ },
+ "sweeps": 5,
+ "sweep_variants": 66,
+ "improvements": 4,
+ "minutes_to_best": 7.81,
+ "best_idea": "tuned IM=8, JM=8, BK=64 on top of: Replace the current panel\u2011update microkernel with a 2D blocked microkernel that computes a small IM\u00d7JM tile of C using registers, reloading a panel of A and B for ea",
+ "progress": [
+  [
+   0.0,
+   1.57117
+  ],
+  [
+   0.78,
+   19.9022
+  ],
+  [
+   3.99,
+   20.7065
+  ],
+  [
+   3.99,
+   25.5203
+  ],
+  [
+   7.81,
+   31.1191
+  ]
+ ],
+ "error": "",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 43.3,
+ "p90_call_seconds": 101.1,
+ "prompt_tokens_per_s": 5142.1,
+ "gen_tokens_per_s": 127.5,
+ "mean_prompt_tokens": 4108,
+ "mean_gen_tokens": 5738,
+ "stopped_calls": 1,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

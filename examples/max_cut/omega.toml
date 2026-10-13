@@ -1,0 +1,53 @@
+# Copyright (c) 2026 by C. Klukas
+# SPDX-License-Identifier: MIT
+[problem]
+name = "max_cut"
+language = "python"
+initial = "initial.py"
+category = "Algorithms and heuristics"
+description = """
+Write a heuristic for weighted max-cut. cut(n, edges) gets the number of nodes n and a
+list of edges (u, v, w) with 0 <= u < v < n, no duplicate pairs and integer weight
+1 <= w <= 10, and must return a list of n sides, each the int 0 or 1. The cut weight is
+the sum of w over edges whose endpoints lie on different sides; the goal is the LARGEST
+cut. It is run on three fixed sparse random graphs: 100 nodes / 400 edges, 200 nodes /
+1200 edges, 400 nodes / 1600 edges. The time limit is 2.0 CPU seconds per graph,
+measured with time.process_time() around the call; using more than 1.5 x the limit
+(3.0 s) makes the program invalid, so check time.process_time() regularly and return
+the best assignment found when time runs out. Only the Python standard library may be
+used (no numpy)."""
+metrics_help = """
+score = mean over the three graphs of (cut weight / total edge weight). Higher is
+better; a random or alternating split gets about 0.5 (the initial program scores about
+0.51), simple one-flip local search about 0.7. Metrics per graph: <name>_cut,
+<name>_total, <name>_ratio, <name>_cpu_s."""
+hints = """
+Known levers, roughly in order of payoff: build adjacency lists once; keep for every node
+its gain (weight to its own side minus weight to the other side) and update the gains
+of the neighbours incrementally after each flip instead of recomputing; greedy
+construction (place nodes one by one on the side that cuts more weight to already
+placed nodes); one-flip local search until no positive gain remains; tabu search (flip
+the best non-tabu node even when the gain is negative, forbid flipping it back for a
+tenure of roughly n/10 to n/5 steps plus randomness, aspiration when a move beats the
+best cut); restarts or perturbations (flip a random 5-10% of the nodes) from the best
+solution, keeping the best assignment found; memetic search that combines two good
+assignments (keep the nodes where both agree) and re-optimizes."""
+
+[evaluator]
+command = ["{python}", "evaluate.py", "{candidate}"]
+stages = [{ name = "main", timeout = 60 }]
+concurrency = 4
+
+[llm]
+models = ["qwen3.5:latest"]
+think = false
+
+[search]
+iterations = 150
+islands = 3
+migration_interval = 30
+insights_interval = 20
+features = [
+  { name = "code_size", min = 0.25, max = 6.0, bins = 6, log = true },
+  { name = "time_used", min = 0.0, max = 1.0, bins = 4 },
+]

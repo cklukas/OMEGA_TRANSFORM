@@ -1,0 +1,72 @@
+{
+ "schema": 1,
+ "example": "circle_packing_26",
+ "model": "gemma4:e2b",
+ "variant": "no-think",
+ "model_size_gb": 7.2,
+ "model_params": "5.1B",
+ "started": "2026-10-09T23:37:23",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "bf87865",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 1.638989330784242,
+ "improvement": 1.0999175565288635,
+ "llm_calls": 74,
+ "mean_llm_seconds": 11.8,
+ "attempts": 74,
+ "ok": 46,
+ "statuses": {
+  "ok": 46,
+  "invalid": 9,
+  "edit_error": 12,
+  "duplicate": 5,
+  "timeout": 1,
+  "llm_error": 1
+ },
+ "sweeps": 2,
+ "sweep_variants": 28,
+ "improvements": 1,
+ "minutes_to_best": 2.62,
+ "best_idea": "tuned cols=5, rows=8 on top of: Adjust the center placement to use a more standard hexagonal packing layout to better approximate the optimal density, which should lead to a higher sum of radii.",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   2.62,
+   1.638989330784242
+  ]
+ ],
+ "error": "",
+ "model_memory_gb": 6.6,
+ "model_gpu_memory_gb": 6.6,
+ "context_length": 32768,
+ "load_seconds": 43.1,
+ "median_call_seconds": 10.2,
+ "p90_call_seconds": 22.4,
+ "prompt_tokens_per_s": 919.3,
+ "gen_tokens_per_s": 56.7,
+ "mean_prompt_tokens": 3816,
+ "mean_gen_tokens": 396,
+ "stopped_calls": 1
+}

@@ -1,0 +1,53 @@
+# Copyright (c) 2026 by C. Klukas
+# SPDX-License-Identifier: MIT
+[problem]
+name = "matmul_f32_single_thread"
+language = "cpp"
+initial = "matmul.cpp"
+category = "Performance (C++)"
+context_files = ["harness.cpp"]
+description = """
+Make the C++ function matmul(n, A, B, C) (single precision, row-major, C = A*B) use as
+little CPU time as possible on ONE core of this machine (Apple Silicon, ARM NEON available
+via <arm_neon.h>). The time is measured with the process CPU clock, so extra threads do
+not help: their CPU time adds up. It must stay correct for every n from 1 to 2048,
+including sizes that are not multiples of any block size, and must write every element
+of C."""
+metrics_help = """
+score = GFLOPS per CPU-second at n = 768 (best of 5 runs): 2*n^3 / CPU seconds / 1e9.
+Correctness is checked first on n = 1, 7, 64, 131, 257; any wrong result makes the
+program invalid."""
+hints = """
+Known levers, roughly in order of payoff: loop order i-k-j so the inner loop streams
+rows of B and C; cache blocking/tiling; register blocking (a micro-kernel computing a
+small tile of C held in registers, e.g. 4x16 or 8x8 floats); NEON fma intrinsics
+(vfmaq_f32, vfmaq_laneq_f32) or code the compiler auto-vectorizes; packing panels of A
+and B into contiguous buffers; unrolling the k loop."""
+
+[evaluator]
+# Separate compilation: the candidate is compiled on its own (without read access to this
+# directory), may define only matmul globally, and is then linked with harness.cpp.
+compile = ["clang++", "-O3", "-march=native", "-std=c++20", "-c", "{candidate}", "-o", "{object}"]
+link = ["clang++", "-O3", "-march=native", "-std=c++20", "{object}", "{problem_dir}/harness.cpp", "-o", "{binary}"]
+exports = ["matmul"]
+command = ["{python}", "evaluate.py", "{binary}", "{stage}"]
+# CPU time is robust to other programs taking turns on the cores, so the benchmark
+# stage may run beside other evaluations; confirm_runs guards the remaining noise
+# (shared caches and memory bandwidth).
+stages = [
+  { name = "check", timeout = 60 },
+  { name = "bench", timeout = 120 },
+]
+concurrency = 4
+confirm_runs = 2
+
+[llm]
+models = ["qwen3.5:latest"]
+think = false
+num_ctx = 32768
+
+[search]
+iterations = 150
+islands = 3
+migration_interval = 30
+insights_interval = 20

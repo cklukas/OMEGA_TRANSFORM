@@ -1,0 +1,121 @@
+{
+ "schema": 1,
+ "example": "circle_packing_26",
+ "model": "nvidia/nemotron-3-super-120b-a12b:free",
+ "variant": "no-think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-10-10T09:32:01",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "968c400",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 2.01308544050497,
+ "improvement": 1.350971587926426,
+ "llm_calls": 108,
+ "mean_llm_seconds": 8.1,
+ "attempts": 108,
+ "ok": 63,
+ "statuses": {
+  "llm_error": 6,
+  "edit_error": 5,
+  "ok": 63,
+  "duplicate": 16,
+  "invalid": 18
+ },
+ "sweeps": 28,
+ "sweep_variants": 390,
+ "improvements": 13,
+ "minutes_to_best": 14.98,
+ "best_idea": "tuned cols=6, rows=5, scale_x=0.98, scale_y=1.02 on top of: Increase the number of local optimization steps from 0 to 200 to iteratively improve circle positions and sum of radii, as done in higher-sc",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   0.74,
+   1.506607674121878
+  ],
+  [
+   0.79,
+   1.6316466730036479
+  ],
+  [
+   1.19,
+   1.6326801597499625
+  ],
+  [
+   1.93,
+   1.6752454964043209
+  ],
+  [
+   3.09,
+   1.6793683389445961
+  ],
+  [
+   6.32,
+   1.6951245604635587
+  ],
+  [
+   6.88,
+   1.6967369490888422
+  ],
+  [
+   7.75,
+   1.716989233981793
+  ],
+  [
+   9.23,
+   1.8110582337175882
+  ],
+  [
+   9.23,
+   1.8703963384415385
+  ],
+  [
+   11.22,
+   1.9439281771213595
+  ],
+  [
+   12.43,
+   1.945566046962855
+  ],
+  [
+   14.98,
+   2.01308544050497
+  ]
+ ],
+ "error": "",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 6.8,
+ "p90_call_seconds": 14.9,
+ "prompt_tokens_per_s": 5751.5,
+ "gen_tokens_per_s": 132.7,
+ "mean_prompt_tokens": 5620,
+ "mean_gen_tokens": 895,
+ "stopped_calls": 6,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

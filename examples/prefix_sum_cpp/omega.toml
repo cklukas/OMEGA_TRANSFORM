@@ -1,0 +1,68 @@
+# Copyright (c) 2026 by C. Klukas
+# SPDX-License-Identifier: MIT
+[problem]
+name = "prefix_sum_histogram_single_thread"
+language = "cpp"
+initial = "scan.cpp"
+category = "Performance (C++)"
+context_files = ["harness.cpp"]
+description = """
+Make the C++ function scan_and_histogram(in, out, n, hist) use as little CPU time as
+possible on ONE core of this machine (Apple Silicon, ARM NEON available via
+<arm_neon.h>). It computes two things in one call over n int64_t values:
+  out[i] = in[0] + in[1] + ... + in[i]   (inclusive prefix sum), and
+  hist[b] = number of i with (in[i] & 255) == b, for all 256 bins b (uint64_t counts).
+The time is measured with the process CPU clock, so extra threads do not help: their
+CPU time adds up. Results must be EXACTLY equal to a simple reference loop for every n
+from 0 to 20'000'000; neither out nor hist is zeroed by the caller, so every element
+and every bin must be written. The benchmark uses n = 10'000'000 values in
+[-2^31, 2^31) (sums cannot overflow); about half of them have low byte 0 and a quarter
+come in runs sharing one low byte, so a few histogram bins are very hot.
+
+Why the histogram: a plain prefix sum alone is a one-line loop the compiler already
+handles close to the memory limit, which would leave little to improve. The fused
+histogram with hot bins makes the straightforward loop stall on repeated
+read-modify-write of the same counter, so there is real headroom while the prefix sum
+still has to stream 80 MB in and 80 MB out."""
+metrics_help = """
+score = GB of input (8 bytes per element) processed per CPU-second at n = 10'000'000
+(best of 30 runs). ns_per_element is the same time per element. Correctness is checked
+first on n = 0, 1, 7, 1001, 65537, and on every benchmark run; any wrong out element,
+wrong bin, or write past the end of out or hist[255] makes the program invalid."""
+hints = """
+Known levers: several private sub-histograms (e.g. 4 or 8 arrays of uint32_t counts,
+element i going to sub-histogram i % k) so consecutive increments of a hot bin do not
+form one long store-to-load dependency chain, summed into hist at the end (uint32_t
+is enough per chunk of under 2^32 elements); unrolling the main loop; keeping the
+running sum in a register and breaking its serial dependency (e.g. two partial sums
+over adjacent halves of a block, or a NEON pairwise scan with vaddq_s64 and
+vextq_s64); special-casing bin 0; prefetching (__builtin_prefetch) and processing
+cache-sized blocks; avoiding int64 -> size_t index conversions in the hot loop."""
+
+[evaluator]
+# Separate compilation: the candidate is compiled on its own (without read access to this
+# directory), may define only scan_and_histogram globally, and is then linked with harness.cpp.
+compile = ["clang++", "-O3", "-march=native", "-std=c++20", "-c", "{candidate}", "-o", "{object}"]
+link = ["clang++", "-O3", "-march=native", "-std=c++20", "{object}", "{problem_dir}/harness.cpp", "-o", "{binary}"]
+exports = ["scan_and_histogram"]
+command = ["{python}", "evaluate.py", "{binary}", "{stage}"]
+# CPU time is robust to other programs taking turns on the cores, so the benchmark
+# stage may run beside other evaluations; confirm_runs guards the remaining noise
+# (shared caches and memory bandwidth).
+stages = [
+  { name = "check", timeout = 60 },
+  { name = "bench", timeout = 120 },
+]
+concurrency = 4
+confirm_runs = 2
+
+[llm]
+models = ["qwen3.5:latest"]
+think = false
+num_ctx = 32768
+
+[search]
+iterations = 150
+islands = 3
+migration_interval = 30
+insights_interval = 20

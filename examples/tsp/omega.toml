@@ -1,0 +1,53 @@
+# Copyright (c) 2026 by C. Klukas
+# SPDX-License-Identifier: MIT
+[problem]
+name = "tsp_heuristic"
+language = "python"
+initial = "initial.py"
+category = "Algorithms and heuristics"
+description = """
+Write a fast heuristic for the Euclidean traveling salesman problem. solve(points,
+time_limit) gets a list of (x, y) city coordinates in the unit square and must return a
+closed tour as a permutation of range(len(points)): every city exactly once (the tour
+returns from the last city to the first). The goal is the SHORTEST tour. It is run on
+three fixed instances of 200, 500 and 1000 uniform random cities. time_limit is 2.0 CPU
+seconds per instance, measured with time.process_time() around the call; using more
+than 1.5 x the limit (3.0 s) makes the program invalid, so check time.process_time()
+regularly and return the best tour found when time runs out. Only the Python standard
+library may be used (no numpy). Threads do not help: their CPU time adds up."""
+metrics_help = """
+score = mean over the three instances of (nearest-neighbour tour length / your tour
+length). The reference is the nearest-neighbour tour from city 0, so the initial program
+scores 1.0; good local search reaches about 1.2 to 1.25. Metrics per instance:
+<name>_length (your tour), <name>_nn_length (reference), <name>_ratio, <name>_cpu_s."""
+hints = """
+Known levers, roughly in order of payoff: improve the start tour (greedy edge matching
+or space-filling curve instead of nearest neighbour); 2-opt local search restricted to
+candidate neighbour lists (the 8-12 nearest cities of each city, found with a grid of
+cells instead of an O(n^2) scan) with don't-look bits; Or-opt moves (move a segment of
+1-3 cities elsewhere, possibly reversed); keep the tour in an array plus a position
+array so a 2-opt reversal flips the shorter side; 3-opt 'segment insertion' moves,
+or a Lin-Kernighan style chain of moves for the strongest results; when stuck,
+perturb with a random double-bridge kick on a small local segment and re-optimize only
+around it (iterated local search), keeping the best tour. Precompute coordinates in
+local lists, avoid function calls and attribute lookups in inner loops, use math.hypot or squared
+distances where possible, and keep a safety margin to the time limit."""
+
+[evaluator]
+command = ["{python}", "evaluate.py", "{candidate}"]
+stages = [{ name = "main", timeout = 60 }]
+concurrency = 4
+
+[llm]
+models = ["qwen3.5:latest"]
+think = false
+
+[search]
+iterations = 150
+islands = 3
+migration_interval = 30
+insights_interval = 20
+features = [
+  { name = "code_size", min = 0.25, max = 6.0, bins = 6, log = true },
+  { name = "time_used", min = 0.0, max = 1.0, bins = 4 },
+]

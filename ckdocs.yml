@@ -1,0 +1,43 @@
+# Copyright (c) 2026 by C. Klukas
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# The documentation site, built by ckdocs (the documentation-site generator
+# of ck-git-hosting) from docs/ and published on the self-hosted ck-git Pages
+# (.ckgit/ci.yml). configuration.md and cli.md are generated from the code
+# (`omega docs`, gated by tests/test_docs.py); benchmarks.md is generated from
+# the committed bench/results/ (`omega report`), regenerated in CI.
+version: 1
+site:
+  title: OMEGA TRANSFORM
+  logo: docs/assets/omega-icon.svg
+  description: Evolutionary program optimization with local language models for Python and C/C++, entirely on your own machine.
+  footer: "© 2026 C. Klukas · GPL-3.0-only (interface LGPL-3.0-only, examples MIT)"
+search: true
+nav:
+  - title: Home
+    page: docs/index.md
+  - title: Start here
+    pages:
+      - docs/getting-started.md
+      - docs/examples.md
+      - docs/defining-problems.md
+  - title: Concepts
+    pages:
+      - docs/how-it-works.md
+      - docs/sweeps.md
+      - docs/robustness.md
+  - title: Models
+    pages:
+      - docs/benchmarking.md
+      - docs/benchmarks.md
+      - docs/cloud-models.md
+      - docs/openrouter-models.md
+  - title: Reference
+    pages:
+      - docs/configuration.md
+      - docs/cli.md
+  - title: Development
+    pages:
+      - docs/development.md
+      - docs/roadmap.md
+      - docs/license.md

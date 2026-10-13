@@ -1,0 +1,75 @@
+{
+ "schema": 1,
+ "example": "matmul_f32_single_thread",
+ "model": "gemma4:12b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 7.2,
+ "model_params": "11.9B",
+ "started": "2026-10-13T04:51:50",
+ "minutes_budget": 15.0,
+ "wall_minutes": 18.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "7ceb65c",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.36162,
+ "best_score": 19.353,
+ "improvement": 14.213216609626768,
+ "llm_calls": 13,
+ "mean_llm_seconds": 74.9,
+ "attempts": 13,
+ "ok": 6,
+ "statuses": {
+  "compile_error": 4,
+  "ok": 6,
+  "invalid": 3
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 2,
+ "minutes_to_best": 10.52,
+ "best_idea": "Fix the compilation error by using a `const float*` for the B row and use `vld1q_f32` on the `const float*` directly to satisfy the ARM NEON requirements.",
+ "progress": [
+  [
+   0.0,
+   1.36162
+  ],
+  [
+   4.24,
+   18.3146
+  ],
+  [
+   10.52,
+   19.353
+  ]
+ ],
+ "error": "",
+ "model_memory_gb": 7.7,
+ "model_gpu_memory_gb": 7.7,
+ "context_length": 32768,
+ "load_seconds": 149.6,
+ "median_call_seconds": 70.9,
+ "p90_call_seconds": 97.2,
+ "prompt_tokens_per_s": 221.6,
+ "gen_tokens_per_s": 21.6,
+ "mean_prompt_tokens": 3412,
+ "mean_gen_tokens": 932,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -1,0 +1,66 @@
+{
+ "schema": 1,
+ "example": "matmul_f32",
+ "model": "qwen3.5:latest",
+ "variant": "no-think",
+ "model_size_gb": 6.6,
+ "model_params": "9.7B",
+ "started": "2026-10-09T23:52:27",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "bf87865",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.50421,
+ "best_score": 1.50421,
+ "improvement": 1.0,
+ "llm_calls": 11,
+ "mean_llm_seconds": 82.2,
+ "attempts": 11,
+ "ok": 0,
+ "statuses": {
+  "llm_error": 3,
+  "edit_error": 2,
+  "invalid": 3,
+  "compile_error": 3
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 0,
+ "minutes_to_best": null,
+ "best_idea": "initial program",
+ "progress": [
+  [
+   0.0,
+   1.50421
+  ]
+ ],
+ "error": "",
+ "model_memory_gb": 6.7,
+ "model_gpu_memory_gb": 6.7,
+ "context_length": 32768,
+ "load_seconds": 0.2,
+ "median_call_seconds": 72.1,
+ "p90_call_seconds": 139.7,
+ "prompt_tokens_per_s": 374.5,
+ "gen_tokens_per_s": 30.6,
+ "mean_prompt_tokens": 2390,
+ "mean_gen_tokens": 1624,
+ "stopped_calls": 3
+}

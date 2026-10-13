@@ -1,0 +1,47 @@
+# Copyright (c) 2026 by C. Klukas
+# SPDX-License-Identifier: MIT
+[problem]
+name = "matmul_f32"
+language = "cpp"
+initial = "matmul.cpp"
+category = "Performance (C++)"
+context_files = ["harness.cpp"]
+description = """
+Make the C++ function matmul(n, A, B, C) (single precision, row-major, C = A*B) as FAST
+as possible on this machine (Apple Silicon, 10 cores, ARM NEON available via
+<arm_neon.h>). It must stay correct for every n from 1 to 2048, including sizes that are
+not multiples of any block size, and must write every element of C."""
+metrics_help = """
+score = GFLOPS at n = 1024 (best of 3 runs). Correctness is checked first on
+n = 1, 7, 64, 131, 257; any wrong result makes the program invalid."""
+hints = """
+Known levers, roughly in order of payoff: loop order i-k-j so the inner loop streams
+rows of B and C; cache blocking/tiling; register blocking (micro-kernel computing a
+small tile of C held in registers); NEON fma intrinsics (vfmaq_f32) or code the compiler
+auto-vectorizes; packing B into contiguous panels; multithreading over row blocks with
+std::thread (10 cores)."""
+
+[evaluator]
+# Separate compilation: the candidate is compiled on its own (without read access to this
+# directory), may define only matmul globally, and is then linked with harness.cpp.
+compile = ["clang++", "-O3", "-march=native", "-std=c++20", "-pthread", "-c", "{candidate}", "-o", "{object}"]
+link = ["clang++", "-O3", "-march=native", "-std=c++20", "-pthread", "{object}", "{problem_dir}/harness.cpp", "-o", "{binary}"]
+exports = ["matmul"]
+command = ["{python}", "evaluate.py", "{binary}", "{stage}"]
+stages = [
+  { name = "check", timeout = 60 },
+  { name = "bench", timeout = 120, exclusive = true },
+]
+concurrency = 4
+confirm_runs = 2   # timing noise is about ±5%: a new best must hold up in 3 runs (median)
+
+[llm]
+models = ["qwen3.5:latest"]
+think = false   # true: slower, more deliberate answers
+num_ctx = 32768
+
+[search]
+iterations = 150
+islands = 3
+migration_interval = 30
+insights_interval = 20

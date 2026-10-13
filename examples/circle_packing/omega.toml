@@ -1,0 +1,45 @@
+# Copyright (c) 2026 by C. Klukas
+# SPDX-License-Identifier: MIT
+[problem]
+name = "circle_packing_26"
+language = "python"
+initial = "initial.py"
+category = "Mathematical constructions"
+description = """
+Place 26 non-overlapping circles inside the unit square [0,1]x[0,1] so that the SUM OF
+THEIR RADII is as large as possible. run() returns construct_packing(26): a list of 26
+(x, y, r) tuples. Circles must lie fully inside the square and must not overlap
+(tolerance 1e-9). The best known value is about 2.635. The program may use numpy if it
+is installed, may run an optimization (for example on the centers with radii derived
+from them), but must finish within the time limit."""
+metrics_help = """
+score = sum of radii. Metrics: ratio_to_best_known (1.0 = the best known 2.635),
+min_radius/max_radius, seconds = CPU time of construct_packing."""
+hints = """
+Good packings mix circle sizes, put large circles in the interior and small ones in the
+corners and gaps. Strong approaches: start from a hexagonal-like or ring layout and
+optimize centers and radii jointly (penalty method or projected gradient steps on
+the overlap and boundary constraints), then compute exact feasible radii at the end."""
+
+[evaluator]
+command = ["{python}", "evaluate.py", "{candidate}"]
+stages = [{ name = "main", timeout = 120 }]
+concurrency = 6
+
+[llm]
+models = ["qwen3.5:latest"]
+think = false   # true: slower, more deliberate answers
+temperature = 0.8
+num_ctx = 32768
+concurrency = 1
+
+[search]
+iterations = 200
+islands = 4
+migration_interval = 30
+insights_interval = 20
+num_inspirations = 2
+features = [
+  { name = "code_size", min = 0.25, max = 6.0, bins = 6, log = true },
+  { name = "radius_spread", min = 0.0, max = 0.2, bins = 5 },
+]
