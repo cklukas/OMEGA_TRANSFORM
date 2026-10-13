@@ -169,7 +169,7 @@ each kind of code it contains. Every file names its license in an
 | Part | License | Text |
 |---|---|---|
 | The framework: `omega_transform/`, tests, scripts, documentation | GPL-3.0-only | [`LICENSE`](LICENSE) |
-| The evaluator interface: `omega_transform/harness.py`, `omega_transform/candidate_runner.py` | LGPL-3.0-only | [`COPYING.LESSER`](COPYING.LESSER), on top of [`LICENSE`](LICENSE) |
+| The evaluator interface: `omega_transform/harness.py`, `omega_transform/candidate_runner.py` | LGPL-3.0-only | [`LICENSES/LGPL-3.0-only.txt`](LICENSES/LGPL-3.0-only.txt), on top of [`LICENSE`](LICENSE) |
 | The examples: `examples/` | MIT | [`examples/LICENSE`](examples/LICENSE) |
 
 Why three, and what this means for using the project:

@@ -20,7 +20,7 @@ each kind of code it contains. Every file names its license in an
 | Part | License | Text |
 |---|---|---|
 | The framework: `omega_transform/`, tests, scripts, documentation | GPL-3.0-only | `LICENSE` |
-| The evaluator interface: `omega_transform/harness.py`, `omega_transform/candidate_runner.py` | LGPL-3.0-only | `COPYING.LESSER`, on top of `LICENSE` |
+| The evaluator interface: `omega_transform/harness.py`, `omega_transform/candidate_runner.py` | LGPL-3.0-only | `LICENSES/LGPL-3.0-only.txt`, on top of `LICENSE` |
 | The examples: `examples/` | MIT | `examples/LICENSE` |
 
 Why three, and what this means for using the project:
@@ -43,5 +43,5 @@ Why three, and what this means for using the project:
 
 This summary is meant as orientation; the license texts are what counts.
 
-The license texts are in the root of the repository (`LICENSE`,
-`COPYING.LESSER`) and in `examples/LICENSE`.
+The license texts are in the repository: `LICENSE` (GPL),
+`LICENSES/LGPL-3.0-only.txt` and `examples/LICENSE` (MIT).
