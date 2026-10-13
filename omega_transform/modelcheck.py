@@ -194,6 +194,33 @@ def check_models(models: list[dict], base: str, log=print, **kw) -> list[ModelCh
     return out
 
 
+def keep_tested(checks: list[ModelCheck], path) -> tuple[list[ModelCheck], list[str]]:
+    """Models that could not be loaded now for lack of free memory keep the result
+    of the previous check in ``path``, if that one really tested them: memory that
+    other applications hold for a while says nothing about the model, and the
+    benchmark reads only models marked ok. Returns the checks and the names kept."""
+    from dataclasses import fields
+    from pathlib import Path
+    p = Path(path)
+    if not p.exists():
+        return checks, []
+    try:
+        previous = {m["model"]: m for m in json.loads(p.read_text()).get("models", [])}
+    except (ValueError, KeyError):
+        return checks, []
+    names = {f.name for f in fields(ModelCheck)}
+    out, kept = [], []
+    for c in checks:
+        old = previous.get(c.model)
+        if c.verdict == "not enough RAM" and old and old.get("verdict") not in (
+                None, "", "not enough RAM"):
+            out.append(ModelCheck(**{k: v for k, v in old.items() if k in names}))
+            kept.append(c.model)
+        else:
+            out.append(c)
+    return out, kept
+
+
 def save(checks: list[ModelCheck], path) -> None:
     from pathlib import Path
     p = Path(path)

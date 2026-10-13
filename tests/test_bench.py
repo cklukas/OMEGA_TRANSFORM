@@ -109,6 +109,25 @@ class BenchTest(unittest.TestCase):
                                   {"model": "b", "verdict": "slow"}]}, f)
         self.assertEqual(feasible_names(f.name), {"a"})
 
+    def test_check_without_memory_keeps_the_earlier_result(self):
+        import json
+        from omega_transform.modelcheck import ModelCheck, keep_tested
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "check.json"
+            self.assertEqual(keep_tested([], path), ([], []))  # no earlier file
+            path.write_text(json.dumps({"models": [
+                {"model": "a", "params": "7B", "size_gb": 4.7, "thinking_capable": False,
+                 "verdict": "ok", "gen_tokens_per_s": 30.0},
+                {"model": "b", "params": "", "size_gb": 9.0, "thinking_capable": False,
+                 "verdict": "not enough RAM"}]}))
+            now = [ModelCheck("a", "7B", 4.7, False, verdict="not enough RAM"),
+                   ModelCheck("b", "", 9.0, False, verdict="not enough RAM"),
+                   ModelCheck("c", "", 2.0, False, verdict="broken")]
+            checks, kept = keep_tested(now, path)
+        self.assertEqual(kept, ["a"])
+        self.assertEqual([c.verdict for c in checks], ["ok", "not enough RAM", "broken"])
+        self.assertEqual(checks[0].gen_tokens_per_s, 30.0)
+
     def test_local_and_cloud_models_are_separate_sections(self):
         base = {"example": "toy", "minutes_budget": 5, "initial_score": 1.0, "attempts": 2,
                 "ok": 1, "best_score": 2.0}

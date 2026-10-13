@@ -269,7 +269,7 @@ def cmd_models(a) -> int:
     """Quick feasibility check of the installed models."""
     from .bench import installed_models
     from .config import LLMConfig
-    from .modelcheck import ModelCheck, check_models, save
+    from .modelcheck import ModelCheck, check_models, keep_tested, save
 
     base = (a.base_url or LLMConfig().base_url).rstrip("/")
     models = installed_models(base)
@@ -297,6 +297,10 @@ def cmd_models(a) -> int:
               f"{c.gen_tokens_per_s or '-':>6} {c.memory_gb or '-':>6} {yn(c.hello_ok):5s} "
               f"{yn(c.edit_ok):4s} {yn(c.think_ok)}")
     if a.out:
+        checks, kept = keep_tested(checks, a.out)
+        if kept:
+            print(f"\nkept the earlier results of {len(kept)} model(s) that did not fit in "
+                  f"memory now: {', '.join(kept)}")
         save(checks, a.out)
         print(f"\nwrote {a.out}; {sum(c.feasible for c in checks)} of {len(checks)} models "
               f"are feasible")
