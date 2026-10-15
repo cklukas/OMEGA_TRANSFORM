@@ -187,8 +187,9 @@ def cloud_inference_section(example: str, rows: list[dict], level: str) -> str:
 # Who develops a model, from its name: the first matching prefix wins.
 DEVELOPERS = [("gemma", "Google"), ("gpt-oss", "OpenAI"), ("qwen", "Alibaba (Qwen)"),
               ("nvidia/", "NVIDIA"), ("cohere/", "Cohere"), ("poolside/", "Poolside"),
-              ("llama", "Meta"), ("mistral", "Mistral AI"), ("deepseek", "DeepSeek"),
-              ("phi", "Microsoft")]
+              ("llama", "Meta"), ("muse", "Meta"), ("meta/", "Meta"),
+              ("phi", "Microsoft"), ("frognano", "Microsoft"), ("microsoft/", "Microsoft"),
+              ("mistral", "Mistral AI"), ("deepseek", "DeepSeek")]
 
 
 def developer(model: str) -> str:
@@ -270,6 +271,16 @@ def ranking_section(results: list[dict]) -> str:
              "won and the examples without any gain are shown alongside. Only models with "
              "results on at least three quarters of the examples are ranked; the others "
              "follow without a rank.\n"]
+    by_dev: dict[str, dict[bool, set]] = defaultdict(lambda: {True: set(), False: set()})
+    for r in results:
+        by_dev[developer(r["model"])][r.get("provider", "ollama") == "ollama"].add(r["model"])
+    parts.append("\n### Models by developer\n\nEvery benchmarked model and the company that "
+                 "develops it, which the comparisons below group by.\n\n"
+                 "| Developer | Local models (Ollama) | Cloud models (OpenRouter) |\n"
+                 "|---|---|---|\n")
+    for who in sorted(by_dev, key=lambda w: (w == "other", w)):
+        local_m, cloud_m = (", ".join(sorted(by_dev[who][k])) or "–" for k in (True, False))
+        parts.append(f"| {who} | {local_m} | {cloud_m} |\n")
     for title, local in (("Local models", True), ("Cloud models (OpenRouter)", False)):
         by_example = {}
         for example, by_model in latest.items():

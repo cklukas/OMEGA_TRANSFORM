@@ -83,7 +83,8 @@ class BenchTest(unittest.TestCase):
         ]
         page = render(results)
         self.assertIn("## toy", page)
-        self.assertLess(page.index("| b:7b"), page.index("| a:1b"))  # best first
+        section = page[page.index("## toy"):]
+        self.assertLess(section.index("| b:7b"), section.index("| a:1b"))  # best first
         self.assertIn("xychart-beta", page)
         self.assertIn('x-axis ["b:7b", "a:1b"]', page)
         self.assertIn("failed: model failed to load", page)
@@ -117,8 +118,11 @@ class BenchTest(unittest.TestCase):
         self.assertEqual({e["label"]: e["share"] for e in ranking(failed)}, {"a": 1.0, "b": 0.0})
         from omega_transform.report import developer, developer_ranking
         self.assertEqual([developer(m) for m in ("gemma4:e2b", "gpt-oss:20b", "qwen3-coder:30b",
-                                                 "nvidia/nemotron-x:free", "unknown:1b")],
-                         ["Google", "OpenAI", "Alibaba (Qwen)", "NVIDIA", "other"])
+                                                 "nvidia/nemotron-x:free", "unknown:1b",
+                                                 "richardyoung/frognano-4b-2609",
+                                                 "muse-glimmer:30b")],
+                         ["Google", "OpenAI", "Alibaba (Qwen)", "NVIDIA", "other",
+                          "Microsoft", "Meta"])
         devs = developer_ranking([{"label": "g1", "model": "gemma4:a", "share": 0.9,
                                    "by_example": {"x": 1.0, "y": 0.8}},
                                   {"label": "g2", "model": "gemma4:b", "share": 0.5,
@@ -132,6 +136,8 @@ class BenchTest(unittest.TestCase):
         self.assertAlmostEqual(g["pick_share"], 1.0)  # best of the family per example
         page = ranking_section([r for rows in by_example.values() for r in rows])
         self.assertIn("## Overall ranking", page)
+        self.assertIn("### Models by developer", page)
+        self.assertIn("| other | a, b | – |", page)
         self.assertIn("| 1 | b | **83%** |", page)
 
     def test_model_check_section(self):
@@ -175,6 +181,7 @@ class BenchTest(unittest.TestCase):
         page = render([dict(base, model="m:1", provider="ollama", started="1"),
                        dict(base, model="v/x:free", provider="openrouter", started="2",
                             gen_tokens_per_s=150.0, cost_usd=0.0)])
+        page = page[page.index("## toy"):]  # the example's own section, after the ranking
         local, cloud = page.index("### Local models"), page.index("### Cloud models (OpenRouter)")
         self.assertLess(page.index("| m:1 |"), cloud)
         self.assertGreater(page.index("| v/x:free |"), cloud)
