@@ -196,7 +196,9 @@ DEVELOPERS = [("gemma", "Google"), ("gpt-oss", "OpenAI"), ("qwen", "Alibaba (Qwe
               ("granite", "IBM"), ("ibm-granite/", "IBM"), ("kimi", "Moonshot AI"),
               ("moonshotai/", "Moonshot AI"), ("minimax", "MiniMax"),
               ("olmo", "Allen AI"), ("allenai/", "Allen AI"), ("exaone", "LG"),
-              ("lfm", "Liquid AI"), ("liquid/", "Liquid AI")]
+              ("lfm", "Liquid AI"), ("liquid/", "Liquid AI"), ("llm-jp", "NII (LLM-jp)"),
+              ("sakana/", "Sakana AI"), ("kolibri", "Aleph Alpha"),
+              ("aleph-alpha/", "Aleph Alpha")]
 
 
 # Short profiles of the developers, as of October 2026: (founded, headquarters, about).
@@ -253,6 +255,18 @@ DEVELOPER_INFO = {
                  "are fully open, including training data and code."),
     "LG": ("2020", "Seoul, South Korea",
            "LG AI Research, the AI lab of the LG group, develops the EXAONE models."),
+    "NII (LLM-jp)": ("2000", "Tokyo, Japan",
+                     "Japan's National Institute of Informatics leads LLM-jp, a consortium of "
+                     "universities and companies that has trained fully open Japanese-English "
+                     "models from scratch since 2023 (LLM-jp-4 in 2026, Apache 2.0)."),
+    "Sakana AI": ("2023", "Tokyo, Japan",
+                  "Research company known for nature-inspired methods such as evolutionary "
+                  "model merging; offers the Fugu orchestration system and the Japanese-tuned "
+                  "Namazu as paid APIs."),
+    "Aleph Alpha": ("2019", "Heidelberg, Germany",
+                    "Germany's best-known model developer, focused on sovereign AI for the "
+                    "public sector and industry; released the open-weight German-English "
+                    "Kolibri (78B, Apache 2.0) in October 2026 and agreed to merge with Cohere."),
     "Liquid AI": ("2023", "Cambridge, USA",
                   "A spin-off of MIT's computer science lab; its LFM models use a hybrid "
                   "architecture built for running on devices."),

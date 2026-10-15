@@ -126,6 +126,9 @@ class BenchTest(unittest.TestCase):
         self.assertEqual([developer(m) for m in ("devstral-small-2:24b", "glm-4.7-flash:latest",
                                                  "granite4.2:30b", "z-ai/glm-5.3:free")],
                          ["Mistral AI", "Z.ai", "IBM", "Z.ai"])
+        self.assertEqual([developer(m) for m in ("ki-krugle-jp/llm-jp-4-8b-thinking:q4_k_m",
+                                                 "sakana/fugu-max", "robit/kolibri-1")],
+                         ["NII (LLM-jp)", "Sakana AI", "Aleph Alpha"])
         devs = developer_ranking([{"label": "g1", "model": "gemma4:a", "share": 0.9,
                                    "by_example": {"x": 1.0, "y": 0.8}},
                                   {"label": "g2", "model": "gemma4:b", "share": 0.5,
