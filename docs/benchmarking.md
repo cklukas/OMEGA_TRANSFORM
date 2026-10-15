@@ -134,6 +134,11 @@ single model, the mean share over all its models, and the mean share when its
 best model is picked for each example separately. The last column favours
 developers with many models; the number of models is shown next to it.
 
+A country leaderboard follows: each country is represented by its best
+ranked model (the country of a model is that of its developer's
+headquarters), and every other country's lag behind the leader is given as
+the relative shortfall of its share, 1 − share / leader's share.
+
 ## Publishing results
 
 After each run, the benchmark regenerates `docs/benchmarks.md`. To publish,

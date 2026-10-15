@@ -290,6 +290,12 @@ DEVELOPER_INFO = {
 }
 
 
+def country(who: str) -> str:
+    """A developer's country, from the headquarters in its profile."""
+    info = DEVELOPER_INFO.get(who)
+    return info[1].rsplit(",", 1)[-1].strip() if info else "unknown"
+
+
 def developer(model: str) -> str:
     name = model.lower()
     for prefix, who in DEVELOPERS:
@@ -354,6 +360,23 @@ def developer_ranking(ranked: list[dict]) -> list[dict]:
                     "mean_share": sum(e["share"] for e in models) / len(models),
                     "pick_share": sum(per_example) / len(per_example)})
     return sorted(out, key=lambda d: -d["best_share"])
+
+
+def country_ranking(ranked: list[dict]) -> list[dict]:
+    """Countries by their best ranked model, with each country's lag behind the
+    leading one (1 - share / leader's share)."""
+    best: dict[str, dict] = {}
+    count: dict[str, int] = defaultdict(int)
+    for e in ranked:
+        c = country(developer(e["model"]))
+        count[c] += 1
+        if c not in best or e["share"] > best[c]["share"]:
+            best[c] = e
+    rows = sorted(best.items(), key=lambda kv: -kv[1]["share"])
+    lead = rows[0][1]["share"] if rows else 0.0
+    return [{"country": c, "label": e["label"], "developer": developer(e["model"]),
+             "share": e["share"], "models": count[c],
+             "lag": (1 - e["share"] / lead) if lead > 0 else 0.0} for c, e in rows]
 
 
 def ranking_section(results: list[dict]) -> str:
@@ -421,6 +444,18 @@ def ranking_section(results: list[dict]) -> str:
                 parts.append(f"| {d['developer']} | {d['models']} | {d['best_label']} | "
                              f"**{d['best_share']:.0%}** | {d['mean_share']:.0%} | "
                              f"{d['pick_share']:.0%} |\n")
+        countries = country_ranking(full)
+        if len(countries) > 1:
+            parts.append("\n#### By country\n\nEach country is represented by its best "
+                         "ranked model; the country of a model is that of its developer's "
+                         "headquarters. The lag is how far its share falls short of the "
+                         "leading country's, relative to that share.\n\n"
+                         "| # | Country | Best model | Developer | Share | Lag behind #1 "
+                         "| Models |\n|--:|---|---|---|--:|--:|--:|\n")
+            for i, c in enumerate(countries, 1):
+                lag = "–" if i == 1 else f"−{c['lag']:.0%}"
+                parts.append(f"| {i} | {c['country']} | {c['label']} | {c['developer']} | "
+                             f"**{c['share']:.0%}** | {lag} | {c['models']} |\n")
         if len(full) > 1:
             tag = "local" if local else "cloud"
             parts.append("\n" + bar_chart(

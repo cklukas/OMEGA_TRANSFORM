@@ -148,6 +148,18 @@ class BenchTest(unittest.TestCase):
         self.assertAlmostEqual(g["pick_share"], 1.0)  # best of the family per example
         page = ranking_section([r for rows in by_example.values() for r in rows])
         self.assertIn("## Overall ranking", page)
+        from omega_transform.report import country, country_ranking
+        self.assertEqual([country(w) for w in ("Google", "Mistral AI", "Swiss AI Initiative",
+                                               "Alibaba (Qwen)", "nobody")],
+                         ["USA", "France", "Switzerland", "China", "unknown"])
+        cr = country_ranking([{"label": "g", "model": "gemma4:a", "share": 0.8},
+                              {"label": "o", "model": "gpt-oss:20b", "share": 0.6},
+                              {"label": "q", "model": "qwen3:8b", "share": 0.6},
+                              {"label": "m", "model": "devstral:24b", "share": 0.2}])
+        self.assertEqual([(c["country"], c["label"], c["models"]) for c in cr],
+                         [("USA", "g", 2), ("China", "q", 1), ("France", "m", 1)])
+        self.assertAlmostEqual(cr[1]["lag"], 0.25)
+        self.assertAlmostEqual(cr[2]["lag"], 0.75)
         self.assertIn("### Models by developer", page)
         self.assertIn("| other | a, b | – |", page)
         from omega_transform.report import DEVELOPERS, DEVELOPER_INFO
