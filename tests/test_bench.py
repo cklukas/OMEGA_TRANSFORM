@@ -93,6 +93,47 @@ class BenchTest(unittest.TestCase):
         self.assertEqual(score_at([[0, 1.0], [6, 2.0]], 5), 1.0)
         self.assertIn("No benchmark results", render([]))
 
+    def test_overall_ranking_weights_every_example_equally(self):
+        from omega_transform.report import ranking, ranking_section
+        def run(example, model, init, best, **kw):
+            return dict(example=example, model=model, initial_score=init, best_score=best,
+                        improvement=best / init, started="1", **kw)
+        by_example = {
+            # a huge gain on one example must not outweigh the other examples
+            "matmul": [run("matmul", "a", 1, 100), run("matmul", "b", 1, 50)],
+            "tsp": [run("tsp", "a", 1, 1.0), run("tsp", "b", 1, 1.2)],
+            "sort": [run("sort", "a", 2, 2.2), run("sort", "b", 2, 2.4)],
+            "flat": [run("flat", "a", 1, 1), run("flat", "b", 1, 1)],  # no information
+        }
+        ranked = {e["label"]: e for e in ranking(by_example)}
+        self.assertEqual(ranked["a"]["examples"], 3)
+        self.assertAlmostEqual(ranked["a"]["share"], (1 + 0 + 0.5) / 3)
+        self.assertAlmostEqual(ranked["b"]["share"], (49 / 99 + 1 + 1) / 3)
+        self.assertEqual((ranked["a"]["wins"], ranked["b"]["wins"]), (1, 2))
+        self.assertEqual(ranked["a"]["no_gain"], 1)
+        self.assertEqual([e["label"] for e in ranking(by_example)], ["b", "a"])
+        # a failed run counts as no gain
+        failed = {"x": [run("x", "a", 1, 2), dict(run("x", "b", 1, 3), error="boom")]}
+        self.assertEqual({e["label"]: e["share"] for e in ranking(failed)}, {"a": 1.0, "b": 0.0})
+        from omega_transform.report import developer, developer_ranking
+        self.assertEqual([developer(m) for m in ("gemma4:e2b", "gpt-oss:20b", "qwen3-coder:30b",
+                                                 "nvidia/nemotron-x:free", "unknown:1b")],
+                         ["Google", "OpenAI", "Alibaba (Qwen)", "NVIDIA", "other"])
+        devs = developer_ranking([{"label": "g1", "model": "gemma4:a", "share": 0.9,
+                                   "by_example": {"x": 1.0, "y": 0.8}},
+                                  {"label": "g2", "model": "gemma4:b", "share": 0.5,
+                                   "by_example": {"x": 0.0, "y": 1.0}},
+                                  {"label": "o", "model": "gpt-oss:20b", "share": 0.95,
+                                   "by_example": {"x": 0.9, "y": 1.0}}])
+        self.assertEqual([d["developer"] for d in devs], ["OpenAI", "Google"])
+        g = devs[1]
+        self.assertEqual((g["models"], g["best_label"]), (2, "g1"))
+        self.assertAlmostEqual(g["mean_share"], 0.7)
+        self.assertAlmostEqual(g["pick_share"], 1.0)  # best of the family per example
+        page = ranking_section([r for rows in by_example.values() for r in rows])
+        self.assertIn("## Overall ranking", page)
+        self.assertIn("| 1 | b | **83%** |", page)
+
     def test_model_check_section(self):
         check = {"checked": "2026-10-09T21:30:00", "models": [
             {"model": "good:1", "size_gb": 6.6, "verdict": "ok", "hello_ok": True, "edit_ok": True},

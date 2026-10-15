@@ -10,6 +10,7 @@ the published charts always match the committed numbers.
 from __future__ import annotations
 
 import json
+import math
 from collections import defaultdict
 from pathlib import Path
 
@@ -183,6 +184,136 @@ def cloud_inference_section(example: str, rows: list[dict], level: str) -> str:
     return "".join(out)
 
 
+# Who develops a model, from its name: the first matching prefix wins.
+DEVELOPERS = [("gemma", "Google"), ("gpt-oss", "OpenAI"), ("qwen", "Alibaba (Qwen)"),
+              ("nvidia/", "NVIDIA"), ("cohere/", "Cohere"), ("poolside/", "Poolside"),
+              ("llama", "Meta"), ("mistral", "Mistral AI"), ("deepseek", "DeepSeek"),
+              ("phi", "Microsoft")]
+
+
+def developer(model: str) -> str:
+    name = model.lower()
+    for prefix, who in DEVELOPERS:
+        if name.startswith(prefix) or name.split("/")[-1].startswith(prefix):
+            return who
+    return "other"
+
+
+def ranking(rows_by_example: dict[str, list[dict]]) -> list[dict]:
+    """Rank models across examples whose scores are not comparable with each other.
+
+    Per example, a run's gain is its improvement over the initial program relative
+    to the initial score; its share is that gain over the largest gain any model
+    reached on that example (1 = the best model, 0 = no gain or a failed run).
+    Examples where no model gained anything carry no information and are left out.
+    A model's rank comes from its mean share; the geometric mean of its
+    improvement factors is shown alongside, each example weighted equally.
+    """
+    per: dict[str, dict] = defaultdict(lambda: {"shares": [], "logs": [], "wins": 0,
+                                                "no_gain": 0})
+    for rows in rows_by_example.values():
+        def gain(r):
+            init = r.get("initial_score")
+            if r.get("error") or r.get("best_score") is None or not init:
+                return 0.0
+            return max(0.0, (r["best_score"] - init) / abs(init))
+        gains = {label(r): gain(r) for r in rows}
+        top = max(gains.values(), default=0.0)
+        if top <= 0:
+            continue
+        winner = max(rows, key=lambda r: gains[label(r)])
+        per[label(winner)]["wins"] += 1
+        for r in rows:
+            e = per[label(r)]
+            e["shares"].append(gains[label(r)] / top)
+            e["model"] = r["model"]
+            e.setdefault("by_example", {})[r["example"]] = gains[label(r)] / top
+            e["logs"].append(math.log(max(r.get("improvement") or 1.0, 1e-9)))
+            e["no_gain"] += gains[label(r)] == 0
+    out = [{"label": k, "model": v["model"], "by_example": v["by_example"],
+            "examples": len(v["shares"]),
+            "share": sum(v["shares"]) / len(v["shares"]),
+            "geo_gain": math.exp(sum(v["logs"]) / len(v["logs"])),
+            "wins": v["wins"], "no_gain": v["no_gain"]} for k, v in per.items()]
+    return sorted(out, key=lambda e: -e["share"])
+
+
+def developer_ranking(ranked: list[dict]) -> list[dict]:
+    """Compare developers by their models' shares (from ``ranking``): their best
+    single model, the mean over all their models, and the mean over the examples
+    of their best model on each example."""
+    groups: dict[str, list[dict]] = defaultdict(list)
+    for e in ranked:
+        groups[developer(e["model"])].append(e)
+    out = []
+    for who, models in groups.items():
+        best = max(models, key=lambda e: e["share"])
+        examples = sorted({x for e in models for x in e["by_example"]})
+        per_example = [max(e["by_example"].get(x, 0.0) for e in models) for x in examples]
+        out.append({"developer": who, "models": len(models), "best_label": best["label"],
+                    "best_share": best["share"],
+                    "mean_share": sum(e["share"] for e in models) / len(models),
+                    "pick_share": sum(per_example) / len(per_example)})
+    return sorted(out, key=lambda d: -d["best_share"])
+
+
+def ranking_section(results: list[dict]) -> str:
+    """The overall ranking, one table per group (local and cloud models)."""
+    latest = latest_per_model(results)
+    parts = ["\n## Overall ranking\n\n"
+             "Scores of different examples cannot be added up (a matrix multiply gains "
+             "×80, a route heuristic ×1.1), so every example is weighted equally: per "
+             "example, a model's **share** is its gain over the starting program as a "
+             "fraction of the largest gain any model of its group reached there (100% "
+             "= the best model, 0% = no gain). The ranking is the mean share over the "
+             "examples; the geometric mean of the improvement factors, the examples "
+             "won and the examples without any gain are shown alongside. Only models with "
+             "results on at least three quarters of the examples are ranked; the others "
+             "follow without a rank.\n"]
+    for title, local in (("Local models", True), ("Cloud models (OpenRouter)", False)):
+        by_example = {}
+        for example, by_model in latest.items():
+            rows = [r for r in by_model.values()
+                    if (r.get("provider", "ollama") == "ollama") == local]
+            if len(rows) > 1:
+                by_example[example] = rows
+        ranked = ranking(by_example)
+        if not ranked:
+            continue
+        parts.append(f"\n### {title}\n\n"
+                     "| # | Model | Share of best gain | Geometric-mean gain | Wins "
+                     "| No gain | Examples |\n|--:|---|--:|--:|--:|--:|--:|\n")
+        most = max(e["examples"] for e in ranked)
+        full = [e for e in ranked if 4 * e["examples"] >= 3 * most]
+        rest = [e for e in ranked if e not in full]
+        for i, e in enumerate(full + rest, 1):
+            rank = str(i) if i <= len(full) else "–"
+            parts.append(f"| {rank} | {e['label']} | **{e['share']:.0%}** | "
+                         f"×{e['geo_gain']:.2f} | {e['wins']} | {e['no_gain']} | "
+                         f"{e['examples']} |\n")
+        devs = developer_ranking(full)
+        if len(devs) > 1:
+            parts.append("\n#### By developer\n\nThe ranked models above, grouped by the "
+                         "company that develops them: the developer's best single model, "
+                         "the mean share over all its models, and the mean share when its "
+                         "best model is picked for each example separately (which favours "
+                         "developers with many models).\n\n"
+                         "| Developer | Models | Best model | Best model's share "
+                         "| Mean over its models | Best per example |\n"
+                         "|---|--:|---|--:|--:|--:|\n")
+            for d in devs:
+                parts.append(f"| {d['developer']} | {d['models']} | {d['best_label']} | "
+                             f"**{d['best_share']:.0%}** | {d['mean_share']:.0%} | "
+                             f"{d['pick_share']:.0%} |\n")
+        if len(full) > 1:
+            tag = "local" if local else "cloud"
+            parts.append("\n" + bar_chart(
+                f"Overall, {tag}: mean share of the best gain (%)",
+                [chart_label({"model": e["label"]}) for e in full],
+                [100 * e["share"] for e in full], "% of the best gain"))
+    return "".join(parts)
+
+
 def render(results: list[dict], check: dict | None = None) -> str:
     parts = [HEADER]
     if check:
@@ -196,6 +327,7 @@ def render(results: list[dict], check: dict | None = None) -> str:
                  f"cores, {m.get('memory_gb', '?')} GB"
                  + (f" — results come from {len(machines)} different machines" if len(machines) > 1
                     else "") + ".\n")
+    parts.append(ranking_section(results))
     for example, by_model in sorted(latest_per_model(results).items()):
         rows = list(by_model.values())
         budget = max(r.get("minutes_budget", 0) for r in rows)

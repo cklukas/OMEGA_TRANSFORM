@@ -115,6 +115,25 @@ Each run writes `bench/results/<time>_<example>_<model>.json` with:
 The full run directories go to `bench/runs/`, which is not committed. They
 can be inspected with the usual commands (`status`, `lineage`, `stats`).
 
+## The overall ranking
+
+Scores of different examples are not comparable: a matrix multiply can gain
+×80 while a route heuristic gains ×1.1, so adding up improvement factors would
+only rank the C++ kernels. The benchmark page therefore weights every example
+equally. Per example, each model's gain over the starting program is divided
+by the largest gain any model reached there, giving its share (100% for the
+best model, 0% for no gain or a failed run); the ranking is the mean share
+over the examples. The geometric mean of the improvement factors, the number
+of examples won and the number without any gain are shown alongside, local
+and cloud models in separate tables. Models with results on fewer than three
+quarters of the examples are listed without a rank.
+
+Below each ranking, the models are grouped by their developer (Google for
+Gemma, OpenAI for gpt-oss, Alibaba for Qwen, and so on): the developer's best
+single model, the mean share over all its models, and the mean share when its
+best model is picked for each example separately. The last column favours
+developers with many models; the number of models is shown next to it.
+
 ## Publishing results
 
 After each run, the benchmark regenerates `docs/benchmarks.md`. To publish,
