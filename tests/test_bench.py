@@ -129,6 +129,12 @@ class BenchTest(unittest.TestCase):
         self.assertEqual([developer(m) for m in ("ki-krugle-jp/llm-jp-4-8b-thinking:q4_k_m",
                                                  "sakana/fugu-max", "robit/kolibri-1")],
                          ["NII (LLM-jp)", "Sakana AI", "Aleph Alpha"])
+        self.assertEqual([developer(m) for m in ("ingu627/exaone4.0:32b",
+                                                 "Bored/GigaChat3.1-10B-A1.8B-q4_K_M:latest",
+                                                 "yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest",
+                                                 "MichelRosselli/apertus:8b-instruct-2509-q4_k_m",
+                                                 "frob/sarvam:30b")],
+                         ["LG", "Sber", "Yandex", "Swiss AI Initiative", "Sarvam AI"])
         devs = developer_ranking([{"label": "g1", "model": "gemma4:a", "share": 0.9,
                                    "by_example": {"x": 1.0, "y": 0.8}},
                                   {"label": "g2", "model": "gemma4:b", "share": 0.5,

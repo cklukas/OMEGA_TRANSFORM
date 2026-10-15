@@ -198,7 +198,9 @@ DEVELOPERS = [("gemma", "Google"), ("gpt-oss", "OpenAI"), ("qwen", "Alibaba (Qwe
               ("olmo", "Allen AI"), ("allenai/", "Allen AI"), ("exaone", "LG"),
               ("lfm", "Liquid AI"), ("liquid/", "Liquid AI"), ("llm-jp", "NII (LLM-jp)"),
               ("sakana/", "Sakana AI"), ("kolibri", "Aleph Alpha"),
-              ("aleph-alpha/", "Aleph Alpha")]
+              ("aleph-alpha/", "Aleph Alpha"), ("gigachat", "Sber"),
+              ("yandex", "Yandex"), ("apertus", "Swiss AI Initiative"),
+              ("swiss-ai/", "Swiss AI Initiative"), ("sarvam", "Sarvam AI")]
 
 
 # Short profiles of the developers, as of October 2026: (founded, headquarters, about).
@@ -267,6 +269,21 @@ DEVELOPER_INFO = {
                     "Germany's best-known model developer, focused on sovereign AI for the "
                     "public sector and industry; released the open-weight German-English "
                     "Kolibri (78B, Apache 2.0) in October 2026 and agreed to merge with Cohere."),
+    "Sber": ("1841", "Moscow, Russia",
+             "Russia's largest bank; develops the GigaChat family and has published "
+             "open-weight GigaChat models under the MIT license since 2025, up to the 432B "
+             "GigaChat 3.5 Ultra (July 2026)."),
+    "Yandex": ("1997", "Moscow, Russia",
+               "Russia's largest search engine; published YandexGPT 5 Lite (8B) as open "
+               "weights in 2025, while its flagship models (now Alice AI) remain proprietary."),
+    "Swiss AI Initiative": ("2023", "Lausanne and Zurich, Switzerland",
+                            "A joint effort of EPFL, ETH Zurich and the national supercomputing "
+                            "centre CSCS; its Apertus models (2025) are fully open, with "
+                            "training data and recipes, under Apache 2.0."),
+    "Sarvam AI": ("2023", "Bengaluru, India",
+                  "Builds models for India's languages; released the Sarvam 30B and 105B "
+                  "mixture-of-experts models (March 2026, Apache 2.0), trained in India under "
+                  "the national IndiaAI mission."),
     "Liquid AI": ("2023", "Cambridge, USA",
                   "A spin-off of MIT's computer science lab; its LFM models use a hybrid "
                   "architecture built for running on devices."),
