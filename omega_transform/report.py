@@ -189,7 +189,14 @@ DEVELOPERS = [("gemma", "Google"), ("gpt-oss", "OpenAI"), ("qwen", "Alibaba (Qwe
               ("nvidia/", "NVIDIA"), ("cohere/", "Cohere"), ("poolside/", "Poolside"),
               ("llama", "Meta"), ("muse", "Meta"), ("meta/", "Meta"),
               ("phi", "Microsoft"), ("frognano", "Microsoft"), ("microsoft/", "Microsoft"),
-              ("mistral", "Mistral AI"), ("deepseek", "DeepSeek")]
+              ("mistral", "Mistral AI"), ("devstral", "Mistral AI"),
+              ("codestral", "Mistral AI"), ("magistral", "Mistral AI"),
+              ("ministral", "Mistral AI"), ("mistralai/", "Mistral AI"),
+              ("deepseek", "DeepSeek"), ("glm", "Z.ai"), ("z-ai/", "Z.ai"),
+              ("granite", "IBM"), ("ibm-granite/", "IBM"), ("kimi", "Moonshot AI"),
+              ("moonshotai/", "Moonshot AI"), ("minimax", "MiniMax"),
+              ("olmo", "Allen AI"), ("allenai/", "Allen AI"), ("exaone", "LG"),
+              ("lfm", "Liquid AI"), ("liquid/", "Liquid AI")]
 
 
 def developer(model: str) -> str:
