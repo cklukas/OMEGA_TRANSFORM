@@ -199,6 +199,66 @@ DEVELOPERS = [("gemma", "Google"), ("gpt-oss", "OpenAI"), ("qwen", "Alibaba (Qwe
               ("lfm", "Liquid AI"), ("liquid/", "Liquid AI")]
 
 
+# Short profiles of the developers, as of October 2026: (founded, headquarters, about).
+# The page shows those whose models appear in the results.
+DEVELOPER_INFO = {
+    "Alibaba (Qwen)": ("1999", "Hangzhou, China",
+                       "China's largest e-commerce and cloud group. Its Qwen team has released "
+                       "open-weight models since 2023, in many sizes and mostly under Apache 2.0; "
+                       "Qwen is among the most widely used open model families."),
+    "Google": ("1998", "Mountain View, USA",
+               "Publishes the Gemma family as open-weight models since 2024, built from the "
+               "research behind its larger proprietary models, from phone-sized to mid-sized models."),
+    "OpenAI": ("2015", "San Francisco, USA",
+               "Best known for ChatGPT and its proprietary GPT models; gpt-oss (August 2025, "
+               "Apache 2.0) were its first open-weight language models since GPT-2 in 2019."),
+    "NVIDIA": ("1993", "Santa Clara, USA",
+               "The leading maker of AI accelerators. Its Nemotron models are open-weight, often "
+               "with their training data published, and partly built on other open models."),
+    "Cohere": ("2019", "Toronto, Canada",
+               "Builds language models for enterprise use (the Command family); some are "
+               "published as open weights."),
+    "Poolside": ("2023", "Paris, France",
+                 "Founded by a former GitHub CTO to build models for software development, "
+                 "trained with reinforcement learning from executing code; Laguna is its "
+                 "open-weight line (2026)."),
+    "Microsoft": ("1975", "Redmond, USA",
+                  "Publishes small open models under the MIT license: the Phi family since 2023 "
+                  "and, in 2026, FrogNano, a 4B coding agent built on Qwen3.5-4B and trained "
+                  "with reinforcement learning on software-engineering tasks."),
+    "Meta": ("2004", "Menlo Park, USA",
+             "Opened up large models with Llama (2023–2025); its newer Muse family is mostly "
+             "proprietary, with Muse Glimmer (30B, Apache 2.0, August 2026) and a large Muse "
+             "Spark released as open weights."),
+    "Mistral AI": ("2023", "Paris, France",
+                   "Europe's largest developer of language models; publishes open-weight "
+                   "general models and the Codestral and Devstral coding models."),
+    "Z.ai": ("2019", "Beijing, China",
+             "Founded as Zhipu AI, a spin-off of Tsinghua University; develops the GLM family, "
+             "whose recent models are among the strongest open-weight coding models."),
+    "IBM": ("1911", "Armonk, USA",
+            "Publishes the Granite family for enterprise use (coding, RAG, tool use) as "
+            "open-weight models under Apache 2.0."),
+    "DeepSeek": ("2023", "Hangzhou, China",
+                 "Funded by the hedge fund High-Flyer; its open-weight R1 and V3 models "
+                 "(2025) matched leading proprietary models at a fraction of the cost."),
+    "Moonshot AI": ("2023", "Beijing, China",
+                    "Develops the Kimi models, large open-weight mixture-of-experts models for "
+                    "agentic coding."),
+    "MiniMax": ("2021", "Shanghai, China",
+                "Founded by former SenseTime researchers, listed in Hong Kong since 2026; "
+                "publishes large open-weight models for coding and agents."),
+    "Allen AI": ("2014", "Seattle, USA",
+                 "The non-profit Allen Institute for AI, founded by Paul Allen; its OLMo models "
+                 "are fully open, including training data and code."),
+    "LG": ("2020", "Seoul, South Korea",
+           "LG AI Research, the AI lab of the LG group, develops the EXAONE models."),
+    "Liquid AI": ("2023", "Cambridge, USA",
+                  "A spin-off of MIT's computer science lab; its LFM models use a hybrid "
+                  "architecture built for running on devices."),
+}
+
+
 def developer(model: str) -> str:
     name = model.lower()
     for prefix, who in DEVELOPERS:
@@ -288,6 +348,13 @@ def ranking_section(results: list[dict]) -> str:
     for who in sorted(by_dev, key=lambda w: (w == "other", w)):
         local_m, cloud_m = (", ".join(sorted(by_dev[who][k])) or "–" for k in (True, False))
         parts.append(f"| {who} | {local_m} | {cloud_m} |\n")
+    known = [w for w in sorted(by_dev) if w in DEVELOPER_INFO]
+    if known:
+        parts.append("\n**About the developers** (as of October 2026; many of these companies "
+                     "and their open models are only a few years old):\n\n")
+        for who in known:
+            founded, where, about = DEVELOPER_INFO[who]
+            parts.append(f"- **{who}** (founded {founded}, {where}): {about}\n")
     for title, local in (("Local models", True), ("Cloud models (OpenRouter)", False)):
         by_example = {}
         for example, by_model in latest.items():

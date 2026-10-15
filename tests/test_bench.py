@@ -141,6 +141,12 @@ class BenchTest(unittest.TestCase):
         self.assertIn("## Overall ranking", page)
         self.assertIn("### Models by developer", page)
         self.assertIn("| other | a, b | – |", page)
+        from omega_transform.report import DEVELOPERS, DEVELOPER_INFO
+        self.assertFalse({who for _, who in DEVELOPERS} - set(DEVELOPER_INFO),
+                         "every developer needs a profile")
+        g = ranking_section([dict(run("x", "gemma4:e2b", 1, 2)), dict(run("x", "gpt-oss:20b", 1, 3))])
+        self.assertIn("- **Google** (founded 1998, Mountain View, USA):", g)
+        self.assertNotIn("**Mistral AI**", g)  # only developers with results
         self.assertIn("| 1 | b | **83%** |", page)
 
     def test_model_check_section(self):
