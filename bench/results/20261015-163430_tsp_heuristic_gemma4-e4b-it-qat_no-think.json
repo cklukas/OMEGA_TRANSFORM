@@ -1,0 +1,111 @@
+{
+ "schema": 2,
+ "example": "tsp_heuristic",
+ "model": "gemma4:e4b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 6.1,
+ "model_params": "7.5B",
+ "started": "2026-10-15T16:34:30",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.0,
+ "best_score": 1.137680773990785,
+ "improvement": 1.137680773990785,
+ "llm_calls": 43,
+ "mean_llm_seconds": 21.1,
+ "attempts": 43,
+ "ok": 26,
+ "statuses": {
+  "ok": 26,
+  "invalid": 12,
+  "edit_error": 4,
+  "llm_error": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 4,
+ "minutes_to_best": 7.43,
+ "best_idea": "Replace the greedy first-improvement strategy in 2-opt with a full pass iteration (iteratively improving until no local improvement is found in one pass) to avoid premature convergence.",
+ "progress": [
+  [
+   0.0,
+   1.0
+  ],
+  [
+   2.15,
+   1.0861281769027051
+  ],
+  [
+   2.53,
+   1.1350777981001665
+  ],
+  [
+   6.51,
+   1.137607592059474
+  ],
+  [
+   7.43,
+   1.137680773990785
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.0,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 4.79,
+   "score": 1.0953984511288886,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Implement a standard 2-opt local search starting from the nearest neighbor tour to iteratively improve the tour length, as this is a known high-impact heuristic."
+  },
+  {
+   "minutes": 7.43,
+   "score": 1.137680773990785,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the greedy first-improvement strategy in 2-opt with a full pass iteration (iteratively improving until no local improvement is found in one pass) to avoid premature convergence."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -21,13 +21,70 @@\n     Current method: plain nearest-neighbour construction starting at city 0.\n     \"\"\"\n     n = len(points)\n+    \n+    # Nearest Neighbour construction\n     unvisited = set(range(1, n))\n     tour = [0]\n-    x, y = points[0]\n+    current_city = 0\n     while unvisited:\n-        nxt = min(unvisited, key=lambda j: (points[j][0] - x) ** 2 + (points[j][1] - y) ** 2)\n-        unvisited.remove(nxt)\n-        tour.append(nxt)\n-        x, y = points[nxt]\n-    return tour\n+        best_nxt = -1\n+        min_dist_sq = float('inf')\n+        for j in unvisited:\n+            d_sq = (points[current_city][0] - points[j][0])**2 + (points[current_city][1] - points[j][1])**2\n+            if d_sq < min_dist_sq:\n+                min_dist_sq = d_sq\n+                best_nxt = j\n+        \n+        tour.append(best_nxt)\n+        unvisited.remove(best_nxt)\n+        current_city = best_nxt\n+\n+    best_tour = list(tour)\n+    \n+    # Helper functions\n+    def dist(i, j):\n+        p1, p2 = points[i], points[j]\n+        return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)\n+\n+    # 2-Opt Local Search\n+    start_time = time.process_time()\n+    while time.process_time() - start_time < time_limit * 0.95:\n+        improved = False\n+        for i in range(n - 1):\n+            for k in range(i + 1, n):\n+                # Check for 2-opt improvement by reversing segment tour[i+1:k+1]\n+                # Edges replaced: (tour[i], tour[i+1]) and (tour[k], tour[k+1] or tour[0])\n+                # New edges: (tour[i], tour[k]) and (tour[i+1], tour[k+1] or tour[0])\n+                \n+                p_i = best_tour[i]\n+                p_i1 = best_tour[i+1]\n+                p_k = best_tour[k]\n+                \n+                # Handle wrap around for the second edge: (tour[k], tour[k+1])\n+                if k == n - 1:\n+                    p_k1 = best_tour[0]\n+                else:\n+                    p_k1 = best_tour[k+1]\n+\n+                # Ensure the swap is valid (i and k are not adjacent/endpoints of the full cycle segment)\n+                if k == i+1: continue \n+                \n+                # Calculate old distance\n+                old_dist = dist(p_i, p_i1) + dist(p_k, p_k1)\n+                \n+                # Calculate new distance\n+                new_dist = dist(p_i, p_k) + dist(p_i1, p_k1)\n+\n+                if new_dist < old_dist:\n+                    # Perform 2-opt swap: reverse the segment tour[i+1:k+1]\n+                    new_tour = list(best_tour)\n+                    segment = new_tour[i+1:k+1]\n+                    segment.reverse()\n+                    new_tour[i+1:k+1] = segment\n+                    \n+                    best_tour = new_tour\n+                    improved = True\n+                    # Continue search from the current iteration (Iterative improvement)\n+                \n+    return best_tour\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 5.7,
+ "model_gpu_memory_gb": 5.7,
+ "context_length": 32768,
+ "load_seconds": 94.0,
+ "median_call_seconds": 15.8,
+ "p90_call_seconds": 35.1,
+ "prompt_tokens_per_s": 600.3,
+ "gen_tokens_per_s": 59.4,
+ "mean_prompt_tokens": 4585,
+ "mean_gen_tokens": 624,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

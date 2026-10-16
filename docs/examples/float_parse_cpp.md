@@ -73,4 +73,70 @@ extern "C" size_t parse_doubles(const char* buf, size_t len, double* out) {
 
 ## Benchmark results
 
-This example has not been benchmarked yet. See [Benchmarking models](../benchmarking.md) for how to run it.
+The best result so far comes from **gemma4:latest (no-think)**, run locally with Ollama on 2026-10-14: a score of **347.6860** (×1.10 the starting program's 316.3600), reached after 15.14 of 15 minutes with 65 model requests.
+
+### How it got there
+
+The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.
+
+| Step | Minute | Score | Kind | Idea |
+|--:|--:|--:|---|---|
+| 0 | 0.0 | 316.3600 | start | initial program |
+| 1 | 3.4 | compile error | edit | Replace the slow `std::strtod` calls with a character-by-character parsing loop that leverages the known structure (terminator is always '\n') for a faster path, improving throughput. |
+| 2 | 4.7 | 330.8340 | fix-up | Correct the `strtod` usage by correctly advancing the pointer after parsing a number to skip the mandatory newline character. |
+| 3 | 5.9 | 342.6620 | edit | Replace the conditional check for '\n' with a direct advance using pointer arithmetic, as `std::strtod` is known to stop right before the terminator, and the terminator is always '\n'. |
+| 4 | 15.1 | 347.6860 | edit | Replace the `while (p < end)` loop condition with a comparison against the guaranteed buffer length for potential branch prediction benefits, as the termination condition is extremely strict. |
+
+### The best program
+
+What changed compared with the starting program:
+
+```diff
+--- initial
++++ best
+@@ -34,11 +34,19 @@
+     const char* p = buf;
+     const char* end = buf + len;
+     size_t count = 0;
+-    while (p < end) {
+-        char* next;
+-        out[count++] = std::strtod(p, &next);
+-        p = next;
+-        while (p < end && *p == '\n') ++p;
++    while ((p < buf + len) && (p < end)) {
++        // Fast path simulation: since we are constrained to exactness,
++        // we cannot write a full custom parser here without violating
++        // the spirit of the constraints (only small improvements to strtod usage).
++        // We replace the strtod call with a simple loop that advances past '\n',
++        // as the primary bottleneck is the function call overhead and minimal data processing.
++        // A full implementation requires complex state machine, which is outside the scope
++        // of a single, safe modification here, and strtod is the required ground truth.
++        // We minimize the loop overhead.
++        char* next_start;
++        double val = std::strtod(p, &next_start);
++        out[count++] = val;
++        p = next_start + 1;
+     }
+     return count;
+ }
+```
+
+### All models
+
+The latest run per model and reasoning mode; the [model benchmarks](../benchmarks.md#float_parse_single_thread) page has speed, memory and progress over time.
+
+| Model | Where | Best | Gain | Minutes to best | New bests |
+|---|---|--:|--:|--:|--:|
+| gemma4:latest (no-think) | local | 347.6860 | ×1.10 | 15.1 | 6 |
+| qwen2.5-coder:7b (no-think) | local | 341.3640 | ×1.08 | 13.6 | 3 |
+| gemma4:26b-a4b-it-qat (no-think) | local | 338.0720 | ×1.06 | 12.2 | 4 |
+| qwen3-coder:30b (no-think) | local | 335.8920 | ×1.04 | 6.5 | 1 |
+| gpt-oss:20b (no-think) | local | 334.3880 | ×1.04 | 3.7 | 1 |
+| qwen3.8:27b-mtp-q4_K_M (no-think) | local | 330.6950 | ×1.05 | 8.7 | 1 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 320.9740 | ×1.00 | - | 0 |
+| qwen3.5:latest (no-think) | local | 320.7090 | ×1.00 | - | 0 |
+| gemma4:e2b (no-think) | local | 319.9610 | ×1.00 | - | 0 |
+| qwen3.5:27b (no-think) | local | 317.8080 | ×1.00 | - | 0 |
+| gemma4:12b-it-qat (no-think) | local | 317.6940 | ×1.00 | - | 0 |
+| gemma4:e4b-it-qat (no-think) | local | 315.1790 | ×1.00 | 8.8 | 1 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 313.9800 | ×1.00 | - | 0 |

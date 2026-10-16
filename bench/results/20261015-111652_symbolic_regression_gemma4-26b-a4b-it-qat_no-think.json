@@ -1,0 +1,106 @@
+{
+ "schema": 2,
+ "example": "symbolic_regression",
+ "model": "gemma4:26b-a4b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 15.6,
+ "model_params": "25.2B",
+ "started": "2026-10-15T11:16:52",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.3128434055615448,
+ "best_score": 0.9977228672182152,
+ "improvement": 3.1892085608367924,
+ "llm_calls": 33,
+ "mean_llm_seconds": 27.1,
+ "attempts": 33,
+ "ok": 31,
+ "statuses": {
+  "ok": 31,
+  "invalid": 1,
+  "llm_error": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 3,
+ "minutes_to_best": 4.68,
+ "best_idea": "The large extrapolation errors suggest a trigonometric component, specifically `sin(x1)` or similar, because polynomials diverge rapidly while the errors don't follow a polynomial growth pattern.",
+ "progress": [
+  [
+   0.0,
+   0.3128434055615448
+  ],
+  [
+   3.57,
+   0.37812843420610287
+  ],
+  [
+   3.77,
+   0.3794462082124446
+  ],
+  [
+   4.68,
+   0.9977228672182152
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.3128434055615448,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.57,
+   "score": 0.37812843420610287,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Expand the basis functions to include quadratic and interaction terms to capture non-linearities and improve fitting accuracy."
+  },
+  {
+   "minutes": 4.68,
+   "score": 0.9977228672182152,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "The large extrapolation errors suggest a trigonometric component, specifically `sin(x1)` or similar, because polynomials diverge rapidly while the errors don't follow a polynomial growth pattern."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -35,7 +35,12 @@\n # OMEGA-BLOCK-START\n def basis(x1, x2, x3):\n     \"\"\"Basis functions of the model; the prediction is a weighted sum of them.\"\"\"\n-    return [1.0, x1, x2, x3]\n+    # Include trigonometric terms to capture periodic components that polynomials fail to extrapolate\n+    return [\n+        1.0, x1, x2, x3, x1**2, x2**2, x3**2, x1*x2, x1*x3, x2*x3,\n+        math.sin(x1), math.cos(x1), math.sin(x2), math.cos(x2), math.sin(x3), math.cos(x3),\n+        math.sin(x1)*x2, math.sin(x1)*x3, math.cos(x2)*x3\n+    ]\n \n \n def fit(rows):\n@@ -48,7 +53,7 @@\n     x3 in [0, 3]. Only the Python standard library may be used (math, statistics,\n     random, ...; no numpy). fit plus all predictions must take at most 10 CPU seconds.\n \n-    Current method: linear regression on the raw inputs.\n+    Current method: quadratic polynomial regression.\n     \"\"\"\n     cols = list(zip(*[basis(x1, x2, x3) for x1, x2, x3, _ in rows]))\n     return least_squares([list(c) for c in cols], [y for *_, y in rows])\n",
+ "error": "",
+ "model_memory_gb": 15.2,
+ "model_gpu_memory_gb": 15.2,
+ "context_length": 32768,
+ "load_seconds": 198.3,
+ "median_call_seconds": 21.4,
+ "p90_call_seconds": 27.7,
+ "prompt_tokens_per_s": 476.2,
+ "gen_tokens_per_s": 56.9,
+ "mean_prompt_tokens": 4926,
+ "mean_gen_tokens": 560,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

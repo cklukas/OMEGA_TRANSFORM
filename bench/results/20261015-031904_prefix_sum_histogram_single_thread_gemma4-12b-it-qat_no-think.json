@@ -1,0 +1,125 @@
+{
+ "schema": 2,
+ "example": "prefix_sum_histogram_single_thread",
+ "model": "gemma4:12b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 7.2,
+ "model_params": "11.9B",
+ "started": "2026-10-15T03:19:04",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 4.99969,
+ "best_score": 15.0602,
+ "improvement": 3.0122267580589996,
+ "llm_calls": 13,
+ "mean_llm_seconds": 70.3,
+ "attempts": 13,
+ "ok": 11,
+ "statuses": {
+  "invalid": 2,
+  "ok": 11
+ },
+ "sweeps": 5,
+ "sweep_variants": 37,
+ "improvements": 6,
+ "minutes_to_best": 15.4,
+ "best_idea": "tuned BANKS=32, UNROLL=16 on top of: Use manual unrolling and a larger bank count for sub-histograms to improve instruction-level parallelism and reduce contention.",
+ "progress": [
+  [
+   0.0,
+   4.99969
+  ],
+  [
+   2.28,
+   7.62704
+  ],
+  [
+   2.96,
+   11.3782
+  ],
+  [
+   3.92,
+   13.9227
+  ],
+  [
+   3.92,
+   13.9252
+  ],
+  [
+   8.13,
+   14.8176
+  ],
+  [
+   15.4,
+   15.0602
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 4.99969,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 6.51,
+   "score": 13.587,
+   "model": "gemma4:12b-it-qat",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Use a block-based approach with a SIMD prefix sum to break the serial dependency of the running sum, combined with a multi-banked histogram to eliminate store-to-load hazards on hot bins."
+  },
+  {
+   "minutes": 15.4,
+   "score": 14.7929,
+   "model": "gemma4:12b-it-qat",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Use manual unrolling and a larger bank count for sub-histograms to improve instruction-level parallelism and reduce contention."
+  },
+  {
+   "minutes": 15.4,
+   "score": 15.0602,
+   "model": "gemma4:12b-it-qat",
+   "mode": "sweep/exploit/diff/tune",
+   "status": "ok",
+   "idea": "tuned BANKS=32, UNROLL=16 on top of: Use manual unrolling and a larger bank count for sub-histograms to improve instruction-level parallelism and reduce contention."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -29,11 +29,62 @@\n // never overflow int64.\n extern \"C\" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, uint64_t* hist) {\n     for (int b = 0; b < 256; ++b) hist[b] = 0;\n-    int64_t sum = 0;\n-    for (size_t i = 0; i < n; ++i) {\n-        sum += in[i];\n-        out[i] = sum;\n-        hist[in[i] & 255]++;\n+\n+    constexpr int BANKS = 32;\n+    constexpr int UNROLL = 16;\n+    uint32_t sub_hists[BANKS][256] = {0};\n+    \n+    int64_t global_sum = 0;\n+    size_t i = 0;\n+\n+    for (; i + (UNROLL - 1) < n; i += UNROLL) {\n+        int64_t v0 = in[i];\n+        int64_t v1 = in[i+1];\n+        int64_t v2 = in[i+2];\n+        int64_t v3 = in[i+3];\n+        int64_t v4 = in[i+4];\n+        int64_t v5 = in[i+5];\n+        int64_t v6 = in[i+6];\n+        int64_t v7 = in[i+7];\n+        int64_t v8 = in[i+8];\n+        int64_t v9 = in[i+9];\n+        int64_t v10 = in[i+10];\n+        int64_t v11 = in[i+11];\n+        int64_t v12 = in[i+12];\n+        int64_t v13 = in[i+13];\n+        int64_t v14 = in[i+14];\n+        int64_t v15 = in[i+15];\n+\n+        global_sum += v0; out[i]   = global_sum; sub_hists[0][v0 & 255]++;\n+        global_sum += v1; out[i+1] = global_sum; sub_hists[1][v1 & 255]++;\n+        global_sum += v2; out[i+2] = global_sum; sub_hists[2][v2 & 255]++;\n+        global_sum += v3; out[i+3] = global_sum; sub_hists[3][v3 & 255]++;\n+        global_sum += v4; out[i+4] = global_sum; sub_hists[4][v4 & 255]++;\n+        global_sum += v5; out[i+5] = global_sum; sub_hists[5][v5 & 255]++;\n+        global_sum += v6; out[i+6] = global_sum; sub_hists[6][v6 & 255]++;\n+        global_sum += v7; out[i+7] = global_sum; sub_hists[7][v7 & 255]++;\n+        global_sum += v8; out[i+8] = global_sum; sub_hists[8][v8 & 255]++;\n+        global_sum += v9; out[i+9] = global_sum; sub_hists[9][v9 & 255]++;\n+        global_sum += v10; out[i+10] = global_sum; sub_hists[10][v10 & 255]++;\n+        global_sum += v11; out[i+11] = global_sum; sub_hists[11][v11 & 255]++;\n+        global_sum += v12; out[i+12] = global_sum; sub_hists[12][v12 & 255]++;\n+        global_sum += v13; out[i+13] = global_sum; sub_hists[13][v13 & 255]++;\n+        global_sum += v14; out[i+14] = global_sum; sub_hists[14][v14 & 255]++;\n+        global_sum += v15; out[i+15] = global_sum; sub_hists[15][v15 & 255]++;\n+    }\n+\n+    for (; i < n; ++i) {\n+        global_sum += in[i];\n+        out[i] = global_sum;\n+        sub_hists[i % BANKS][in[i] & 255]++;\n+    }\n+\n+    for (int b = 0; b < 256; ++b) {\n+        uint64_t total = 0;\n+        for (int k = 0; k < BANKS; ++k) {\n+            total += sub_hists[k][b];\n+        }\n+        hist[b] = total;\n     }\n }\n // OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 8.0,
+ "model_gpu_memory_gb": 8.0,
+ "context_length": 32768,
+ "load_seconds": 64.8,
+ "median_call_seconds": 73.5,
+ "p90_call_seconds": 99.0,
+ "prompt_tokens_per_s": 205.1,
+ "gen_tokens_per_s": 28.8,
+ "mean_prompt_tokens": 5367,
+ "mean_gen_tokens": 1124,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

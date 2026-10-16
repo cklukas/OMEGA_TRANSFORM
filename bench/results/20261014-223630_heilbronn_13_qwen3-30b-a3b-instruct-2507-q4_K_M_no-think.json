@@ -1,0 +1,179 @@
+{
+ "schema": 2,
+ "example": "heilbronn_13",
+ "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-10-14T22:36:30",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.004790811518724618,
+ "best_score": 0.013324599163982475,
+ "improvement": 2.781282275853272,
+ "llm_calls": 55,
+ "mean_llm_seconds": 15.1,
+ "attempts": 55,
+ "ok": 35,
+ "statuses": {
+  "ok": 35,
+  "duplicate": 12,
+  "invalid": 7,
+  "edit_error": 1
+ },
+ "sweeps": 32,
+ "sweep_variants": 511,
+ "improvements": 9,
+ "minutes_to_best": 12.33,
+ "best_idea": "tuned angle_offset=0.06039 on top of: Increase the angular offset slightly to further break symmetry and reduce the likelihood of degenerate triangles, potentially improving the minimum area by avoidi",
+ "progress": [
+  [
+   0.0,
+   0.004790811518724618
+  ],
+  [
+   3.28,
+   0.010779325917130394
+  ],
+  [
+   3.28,
+   0.011841233694326558
+  ],
+  [
+   3.48,
+   0.012010298321247139
+  ],
+  [
+   3.48,
+   0.012264477487935023
+  ],
+  [
+   3.72,
+   0.013307809774235053
+  ],
+  [
+   7.95,
+   0.013308780107893745
+  ],
+  [
+   7.95,
+   0.013316520906001564
+  ],
+  [
+   10.02,
+   0.013319797457518545
+  ],
+  [
+   12.33,
+   0.013324599163982475
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.004790811518724618,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.28,
+   "score": 0.010779325917130394,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Increase the radius to use more of the unit square while preserving symmetry, which should increase the minimum triangle area by reducing geometric crowding."
+  },
+  {
+   "minutes": 3.72,
+   "score": 0.011838976772087978,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Increase the radius slightly to better utilize the unit square while maintaining symmetry, which may improve the minimum triangle area by reducing geometric crowding and balancing triangle sizes."
+  },
+  {
+   "minutes": 3.72,
+   "score": 0.013307809774235053,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "sweep/exploit/diff/refine",
+   "status": "ok",
+   "idea": "tuned radius=0.5 on top of: Increase the radius slightly to better utilize the unit square while maintaining symmetry, which may improve the minimum triangle area by reducing geometric crowding and balancing triangle sizes."
+  },
+  {
+   "minutes": 5.15,
+   "score": 0.012401870741286694,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Increase the radius slightly beyond 0.5 to better utilize the unit square while maintaining symmetry, which may improve the minimum triangle area by reducing geometric crowding and balancing triangle sizes, but clamp points to the square to avoid violations."
+  },
+  {
+   "minutes": 10.02,
+   "score": 0.012442871602300816,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Add a small angular offset to break exact rotational symmetry, which can eliminate degenerate triangles and increase the minimum area by improving geometric distribution."
+  },
+  {
+   "minutes": 10.02,
+   "score": 0.013319797457518545,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "sweep/exploit/diff/refine",
+   "status": "ok",
+   "idea": "tuned angle_offset=0.06113, radius=0.5011 on top of: Add a small angular offset to break exact rotational symmetry, which can eliminate degenerate triangles and increase the minimum area by improving geometric distribution."
+  },
+  {
+   "minutes": 12.33,
+   "score": 0.013319783621383984,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Increase the angular offset slightly to further break symmetry and reduce the likelihood of degenerate triangles, potentially improving the minimum area by avoiding near-collinear configurations that could limit the smallest triangle."
+  },
+  {
+   "minutes": 12.33,
+   "score": 0.013324599163982475,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "sweep/exploit/diff/refine",
+   "status": "ok",
+   "idea": "tuned angle_offset=0.06039 on top of: Increase the angular offset slightly to further break symmetry and reduce the likelihood of degenerate triangles, potentially improving the minimum area by avoiding near-collinear configurations that could limit the smallest triangle."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -13,9 +13,10 @@\n     the points on a regular polygon on a small circle around the center, which\n     avoids collinear triples but wastes most of the square.\n     \"\"\"\n-    radius = 0.3\n-    return [(0.5 + radius * math.cos(2 * math.pi * k / n),\n-             0.5 + radius * math.sin(2 * math.pi * k / n)) for k in range(n)]\n+    radius = 0.501091408068637\n+    angle_offset = 0.06038917429040523\n+    return [(max(0.0, min(1.0, 0.5 + radius * math.cos(2 * math.pi * k / n + angle_offset))),\n+             max(0.0, min(1.0, 0.5 + radius * math.sin(2 * math.pi * k / n + angle_offset)))) for k in range(n)]\n # OMEGA-BLOCK-END\n \n \n",
+ "error": "",
+ "model_memory_gb": 21.8,
+ "model_gpu_memory_gb": 21.8,
+ "context_length": 32768,
+ "load_seconds": 180.4,
+ "median_call_seconds": 11.7,
+ "p90_call_seconds": 18.9,
+ "prompt_tokens_per_s": 692.5,
+ "gen_tokens_per_s": 50.5,
+ "mean_prompt_tokens": 4678,
+ "mean_gen_tokens": 237,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

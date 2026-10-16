@@ -1,0 +1,139 @@
+{
+ "schema": 2,
+ "example": "sort_u32_single_thread",
+ "model": "gemma4:26b-a4b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 15.6,
+ "model_params": "25.2B",
+ "started": "2026-10-15T07:50:17",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 23.975189836067116,
+ "best_score": 526.8705080329396,
+ "improvement": 21.975655318496834,
+ "llm_calls": 24,
+ "mean_llm_seconds": 37.5,
+ "attempts": 24,
+ "ok": 20,
+ "statuses": {
+  "ok": 20,
+  "edit_error": 1,
+  "llm_error": 2,
+  "invalid": 1
+ },
+ "sweeps": 2,
+ "sweep_variants": 10,
+ "improvements": 7,
+ "minutes_to_best": 14.2,
+ "best_idea": "Implement a check to skip radix passes when all elements in the current pass share the same key, which significantly boosts performance on many duplicates and nearly sorted data.",
+ "progress": [
+  [
+   0.0,
+   23.975189836067116
+  ],
+  [
+   3.71,
+   233.84196722787058
+  ],
+  [
+   4.05,
+   254.50449563278562
+  ],
+  [
+   4.47,
+   312.2271475069462
+  ],
+  [
+   5.49,
+   319.40725650106214
+  ],
+  [
+   6.67,
+   419.28731244567524
+  ],
+  [
+   11.92,
+   459.727662549148
+  ],
+  [
+   14.2,
+   526.8705080329396
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 23.975189836067116,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.71,
+   "score": 233.84196722787058,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Implement a high-performance LSD Radix Sort with 11-bit digits (3 passes total) to maximize throughput on random data, utilizing a single scratch buffer and optimized histogramming."
+  },
+  {
+   "minutes": 4.89,
+   "score": 253.2285422002888,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Implement a hybrid approach using a fast check for sorted/reverse-sorted runs, and use a highly optimized LSD Radix Sort with 8-bit digits (4 passes) and a single buffer, as 8-bit digits provide better cache locality for the prefix sum and reordering steps on large $n$."
+  },
+  {
+   "minutes": 9.21,
+   "score": 309.9434495481028,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Switch to a 3-pass radix sort with 11-11-10 bit partitioning to reduce the number of passes and memory traversals, which is much faster for large $n$ on most distributions."
+  },
+  {
+   "minutes": 14.2,
+   "score": 526.8705080329396,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Implement a check to skip radix passes when all elements in the current pass share the same key, which significantly boosts performance on many duplicates and nearly sorted data."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,22 +19,88 @@\n #endif\n \n // OMEGA-BLOCK-START\n-// Sorts a[0..n) ascending, in place, on the calling thread. n is any size from\n-// 0 to 2'000'000. Extra memory may be allocated freely.\n-static void merge_sort_rec(uint32_t* a, uint32_t* tmp, size_t lo, size_t hi) {\n-    if (hi - lo < 2) return;\n-    size_t mid = lo + (hi - lo) / 2;\n-    merge_sort_rec(a, tmp, lo, mid);\n-    merge_sort_rec(a, tmp, mid, hi);\n-    size_t i = lo, j = mid, k = lo;\n-    while (i < mid && j < hi) tmp[k++] = (a[j] < a[i]) ? a[j++] : a[i++];\n-    while (i < mid) tmp[k++] = a[i++];\n-    while (j < hi) tmp[k++] = a[j++];\n-    for (size_t t = lo; t < hi; ++t) a[t] = tmp[t];\n-}\n+extern \"C\" void sort_u32(uint32_t* a, size_t n) {\n+    if (n < 2) return;\n \n-extern \"C\" void sort_u32(uint32_t* a, size_t n) {\n+    // Fast path for sorted or reverse sorted\n+    bool sorted = true;\n+    bool reverse = true;\n+    for (size_t i = 1; i < n; ++i) {\n+        if (a[i] < a[i-1]) sorted = false;\n+        if (a[i] > a[i-1]) reverse = false;\n+        if (!sorted && !reverse) break;\n+    }\n+    if (sorted) return;\n+    if (reverse) {\n+        for (size_t i = 0; i < n / 2; ++i) std::swap(a[i], a[n - 1 - i]);\n+        return;\n+    }\n+\n+    // Hybrid: Small n uses std::sort\n+    if (n < 256) {\n+        std::sort(a, a + n);\n+        return;\n+    }\n+\n+    // LSD Radix Sort with 11-11-10 bits (3 passes)\n     std::vector<uint32_t> tmp(n);\n-    merge_sort_rec(a, tmp.data(), 0, n);\n+    uint32_t* src = a;\n+    uint32_t* dst = tmp.data();\n+\n+    struct Pass { int shift; int bits; };\n+    Pass passes[3] = {{0, 11}, {11, 11}, {22, 10}};\n+\n+    for (int p = 0; p < 3; ++p) {\n+        int shift = passes[p].shift;\n+        int bits = passes[p].bits;\n+        size_t num_buckets = 1 << bits;\n+        size_t mask = num_buckets - 1;\n+        size_t count[4096] = {0};\n+\n+        // Check if all elements share the same key for this pass\n+        uint32_t first_key = (src[0] >> shift) & mask;\n+        bool all_same = true;\n+        for (size_t i = 1; i < n; ++i) {\n+            if (((src[i] >> shift) & mask) != first_key) {\n+                all_same = false;\n+                break;\n+            }\n+        }\n+\n+        if (all_same) {\n+            // If all same, the elements are already \"sorted\" for this digit.\n+            // We just need to ensure src and dst are synced for the next pass.\n+            // However, if we skip, we must ensure the next src is what we want.\n+            // To keep logic simple, if all same, we skip movement but must update src/dst.\n+            // Actually, if all same, we don't need to move anything to dst, \n+            // but we must treat the current src as the \"sorted\" version for the next pass.\n+            // A simpler way: if all same, just proceed as if we did a pass but didn't move.\n+            // But the easiest is to copy src to dst to keep the ping-pong.\n+            std::memcpy(dst, src, n * sizeof(uint32_t));\n+            std::swap(src, dst);\n+            continue;\n+        }\n+\n+        for (size_t i = 0; i < n; ++i) {\n+            count[(src[i] >> shift) & mask]++;\n+        }\n+\n+        size_t total = 0;\n+        for (size_t i = 0; i < num_buckets; ++i) {\n+            size_t c = count[i];\n+            count[i] = total;\n+            total += c;\n+        }\n+\n+        for (size_t i = 0; i < n; ++i) {\n+            size_t bucket = (src[i] >> shift) & mask;\n+            dst[count[bucket]++] = src[i];\n+        }\n+        std::swap(src, dst);\n+    }\n+\n+    if (src != a) {\n+        std::memcpy(a, src, n * sizeof(uint32_t));\n+    }\n }\n // OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 15.4,
+ "model_gpu_memory_gb": 15.4,
+ "context_length": 32768,
+ "load_seconds": 195.9,
+ "median_call_seconds": 27.6,
+ "p90_call_seconds": 54.3,
+ "prompt_tokens_per_s": 524.3,
+ "gen_tokens_per_s": 61.6,
+ "mean_prompt_tokens": 5682,
+ "mean_gen_tokens": 955,
+ "stopped_calls": 2,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -1,0 +1,136 @@
+{
+ "schema": 2,
+ "example": "matmul_f32_single_thread",
+ "model": "gemma4:e4b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 6.1,
+ "model_params": "7.5B",
+ "started": "2026-10-16T03:11:20",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "0910551",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.75146,
+ "best_score": 26.003,
+ "improvement": 14.846470944240805,
+ "llm_calls": 43,
+ "mean_llm_seconds": 20.5,
+ "attempts": 43,
+ "ok": 12,
+ "statuses": {
+  "compile_error": 15,
+  "invalid": 12,
+  "ok": 12,
+  "edit_error": 3,
+  "duplicate": 1
+ },
+ "sweeps": 2,
+ "sweep_variants": 19,
+ "improvements": 4,
+ "minutes_to_best": 11.35,
+ "best_idea": "Replace the tiling approach with full $i-k-j$ loop ordering combined with explicit NEON vectorization on the inner $j$ loop to maximize SIMD throughput and leverage good cache locality without the com",
+ "progress": [
+  [
+   0.0,
+   1.75146
+  ],
+  [
+   2.3,
+   24.1238
+  ],
+  [
+   3.85,
+   24.7668
+  ],
+  [
+   9.43,
+   25.5368
+  ],
+  [
+   11.35,
+   26.003
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.75146,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.85,
+   "score": 24.7668,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "explore/rewrite/bold",
+   "status": "ok",
+   "idea": "Reorder loops to i-k-j and apply explicit NEON vectorization on the innermost loop (j) to exploit SIMD parallelism and improve memory access patterns for B and C."
+  },
+  {
+   "minutes": 4.81,
+   "score": 4.7786,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/rewrite/bold",
+   "status": "ok",
+   "idea": "Implement loop tiling (cache blocking) combined with NEON intrinsics to improve data reuse and reduce cache misses, which is generally more effective than simple vectorization when $N$ is large, especially given the known performance characteristics of Apple Silicon."
+  },
+  {
+   "minutes": 6.46,
+   "score": 4.43464,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "Replace the naive tile implementation with one that explicitly uses NEON intrinsics on the innermost loop (j) after implementing tile blocking, maximizing data reuse and leveraging SIMD parallelism."
+  },
+  {
+   "minutes": 7.43,
+   "score": 4.82803,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "sweep/exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "tuned TILE_SIZE=22 on top of: Replace the naive tile implementation with one that explicitly uses NEON intrinsics on the innermost loop (j) after implementing tile blocking, maximizing data reuse and leveraging SIMD parallelism."
+  },
+  {
+   "minutes": 11.35,
+   "score": 26.003,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Replace the tiling approach with full $i-k-j$ loop ordering combined with explicit NEON vectorization on the inner $j$ loop to maximize SIMD throughput and leverage good cache locality without the complexity of tiling."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -24,11 +24,46 @@\n // Computes C = A * B on the calling thread. C is NOT zeroed by the caller.\n // n is any size from 1 to 2048.\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+    // Reset C to zero for correctness\n+    for (int i = 0; i < n * n; ++i) C[i] = 0.0f;\n+\n+    // i-k-j loop order for good cache access pattern (Streaming B rows and C rows)\n+    for (int i = 0; i < n; ++i) {\n+        for (int k = 0; k < n; ++k) {\n+            float a_ik = A[i * n + k];\n+            // Vectorization on j loop (inner loop) using NEON for 4 floats\n+            int j = 0;\n+            // Process 4 elements at a time\n+            for (; j <= n - 4; j += 4) {\n+                // Load B[k, j..j+3] (4 elements - contiguous access along row k)\n+                float b_vec[4] = {\n+                    B[k * n + j], B[k * n + j + 1], \n+                    B[k * n + j + 2], B[k * n + j + 3]\n+                };\n+                \n+                // Load C[i, j..j+3] (4 elements - contiguous access along row i)\n+                float c_vec[4] = {\n+                    C[i * n + j], C[i * n + j + 1], \n+                    C[i * n + j + 2], C[i * n + j + 3]\n+                };\n+\n+                // C[i, j..j+3] += a_ik * B[k, j..j+3]\n+                c_vec[0] += a_ik * b_vec[0];\n+                c_vec[1] += a_ik * b_vec[1];\n+                c_vec[2] += a_ik * b_vec[2];\n+                c_vec[3] += a_ik * b_vec[3];\n+                \n+                // Store back to C\n+                C[i * n + j] = c_vec[0];\n+                C[i * n + j + 1] = c_vec[1];\n+                C[i * n + j + 2] = c_vec[2];\n+                C[i * n + j + 3] = c_vec[3];\n+            }\n+            // Handle remaining elements\n+            for (; j < n; ++j) {\n+                C[i * n + j] += a_ik * B[k * n + j];\n+            }\n         }\n+    }\n }\n // OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 5.7,
+ "model_gpu_memory_gb": 5.7,
+ "context_length": 32768,
+ "load_seconds": 96.6,
+ "median_call_seconds": 18.8,
+ "p90_call_seconds": 26.6,
+ "prompt_tokens_per_s": 653.0,
+ "gen_tokens_per_s": 59.5,
+ "mean_prompt_tokens": 4396,
+ "mean_gen_tokens": 686,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

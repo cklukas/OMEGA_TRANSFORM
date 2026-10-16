@@ -1,0 +1,99 @@
+{
+ "schema": 2,
+ "example": "tsp_heuristic",
+ "model": "qwen2.5-coder:7b",
+ "variant": "no-think",
+ "model_size_gb": 4.7,
+ "model_params": "7.6B",
+ "started": "2026-10-15T16:18:58",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.0,
+ "best_score": 1.0054552590345731,
+ "improvement": 1.0054552590345731,
+ "llm_calls": 35,
+ "mean_llm_seconds": 25.9,
+ "attempts": 35,
+ "ok": 15,
+ "statuses": {
+  "invalid": 14,
+  "ok": 15,
+  "duplicate": 5,
+  "timeout": 1
+ },
+ "sweeps": 7,
+ "sweep_variants": 95,
+ "improvements": 1,
+ "minutes_to_best": 3.0,
+ "best_idea": "Improve the efficiency of the 2-opt local search by limiting the number of candidate neighbors to the 10 nearest cities of each city, found using a grid of cells, and use a don't-look bit to avoid rev",
+ "progress": [
+  [
+   0.0,
+   1.0
+  ],
+  [
+   3.0,
+   1.0054552590345731
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.0,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.87,
+   "score": 1.0,
+   "model": "qwen2.5-coder:7b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Improve the initial tour construction by using a space-filling curve instead of the nearest neighbor approach."
+  },
+  {
+   "minutes": 3.0,
+   "score": 1.0054552590345731,
+   "model": "qwen2.5-coder:7b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Improve the efficiency of the 2-opt local search by limiting the number of candidate neighbors to the 10 nearest cities of each city, found using a grid of cells, and use a don't-look bit to avoid revisiting moves."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -18,16 +18,70 @@\n     makes the program invalid). The tour returns from the last city to the first.\n     Only the Python standard library may be used.\n \n-    Current method: plain nearest-neighbour construction starting at city 0.\n+    Current method: use a space-filling curve to guide the initial tour.\n     \"\"\"\n     n = len(points)\n     unvisited = set(range(1, n))\n     tour = [0]\n     x, y = points[0]\n-    while unvisited:\n-        nxt = min(unvisited, key=lambda j: (points[j][0] - x) ** 2 + (points[j][1] - y) ** 2)\n-        unvisited.remove(nxt)\n-        tour.append(nxt)\n-        x, y = points[nxt]\n+    grid_size = 2.0 ** (1.0 / (n ** 0.5))\n+    grid = [[[] for _ in range(2)] for _ in range(2)]\n+    for i, (px, py) in enumerate(points):\n+        grid[int(px / grid_size)][int(py / grid_size)].append(i)\n+    \n+    for i in range(n):\n+        if not unvisited:\n+            break\n+        min_dist = float('inf')\n+        best_j = None\n+        for gx in range(2):\n+            for gy in range(2):\n+                for j in grid[gx][gy]:\n+                    if j in unvisited:\n+                        dist = (points[j][0] - x) ** 2 + (points[j][1] - y) ** 2\n+                        if dist < min_dist:\n+                            min_dist = dist\n+                            best_j = j\n+        unvisited.remove(best_j)\n+        tour.append(best_j)\n+        x, y = points[best_j]\n+    \n+    best_tour = tour\n+    best_length = calculate_length(tour, points)\n+    start_time = time.process_time()\n+    while time.process_time() - start_time < time_limit:\n+        improved = local_search(tour, points, time_limit - (time.process_time() - start_time))\n+        if improved:\n+            tour = improved[0]\n+            best_length = improved[1]\n+        else:\n+            break\n     return tour\n+\n+def calculate_length(tour, points):\n+    n = len(tour)\n+    length = 0\n+    for i in range(n):\n+        length += math.hypot(points[tour[i]][0] - points[tour[(i + 1) % n]][0],\n+                             points[tour[i]][1] - points[tour[(i + 1) % n]][1])\n+    return length\n+\n+def local_search(tour, points, time_limit):\n+    n = len(tour)\n+    best_tour = tour.copy()\n+    best_length = calculate_length(tour, points)\n+    start_time = time.process_time()\n+    while time.process_time() - start_time < time_limit:\n+        for i in range(n):\n+            for j in range(max(1, i - 10), min(n - 1, i + 11)):\n+                if i != j and i != (j + 1) % n and (i + 1) % n != j:\n+                    new_tour = tour[:]\n+                    new_tour[i], new_tour[j] = new_tour[j], new_tour[i]\n+                    new_length = calculate_length(new_tour, points)\n+                    if new_length < best_length:\n+                        best_tour = new_tour\n+                        best_length = new_length\n+                        if time.process_time() - start_time > 0.1:\n+                            return best_tour, best_length\n+    return best_tour, best_length\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 6.6,
+ "model_gpu_memory_gb": 6.6,
+ "context_length": 32768,
+ "load_seconds": 78.9,
+ "median_call_seconds": 23.6,
+ "p90_call_seconds": 35.0,
+ "prompt_tokens_per_s": 462.4,
+ "gen_tokens_per_s": 37.4,
+ "mean_prompt_tokens": 2999,
+ "mean_gen_tokens": 639,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

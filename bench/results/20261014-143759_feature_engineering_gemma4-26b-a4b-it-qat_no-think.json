@@ -1,0 +1,127 @@
+{
+ "schema": 2,
+ "example": "feature_engineering",
+ "model": "gemma4:26b-a4b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 15.6,
+ "model_params": "25.2B",
+ "started": "2026-10-14T14:37:59",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.7,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.623,
+ "best_score": 0.859,
+ "improvement": 1.3788121990369182,
+ "llm_calls": 38,
+ "mean_llm_seconds": 23.6,
+ "attempts": 38,
+ "ok": 27,
+ "statuses": {
+  "ok": 27,
+  "edit_error": 5,
+  "duplicate": 2,
+  "invalid": 4
+ },
+ "sweeps": 8,
+ "sweep_variants": 117,
+ "improvements": 4,
+ "minutes_to_best": 8.91,
+ "best_idea": "tuned X3_T1=1.124, X3_S1=0.1, X6_T1=-0.2104, X6_S1=0.1884 on top of: Refine the feature set by replacing redundant indicators with a soft sigmoid-based threshold for $x_3$ and $x_6$ to improve gradien",
+ "progress": [
+  [
+   0.0,
+   0.623
+  ],
+  [
+   3.56,
+   0.788
+  ],
+  [
+   4.28,
+   0.839
+  ],
+  [
+   8.91,
+   0.845
+  ],
+  [
+   8.91,
+   0.859
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.623,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.56,
+   "score": 0.788,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Add log-transform for the skewed $x_3$ and interaction terms (products) to capture non-linear boundaries, specifically targeting the strongest weights."
+  },
+  {
+   "minutes": 4.28,
+   "score": 0.839,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "best/diff/bold",
+   "status": "ok",
+   "idea": "The feedback shows $x_1, x_2, x_6$ (indices 0, 1, 5) and $x_3$ (index 2) have significant weights. I will replace some redundant interaction/square terms with threshold-based indicator functions for $x_3$ and $x_6$ to capture potential non-monotonic step-like dependencies, and refine the interaction set."
+  },
+  {
+   "minutes": 8.91,
+   "score": 0.845,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "best/rewrite/refine",
+   "status": "ok",
+   "idea": "Refine the feature set by replacing redundant indicators with a soft sigmoid-based threshold for $x_3$ and $x_6$ to improve gradient-like learning for the linear model."
+  },
+  {
+   "minutes": 8.91,
+   "score": 0.859,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "sweep/best/rewrite/refine",
+   "status": "ok",
+   "idea": "tuned X3_T1=1.124, X3_S1=0.1, X6_T1=-0.2104, X6_S1=0.1884 on top of: Refine the feature set by replacing redundant indicators with a soft sigmoid-based threshold for $x_3$ and $x_6$ to improve gradient-like learning for the linear model."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -18,8 +18,53 @@\n     Every row must give the same number of features. The classifier is linear in the\n     features (they are standardized and a bias is added), so nonlinear structure only\n     helps if a feature expresses it. Only the Python standard library may be used.\n+    \"\"\"\n+    x1, x2, x3, x4, x5, x6 = row\n+    \n+    def sigmoid(v, center, scale):\n+        return 1.0 / (1.0 + math.exp(-(v - center) / scale))\n \n-    Current method: the raw inputs.\n-    \"\"\"\n-    return list(row)\n+    log_x3 = math.log(x3 + 1e-9)\n+    \n+    # 1. Raw inputs (6)\n+    # 2. Log transform (1)\n+    # 3. Strong interactions (6)\n+    # 4. Uniform/Normal interactions (3)\n+    # 5. Squares (6)\n+    # 6. Soft thresholds (8)\n+    # Total: 6 + 1 + 6 + 3 + 6 + 8 = 30\n+    \n+    feats = [\n+        x1, x2, x3, x4, x5, x6,             # Raw\n+        log_x3,                              # Skewed x3\n+        x1*x2, x1*x6, x2*x6, x1*x3, x2*x3, x6*x3, # Interactions\n+        x4*x5, x4*x6, x5*x6,                 # Uniform/Normal\n+        x1*x1, x2*x2, x3*x3, x4*x4, x5*x5, x6*x6, # Squares\n+        # Soft thresholds for x3 (skewed)\n+        sigmoid(x3, X3_T1, X3_S1),\n+        sigmoid(x3, X3_T2, X3_S2),\n+        # Soft thresholds for x6 (normal)\n+        sigmoid(x6, X6_T1, X6_S1),\n+        sigmoid(x6, X6_T2, X6_S2),\n+        sigmoid(x6, X6_T3, X6_S3),\n+        sigmoid(x6, X6_T4, X6_S4),\n+        # Interaction between log_x3 and x6\n+        sigmoid(log_x3, 0.0, 1.0) * sigmoid(x6, 0.0, 1.0),\n+        # Interaction between x1 and x2 (quadrant)\n+        (x1 > 0 and x2 > 0) * 2.0 - 1.0\n+    ]\n+    return feats[:30]\n+\n+X3_T1 = 1.1244608262953806\n+X3_S1 = 0.1\n+X3_T2 = 3.0\n+X3_S2 = 1.0\n+X6_T1 = -0.2103902623556057\n+X6_S1 = 0.1884445021641349\n+X6_T2 = 1.0\n+X6_S2 = 0.5\n+X6_T3 = -1.0\n+X6_S3 = 0.5\n+X6_T4 = 2.0\n+X6_S4 = 0.5\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 15.4,
+ "model_gpu_memory_gb": 15.4,
+ "context_length": 32768,
+ "load_seconds": 199.6,
+ "median_call_seconds": 17.6,
+ "p90_call_seconds": 30.7,
+ "prompt_tokens_per_s": 624.0,
+ "gen_tokens_per_s": 63.1,
+ "mean_prompt_tokens": 4390,
+ "mean_gen_tokens": 640,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

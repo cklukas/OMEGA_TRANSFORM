@@ -1,0 +1,183 @@
+{
+ "schema": 2,
+ "example": "feature_engineering",
+ "model": "gemma4:e4b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 6.1,
+ "model_params": "7.5B",
+ "started": "2026-10-14T13:05:51",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.623,
+ "best_score": 0.891,
+ "improvement": 1.4301765650080258,
+ "llm_calls": 66,
+ "mean_llm_seconds": 13.2,
+ "attempts": 66,
+ "ok": 56,
+ "statuses": {
+  "ok": 56,
+  "duplicate": 5,
+  "invalid": 3,
+  "edit_error": 2
+ },
+ "sweeps": 2,
+ "sweep_variants": 7,
+ "improvements": 10,
+ "minutes_to_best": 12.36,
+ "best_idea": "Introduce sign features for the interaction between $\\log(1+x_3)$ and the strong features $x_1$ and $x_2$ to capture quadrant information related to the linearized skewed variable.",
+ "progress": [
+  [
+   0.0,
+   0.623
+  ],
+  [
+   1.69,
+   0.713
+  ],
+  [
+   1.94,
+   0.715
+  ],
+  [
+   2.08,
+   0.729
+  ],
+  [
+   2.53,
+   0.732
+  ],
+  [
+   2.96,
+   0.76
+  ],
+  [
+   5.35,
+   0.763
+  ],
+  [
+   5.94,
+   0.81
+  ],
+  [
+   7.21,
+   0.873
+  ],
+  [
+   8.74,
+   0.89
+  ],
+  [
+   12.36,
+   0.891
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.623,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.33,
+   "score": 0.628,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Introduce squared terms for the standard-normal-like inputs (x1, x2, x6) as suggested by previous high-scoring attempts to capture variance and quadratic effects that a linear model can approximate."
+  },
+  {
+   "minutes": 2.82,
+   "score": 0.678,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Introduce log transformation for the right-skewed input x3, as suggested by successful strategies and the hint regarding skewed inputs, to make its non-linear relationship with the hidden rule more linearly separable."
+  },
+  {
+   "minutes": 3.72,
+   "score": 0.737,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Introduce feature bins over the skewed input $x_3$ to allow the linear model to fit non-monotone relationships in $x_3$ that the log transform might miss."
+  },
+  {
+   "minutes": 4.8,
+   "score": 0.75,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "explore/diff/refine",
+   "status": "ok",
+   "idea": "The feedback indicates that the largest standardized weights correspond to f9, f2, f0, etc., which are likely early features, suggesting the raw inputs or early transformations have strong signals; I will introduce pairwise interaction features for the standard-normal-like inputs ($x_1, x_2, x_6$) as suggested by high-scoring prior attempts, which can capture non-linear patterns like quadrant info"
+  },
+  {
+   "minutes": 6.39,
+   "score": 0.756,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Replace the fixed binning strategy for $x_3$ with a logarithmic transformation, as this is a known successful strategy for skewed data and is simpler than hard binning."
+  },
+  {
+   "minutes": 7.05,
+   "score": 0.758,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Since $x_3$ is lognormal-like, exploring different transformations of $x_3$ like $\\log(x_3)$ vs $\\sqrt{x_3}$ or $\\log(1+x_3)$ could improve feature representation compared to the current $\\log(x_3)$."
+  },
+  {
+   "minutes": 8.74,
+   "score": 0.89,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Since the largest standardized weights are on f12 (which is $\\log(1+x_3)$) and f2 ($\\text{sign}(x_1 x_2)$), I will incorporate the squared terms for the uniform features $x_4$ and $x_5$ and investigate interaction features involving the log-transformed $x_3$."
+  },
+  {
+   "minutes": 12.36,
+   "score": 0.891,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Introduce sign features for the interaction between $\\log(1+x_3)$ and the strong features $x_1$ and $x_2$ to capture quadrant information related to the linearized skewed variable."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -21,5 +21,26 @@\n \n     Current method: the raw inputs.\n     \"\"\"\n-    return list(row)\n+    x1, x2, x3, x4, x5, x6 = row\n+    # Raw features\n+    features_list = [x1, x2, x3, x4, x5, x6]\n+    # Squared features for standard normal-like inputs\n+    features_list.append(x1 * x1)\n+    features_list.append(x2 * x2)\n+    features_list.append(x6 * x6)\n+    # Pairwise interaction features for standard normal-like inputs (x1, x2, x6)\n+    features_list.append(math.copysign(1.0, x1 * x2)) # sign(x1*x2)\n+    features_list.append(math.copysign(1.0, x1 * x6)) # sign(x1*x6)\n+    features_list.append(math.copysign(1.0, x2 * x6)) # sign(x2*x6)\n+    # Transformation of skewed input x3 (using log(1+x3) as it was strong)\n+    transform_x3 = math.log(1.0 + x3)\n+    features_list.append(transform_x3)\n+    # Squared features for uniform inputs x4 and x5\n+    features_list.append(x4 * x4)\n+    features_list.append(x5 * x5)\n+    # Interaction between log(1+x3) and x1\n+    features_list.append(math.copysign(1.0, x1 * transform_x3))\n+    # Interaction between log(1+x3) and x2\n+    features_list.append(math.copysign(1.0, x2 * transform_x3))\n+    return features_list\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 5.7,
+ "model_gpu_memory_gb": 5.7,
+ "context_length": 32768,
+ "load_seconds": 94.3,
+ "median_call_seconds": 11.6,
+ "p90_call_seconds": 16.4,
+ "prompt_tokens_per_s": 668.6,
+ "gen_tokens_per_s": 60.6,
+ "mean_prompt_tokens": 4266,
+ "mean_gen_tokens": 323,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

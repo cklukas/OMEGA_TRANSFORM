@@ -1,0 +1,90 @@
+{
+ "schema": 2,
+ "example": "heilbronn_13",
+ "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 17.8,
+ "model_params": "27.3B",
+ "started": "2026-10-14T22:20:25",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.004790811518724618,
+ "best_score": 0.008962219190544251,
+ "improvement": 1.870710036392774,
+ "llm_calls": 6,
+ "mean_llm_seconds": 159.8,
+ "attempts": 6,
+ "ok": 3,
+ "statuses": {
+  "ok": 3,
+  "invalid": 1,
+  "duplicate": 2
+ },
+ "sweeps": 1,
+ "sweep_variants": 16,
+ "improvements": 1,
+ "minutes_to_best": 11.63,
+ "best_idea": "Replace the initial circular layout with a multi-restart simulated annealing optimization that uses a soft-min objective function to maximize the minimum triangle area, leveraging the hint about symme",
+ "progress": [
+  [
+   0.0,
+   0.004790811518724618
+  ],
+  [
+   11.63,
+   0.008962219190544251
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.004790811518724618,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 11.63,
+   "score": 0.008962219190544251,
+   "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Replace the initial circular layout with a multi-restart simulated annealing optimization that uses a soft-min objective function to maximize the minimum triangle area, leveraging the hint about symmetric starting layouts and boundary points to find a better configuration."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -5,17 +5,144 @@\n import math\n \n # OMEGA-BLOCK-START\n+import random\n+\n+# Tunable constants for the optimization\n+INITIAL_TEMP = 0.1\n+COOLING_RATE = 0.99\n+NUM_RESTARTS = 5\n+STEPS_PER_RESTART = 2000\n+INITIAL_STEP_SIZE = 0.05\n+BETA = 50.0  # Soft-min parameter\n+\n+def triangle_area(p1, p2, p3):\n+    \"\"\"Compute the area of triangle formed by three points.\"\"\"\n+    x1, y1 = p1\n+    x2, y2 = p2\n+    x3, y3 = p3\n+    return 0.5 * abs(x1*(y2-y3) + x2*(y3-y1) + x3*(y1-y2))\n+\n+def soft_min_area(points, beta=BETA):\n+    \"\"\"Compute a smooth approximation of the minimum triangle area using log-sum-exp.\"\"\"\n+    areas = []\n+    n = len(points)\n+    for i in range(n):\n+        for j in range(i+1, n):\n+            for k in range(j+1, n):\n+                area = triangle_area(points[i], points[j], points[k])\n+                areas.append(area)\n+    \n+    # Use soft minimum: -1/beta * log(sum(exp(-beta * area)))\n+    # This encourages all triangles to have large areas\n+    max_neg_area = max(-area for area in areas)\n+    sum_exp = sum(math.exp(-beta * area - max_neg_area) for area in areas)\n+    return -(math.log(sum_exp) + max_neg_area) / beta\n+\n+def generate_initial_points(n):\n+    \"\"\"Generate an initial configuration with points spread across the square.\n+    Uses a grid-like pattern with some perturbation, including boundary points.\"\"\"\n+    points = []\n+    \n+    # Add corner points\n+    points.append((0.0, 0.0))\n+    points.append((1.0, 0.0))\n+    points.append((0.0, 1.0))\n+    points.append((1.0, 1.0))\n+    \n+    # Add points along edges\n+    for t in [0.25, 0.5, 0.75]:\n+        points.append((t, 0.0))\n+        points.append((t, 1.0))\n+        points.append((0.0, t))\n+        points.append((1.0, t))\n+    \n+    # Fill remaining points with a perturbed grid in the interior\n+    remaining = n - len(points)\n+    if remaining > 0:\n+        grid_size = int(math.sqrt(remaining)) + 1\n+        idx = 0\n+        for i in range(1, grid_size):\n+            for j in range(1, grid_size):\n+                if idx < remaining:\n+                    x = (i + 0.5) / grid_size\n+                    y = (j + 0.5) / grid_size\n+                    points.append((x, y))\n+                    idx += 1\n+    \n+    return points[:n]\n+\n+def clamp_point(p):\n+    \"\"\"Clamp a point to the unit square.\"\"\"\n+    x = max(0.0, min(1.0, p[0]))\n+    y = max(0.0, min(1.0, p[1]))\n+    return (x, y)\n+\n+def optimize(points, initial_temp=INITIAL_TEMP, cooling_rate=COOLING_RATE, \n+             steps=STEPS_PER_RESTART, initial_step=INITIAL_STEP_SIZE):\n+    \"\"\"Simulated annealing optimization using soft-min objective.\"\"\"\n+    random.seed(42)  # Fixed seed for reproducibility\n+    current_points = [list(p) for p in points]\n+    temp = initial_temp\n+    step_size = initial_step\n+    current_score = soft_min_area(current_points)\n+    \n+    best_points = [list(p) for p in current_points]\n+    best_score = current_score\n+    \n+    for step in range(steps):\n+        # Choose a random point to perturb\n+        idx = random.randint(0, len(current_points) - 1)\n+        \n+        # Generate a random perturbation\n+        dx = random.uniform(-step_size, step_size)\n+        dy = random.uniform(-step_size, step_size)\n+        \n+        # Create new point\n+        new_x = max(0.0, min(1.0, current_points[idx][0] + dx))\n+        new_y = max(0.0, min(1.0, current_points[idx][1] + dy))\n+        \n+        # Save old point\n+        old_x, old_y = current_points[idx]\n+        current_points[idx] = [new_x, new_y]\n+        \n+        # Compute new score\n+        new_score = soft_min_area(current_points)\n+        \n+        # Accept or reject based on simulated annealing criterion\n+        if new_score > current_score or random.random() < math.exp((new_score - current_score) / temp):\n+            current_score = new_score\n+            if new_score > best_score:\n+                best_score = new_score\n+                best_points = [list(p) for p in current_points]\n+        else:\n+            # Revert\n+            current_points[idx] = [old_x, old_y]\n+        \n+        # Cool down\n+        temp *= cooling_rate\n+        step_size *= 0.999  # Gradually reduce step size\n+    \n+    return [tuple(p) for p in best_points]\n+\n def construct(n=13):\n     \"\"\"Return a list of n points (x, y) inside the closed unit square [0,1]^2.\n-\n-    The score is the smallest area among all triangles with corners at three of\n-    the points, so no three points may be (nearly) collinear. This start puts\n-    the points on a regular polygon on a small circle around the center, which\n-    avoids collinear triples but wastes most of the square.\n-    \"\"\"\n-    radius = 0.3\n-    return [(0.5 + radius * math.cos(2 * math.pi * k / n),\n-             0.5 + radius * math.sin(2 * math.pi * k / n)) for k in range(n)]\n+    \n+    Uses simulated annealing with a soft-min objective to maximize the minimum\n+    triangle area.\"\"\"\n+    best_points = None\n+    best_score = -1\n+    \n+    for restart in range(NUM_RESTARTS):\n+        random.seed(123 + restart)  # Different seed for each restart\n+        initial_points = generate_initial_points(n)\n+        optimized_points = optimize(initial_points)\n+        score = soft_min_area(optimized_points)\n+        \n+        if score > best_score:\n+            best_score = score\n+            best_points = optimized_points\n+    \n+    return best_points\n # OMEGA-BLOCK-END\n \n \n",
+ "error": "",
+ "model_memory_gb": 17.4,
+ "model_gpu_memory_gb": 17.4,
+ "context_length": 32768,
+ "load_seconds": 244.3,
+ "median_call_seconds": 130.6,
+ "p90_call_seconds": 373.7,
+ "prompt_tokens_per_s": 102.2,
+ "gen_tokens_per_s": 15.6,
+ "mean_prompt_tokens": 2497,
+ "mean_gen_tokens": 1468,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

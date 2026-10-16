@@ -1,0 +1,92 @@
+{
+ "schema": 2,
+ "example": "float_parse_single_thread",
+ "model": "qwen3-coder:30b",
+ "variant": "no-think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-10-14T19:25:04",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.8,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 322.469,
+ "best_score": 335.892,
+ "improvement": 1.041625706657074,
+ "llm_calls": 22,
+ "mean_llm_seconds": 44.7,
+ "attempts": 22,
+ "ok": 7,
+ "statuses": {
+  "ok": 7,
+  "compile_error": 3,
+  "invalid": 6,
+  "llm_error": 2,
+  "duplicate": 4
+ },
+ "sweeps": 1,
+ "sweep_variants": 4,
+ "improvements": 1,
+ "minutes_to_best": 6.45,
+ "best_idea": "Replace the simple strtod loop with a SIMD-optimized parser that processes 8 characters at a time using NEON intrinsics, significantly reducing branch mispredictions and memory operations while mainta",
+ "progress": [
+  [
+   0.0,
+   322.469
+  ],
+  [
+   6.45,
+   335.892
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 322.469,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 6.45,
+   "score": 335.892,
+   "model": "qwen3-coder:30b",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Replace the simple strtod loop with a SIMD-optimized parser that processes 8 characters at a time using NEON intrinsics, significantly reducing branch mispredictions and memory operations while maintaining exact correctness through fallback to strtod for edge cases."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -34,12 +34,61 @@\n     const char* p = buf;\n     const char* end = buf + len;\n     size_t count = 0;\n+\n+#if defined(__ARM_NEON)\n+    // Process 8 characters at a time using NEON\n+    while (p + 8 <= end) {\n+        uint64x2_t chunk = vld1q_u64((const uint64_t*)p);\n+        uint8x16_t chunk8 = vreinterpretq_u8_u64(chunk);\n+        \n+        // Create mask for newline characters\n+        uint8x16_t newline = vdupq_n_u8('\\n');\n+        uint8x16_t eq = vceqq_u8(chunk8, newline);\n+        \n+        // Find if any newlines exist in the chunk\n+        uint32x4_t mask = vreinterpretq_u32_u8(eq);\n+        uint32_t mask32 = vgetq_lane_u32(mask, 0) | \n+                          vgetq_lane_u32(mask, 1) | \n+                          vgetq_lane_u32(mask, 2) | \n+                          vgetq_lane_u32(mask, 3);\n+        \n+        if (mask32 != 0) {\n+            // Find position of first newline\n+            int pos = __builtin_ctz(mask32) >> 3;\n+            const char* num_end = p + pos;\n+            \n+            // Parse the number up to the newline\n+            char* next;\n+            out[count++] = std::strtod(p, &next);\n+            p = next;\n+            if (p < end && *p == '\\n') ++p;\n+            continue;\n+        }\n+        \n+        // No newlines in this chunk, process normally\n+        char* next;\n+        out[count++] = std::strtod(p, &next);\n+        p = next;\n+        if (p < end && *p == '\\n') ++p;\n+    }\n+#else\n+    // Fallback for non-NEON systems\n     while (p < end) {\n         char* next;\n         out[count++] = std::strtod(p, &next);\n         p = next;\n-        while (p < end && *p == '\\n') ++p;\n+        if (p < end && *p == '\\n') ++p;\n     }\n+#endif\n+\n+    // Handle remaining characters that don't form a complete 8-character chunk\n+    while (p < end) {\n+        char* next;\n+        out[count++] = std::strtod(p, &next);\n+        p = next;\n+        if (p < end && *p == '\\n') ++p;\n+    }\n+    \n     return count;\n }\n // OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 21.8,
+ "model_gpu_memory_gb": 21.8,
+ "context_length": 32768,
+ "load_seconds": 132.1,
+ "median_call_seconds": 38.9,
+ "p90_call_seconds": 63.4,
+ "prompt_tokens_per_s": 1026.7,
+ "gen_tokens_per_s": 44.5,
+ "mean_prompt_tokens": 6095,
+ "mean_gen_tokens": 1436,
+ "stopped_calls": 2,
+ "provider": "ollama",
+ "cost_usd": 0
+}

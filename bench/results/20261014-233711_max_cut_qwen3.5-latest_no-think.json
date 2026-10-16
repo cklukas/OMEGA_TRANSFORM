@@ -1,0 +1,107 @@
+{
+ "schema": 2,
+ "example": "max_cut",
+ "model": "qwen3.5:latest",
+ "variant": "no-think",
+ "model_size_gb": 6.6,
+ "model_params": "9.7B",
+ "started": "2026-10-14T23:37:11",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.5121828962692699,
+ "best_score": 0.7377064630316138,
+ "improvement": 1.440318426103357,
+ "llm_calls": 19,
+ "mean_llm_seconds": 47.8,
+ "attempts": 19,
+ "ok": 12,
+ "statuses": {
+  "ok": 12,
+  "invalid": 4,
+  "edit_error": 2,
+  "timeout": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 3,
+ "minutes_to_best": 7.56,
+ "best_idea": "Add an incremental local search phase that iteratively flips nodes with positive gain until no improvement is possible, refining the greedy solution to escape local optima without exceeding the time l",
+ "progress": [
+  [
+   0.0,
+   0.5121828962692699
+  ],
+  [
+   2.05,
+   0.7307037767391336
+  ],
+  [
+   2.98,
+   0.7338796359036793
+  ],
+  [
+   7.56,
+   0.7377064630316138
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.5121828962692699,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.5,
+   "score": 0.7065332992219643,
+   "model": "qwen3.5:latest",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Switch from a naive alternating index heuristic to a greedy construction that assigns each node to the side maximizing its immediate gain based on edge weights to already-placed neighbors, which directly utilizes the input `edges` data to achieve a significantly higher cut ratio."
+  },
+  {
+   "minutes": 7.56,
+   "score": 0.7377064630316138,
+   "model": "qwen3.5:latest",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Add an incremental local search phase that iteratively flips nodes with positive gain until no improvement is possible, refining the greedy solution to escape local optima without exceeding the time limit."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,7 +19,80 @@\n     time limit of 2.0 s (time.process_time(); more than 1.5 x the limit makes the program\n     invalid). Only the Python standard library may be used.\n \n-    Current method: alternate the sides by node index (ignores the edges entirely).\n+    Method: Construct a greedy assignment by iterating nodes in arbitrary order,\n+    assigning each node to the side that maximizes weight connections to already\n+    assigned neighbors. This utilizes edge weights to break ties and optimize local cuts.\n     \"\"\"\n-    return [i % 2 for i in range(n)]\n+    # Build adjacency list once for O(1) neighbor lookup during construction\n+    adj = [[] for _ in range(n)]\n+    total_weight = 0\n+    for u, v, w in edges:\n+        adj[u].append((v, w))\n+        adj[v].append((u, w))\n+        total_weight += w\n+\n+    # Track current side assignment (0 or 1) and running gain for each node\n+    side = [0] * n  # Initialize to 0; gain logic handles first placement implicitly\n+\n+    # Shuffle node order to avoid bias towards specific graph structures\n+    nodes = list(range(n))\n+    random.shuffle(nodes)\n+\n+    for u in nodes:\n+        if side[u] != -1:\n+            continue  # Skip already assigned nodes (if any due to shuffle logic, though loop ensures all visited)\n+        \n+        # Calculate gain for placing u on side 0 vs side 1\n+        # Gain = sum of weights to neighbors on the *opposite* side\n+        gain_0 = 0\n+        gain_1 = 0\n+        \n+        for v, w in adj[u]:\n+            if side[v] != -1:\n+                if side[v] == 0:\n+                    gain_1 += w  # If we put u on 1, edge (u,v) cuts\n+                else:\n+                    gain_0 += w  # If we put u on 0, edge (u,v) cuts\n+        \n+        # Assign to side with higher gain; break ties randomly\n+        if gain_0 > gain_1:\n+            side[u] = 0\n+            gains[u] = gain_0\n+        elif gain_1 > gain_0:\n+            side[u] = 1\n+            gains[u] = gain_1\n+        else:\n+            # Ties: prefer side 0 for consistency; gain calculation in local search will correct if needed\n+            side[u] = 0\n+\n+    # Local search: iteratively flip the node with positive gain to improve the cut\n+    start_time = time.process_time()\n+    while True:\n+        best_gain = -1\n+        best_flip = -1\n+        for i in range(n):\n+            s0 = 0\n+            s1 = 0\n+            for neighbor, w in adj[i]:\n+                if side[neighbor] == side[i]:\n+                    s0 += w\n+                else:\n+                    s1 += w\n+            gain = s0 - s1\n+            if gain > best_gain:\n+                best_gain = gain\n+                best_flip = i\n+        \n+        if best_flip == -1 or best_gain <= 0:\n+            break\n+        \n+        # Apply flip\n+        side[best_flip] ^= 1\n+    \n+    # Safety check against time limit (though usually not needed for this approach)\n+    elapsed = time.process_time() - start_time\n+    if elapsed > 1.8:\n+        return side[:n-1] if n > 1 else side\n+        \n+    return side\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 6.8,
+ "model_gpu_memory_gb": 6.8,
+ "context_length": 32768,
+ "load_seconds": 70.0,
+ "median_call_seconds": 40.2,
+ "p90_call_seconds": 101.9,
+ "prompt_tokens_per_s": 387.2,
+ "gen_tokens_per_s": 34.9,
+ "mean_prompt_tokens": 4638,
+ "mean_gen_tokens": 1117,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

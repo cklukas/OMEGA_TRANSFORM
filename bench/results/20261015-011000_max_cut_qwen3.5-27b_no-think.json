@@ -1,0 +1,89 @@
+{
+ "schema": 2,
+ "example": "max_cut",
+ "model": "qwen3.5:27b",
+ "variant": "no-think",
+ "model_size_gb": 17.4,
+ "model_params": "27.8B",
+ "started": "2026-10-15T01:10:00",
+ "minutes_budget": 15.0,
+ "wall_minutes": 17.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.5121828962692699,
+ "best_score": 0.6938525769566565,
+ "improvement": 1.3546968905261478,
+ "llm_calls": 7,
+ "mean_llm_seconds": 148.7,
+ "attempts": 7,
+ "ok": 5,
+ "statuses": {
+  "edit_error": 2,
+  "ok": 5
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 9.15,
+ "best_idea": "Implement a greedy construction heuristic that places nodes one by one onto the side that maximizes the cut weight with respect to already placed neighbors, which is a significant improvement over the",
+ "progress": [
+  [
+   0.0,
+   0.5121828962692699
+  ],
+  [
+   9.15,
+   0.6938525769566565
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.5121828962692699,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 9.15,
+   "score": 0.6938525769566565,
+   "model": "qwen3.5:27b",
+   "mode": "explore/diff/tune",
+   "status": "ok",
+   "idea": "Implement a greedy construction heuristic that places nodes one by one onto the side that maximizes the cut weight with respect to already placed neighbors, which is a significant improvement over the random alternating baseline."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,7 +19,41 @@\n     time limit of 2.0 s (time.process_time(); more than 1.5 x the limit makes the program\n     invalid). Only the Python standard library may be used.\n \n-    Current method: alternate the sides by node index (ignores the edges entirely).\n+    Current method: Greedy construction.\n     \"\"\"\n-    return [i % 2 for i in range(n)]\n+    # Build adjacency list for fast lookup\n+    adj = [[] for _ in range(n)]\n+    for u, v, w in edges:\n+        adj[u].append((v, w))\n+        adj[v].append((u, w))\n+    \n+    side = [-1] * n\n+    # Initialize with node 0 on side 0\n+    side[0] = 0\n+    \n+    # Track weight connected to side 0 and side 1 for each node\n+    # gain0[u] = weight of edges from u to nodes on side 0\n+    # gain1[u] = weight of edges from u to nodes on side 1\n+    # If we place u on side 0, cut contribution = gain1[u]\n+    # If we place u on side 1, cut contribution = gain0[u]\n+    # We want to maximize cut, so we pick side with larger 'other' weight\n+    \n+    # We will place nodes in order 1..n-1\n+    for u in range(1, n):\n+        w0 = 0  # weight to side 0\n+        w1 = 0  # weight to side 1\n+        for v, w in adj[u]:\n+            if side[v] == 0:\n+                w0 += w\n+            elif side[v] == 1:\n+                w1 += w\n+        \n+        # Place on side that maximizes edges crossing to the other side\n+        # If we pick side 0, cut adds w1. If side 1, cut adds w0.\n+        if w1 >= w0:\n+            side[u] = 0\n+        else:\n+            side[u] = 1\n+            \n+    return side\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 18.6,
+ "model_gpu_memory_gb": 18.6,
+ "context_length": 32768,
+ "load_seconds": 233.4,
+ "median_call_seconds": 90.4,
+ "p90_call_seconds": 396.8,
+ "prompt_tokens_per_s": 106.8,
+ "gen_tokens_per_s": 11.1,
+ "mean_prompt_tokens": 2284,
+ "mean_gen_tokens": 1039,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

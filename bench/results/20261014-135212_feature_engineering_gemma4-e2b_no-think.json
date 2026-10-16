@@ -1,0 +1,151 @@
+{
+ "schema": 2,
+ "example": "feature_engineering",
+ "model": "gemma4:e2b",
+ "variant": "no-think",
+ "model_size_gb": 7.2,
+ "model_params": "5.1B",
+ "started": "2026-10-14T13:52:12",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.623,
+ "best_score": 0.774,
+ "improvement": 1.2423756019261638,
+ "llm_calls": 66,
+ "mean_llm_seconds": 13.2,
+ "attempts": 66,
+ "ok": 48,
+ "statuses": {
+  "ok": 48,
+  "duplicate": 8,
+  "edit_error": 7,
+  "invalid": 3
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 8,
+ "minutes_to_best": 14.19,
+ "best_idea": "Incorporate binning for the uniform features $x_4$ and $x_5$ to capture the piecewise linear structure suggested by the leaderboard, as this was a strong direction.",
+ "progress": [
+  [
+   0.0,
+   0.623
+  ],
+  [
+   0.77,
+   0.681
+  ],
+  [
+   1.1,
+   0.701
+  ],
+  [
+   1.32,
+   0.724
+  ],
+  [
+   3.59,
+   0.734
+  ],
+  [
+   6.94,
+   0.765
+  ],
+  [
+   7.86,
+   0.769
+  ],
+  [
+   9.19,
+   0.772
+  ],
+  [
+   14.19,
+   0.774
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.623,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 0.77,
+   "score": 0.681,
+   "model": "gemma4:e2b",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Use pairwise products and their signs to capture potential non-linear interactions, as hinted by the expert advice, to better reveal the underlying structure the linear model can exploit."
+  },
+  {
+   "minutes": 1.32,
+   "score": 0.724,
+   "model": "gemma4:e2b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "The evaluator suggests that features $f_{15}$ and $f_{14}$ have non-zero weights, indicating the importance of interactions involving $x_1, x_2, x_3, x_4, x_5, x_6$. I will add features derived from the log-like distribution of $x_3$ and the range of $x_4, x_5$ to capture more structure."
+  },
+  {
+   "minutes": 7.38,
+   "score": 0.734,
+   "model": "gemma4:e2b",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Focus on binning the uniform variables $x_4$ and $x_5$ using fewer, well-chosen thresholds to capture piecewise linearity, as suggested by the leaderboard, replacing complex pairwise interactions."
+  },
+  {
+   "minutes": 10.31,
+   "score": 0.743,
+   "model": "gemma4:e2b",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Replace the complex manual binning with a simpler, direct log transformation and essential pairwise interactions to focus on the known non-linearities of $x_3$ and the interplay with the normal inputs."
+  },
+  {
+   "minutes": 14.19,
+   "score": 0.774,
+   "model": "gemma4:e2b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Incorporate binning for the uniform features $x_4$ and $x_5$ to capture the piecewise linear structure suggested by the leaderboard, as this was a strong direction."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,7 +19,35 @@\n     features (they are standardized and a bias is added), so nonlinear structure only\n     helps if a feature expresses it. Only the Python standard library may be used.\n \n-    Current method: the raw inputs.\n+    Method: Pairwise products and their signs.\n     \"\"\"\n-    return list(row)\n+    x1, x2, x3, x4, x5, x6 = row\n+    features_list = []\n+    # Log transform x3 and include key pairwise interactions.\n+    features_list.append(math.log(x3))\n+    features_list.extend([x1 * x3, x2 * x3, x1 * x2, x1 * x6, x2 * x6,\n+                          x3 * x4, x3 * x5])\n+    \n+    # Binning for x4 and x5 to capture piecewise behavior.\n+    # x4 binning: [-2, -1), [-1, 0), [0, 1), [1, 2]\n+    x4_bin = [\n+        1.0 if x4 >= 1.0 else 0.0,  # x4 >= 1\n+        1.0 if (x4 >= 0.0 and x4 < 1.0) else 0.0, # 0 <= x4 < 1\n+        1.0 if (x4 >= -1.0 and x4 < 0.0) else 0.0, # -1 <= x4 < 0\n+        1.0 if x4 < -1.0 else 0.0    # x4 < -1\n+    ]\n+\n+    # x5 binning: [-2, -1), [-1, 1), [1, 2]\n+    x5_bin = [\n+        1.0 if x5 >= 1.0 else 0.0,  # x5 >= 1\n+        1.0 if (x5 >= -1.0 and x5 < 1.0) else 0.0, # -1 <= x5 < 1\n+        1.0 if x5 < -1.0 else 0.0    # x5 < -1\n+    ]\n+    features_list.extend(x4_bin)\n+    features_list.extend(x5_bin)\n+    \n+    return features_list\n+    \n+    return features_list\n+    return features_list\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 6.6,
+ "model_gpu_memory_gb": 6.6,
+ "context_length": 32768,
+ "load_seconds": 34.4,
+ "median_call_seconds": 12.7,
+ "p90_call_seconds": 23.6,
+ "prompt_tokens_per_s": 989.8,
+ "gen_tokens_per_s": 77.0,
+ "mean_prompt_tokens": 4468,
+ "mean_gen_tokens": 629,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

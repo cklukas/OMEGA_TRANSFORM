@@ -1,0 +1,124 @@
+{
+ "schema": 2,
+ "example": "tammes_30",
+ "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 17.8,
+ "model_params": "27.3B",
+ "started": "2026-10-15T15:31:04",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.8,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 3.2013569883368893,
+ "best_score": 37.96440709010342,
+ "improvement": 11.858848365994321,
+ "llm_calls": 8,
+ "mean_llm_seconds": 125.3,
+ "attempts": 8,
+ "ok": 8,
+ "statuses": {
+  "ok": 8
+ },
+ "sweeps": 1,
+ "sweep_variants": 15,
+ "improvements": 4,
+ "minutes_to_best": 14.54,
+ "best_idea": "Add a local search polish phase that explicitly pushes apart the closest pairs with a shrinking step size to maximize the minimum angle directly, rather than relying solely on the repulsion energy gra",
+ "progress": [
+  [
+   0.0,
+   3.2013569883368893
+  ],
+  [
+   4.73,
+   32.740231081838274
+  ],
+  [
+   6.63,
+   35.63910152391187
+  ],
+  [
+   8.91,
+   36.83406086252404
+  ],
+  [
+   14.54,
+   37.96440709010342
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.2013569883368893,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 4.73,
+   "score": 32.740231081838274,
+   "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Replace the random initialization with a Fibonacci lattice (golden spiral) distribution, which provides a much more uniform initial placement of points on the sphere, significantly increasing the minimum angle before any optimization."
+  },
+  {
+   "minutes": 8.91,
+   "score": 7.94569020107567,
+   "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Add a gradient-based optimization loop that minimizes a repulsion energy (sum of 1/d^s) projected onto the sphere tangent planes to push the closest pairs apart and increase the minimum angle beyond the static Fibonacci lattice limit."
+  },
+  {
+   "minutes": 8.91,
+   "score": 36.83406086252404,
+   "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+   "mode": "sweep/best/diff/refine",
+   "status": "ok",
+   "idea": "tuned max_iter=1000, learning_rate=0.005, iters_per_s_step=200 on top of: Add a gradient-based optimization loop that minimizes a repulsion energy (sum of 1/d^s) projected onto the sphere tangent planes to push the closest pairs apart and increase the minimum angle beyond the static Fibonacci lattic"
+  },
+  {
+   "minutes": 14.54,
+   "score": 37.96440709010342,
+   "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Add a local search polish phase that explicitly pushes apart the closest pairs with a shrinking step size to maximize the minimum angle directly, rather than relying solely on the repulsion energy gradient which may stagnate."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -9,19 +9,245 @@\n def construct(n=30):\n     \"\"\"Return a list of n points (x, y, z) on the unit sphere.\n \n-    Vectors need not be normalized (the evaluator normalizes them), but none may be\n-    zero. The score is the minimum angle in degrees between any two points. This\n-    start draws uniformly random points with a fixed seed, so some pairs end up\n-    close together.\n+    Starts with a Fibonacci lattice and optimizes via gradient descent on\n+    repulsion energy projected onto the sphere.\n     \"\"\"\n-    rng = random.Random(1)\n+    # 1. Initialize with Fibonacci lattice\n     points = []\n-    for _ in range(n):\n-        z = rng.uniform(-1.0, 1.0)\n-        phi = rng.uniform(0.0, 2 * math.pi)\n-        s = math.sqrt(1.0 - z * z)\n-        points.append((s * math.cos(phi), s * math.sin(phi), z))\n-    return points\n+    golden_ratio = (1 + math.sqrt(5)) / 2\n+    for i in range(n):\n+        z = 1 - (2 * i + 1) / n\n+        radius = math.sqrt(1 - z * z)\n+        phi = 2 * math.pi * i / golden_ratio\n+        x = radius * math.cos(phi)\n+        y = radius * math.sin(phi)\n+        points.append([x, y, z]) # Use lists for mutability\n+\n+    # 2. Gradient Descent Optimization\n+    # Repulsion energy: sum 1/d^s for chord distance d\n+    # We increase s over time to focus on the minimum distances (Tammes objective)\n+    \n+    max_iter = 1000\n+    learning_rate = 0.005\n+    s_power = 1.0 # Start with Thomson-like repulsion\n+    s_step = 0.5  # Increase power every few iterations\n+    iters_per_s_step = 200\n+\n+    for it in range(max_iter):\n+        # Update repulsion power gradually\n+        if it > 0 and it % iters_per_s_step == 0:\n+            s_power += s_step\n+            # Reduce learning rate slightly as we get more focused\n+            learning_rate *= 0.95\n+\n+        # Compute gradients for each point\n+        gradients = [[0.0, 0.0, 0.0] for _ in range(n)]\n+        \n+        for i in range(n):\n+            pi = points[i]\n+            for j in range(i + 1, n):\n+                pj = points[j]\n+                \n+                # Vector from i to j\n+                dx = pj[0] - pi[0]\n+                dy = pj[1] - pi[1]\n+                dz = pj[2] - pi[2]\n+                \n+                # Chord distance squared\n+                d_sq = dx*dx + dy*dy + dz*dz\n+                \n+                # Avoid division by zero if points coincide\n+                if d_sq < 1e-10:\n+                    continue\n+\n+                d = math.sqrt(d_sq)\n+                \n+                # Force magnitude: dF/dd = s * d^(-s-1)\n+                # Direction is along the vector (pj - pi)\n+                # Gradient of potential 1/d^s w.r.t pi is s * d^(-s-1) * (pi - pj) / d\n+                # Actually, let's derive carefully:\n+                # E = sum (|ri - rj|^2)^(-s/2)\n+                # dE/dri = -s * (|ri - rj|^2)^(-s/2 - 1) * (ri - rj)\n+                # So force on i is away from j.\n+                \n+                mag = s_power * (d_sq ** (-s_power / 2.0 - 1.0))\n+                \n+                fx = mag * dx\n+                fy = mag * dy\n+                fz = mag * dz\n+                \n+                # Add to gradient of i (repulsive force from j)\n+                gradients[i][0] += fx\n+                gradients[i][1] += fy\n+                gradients[i][2] += fz\n+                \n+                # Add to gradient of j (repulsive force from i, opposite direction)\n+                gradients[j][0] -= fx\n+                gradients[j][1] -= fy\n+                gradients[j][2] -= fz\n+\n+        # Apply updates projected onto tangent plane\n+        for i in range(n):\n+            pi = points[i]\n+            \n+            # Gradient points in direction of steepest ascent of energy\n+            # We want to minimize energy, so move opposite to gradient\n+            gx = -gradients[i][0]\n+            gy = -gradients[i][1]\n+            gz = -gradients[i][2]\n+            \n+            # Project gradient onto tangent plane at pi\n+            # Tangent plane is orthogonal to pi (since |pi|=1)\n+            # proj(g) = g - (g . pi) * pi\n+            dot = gx * pi[0] + gy * pi[1] + gz * pi[2]\n+            \n+            tx = gx - dot * pi[0]\n+            ty = gy - dot * pi[1]\n+            tz = gz - dot * pi[2]\n+            \n+            # Normalize tangent vector to apply fixed step size (optional, but helps stability)\n+            t_len = math.sqrt(tx*tx + ty*ty + tz*tz)\n+            if t_len > 1e-10:\n+                step = learning_rate / t_len # Normalize step size relative to gradient magnitude? \n+                # Actually, usually just step * tx is fine if learning rate is small.\n+                # Let's use raw tangent component scaled by learning rate\n+                points[i][0] += tx * learning_rate\n+                points[i][1] += ty * learning_rate\n+                points[i][2] += tz * learning_rate\n+            \n+            # Renormalize to sphere\n+            norm = math.sqrt(points[i][0]**2 + points[i][1]**2 + points[i][2]**2)\n+            points[i][0] /= norm\n+            points[i][1] /= norm\n+            points[i][2] /= norm\n+\n+    # 3. Local Search Polish: Push apart closest pairs directly\n+    # This focuses specifically on the minimum distance to increase the Tammes score\n+    best_points = [list(p) for p in points]\n+    best_min_dist = 0.0\n+    \n+    # Compute initial min distance\n+    min_d_sq = float('inf')\n+    for i in range(n):\n+        for j in range(i + 1, n):\n+            dx = points[i][0] - points[j][0]\n+            dy = points[i][1] - points[j][1]\n+            dz = points[i][2] - points[j][2]\n+            d_sq = dx*dx + dy*dy + dz*dz\n+            if d_sq < min_d_sq:\n+                min_d_sq = d_sq\n+    best_min_dist = min_d_sq\n+\n+    step_size = 0.01\n+    decay = 0.99\n+    min_step = 1e-7\n+    margin_factor = 1.05 # Consider pairs within 5% of min distance as \"closest\"\n+\n+    while step_size > min_step:\n+        improved = False\n+        # Find pairs close to the current minimum\n+        current_min_sq = best_min_dist\n+        \n+        # Identify indices of closest pairs\n+        close_pairs = []\n+        for i in range(n):\n+            for j in range(i + 1, n):\n+                dx = points[i][0] - points[j][0]\n+                dy = points[i][1] - points[j][1]\n+                dz = points[i][2] - points[j][2]\n+                d_sq = dx*dx + dy*dy + dz*dz\n+                if d_sq < current_min_sq * margin_factor:\n+                    close_pairs.append((i, j, d_sq))\n+        \n+        if not close_pairs:\n+            break\n+\n+        # Sort by distance, push the closest ones first\n+        close_pairs.sort(key=lambda x: x[2])\n+        \n+        for i, j, d_sq in close_pairs:\n+            pi = points[i]\n+            pj = points[j]\n+            \n+            dx = pj[0] - pi[0]\n+            dy = pj[1] - pi[1]\n+            dz = pj[2] - pi[2]\n+            \n+            d = math.sqrt(d_sq)\n+            if d < 1e-10:\n+                continue\n+                \n+            # Unit vector from i to j\n+            ux = dx / d\n+            uy = dy / d\n+            uz = dz / d\n+            \n+            # Move i away from j, and j away from i\n+            # Project displacement onto tangent plane\n+            # Displacement for i: -step * (u - (u.pi)*pi)\n+            dot_i = ux * pi[0] + uy * pi[1] + uz * pi[2]\n+            tx_i = ux - dot_i * pi[0]\n+            ty_i = uy - dot_i * pi[1]\n+            tz_i = uz - dot_i * pi[2]\n+            \n+            # Normalize tangent vector\n+            t_len_i = math.sqrt(tx_i*tx_i + ty_i*ty_i + tz_i*tz_i)\n+            if t_len_i > 1e-10:\n+                pi[0] -= (step_size / t_len_i) * tx_i\n+                pi[1] -= (step_size / t_len_i) * ty_i\n+                pi[2] -= (step_size / t_len_i) * tz_i\n+                \n+                # Renormalize\n+                norm = math.sqrt(pi[0]**2 + pi[1]**2 + pi[2]**2)\n+                pi[0] /= norm\n+                pi[1] /= norm\n+                pi[2] /= norm\n+                \n+                # Update pj immediately for consistency in this step\n+                # Displacement for j: +step * (u - (u.pj)*pj) -> actually u is from i to j\n+                # So force on j is away from i, which is +u direction\n+                dot_j = ux * pj[0] + uy * pj[1] + uz * pj[2]\n+                tx_j = ux - dot_j * pj[0]\n+                ty_j = uy - dot_j * pj[1]\n+                tz_j = uz - dot_j * pj[2]\n+                \n+                t_len_j = math.sqrt(tx_j*tx_j + ty_j*ty_j + tz_j*tz_j)\n+                if t_len_j > 1e-10:\n+                    pj[0] += (step_size / t_len_j) * tx_j\n+                    pj[1] += (step_size / t_len_j) * ty_j\n+                    pj[2] += (step_size / t_len_j) * tz_j\n+                    \n+                    norm = math.sqrt(pj[0]**2 + pj[1]**2 + pj[2]**2)\n+                    pj[0] /= norm\n+                    pj[1] /= norm\n+                    pj[2] /= norm\n+\n+        # Recalculate min distance to check for improvement\n+        new_min_sq = float('inf')\n+        for i in range(n):\n+            for j in range(i + 1, n):\n+                dx = points[i][0] - points[j][0]\n+                dy = points[i][1] - points[j][1]\n+                dz = points[i][2] - points[j][2]\n+                d_sq = dx*dx + dy*dy + dz*dz\n+                if d_sq < new_min_sq:\n+                    new_min_sq = d_sq\n+        \n+        if new_min_sq > best_min_dist:\n+            best_min_dist = new_min_sq\n+            best_points = [list(p) for p in points]\n+            improved = True\n+        else:\n+            # If no improvement after pushing closest pairs, reduce step size\n+            # But only if we've tried enough or it's clearly stuck\n+            pass\n+            \n+        step_size *= decay\n+\n+    points = best_points\n+\n+    # Convert back to tuples\n+    return [(p[0], p[1], p[2]) for p in points]\n # OMEGA-BLOCK-END\n \n \n",
+ "error": "",
+ "model_memory_gb": 18.2,
+ "model_gpu_memory_gb": 18.2,
+ "context_length": 32768,
+ "load_seconds": 241.5,
+ "median_call_seconds": 131.0,
+ "p90_call_seconds": 283.6,
+ "prompt_tokens_per_s": 99.7,
+ "gen_tokens_per_s": 14.9,
+ "mean_prompt_tokens": 2676,
+ "mean_gen_tokens": 1011,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

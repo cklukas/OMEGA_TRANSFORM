@@ -1,0 +1,120 @@
+{
+ "schema": 2,
+ "example": "prefix_sum_histogram_single_thread",
+ "model": "gemma4:latest",
+ "variant": "no-think",
+ "model_size_gb": 9.5,
+ "model_params": "",
+ "started": "2026-10-15T03:50:03",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 4.9125,
+ "best_score": 5.93032,
+ "improvement": 1.2071898218829518,
+ "llm_calls": 35,
+ "mean_llm_seconds": 25.8,
+ "attempts": 35,
+ "ok": 11,
+ "statuses": {
+  "compile_error": 10,
+  "ok": 11,
+  "invalid": 9,
+  "llm_error": 1,
+  "edit_error": 4
+ },
+ "sweeps": 2,
+ "sweep_variants": 19,
+ "improvements": 4,
+ "minutes_to_best": 15.25,
+ "best_idea": "tuned UNROLL_FACTOR=23 on top of: Increase the loop unrolling factor from 16 to expose more Instruction Level Parallelism (ILP) to reduce loop overhead, as this is the primary method for improving the",
+ "progress": [
+  [
+   0.0,
+   4.9125
+  ],
+  [
+   13.04,
+   5.80804
+  ],
+  [
+   13.64,
+   5.8984
+  ],
+  [
+   14.01,
+   5.90362
+  ],
+  [
+   15.25,
+   5.93032
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 4.9125,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 14.01,
+   "score": 5.90362,
+   "model": "gemma4:latest",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the simple sequential loop with a loop unrolling factor of 16 to expose instruction-level parallelism and reduce loop overhead."
+  },
+  {
+   "minutes": 15.25,
+   "score": 4.99376,
+   "model": "gemma4:latest",
+   "mode": "best/rewrite/tune",
+   "status": "ok",
+   "idea": "Increase the loop unrolling factor from 16 to expose more Instruction Level Parallelism (ILP) to reduce loop overhead, as this is the primary method for improving the sequential scan."
+  },
+  {
+   "minutes": 15.25,
+   "score": 5.93032,
+   "model": "gemma4:latest",
+   "mode": "sweep/best/rewrite/tune",
+   "status": "ok",
+   "idea": "tuned UNROLL_FACTOR=23 on top of: Increase the loop unrolling factor from 16 to expose more Instruction Level Parallelism (ILP) to reduce loop overhead, as this is the primary method for improving the sequential scan."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -30,10 +30,23 @@\n extern \"C\" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, uint64_t* hist) {\n     for (int b = 0; b < 256; ++b) hist[b] = 0;\n     int64_t sum = 0;\n-    for (size_t i = 0; i < n; ++i) {\n+    constexpr size_t UNROLL_FACTOR = 23;\n+    size_t i = 0;\n+    for (; i + UNROLL_FACTOR <= n; i += UNROLL_FACTOR) {\n+        int64_t current_sum = sum;\n+        // Unroll UNROLL_FACTOR iterations\n+        for (size_t j = 0; j < UNROLL_FACTOR; ++j) {\n+            current_sum += in[i + j];\n+            out[i + j] = current_sum;\n+            hist[in[i + j] & 0xFF]++;\n+        }\n+        sum = current_sum;\n+    }\n+    // Handle remaining elements sequentially\n+    for (; i < n; ++i) {\n         sum += in[i];\n         out[i] = sum;\n-        hist[in[i] & 255]++;\n+        hist[in[i] & 0xFF]++;\n     }\n }\n // OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 13.4,
+ "model_gpu_memory_gb": 13.4,
+ "context_length": 32768,
+ "load_seconds": 103.7,
+ "median_call_seconds": 21.1,
+ "p90_call_seconds": 38.9,
+ "prompt_tokens_per_s": 1436.9,
+ "gen_tokens_per_s": 47.1,
+ "mean_prompt_tokens": 4901,
+ "mean_gen_tokens": 897,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

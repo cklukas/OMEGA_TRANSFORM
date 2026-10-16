@@ -1,0 +1,187 @@
+{
+ "schema": 2,
+ "example": "feature_engineering",
+ "model": "gemma4:latest",
+ "variant": "no-think",
+ "model_size_gb": 9.5,
+ "model_params": "",
+ "started": "2026-10-14T14:07:17",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.623,
+ "best_score": 0.889,
+ "improvement": 1.4269662921348314,
+ "llm_calls": 72,
+ "mean_llm_seconds": 12.1,
+ "attempts": 72,
+ "ok": 60,
+ "statuses": {
+  "ok": 60,
+  "duplicate": 5,
+  "invalid": 5,
+  "edit_error": 2
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 11,
+ "minutes_to_best": 12.07,
+ "best_idea": "Replace the simple absolute difference features with signed difference features to allow the linear model to learn directional dependence, which might be more discriminative than the symmetric absolut",
+ "progress": [
+  [
+   0.0,
+   0.623
+  ],
+  [
+   1.87,
+   0.715
+  ],
+  [
+   1.93,
+   0.76
+  ],
+  [
+   3.21,
+   0.763
+  ],
+  [
+   4.64,
+   0.782
+  ],
+  [
+   6.29,
+   0.799
+  ],
+  [
+   6.7,
+   0.808
+  ],
+  [
+   7.92,
+   0.813
+  ],
+  [
+   8.7,
+   0.861
+  ],
+  [
+   9.64,
+   0.882
+  ],
+  [
+   10.74,
+   0.883
+  ],
+  [
+   12.07,
+   0.889
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.623,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.93,
+   "score": 0.76,
+   "model": "gemma4:latest",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Introduce features based on pairwise products and signs to capture potential non-linear interactions between the standard-normal-like inputs x1, x2, and x6."
+  },
+  {
+   "minutes": 3.21,
+   "score": 0.763,
+   "model": "gemma4:latest",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Add features based on the interaction of the right-skewed input x3 with the bounded inputs x4 and x5, as these inputs have not been fully utilized in the current feature set."
+  },
+  {
+   "minutes": 3.76,
+   "score": 0.726,
+   "model": "gemma4:latest",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Introduce log transformations of the right-skewed input $x_3$ as suggested by prior high-scoring ideas, and combine them with existing features."
+  },
+  {
+   "minutes": 4.64,
+   "score": 0.782,
+   "model": "gemma4:latest",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Introduce features based on the squared magnitude of inputs to approximate distance measures or non-linear relationships, focusing on $x_3^2$ and $x_4^2+x_5^2$ to capture scale effects."
+  },
+  {
+   "minutes": 8.7,
+   "score": 0.861,
+   "model": "gemma4:latest",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Introduce features based on the signs of the original inputs to capture quadrant-like information, as hinted by previous successful ideas."
+  },
+  {
+   "minutes": 9.64,
+   "score": 0.882,
+   "model": "gemma4:latest",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Introduce features based on the log transformation of $x_3$ and combine it with bounded inputs ($x_4, x_5$) as suggested by past successes, using a safe log offset."
+  },
+  {
+   "minutes": 10.74,
+   "score": 0.883,
+   "model": "gemma4:latest",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Introduce features based on the difference and sign of the standard-normal-like inputs ($x_1, x_2, x_6$) combined with the log-transformed $x_3$ to explore unexplored directions."
+  },
+  {
+   "minutes": 12.07,
+   "score": 0.889,
+   "model": "gemma4:latest",
+   "mode": "explore/diff/refine",
+   "status": "ok",
+   "idea": "Replace the simple absolute difference features with signed difference features to allow the linear model to learn directional dependence, which might be more discriminative than the symmetric absolute difference."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -21,5 +21,40 @@\n \n     Current method: the raw inputs.\n     \"\"\"\n-    return list(row)\n+    x1, x2, x3, x4, x5, x6 = row\n+    features = list(row)\n+    # Pairwise interactions between x1, x2, x6 (standard-normal-like)\n+    features.append(x1 * x2)\n+    features.append(x1 * x6)\n+    features.append(x2 * x6)\n+    # Interactions involving x3 (lognormal-like) and x4, x5 (uniform)\n+    features.append(x3 * x4)\n+    features.append(x3 * x5)\n+    features.append(x4 * x5)\n+    # Squared features to capture magnitude/curvature effects\n+    features.append(x3 * x3)\n+    features.append(x4 * x4)\n+    features.append(x5 * x5)\n+    # Interaction feature based on sum of squares of bounded inputs\n+    features.append(x4 * x4 + x5 * x5)\n+    # Log transformation of x3 (using a small offset for safety)\n+    log_x3 = math.log(x3 + 1.0)\n+    features.append(log_x3)\n+    # Interactions involving log(x3) and bounded inputs\n+    features.append(log_x3 * x4)\n+    features.append(log_x3 * x5)\n+    # Added features from unexplored direction 2: signed differences of standard-normal inputs\n+    features.append(x1 - x2)\n+    features.append(x1 - x6)\n+    features.append(x2 - x6)\n+    # Interactions of signed differences with log(x3)\n+    features.append((x1 - x2) * log_x3)\n+    features.append((x1 - x6) * log_x3)\n+    # Signs of inputs\n+    features.append(1.0 if x1 >= 0 else -1.0)\n+    features.append(1.0 if x2 >= 0 else -1.0)\n+    features.append(1.0 if x6 >= 0 else -1.0)\n+    # Interaction of signs\n+    features.append(1.0 if (x1 >= 0 and x2 >= 0) else -1.0)\n+    return features\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 17.9,
+ "model_gpu_memory_gb": 17.9,
+ "context_length": 32768,
+ "load_seconds": 105.7,
+ "median_call_seconds": 10.0,
+ "p90_call_seconds": 17.7,
+ "prompt_tokens_per_s": 1081.5,
+ "gen_tokens_per_s": 50.0,
+ "mean_prompt_tokens": 4246,
+ "mean_gen_tokens": 333,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -1,0 +1,155 @@
+{
+ "schema": 2,
+ "example": "tammes_30",
+ "model": "gemma4:latest",
+ "variant": "no-think",
+ "model_size_gb": 9.5,
+ "model_params": "",
+ "started": "2026-10-15T14:10:11",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 3.2013569883368893,
+ "best_score": 37.0128540572805,
+ "improvement": 11.561614088064806,
+ "llm_calls": 49,
+ "mean_llm_seconds": 17.9,
+ "attempts": 49,
+ "ok": 33,
+ "statuses": {
+  "ok": 33,
+  "invalid": 11,
+  "duplicate": 1,
+  "edit_error": 4
+ },
+ "sweeps": 2,
+ "sweep_variants": 28,
+ "improvements": 7,
+ "minutes_to_best": 11.29,
+ "best_idea": "tuned S=8, STEPS=2000, STEP_SCALE=7.776e-05 on top of: Promote the heuristic parameters (S, STEPS, STEP_SCALE) to constants to allow the evolutionary search to tune the repulsion energy minimization p",
+ "progress": [
+  [
+   0.0,
+   3.2013569883368893
+  ],
+  [
+   1.81,
+   9.399327664731388
+  ],
+  [
+   1.88,
+   9.555664021413529
+  ],
+  [
+   4.89,
+   20.69354123118596
+  ],
+  [
+   6.35,
+   23.425759718043285
+  ],
+  [
+   8.56,
+   34.68676020167566
+  ],
+  [
+   10.02,
+   35.518673285265656
+  ],
+  [
+   11.29,
+   37.0128540572805
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.2013569883368893,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.86,
+   "score": 9.555664021413529,
+   "model": "gemma4:latest",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the random initialization with the Fibonacci spiral configuration to provide a better starting point, as suggested by previous successful runs."
+  },
+  {
+   "minutes": 4.44,
+   "score": 8.393899659623154,
+   "model": "gemma4:latest",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Implement the energy minimization refinement step starting from the golden-spiral initialization to improve the configuration."
+  },
+  {
+   "minutes": 6.35,
+   "score": 23.425759718043285,
+   "model": "gemma4:latest",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the simple random nudging refinement loop with a more targeted energy minimization using pairwise repulsion, as suggested by expert hints."
+  },
+  {
+   "minutes": 8.56,
+   "score": 34.68676020167566,
+   "model": "gemma4:latest",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Increase the number of refinement iterations and adjust the repulsion step size to allow the energy minimization to converge better."
+  },
+  {
+   "minutes": 11.29,
+   "score": 34.68676020167566,
+   "model": "gemma4:latest",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Promote the heuristic parameters (S, STEPS, STEP_SCALE) to constants to allow the evolutionary search to tune the repulsion energy minimization process."
+  },
+  {
+   "minutes": 11.29,
+   "score": 37.0128540572805,
+   "model": "gemma4:latest",
+   "mode": "sweep/exploit/diff/tune",
+   "status": "ok",
+   "idea": "tuned S=8, STEPS=2000, STEP_SCALE=7.776e-05 on top of: Promote the heuristic parameters (S, STEPS, STEP_SCALE) to constants to allow the evolutionary search to tune the repulsion energy minimization process."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -16,11 +16,77 @@\n     \"\"\"\n     rng = random.Random(1)\n     points = []\n-    for _ in range(n):\n-        z = rng.uniform(-1.0, 1.0)\n-        phi = rng.uniform(0.0, 2 * math.pi)\n-        s = math.sqrt(1.0 - z * z)\n-        points.append((s * math.cos(phi), s * math.sin(phi), z))\n+    # Use a known good configuration (like the Fibonacci spiral or a related one) for initialization\n+    # For simplicity and to keep the initial structure, we start with the provided points and apply a small local optimization loop\n+    points = [\n+        (math.cos(2 * math.pi * i / n), math.sin(2 * math.pi * i / n), 0.0) for i in range(n)\n+    ]\n+    # Refinement loop: Minimize repulsion energy (simple attraction towards center of mass of the whole set is not helpful, so we use a simplified gradient approach)\n+    # Since we cannot easily implement full gradient projection/tangent plane projection without extensive vector math, we'll simulate a few steps of nudging based on pairwise repulsion.\n+    \n+    # A simplified approach: Re-initialize using the pattern from the lineage's successful programs (which are related to Fibonacci/spherical packing)\n+    # Let's re-implement the golden spiral structure mentioned in the lineage for better starting points, as the current structure is likely insufficient for optimization.\n+    \n+    # Reverting to a structure similar to the successful ones, which use a specific parametrization.\n+    # We'll use the parameters from Inspiration Program 2, which was explicitly mentioned as successful.\n+    rng = random.Random(1)\n+    points = []\n+    for i in range(n):\n+        phi = i * 2 * math.pi / n\n+        z = 1 - 2 * i / (n + 1)\n+        radius = math.sqrt(1 - z*z)\n+        x = radius * math.cos(phi)\n+        y = radius * math.sin(phi)\n+        points.append((x, y, z))\n+\n+    # Energy minimization refinement loop (Repulsion Energy: Sum of 1/d^s)\n+    S = 8.0 # Exponent for repulsion force\n+    STEPS = 2000 # Number of iterations\n+    STEP_SCALE = 7.775923467170839e-05 # Step size for gradient nudge\n+    for iteration in range(STEPS):\n+        new_points = [list(p) for p in points]\n+        \n+        # Calculate repulsive forces\n+        for i in range(n):\n+            p_i = points[i]\n+            force_x, force_y, force_z = 0.0, 0.0, 0.0\n+            \n+            for j in range(n):\n+                if i == j: continue\n+                p_j = points[j]\n+                \n+                # Chord distance squared (d^2)\n+                d_sq = sum([(p_i[k] - p_j[k])**2 for k in range(3)])\n+                \n+                # Force is proportional to 1/d^S\n+                if d_sq < 1e-10: continue # Avoid division by zero\n+                \n+                # Calculate direction vector from j to i\n+                vec_ij = [(p_i[k] - p_j[k]) for k in range(3)]\n+                dist = math.sqrt(d_sq)\n+                \n+                # Repulsion force magnitude (simple inverse distance)\n+                force_mag = 1.0 / (dist**S)\n+                \n+                # Add force components\n+                force_x += vec_ij[0] * force_mag\n+                force_y += vec_ij[1] * force_mag\n+                force_z += vec_ij[2] * force_mag\n+            \n+            # Apply force nudge (move away from others)\n+            new_points[i][0] += force_x * STEP_SCALE\n+            new_points[i][1] += force_y * STEP_SCALE\n+            new_points[i][2] += force_z * STEP_SCALE\n+\n+        # Renormalize all points\n+        new_points_spherical = []\n+        for p in new_points:\n+            norm = math.sqrt(p[0]**2 + p[1]**2 + p[2]**2)\n+            if norm == 0: continue\n+            new_points_spherical.append(tuple(p[k] / norm for k in range(3)))\n+        \n+        points = new_points_spherical\n+        \n     return points\n # OMEGA-BLOCK-END\n \n",
+ "error": "",
+ "model_memory_gb": 15.0,
+ "model_gpu_memory_gb": 15.0,
+ "context_length": 32768,
+ "load_seconds": 103.2,
+ "median_call_seconds": 16.4,
+ "p90_call_seconds": 28.8,
+ "prompt_tokens_per_s": 984.2,
+ "gen_tokens_per_s": 53.9,
+ "mean_prompt_tokens": 3414,
+ "mean_gen_tokens": 662,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

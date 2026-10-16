@@ -1,0 +1,90 @@
+{
+ "schema": 2,
+ "example": "max_cut",
+ "model": "gemma4:12b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 7.2,
+ "model_params": "11.9B",
+ "started": "2026-10-14T23:52:29",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.5121828962692699,
+ "best_score": 0.71176993090028,
+ "improvement": 1.38967922608271,
+ "llm_calls": 17,
+ "mean_llm_seconds": 54.7,
+ "attempts": 17,
+ "ok": 8,
+ "statuses": {
+  "edit_error": 4,
+  "ok": 8,
+  "invalid": 5
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 3.51,
+ "best_idea": "Implement a greedy construction followed by a local search (one-flip) to significantly improve the cut weight.",
+ "progress": [
+  [
+   0.0,
+   0.5121828962692699
+  ],
+  [
+   3.51,
+   0.71176993090028
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.5121828962692699,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.51,
+   "score": 0.71176993090028,
+   "model": "gemma4:12b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Implement a greedy construction followed by a local search (one-flip) to significantly improve the cut weight."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,7 +19,102 @@\n     time limit of 2.0 s (time.process_time(); more than 1.5 x the limit makes the program\n     invalid). Only the Python standard library may be used.\n \n-    Current method: alternate the sides by node index (ignores the edges entirely).\n+    Current method: greedy construction followed by local search.\n     \"\"\"\n-    return [i % 2 for i in range(n)]\n+    adj = [[] for _ in range(n)]\n+    for u, v, w in edges:\n+        adj[u].append((v, w))\n+        adj[v].append((u, w))\n+\n+    # Greedy initialization\n+    sides = [-1] * n\n+    for i in range(n):\n+        gain = 0\n+        for neighbor, weight in adj[i]:\n+            if sides[neighbor] != -1:\n+                # If neighbor is on same side (will be assigned), weight is added\n+                # If neighbor is on different side, weight is subtracted\n+                # Actually, we want to pick side that maximizes cut with already placed\n+                if sides[neighbor] == 0:\n+                    gain += weight # Putting i on side 1 cuts this\n+                else:\n+                    gain -= weight # Putting i on side 1 doesn't cut this (neighbor is on 1)\n+                    # Wait, logic: if neighbor is 0, and we pick 1, cut increases.\n+                    # If neighbor is 1, and we pick 0, cut increases.\n+                    # Let's re-simplify:\n+                    pass\n+        \n+        # Correct Greedy: pick side that maximizes edges to the OTHER side\n+        weight_to_0 = 0\n+        weight_to_1 = 0\n+        for neighbor, weight in adj[i]:\n+            if sides[neighbor] == 0:\n+                weight_to_0 += weight\n+            elif sides[neighbor] == 1:\n+                weight_to_1 += weight\n+        \n+        sides[i] = 1 if weight_to_0 >= weight_to_1 else 0\n+\n+    # Local Search (One-flip)\n+    # gains[i] = sum(w for neighbors on same side) - sum(w for neighbors on diff side)\n+    # Flipping i changes cut by -gains[i]\n+    gains = [0] * n\n+    for u in range(n):\n+        for v, w in adj[u]:\n+            if sides[u] == sides[v]:\n+                gains[u] += w\n+            else:\n+                gains[u] -= w\n+\n+    start_time = time.process_time()\n+    while True:\n+        best_node = -1\n+        max_gain = 0\n+        for i in range(n):\n+            if gains[i] > max_gain:\n+                max_gain = gains[i]\n+                best_node = i\n+        \n+        if best_node == -1:\n+            break\n+            \n+        # Flip best_node\n+        old_side = sides[best_node]\n+        sides[best_node] = 1 - old_side\n+        # Update gains of neighbors\n+        for neighbor, w in adj[best_node]:\n+            # Neighbor's gain change:\n+            # It was (same side) -> (diff side) or vice versa\n+            # If it was same, it's now diff: gain decreases by w\n+            # If it was diff, it's now same: gain increases by w\n+            # Wait: gains[u] = sum(w_same) - sum(w_diff)\n+            # If u and best_node were same: sum(w_same) decreases by w, sum(w_diff) increases by w\n+            # New gain = (old_sum_same - w) - (old_sum_diff + w) = old_gain - 2w\n+            # If u and best_node were diff: sum(w_same) increases by w, sum(w_diff) decreases by w\n+            # New gain = (old_sum_same + w) - (old_sum_diff - w) = old_gain + 2w\n+            if sides[neighbor] == sides[best_node]: # Now same\n+                gains[neighbor] -= 2 * w\n+            else: # Now diff\n+                gains[neighbor] += 2 * w\n+        \n+        # Update the flipped node's own gain\n+        # New gain = sum(w_same_new) - sum(w_diff_new)\n+        # This is easier to just recompute or use the logic:\n+        # Old gain was (sum_same - sum_diff). \n+        # After flip, all neighbors that were same are now diff, and vice versa.\n+        # New gain = sum_diff_old - sum_same_old = -(old_gain)\n+        # But that's not right because gain depends on the side of the node itself.\n+        # Let's just recompute gains[best_node] correctly:\n+        new_g = 0\n+        for neighbor, w in adj[best_node]:\n+            if sides[neighbor] == sides[best_node]:\n+                new_g += w\n+            else:\n+                new_g -= w\n+        gains[best_node] = new_g\n+\n+        if time.process_time() - start_time > 1.8:\n+            break\n+            \n+    return sides\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 8.0,
+ "model_gpu_memory_gb": 8.0,
+ "context_length": 32768,
+ "load_seconds": 116.1,
+ "median_call_seconds": 47.8,
+ "p90_call_seconds": 76.5,
+ "prompt_tokens_per_s": 246.8,
+ "gen_tokens_per_s": 29.9,
+ "mean_prompt_tokens": 3470,
+ "mean_gen_tokens": 1000,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

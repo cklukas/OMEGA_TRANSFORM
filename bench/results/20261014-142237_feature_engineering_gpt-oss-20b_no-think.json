@@ -1,0 +1,135 @@
+{
+ "schema": 2,
+ "example": "feature_engineering",
+ "model": "gpt-oss:20b",
+ "variant": "no-think",
+ "model_size_gb": 13.8,
+ "model_params": "20.9B",
+ "started": "2026-10-14T14:22:37",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.623,
+ "best_score": 0.858,
+ "improvement": 1.377207062600321,
+ "llm_calls": 13,
+ "mean_llm_seconds": 70.6,
+ "attempts": 13,
+ "ok": 10,
+ "statuses": {
+  "ok": 10,
+  "invalid": 1,
+  "edit_error": 1,
+  "duplicate": 1
+ },
+ "sweeps": 2,
+ "sweep_variants": 17,
+ "improvements": 4,
+ "minutes_to_best": 8.06,
+ "best_idea": "tuned THRESH_X3=1, THRESH_RADIUS=2.5 on top of: Add radius\u2010based features and sweep x3 and radius thresholds to better capture nonlinear patterns in the uniform inputs.",
+ "progress": [
+  [
+   0.0,
+   0.623
+  ],
+  [
+   1.97,
+   0.801
+  ],
+  [
+   3.52,
+   0.829
+  ],
+  [
+   5.58,
+   0.837
+  ],
+  [
+   8.06,
+   0.858
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.623,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.56,
+   "score": 0.72,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Add nonlinear transformations of the skewed feature x3 (log, sqrt, square), interaction products of normal features, a uniform interaction, and a threshold indicator on x3 to give the linear model richer signals, improving accuracy."
+  },
+  {
+   "minutes": 2.56,
+   "score": 0.745,
+   "model": "gpt-oss:20b",
+   "mode": "sweep/exploit/diff/refine",
+   "status": "ok",
+   "idea": "tuned THRESH_X3=1 on top of: Add nonlinear transformations of the skewed feature x3 (log, sqrt, square), interaction products of normal features, a uniform interaction, and a threshold indicator on x3 to give the linear model richer signals, improving accuracy."
+  },
+  {
+   "minutes": 3.88,
+   "score": 0.746,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Add interactions of the skewed feature x3 with the standard\u2011normal features x1 and x2 to give the linear model more expressive power."
+  },
+  {
+   "minutes": 8.06,
+   "score": 0.825,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Add radius\u2010based features and sweep x3 and radius thresholds to better capture nonlinear patterns in the uniform inputs."
+  },
+  {
+   "minutes": 8.06,
+   "score": 0.858,
+   "model": "gpt-oss:20b",
+   "mode": "sweep/exploit/diff/refine",
+   "status": "ok",
+   "idea": "tuned THRESH_X3=1, THRESH_RADIUS=2.5 on top of: Add radius\u2010based features and sweep x3 and radius thresholds to better capture nonlinear patterns in the uniform inputs."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -9,17 +9,54 @@\n import math\n \n # OMEGA-BLOCK-START\n+THRESH_X3 = 1.0\n+THRESH_RADIUS = 2.5\n+\n def features(row):\n     \"\"\"Return the feature vector (a list of at most 30 finite floats) for one row.\n-\n+    \n     row: list of 6 floats [x1, x2, x3, x4, x5, x6]. Roughly: x1, x2, x6 are\n     standard-normal-like, x3 is positive and right-skewed (lognormal-like), x4 and x5\n     lie in [-2, 2]. The label is a hidden NONLINEAR function of the inputs plus noise.\n     Every row must give the same number of features. The classifier is linear in the\n     features (they are standardized and a bias is added), so nonlinear structure only\n     helps if a feature expresses it. Only the Python standard library may be used.\n-\n-    Current method: the raw inputs.\n+    \n+    New method: raw inputs plus engineered features (log, sqrt, square of x3, interactions,\n+    radius of x4/x5, indicators, sign of product, and cross terms with x3).\n     \"\"\"\n-    return list(row)\n+    x1, x2, x3, x4, x5, x6 = row\n+    feats = [x1, x2, x3, x4, x5, x6]\n+    # Nonlinear transforms of x3\n+    if x3 > 0:\n+        logx3 = math.log(x3)\n+        sqrtx3 = math.sqrt(x3)\n+    else:\n+        logx3 = 0.0\n+        sqrtx3 = 0.0\n+    feats.append(logx3)\n+    feats.append(sqrtx3)\n+    feats.append(x3 * x3)  # x3 squared\n+    # Interaction products\n+    feats.append(x1 * x2)\n+    feats.append(x1 * x6)\n+    feats.append(x2 * x6)\n+    feats.append(x4 * x5)\n+    # Radius in (x4, x5) plane\n+    radius = x4 * x4 + x5 * x5\n+    feats.append(radius)\n+    # sqrt of radius\n+    feats.append(math.sqrt(radius))\n+    # Indicator for radius > THRESH_RADIUS\n+    feats.append(1.0 if radius > THRESH_RADIUS else 0.0)\n+    # Sign of product x4*x5\n+    feats.append(1.0 if x4 * x5 >= 0 else -1.0)\n+    # Threshold indicator for x3\n+    feats.append(1.0 if x3 > THRESH_X3 else 0.0)\n+    # Cross terms with x3\n+    feats.append(x3 * x1)\n+    feats.append(x3 * x2)\n+    feats.append(x3 * x4)\n+    feats.append(x3 * x5)\n+    return feats\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 12.9,
+ "model_gpu_memory_gb": 12.9,
+ "context_length": 32768,
+ "load_seconds": 54.8,
+ "median_call_seconds": 58.0,
+ "p90_call_seconds": 118.0,
+ "prompt_tokens_per_s": 737.5,
+ "gen_tokens_per_s": 52.1,
+ "mean_prompt_tokens": 3061,
+ "mean_gen_tokens": 3238,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

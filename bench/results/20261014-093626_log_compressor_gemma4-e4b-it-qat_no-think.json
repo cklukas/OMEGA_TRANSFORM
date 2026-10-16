@@ -1,0 +1,95 @@
+{
+ "schema": 2,
+ "example": "log_compressor",
+ "model": "gemma4:e4b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 6.1,
+ "model_params": "7.5B",
+ "started": "2026-10-14T09:36:26",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 11.28605206956168,
+ "best_score": 21.45702822892498,
+ "improvement": 1.9011987625676718,
+ "llm_calls": 58,
+ "mean_llm_seconds": 15.3,
+ "attempts": 58,
+ "ok": 10,
+ "statuses": {
+  "invalid": 18,
+  "ok": 10,
+  "duplicate": 21,
+  "edit_error": 9
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 2,
+ "minutes_to_best": 3.99,
+ "best_idea": "Replace zlib compression with lzma compression at the maximum preset to leverage superior compression algorithms, as indicated by the reference scores.",
+ "progress": [
+  [
+   0.0,
+   11.28605206956168
+  ],
+  [
+   1.46,
+   17.631990784874482
+  ],
+  [
+   3.99,
+   21.45702822892498
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 11.28605206956168,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.99,
+   "score": 21.45702822892498,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace zlib compression with lzma compression at the maximum preset to leverage superior compression algorithms, as indicated by the reference scores."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -10,6 +10,7 @@\n import zlib\n \n # OMEGA-BLOCK-START\n+import lzma\n def compress(data: bytes) -> bytes:\n     \"\"\"Compress arbitrary bytes losslessly and return the compressed blob.\n \n@@ -19,14 +20,14 @@\n     Only the Python standard library may be used (zlib, lzma, bz2, struct, re, ...).\n     Compress plus decompress of the main input must stay within 20 CPU seconds.\n \n-    Current method: plain zlib at level 1.\n+    Current method: LZMA at extreme preset.\n     \"\"\"\n-    return zlib.compress(data, 1)\n+    return lzma.compress(data, preset=lzma.PRESET_EXTREME)\n \n \n def decompress(blob: bytes) -> bytes:\n     \"\"\"Invert compress() exactly.\"\"\"\n-    return zlib.decompress(blob)\n+    return lzma.decompress(blob)\n # OMEGA-BLOCK-END\n \n \n",
+ "error": "",
+ "model_memory_gb": 5.7,
+ "model_gpu_memory_gb": 5.7,
+ "context_length": 32768,
+ "load_seconds": 55.1,
+ "median_call_seconds": 13.3,
+ "p90_call_seconds": 35.2,
+ "prompt_tokens_per_s": 666.1,
+ "gen_tokens_per_s": 59.6,
+ "mean_prompt_tokens": 3407,
+ "mean_gen_tokens": 551,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

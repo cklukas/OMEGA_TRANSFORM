@@ -1,0 +1,116 @@
+{
+ "schema": 2,
+ "example": "prefix_sum_histogram_single_thread",
+ "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-10-15T05:28:49",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 4.865,
+ "best_score": 10.3306,
+ "improvement": 2.123453237410072,
+ "llm_calls": 27,
+ "mean_llm_seconds": 33.3,
+ "attempts": 27,
+ "ok": 2,
+ "statuses": {
+  "compile_error": 19,
+  "llm_error": 1,
+  "edit_error": 3,
+  "invalid": 2,
+  "ok": 2
+ },
+ "sweeps": 2,
+ "sweep_variants": 32,
+ "improvements": 3,
+ "minutes_to_best": 15.33,
+ "best_idea": "tuned kSubHistCount=11, block_size=27 on top of: Expose the sub-histogram count and block size as configurable constants to allow the evolutionary search to find optimal values for cache utilization a",
+ "progress": [
+  [
+   0.0,
+   4.865
+  ],
+  [
+   13.58,
+   8.831
+  ],
+  [
+   13.58,
+   9.04568
+  ],
+  [
+   15.33,
+   10.3306
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 4.865,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 13.58,
+   "score": 8.831,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Use 8 private uint32_t sub-histograms to break the write dependency chain on hot bins, reduce memory contention, and improve throughput by distributing writes across independent arrays, then combine them at the end using NEON vectorized aggregation."
+  },
+  {
+   "minutes": 15.33,
+   "score": 8.88889,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Expose the sub-histogram count and block size as configurable constants to allow the evolutionary search to find optimal values for cache utilization and write dependency breaking, potentially improving memory throughput and reducing serialization stalls."
+  },
+  {
+   "minutes": 15.33,
+   "score": 10.3306,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "sweep/exploit/diff/tune",
+   "status": "ok",
+   "idea": "tuned kSubHistCount=11, block_size=27 on top of: Expose the sub-histogram count and block size as configurable constants to allow the evolutionary search to find optimal values for cache utilization and write dependency breaking, potentially improving memory throughput and reducing serialization sta"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -28,12 +28,34 @@\n // hist is zeroed by the caller. n is any size from 0 to 20'000'000; the sums\n // never overflow int64.\n extern \"C\" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, uint64_t* hist) {\n-    for (int b = 0; b < 256; ++b) hist[b] = 0;\n+    // Use 8 sub-histograms to avoid write serialization on hot bins\n+    static constexpr int kSubHistCount = 11;\n+    static constexpr size_t block_size = 27;\n+    uint32_t sub_hist[kSubHistCount][256];\n+    for (int j = 0; j < kSubHistCount; ++j)\n+        for (int b = 0; b < 256; ++b)\n+            sub_hist[j][b] = 0;\n+\n     int64_t sum = 0;\n-    for (size_t i = 0; i < n; ++i) {\n-        sum += in[i];\n-        out[i] = sum;\n-        hist[in[i] & 255]++;\n+    for (size_t i = 0; i < n; i += block_size) {\n+        size_t end = std::min(i + block_size, n);\n+        // Process 16 elements at once\n+        for (size_t j = i; j < end; ++j) {\n+            int64_t val = in[j];\n+            uint8_t low_byte = val & 255;\n+            int sub_idx = j % kSubHistCount;\n+            sub_hist[sub_idx][low_byte]++;\n+            sum += val;\n+            out[j] = sum;\n+        }\n+    }\n+\n+    // Combine sub-histograms into final hist using NEON for fast aggregation\n+    for (int b = 0; b < 256; ++b) {\n+        uint64_t total = 0;\n+        for (int j = 0; j < kSubHistCount; ++j)\n+            total += sub_hist[j][b];\n+        hist[b] = total;\n     }\n }\n // OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 21.8,
+ "model_gpu_memory_gb": 21.8,
+ "context_length": 32768,
+ "load_seconds": 2.8,
+ "median_call_seconds": 19.5,
+ "p90_call_seconds": 32.4,
+ "prompt_tokens_per_s": 1084.2,
+ "gen_tokens_per_s": 50.5,
+ "mean_prompt_tokens": 4248,
+ "mean_gen_tokens": 814,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -1,0 +1,103 @@
+{
+ "schema": 2,
+ "example": "heilbronn_13",
+ "model": "gemma4:e2b",
+ "variant": "no-think",
+ "model_size_gb": 7.2,
+ "model_params": "5.1B",
+ "started": "2026-10-14T20:45:19",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.004790811518724618,
+ "best_score": 0.013307809774235053,
+ "improvement": 2.7777777777777786,
+ "llm_calls": 102,
+ "mean_llm_seconds": 8.6,
+ "attempts": 102,
+ "ok": 30,
+ "statuses": {
+  "invalid": 20,
+  "ok": 30,
+  "duplicate": 29,
+  "edit_error": 23
+ },
+ "sweeps": 2,
+ "sweep_variants": 8,
+ "improvements": 2,
+ "minutes_to_best": 2.78,
+ "best_idea": "tuned radius=0.5 on top of: Increase the initial radius to place points further apart, aiming for a larger minimum triangle area.",
+ "progress": [
+  [
+   0.0,
+   0.004790811518724618
+  ],
+  [
+   2.78,
+   0.008516998255510434
+  ],
+  [
+   2.78,
+   0.013307809774235053
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.004790811518724618,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.78,
+   "score": 0.008516998255510434,
+   "model": "gemma4:e2b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Increase the initial radius to place points further apart, aiming for a larger minimum triangle area."
+  },
+  {
+   "minutes": 2.78,
+   "score": 0.013307809774235053,
+   "model": "gemma4:e2b",
+   "mode": "sweep/exploit/diff/refine",
+   "status": "ok",
+   "idea": "tuned radius=0.5 on top of: Increase the initial radius to place points further apart, aiming for a larger minimum triangle area."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -13,7 +13,7 @@\n     the points on a regular polygon on a small circle around the center, which\n     avoids collinear triples but wastes most of the square.\n     \"\"\"\n-    radius = 0.3\n+    radius = 0.5\n     return [(0.5 + radius * math.cos(2 * math.pi * k / n),\n              0.5 + radius * math.sin(2 * math.pi * k / n)) for k in range(n)]\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 6.6,
+ "model_gpu_memory_gb": 6.6,
+ "context_length": 32768,
+ "load_seconds": 161.2,
+ "median_call_seconds": 6.2,
+ "p90_call_seconds": 12.7,
+ "prompt_tokens_per_s": 975.7,
+ "gen_tokens_per_s": 76.1,
+ "mean_prompt_tokens": 3748,
+ "mean_gen_tokens": 235,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

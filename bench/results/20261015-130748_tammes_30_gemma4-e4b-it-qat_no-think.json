@@ -1,0 +1,123 @@
+{
+ "schema": 2,
+ "example": "tammes_30",
+ "model": "gemma4:e4b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 6.1,
+ "model_params": "7.5B",
+ "started": "2026-10-15T13:07:48",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 3.2013569883368893,
+ "best_score": 34.987198681470964,
+ "improvement": 10.928865105933367,
+ "llm_calls": 52,
+ "mean_llm_seconds": 16.9,
+ "attempts": 52,
+ "ok": 34,
+ "statuses": {
+  "invalid": 11,
+  "ok": 34,
+  "edit_error": 2,
+  "duplicate": 5
+ },
+ "sweeps": 2,
+ "sweep_variants": 8,
+ "improvements": 5,
+ "minutes_to_best": 14.24,
+ "best_idea": "Implement Simulated Annealing (SA) starting from the Fibonacci configuration and iteratively minimize the repulsive energy $E = \\sum_{i<j} 1/d_{ij}^2$ projected onto the tangent plane at each step.",
+ "progress": [
+  [
+   0.0,
+   3.2013569883368893
+  ],
+  [
+   1.47,
+   9.555664021413527
+  ],
+  [
+   1.66,
+   21.03946978131723
+  ],
+  [
+   10.62,
+   25.01795505190517
+  ],
+  [
+   13.15,
+   30.46089800880418
+  ],
+  [
+   14.24,
+   34.987198681470964
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.2013569883368893,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.47,
+   "score": 9.555664021413527,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "Implement the Fibonacci sphere construction as the initial configuration, as it provides a much better initial distribution of points compared to uniform random sampling."
+  },
+  {
+   "minutes": 2.78,
+   "score": 21.03946978131723,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Enhance the initial configuration by using the Fibonacci spiral construction from Inspiration Program 2, as it is known to provide a superior starting point for spherical codes compared to the simpler latitude/longitude grid used in the current program."
+  },
+  {
+   "minutes": 14.24,
+   "score": 34.987198681470964,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Implement Simulated Annealing (SA) starting from the Fibonacci configuration and iteratively minimize the repulsive energy $E = \\sum_{i<j} 1/d_{ij}^2$ projected onto the tangent plane at each step."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -9,19 +9,100 @@\n def construct(n=30):\n     \"\"\"Return a list of n points (x, y, z) on the unit sphere.\n \n-    Vectors need not be normalized (the evaluator normalizes them), but none may be\n-    zero. The score is the minimum angle in degrees between any two points. This\n-    start draws uniformly random points with a fixed seed, so some pairs end up\n-    close together.\n+    Uses Simulated Annealing starting from the Fibonacci configuration to maximize the minimum angle.\n     \"\"\"\n-    rng = random.Random(1)\n     points = []\n-    for _ in range(n):\n-        z = rng.uniform(-1.0, 1.0)\n-        phi = rng.uniform(0.0, 2 * math.pi)\n-        s = math.sqrt(1.0 - z * z)\n-        points.append((s * math.cos(phi), s * math.sin(phi), z))\n-    return points\n+    phi = (1 + math.sqrt(5)) / 2\n+    phi_inc = 2 * math.pi / phi\n+    for i in range(n):\n+        theta = math.acos(1 - 2 * i / n)\n+        phi_angle = i * phi_inc\n+        x = math.sin(theta) * math.cos(phi_angle)\n+        y = math.sin(theta) * math.sin(phi_angle)\n+        z = math.cos(theta)\n+        points.append((x, y, z))\n+    \n+    # --- Simulated Annealing Setup ---\n+    \n+    # Target energy function to minimize: E = sum(1/d_ij^2)\n+    # We minimize E, which maximizes separation (minimizes repulsion).\n+    \n+    T_start = 1.0  # Initial temperature\n+    T_end = 1e-4  # Final temperature\n+    alpha = 0.999 # Cooling rate\n+    \n+    current_points = list(points)\n+    \n+    def get_dist_sq(p1, p2):\n+        return (p1[0] - p2[0])**2 + (p1[1] - p2[1])**2 + (p1[2] - p2[2])**2\n+\n+    def calculate_energy(pts):\n+        E = 0.0\n+        for i in range(n):\n+            for j in range(i + 1, n):\n+                d2 = get_dist_sq(pts[i], pts[j])\n+                # Avoid division by zero or extremely small numbers; d2 should be >= 0\n+                if d2 < 1e-12:\n+                    return float('inf')\n+                E += 1.0 / d2\n+        return E\n+\n+    current_energy = calculate_energy(current_points)\n+    \n+    # SA loop\n+    T = T_start\n+    while T > T_end:\n+        # Iterate over all points to try small random perturbations\n+        for i in range(n):\n+            # Generate a small random perturbation (e.g., spherical move)\n+            # Using a random step scaled by T for exploration\n+            \n+            # Generate random vector for perturbation\n+            rx = random.uniform(-1, 1)\n+            ry = random.uniform(-1, 1)\n+            rz = random.uniform(-1, 1)\n+            \n+            # Normalize perturbation vector\n+            perturb = math.sqrt(rx*rx + ry*ry + rz*rz)\n+            if perturb < 1e-9: continue\n+            \n+            perturb_x = rx / perturb\n+            perturb_y = ry / perturb\n+            perturb_z = rz / perturb\n+\n+            # Current point\n+            p_old = current_points[i]\n+            \n+            # Calculate new point candidate: (p_old + perturbation) / |p_old + perturbation|\n+            # Since p_old is on unit sphere, adding a small perturbation keeps it close.\n+            # We project the sum back onto the unit sphere.\n+            new_x_unnorm = p_old[0] + T * perturb_x * 0.1\n+            new_y_unnorm = p_old[1] + T * perturb_y * 0.1\n+            new_z_unnorm = p_old[2] + T * perturb_z * 0.1\n+            \n+            norm_sq = new_x_unnorm**2 + new_y_unnorm**2 + new_z_unnorm**2\n+            if norm_sq < 1e-12: continue\n+            norm = math.sqrt(norm_sq)\n+            \n+            p_new = (new_x_unnorm / norm, new_y_unnorm / norm, new_z_unnorm / norm)\n+            \n+            # Create candidate list\n+            candidate_points = list(current_points)\n+            candidate_points[i] = p_new\n+            \n+            new_energy = calculate_energy(candidate_points)\n+            \n+            delta_E = new_energy - current_energy\n+            \n+            # Acceptance probability\n+            if delta_E < 0 or random.random() < math.exp(-delta_E / T):\n+                current_points = candidate_points\n+                current_energy = new_energy\n+        \n+        # Cool down\n+        T *= alpha\n+        \n+    return current_points\n # OMEGA-BLOCK-END\n \n \n",
+ "error": "",
+ "model_memory_gb": 5.7,
+ "model_gpu_memory_gb": 5.7,
+ "context_length": 32768,
+ "load_seconds": 55.0,
+ "median_call_seconds": 13.6,
+ "p90_call_seconds": 30.6,
+ "prompt_tokens_per_s": 688.1,
+ "gen_tokens_per_s": 58.2,
+ "mean_prompt_tokens": 3141,
+ "mean_gen_tokens": 653,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

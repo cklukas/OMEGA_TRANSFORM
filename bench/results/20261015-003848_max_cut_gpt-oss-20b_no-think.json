@@ -1,0 +1,133 @@
+{
+ "schema": 2,
+ "example": "max_cut",
+ "model": "gpt-oss:20b",
+ "variant": "no-think",
+ "model_size_gb": 13.8,
+ "model_params": "20.9B",
+ "started": "2026-10-15T00:38:48",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.8,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.5121828962692699,
+ "best_score": 0.7515056689519813,
+ "improvement": 1.467260375982747,
+ "llm_calls": 12,
+ "mean_llm_seconds": 78.7,
+ "attempts": 12,
+ "ok": 11,
+ "statuses": {
+  "ok": 11,
+  "edit_error": 1
+ },
+ "sweeps": 3,
+ "sweep_variants": 28,
+ "improvements": 4,
+ "minutes_to_best": 14.9,
+ "best_idea": "tuned TIME_LIMIT=1.669, RESTARTS=11, PERTURB_RATE=0.03627 on top of: expose the time limit, number of restarts and perturbation rate as tunable constants so the search can find better trade\u2011offs.",
+ "progress": [
+  [
+   0.0,
+   0.5121828962692699
+  ],
+  [
+   2.31,
+   0.7420823317227606
+  ],
+  [
+   11.25,
+   0.7483160166868301
+  ],
+  [
+   14.9,
+   0.7499612871022231
+  ],
+  [
+   14.9,
+   0.7515056689519813
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.5121828962692699,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.02,
+   "score": 0.725159521057163,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the trivial alternating assignment with a greedy construction followed by a one\u2011flip local search that updates node gains incrementally, which should substantially increase the cut weight."
+  },
+  {
+   "minutes": 6.13,
+   "score": 0.738363536716839,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Run multiple random greedy restarts with incremental local search, keeping the best solution found, to escape local optima and improve the cut ratio."
+  },
+  {
+   "minutes": 11.25,
+   "score": 0.7483160166868301,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Add a perturbation phase after each local search, maintain incremental cut weight, and increase restarts to explore more solutions."
+  },
+  {
+   "minutes": 14.9,
+   "score": 0.7499612871022231,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "expose the time limit, number of restarts and perturbation rate as tunable constants so the search can find better trade\u2011offs."
+  },
+  {
+   "minutes": 14.9,
+   "score": 0.7515056689519813,
+   "model": "gpt-oss:20b",
+   "mode": "sweep/exploit/diff/tune",
+   "status": "ok",
+   "idea": "tuned TIME_LIMIT=1.669, RESTARTS=11, PERTURB_RATE=0.03627 on top of: expose the time limit, number of restarts and perturbation rate as tunable constants so the search can find better trade\u2011offs."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,7 +19,140 @@\n     time limit of 2.0 s (time.process_time(); more than 1.5 x the limit makes the program\n     invalid). Only the Python standard library may be used.\n \n-    Current method: alternate the sides by node index (ignores the edges entirely).\n+    New method: greedy construction + incremental one\u2011flip local search.\n     \"\"\"\n-    return [i % 2 for i in range(n)]\n+    # Randomized restarts with greedy construction and local search\n+    start_time = time.process_time()\n+    TIME_LIMIT = 1.669006009403426\n+    RESTARTS = 11\n+    PERTURB_RATE = 0.03626926320259882\n+\n+    adj = [[] for _ in range(n)]\n+    for u, v, w in edges:\n+        adj[u].append((v, w))\n+        adj[v].append((u, w))\n+\n+    best_assignment = [0] * n\n+    best_cut = -1\n+\n+    for _ in range(RESTARTS):\n+        if time.process_time() - start_time > TIME_LIMIT:\n+            break\n+\n+        # Random order greedy assignment\n+        order = list(range(n))\n+        random.shuffle(order)\n+        side = [-1] * n\n+        for i in order:\n+            w0 = w1 = 0\n+            for nb, w in adj[i]:\n+                if side[nb] == 0:\n+                    w0 += w\n+                elif side[nb] == 1:\n+                    w1 += w\n+            if w0 > w1:\n+                side[i] = 0\n+            elif w1 > w0:\n+                side[i] = 1\n+            else:\n+                side[i] = random.randint(0, 1)\n+\n+        # Compute initial gains\n+        gain = [0] * n\n+        for i in range(n):\n+            s = side[i]\n+            total = 0\n+            for nb, w in adj[i]:\n+                total += w if side[nb] == s else -w\n+            gain[i] = total\n+\n+        # Compute initial cut weight\n+        cur_cut = 0\n+        for u, v, w in edges:\n+            if side[u] != side[v]:\n+                cur_cut += w\n+\n+        # Local search (first phase)\n+        while True:\n+            if time.process_time() - start_time > TIME_LIMIT:\n+                break\n+            max_gain = 0\n+            max_node = -1\n+            for idx, g in enumerate(gain):\n+                if g > max_gain:\n+                    max_gain, max_node = g, idx\n+            if max_node == -1:\n+                break\n+            i = max_node\n+            g = gain[i]\n+            prev_side = side[i]\n+            new_side = 1 - prev_side\n+            side[i] = new_side\n+            cur_cut += g\n+            for nb, w in adj[i]:\n+                same_before = (side[nb] == prev_side)\n+                if same_before:\n+                    gain[i] -= 2 * w\n+                    gain[nb] -= 2 * w\n+                else:\n+                    gain[i] += 2 * w\n+                    gain[nb] += 2 * w\n+\n+        # Update best if improved\n+        if cur_cut > best_cut:\n+            best_cut = cur_cut\n+            best_assignment = side.copy()\n+\n+        # Perturbation: flip a random 5% of nodes\n+        k = max(1, int(n * PERTURB_RATE))\n+        nodes_to_flip = random.sample(range(n), k)\n+        for i in nodes_to_flip:\n+            old_side = side[i]\n+            for nb, w in adj[i]:\n+                if side[nb] == old_side:\n+                    cur_cut += w\n+                else:\n+                    cur_cut -= w\n+            side[i] ^= 1\n+\n+        # Recompute gains after perturbation\n+        for i in range(n):\n+            s = side[i]\n+            total = 0\n+            for nb, w in adj[i]:\n+                total += w if side[nb] == s else -w\n+            gain[i] = total\n+\n+        # Local search (second phase)\n+        while True:\n+            if time.process_time() - start_time > TIME_LIMIT:\n+                break\n+            max_gain = 0\n+            max_node = -1\n+            for idx, g in enumerate(gain):\n+                if g > max_gain:\n+                    max_gain, max_node = g, idx\n+            if max_node == -1:\n+                break\n+            i = max_node\n+            g = gain[i]\n+            prev_side = side[i]\n+            new_side = 1 - prev_side\n+            side[i] = new_side\n+            cur_cut += g\n+            for nb, w in adj[i]:\n+                same_before = (side[nb] == prev_side)\n+                if same_before:\n+                    gain[i] -= 2 * w\n+                    gain[nb] -= 2 * w\n+                else:\n+                    gain[i] += 2 * w\n+                    gain[nb] += 2 * w\n+\n+        # Update best if improved after second phase\n+        if cur_cut > best_cut:\n+            best_cut = cur_cut\n+            best_assignment = side.copy()\n+\n+    return best_assignment\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 12.9,
+ "model_gpu_memory_gb": 12.9,
+ "context_length": 32768,
+ "load_seconds": 56.5,
+ "median_call_seconds": 70.5,
+ "p90_call_seconds": 138.5,
+ "prompt_tokens_per_s": 605.7,
+ "gen_tokens_per_s": 52.0,
+ "mean_prompt_tokens": 3104,
+ "mean_gen_tokens": 3580,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

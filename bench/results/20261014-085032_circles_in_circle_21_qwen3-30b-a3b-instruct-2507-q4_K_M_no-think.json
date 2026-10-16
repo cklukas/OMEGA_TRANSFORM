@@ -1,0 +1,151 @@
+{
+ "schema": 2,
+ "example": "circles_in_circle_21",
+ "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-10-14T08:50:32",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 3.1890454825108625,
+ "best_score": 4.051174705990506,
+ "improvement": 1.2703408365317055,
+ "llm_calls": 35,
+ "mean_llm_seconds": 24.7,
+ "attempts": 35,
+ "ok": 26,
+ "statuses": {
+  "invalid": 4,
+  "ok": 26,
+  "duplicate": 2,
+  "edit_error": 3
+ },
+ "sweeps": 17,
+ "sweep_variants": 272,
+ "improvements": 8,
+ "minutes_to_best": 15.21,
+ "best_idea": "Expose the inner and outer ring radii as sweepable constants to optimize their spacing for better gap filling and radius sum, leveraging the proven success of tuned ring layouts from prior high-scorin",
+ "progress": [
+  [
+   0.0,
+   3.1890454825108625
+  ],
+  [
+   4.48,
+   3.282402619285721
+  ],
+  [
+   4.62,
+   3.544953012745966
+  ],
+  [
+   5.22,
+   3.5453074206999338
+  ],
+  [
+   5.22,
+   3.817692167273721
+  ],
+  [
+   6.45,
+   3.9667976136790117
+  ],
+  [
+   6.45,
+   3.9852070143493057
+  ],
+  [
+   9.36,
+   4.051056047151204
+  ],
+  [
+   15.21,
+   4.051174705990506
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.1890454825108625,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 6.07,
+   "score": 3.5132999999964873,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the fixed ring radii (0.35 and 0.75) with optimized values that better balance inner and outer ring spacing and wall clearance, increasing the minimum possible radius and thus the total sum."
+  },
+  {
+   "minutes": 9.36,
+   "score": 3.653334988594271,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Replace uniform radii with iteratively adjusted variable radii that respect wall and neighbor constraints, enabling smaller boundary circles to fill gaps and increase total radius sum beyond fixed-radius limits."
+  },
+  {
+   "minutes": 9.36,
+   "score": 4.051056047151204,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "sweep/exploit/diff/bold",
+   "status": "ok",
+   "idea": "tuned inner_ring_radius=0.4317, outer_ring_radius=0.8057 on top of: Replace uniform radii with iteratively adjusted variable radii that respect wall and neighbor constraints, enabling smaller boundary circles to fill gaps and increase total radius sum beyond fixed-radius limits."
+  },
+  {
+   "minutes": 11.34,
+   "score": 4.051056047151204,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Increase the number of iterative radius improvement passes from 100 to 200 to allow more convergence toward optimal radii, especially for boundary circles that benefit from multiple refinement cycles. This should improve the sum of radii without increasing runtime significantly."
+  },
+  {
+   "minutes": 15.21,
+   "score": 4.051174705990506,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "Expose the inner and outer ring radii as sweepable constants to optimize their spacing for better gap filling and radius sum, leveraging the proven success of tuned ring layouts from prior high-scoring attempts."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -12,16 +12,48 @@\n     13 circles, all with the same radius: the largest one that keeps every pair\n     apart and every circle inside the container.\n     \"\"\"\n+    # Sweepable ring radii for optimal spacing\n+    inner_ring_radius = 0.4317\n+    outer_ring_radius = 0.8057\n+\n     centers = [(0.0, 0.0)]\n-    for count, ring in ((7, 0.35), (n - 8, 0.75)):\n+    for count, ring in ((7, inner_ring_radius), (n - 8, outer_ring_radius)):\n         centers += [(ring * math.cos(2 * math.pi * k / count),\n                      ring * math.sin(2 * math.pi * k / count)) for k in range(count)]\n-    r = min(1.0 - math.hypot(x, y) for x, y in centers)\n-    for a in range(n):\n-        for b in range(a + 1, n):\n-            r = min(r, math.dist(centers[a], centers[b]) / 2)\n-    r *= 1 - 1e-12  # stay strictly feasible despite rounding\n-    return [(x, y, r) for x, y in centers]\n+    \n+    # Initialize radii to maximum allowed by wall and direct neighbor constraints\n+    r = [0.0] * n\n+    for i in range(n):\n+        wall_limit = 1.0 - math.hypot(centers[i][0], centers[i][1])\n+        min_neighbor_dist = float('inf')\n+        for j in range(n):\n+            if i == j:\n+                continue\n+            d = math.hypot(centers[i][0] - centers[j][0], centers[i][1] - centers[j][1])\n+            min_neighbor_dist = min(min_neighbor_dist, d)\n+        r[i] = min(wall_limit, min_neighbor_dist / 2)\n+    \n+    # Iteratively improve radii: each circle takes largest radius allowed by wall and all neighbors\n+    for _ in range(200):\n+        improved = False\n+        for i in range(n):\n+            wall_limit = 1.0 - math.hypot(centers[i][0], centers[i][1])\n+            max_possible = wall_limit\n+            for j in range(n):\n+                if i == j:\n+                    continue\n+                # Available space is distance to j minus j's radius\n+                available = math.hypot(centers[i][0] - centers[j][0], centers[i][1] - centers[j][1]) - r[j]\n+                max_possible = min(max_possible, available)\n+            if max_possible > r[i]:\n+                r[i] = max_possible\n+                improved = True\n+        if not improved:\n+            break\n+    \n+    # Final shrink to ensure strict feasibility\n+    scale = 1.0 - 1e-10\n+    return [(x, y, r * scale) for x, y, r in zip([c[0] for c in centers], [c[1] for c in centers], r)]\n # OMEGA-BLOCK-END\n \n \n",
+ "error": "",
+ "model_memory_gb": 21.8,
+ "model_gpu_memory_gb": 21.8,
+ "context_length": 32768,
+ "load_seconds": 213.2,
+ "median_call_seconds": 19.4,
+ "p90_call_seconds": 27.1,
+ "prompt_tokens_per_s": 624.5,
+ "gen_tokens_per_s": 51.3,
+ "mean_prompt_tokens": 4653,
+ "mean_gen_tokens": 556,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

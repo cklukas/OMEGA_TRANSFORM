@@ -1,0 +1,134 @@
+{
+ "schema": 2,
+ "example": "tammes_30",
+ "model": "gemma4:12b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 7.2,
+ "model_params": "11.9B",
+ "started": "2026-10-15T13:39:18",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 3.2013569883368893,
+ "best_score": 38.20184695864076,
+ "improvement": 11.933016873100017,
+ "llm_calls": 16,
+ "mean_llm_seconds": 56.4,
+ "attempts": 16,
+ "ok": 14,
+ "statuses": {
+  "ok": 14,
+  "invalid": 1,
+  "edit_error": 1
+ },
+ "sweeps": 11,
+ "sweep_variants": 140,
+ "improvements": 4,
+ "minutes_to_best": 10.79,
+ "best_idea": "tuned S_POWER=4, GLOBAL_ITER=400, REFINEMENT_STEP=0.02 on top of: Introduce a larger initial repulsion stage with higher power and more iterations, followed by a more aggressive local refinement step ",
+ "progress": [
+  [
+   0.0,
+   3.2013569883368893
+  ],
+  [
+   3.3,
+   36.796610816590785
+  ],
+  [
+   6.28,
+   36.91973094199482
+  ],
+  [
+   10.79,
+   38.032943974507695
+  ],
+  [
+   10.79,
+   38.20184695864076
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.2013569883368893,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.3,
+   "score": 0.0,
+   "model": "gemma4:12b-it-qat",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Replace random initialization with a Fibonacci spiral and use a repulsive force optimization (Thomson problem style) to maximize the minimum angle."
+  },
+  {
+   "minutes": 3.3,
+   "score": 36.796610816590785,
+   "model": "gemma4:12b-it-qat",
+   "mode": "sweep/best/diff/refine",
+   "status": "ok",
+   "idea": "tuned s_power=4, learning_rate=0.001 on top of: Replace random initialization with a Fibonacci spiral and use a repulsive force optimization (Thomson problem style) to maximize the minimum angle."
+  },
+  {
+   "minutes": 6.28,
+   "score": 36.91973094199482,
+   "model": "gemma4:12b-it-qat",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Replace the global repulsive force with a multi-stage approach that focuses specifically on the closest pairs using a shrinking-step local push to achieve a more precise max-min configuration."
+  },
+  {
+   "minutes": 10.79,
+   "score": 38.032943974507695,
+   "model": "gemma4:12b-it-qat",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Introduce a larger initial repulsion stage with higher power and more iterations, followed by a more aggressive local refinement step to maximize the minimum angle."
+  },
+  {
+   "minutes": 10.79,
+   "score": 38.20184695864076,
+   "model": "gemma4:12b-it-qat",
+   "mode": "sweep/exploit/diff/tune",
+   "status": "ok",
+   "idea": "tuned S_POWER=4, GLOBAL_ITER=400, REFINEMENT_STEP=0.02 on top of: Introduce a larger initial repulsion stage with higher power and more iterations, followed by a more aggressive local refinement step to maximize the minimum angle."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -14,13 +14,80 @@\n     start draws uniformly random points with a fixed seed, so some pairs end up\n     close together.\n     \"\"\"\n-    rng = random.Random(1)\n+    # Fibonacci spiral initialization\n     points = []\n-    for _ in range(n):\n-        z = rng.uniform(-1.0, 1.0)\n-        phi = rng.uniform(0.0, 2 * math.pi)\n-        s = math.sqrt(1.0 - z * z)\n-        points.append((s * math.cos(phi), s * math.sin(phi), z))\n+    phi_const = (1 + 5**0.5) / 2\n+    for i in range(n):\n+        y = 1 - (i / (n - 1))\n+        radius = math.sqrt(1 - y**2)\n+        theta = 2 * math.pi * i * phi_const\n+        points.append((radius * math.cos(theta), radius * math.sin(theta), y))\n+\n+    # Multi-stage optimization: \n+    # 1. Global repulsion to get a good layout\n+    # 2. Local \"push-apart\" for the closest pairs to maximize the minimum angle\n+    S_POWER = 4\n+    GLOBAL_LR = 0.001\n+    GLOBAL_ITER = 400\n+    REFINEMENT_ITER = 150\n+    REFINEMENT_STEP = 0.02\n+\n+    for _ in range(GLOBAL_ITER):\n+        forces = [[0.0, 0.0, 0.0] for _ in range(n)]\n+        for i in range(n):\n+            for j in range(i + 1, n):\n+                dx = points[i][0] - points[j][0]\n+                dy = points[i][1] - points[j][1]\n+                dz = points[i][2] - points[j][2]\n+                dist_sq = dx*dx + dy*dy + dz*dz\n+                dist = math.sqrt(dist_sq)\n+                if dist < 1e-9: dist = 1e-9\n+                mag = S_POWER * (dist**(-(S_POWER + 1)))\n+                forces[i][0] += mag * dx\n+                forces[i][1] += mag * dy\n+                forces[i][2] += mag * dz\n+                forces[j][0] -= mag * dx\n+                forces[j][1] -= mag * dy\n+                forces[j][2] -= mag * dz\n+        \n+        for i in range(n):\n+            nx = points[i][0] + GLOBAL_LR * forces[i][0]\n+            ny = points[i][1] + GLOBAL_LR * forces[i][1]\n+            nz = points[i][2] + GLOBAL_LR * forces[i][2]\n+            norm = math.sqrt(nx*nx + ny*ny + nz*nz)\n+            if norm > 1e-9:\n+                points[i] = (nx/norm, ny/norm, nz/norm)\n+\n+    # Refinement: specifically push apart the closest pairs\n+    for _ in range(REFINEMENT_ITER):\n+        min_dist = 1e18\n+        closest_pair = (-1, -1)\n+        for i in range(n):\n+            for j in range(i + 1, n):\n+                dx = points[i][0] - points[j][0]\n+                dy = points[i][1] - points[j][1]\n+                dz = points[i][2] - points[j][2]\n+                d_sq = dx*dx + dy*dy + dz*dz\n+                if d_sq < min_dist:\n+                    min_dist = d_sq\n+                    closest_pair = (i, j)\n+        \n+        i, j = closest_pair\n+        dx = points[i][0] - points[j][0]\n+        dy = points[i][1] - points[j][1]\n+        dz = points[i][2] - points[j][2]\n+        dist = math.sqrt(dx*dx + dy*dy + dz*dz)\n+        if dist > 1e-9:\n+            # Push them apart along the vector connecting them\n+            # Step size decays over iterations\n+            step = REFINEMENT_STEP * (1.0 - _ / REFINEMENT_ITER)\n+            nx_i, ny_i, nz_i = points[i][0] + (dx/dist)*step, points[i][1] + (dy/dist)*step, points[i][2] + (dz/dist)*step\n+            nx_j, ny_j, nz_j = points[j][0] - (dx/dist)*step, points[j][1] - (dy/dist)*step, points[j][2] - (dz/dist)*step\n+            \n+            norm_i = math.sqrt(nx_i**2 + ny_i**2 + nz_i**2)\n+            norm_j = math.sqrt(nx_j**2 + ny_j**2 + nz_j**2)\n+            points[i] = (nx_i/norm_i, ny_i/norm_i, nz_i/norm_i)\n+            points[j] = (nx_j/norm_j, ny_j/norm_j, nz_j/norm_j)\n     return points\n # OMEGA-BLOCK-END\n \n",
+ "error": "",
+ "model_memory_gb": 8.0,
+ "model_gpu_memory_gb": 8.0,
+ "context_length": 32768,
+ "load_seconds": 65.4,
+ "median_call_seconds": 61.1,
+ "p90_call_seconds": 96.5,
+ "prompt_tokens_per_s": 226.8,
+ "gen_tokens_per_s": 30.1,
+ "mean_prompt_tokens": 3819,
+ "mean_gen_tokens": 1055,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

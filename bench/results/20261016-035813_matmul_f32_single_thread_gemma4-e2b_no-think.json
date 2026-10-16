@@ -1,0 +1,104 @@
+{
+ "schema": 2,
+ "example": "matmul_f32_single_thread",
+ "model": "gemma4:e2b",
+ "variant": "no-think",
+ "model_size_gb": 7.2,
+ "model_params": "5.1B",
+ "started": "2026-10-16T03:58:13",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.7,
+ "omega_version": "0.1.0",
+ "omega_commit": "0910551",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.67285,
+ "best_score": 1.71127,
+ "improvement": 1.0229667931972384,
+ "llm_calls": 64,
+ "mean_llm_seconds": 13.9,
+ "attempts": 64,
+ "ok": 7,
+ "statuses": {
+  "edit_error": 11,
+  "ok": 7,
+  "invalid": 8,
+  "compile_error": 36,
+  "duplicate": 2
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 2,
+ "minutes_to_best": 12.03,
+ "best_idea": "The previous attempt failed due to incorrect indexing and loop structure when attempting to apply NEON to the innermost dot product; the fix simplifies the vectorization to process the full inner prod",
+ "progress": [
+  [
+   0.0,
+   1.67285
+  ],
+  [
+   1.54,
+   1.70339
+  ],
+  [
+   12.03,
+   1.71127
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.67285,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 9.49,
+   "score": null,
+   "model": "gemma4:e2b",
+   "mode": "explore/diff/refine",
+   "status": "compile_error",
+   "idea": "Apply NEON intrinsics to vectorize the inner loop dot product calculation to exploit SIMD parallelism and achieve significant speedup."
+  },
+  {
+   "minutes": 12.03,
+   "score": 1.71127,
+   "model": "gemma4:e2b",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "The previous attempt failed due to incorrect indexing and loop structure when attempting to apply NEON to the innermost dot product; the fix simplifies the vectorization to process the full inner product for each $C_{ij}$ using a more direct and correct approach, relying on the compiler to handle the rest efficiently, which is often better for non-perfectly aligned/sized access patterns when SIMD"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -26,9 +26,11 @@\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n     for (int i = 0; i < n; ++i)\n         for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+            float sum = 0.0f;\n+            for (int k = 0; k < n; ++k) {\n+                sum += A[i * n + k] * B[k * n + j];\n+            }\n+            C[i * n + j] = sum;\n         }\n }\n // OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 6.6,
+ "model_gpu_memory_gb": 6.6,
+ "context_length": 32768,
+ "load_seconds": 34.1,
+ "median_call_seconds": 13.4,
+ "p90_call_seconds": 21.4,
+ "prompt_tokens_per_s": 954.7,
+ "gen_tokens_per_s": 60.7,
+ "mean_prompt_tokens": 4287,
+ "mean_gen_tokens": 537,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

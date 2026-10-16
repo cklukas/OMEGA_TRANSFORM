@@ -1,0 +1,89 @@
+{
+ "schema": 2,
+ "example": "tsp_heuristic",
+ "model": "qwen3.8:27b-mtp-q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 17.7,
+ "model_params": "27.3B",
+ "started": "2026-10-15T18:38:53",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.0,
+ "best_score": 1.1009372203892802,
+ "improvement": 1.1009372203892802,
+ "llm_calls": 4,
+ "mean_llm_seconds": 225.1,
+ "attempts": 4,
+ "ok": 2,
+ "statuses": {
+  "invalid": 2,
+  "ok": 2
+ },
+ "sweeps": 1,
+ "sweep_variants": 4,
+ "improvements": 1,
+ "minutes_to_best": 11.42,
+ "best_idea": "Replace the plain NN construction with a nearest-neighbour initial tour (no set) plus a grid-restricted 2-opt local search using don't-look bits, which should yield a 1.2-1.25x ratio.",
+ "progress": [
+  [
+   0.0,
+   1.0
+  ],
+  [
+   11.42,
+   1.1009372203892802
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.0,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 11.42,
+   "score": 1.1009372203892802,
+   "model": "qwen3.8:27b-mtp-q4_K_M",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Replace the plain NN construction with a nearest-neighbour initial tour (no set) plus a grid-restricted 2-opt local search using don't-look bits, which should yield a 1.2-1.25x ratio."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -11,23 +11,81 @@\n \n # OMEGA-BLOCK-START\n def solve(points, time_limit):\n-    \"\"\"Return a closed tour through all cities as a permutation of range(len(points)).\n-\n-    points: list of (x, y) float tuples in the unit square; time_limit: CPU seconds\n-    allowed for this call (measured with time.process_time(); more than 1.5 x the limit\n-    makes the program invalid). The tour returns from the last city to the first.\n-    Only the Python standard library may be used.\n-\n-    Current method: plain nearest-neighbour construction starting at city 0.\n-    \"\"\"\n+    \"\"\"Return a closed tour through all cities as a permutation of range(len(points)).\"\"\"\n     n = len(points)\n-    unvisited = set(range(1, n))\n+    x = [p[0] for p in points]\n+    y = [p[1] for p in points]\n+    # NN construction\n+    unvisited = list(range(1, n))\n+    in_tour = [False] * n\n     tour = [0]\n-    x, y = points[0]\n+    in_tour[0] = True\n+    cx, cy = x[0], y[0]\n     while unvisited:\n-        nxt = min(unvisited, key=lambda j: (points[j][0] - x) ** 2 + (points[j][1] - y) ** 2)\n-        unvisited.remove(nxt)\n-        tour.append(nxt)\n-        x, y = points[nxt]\n+        best = -1\n+        bd = 1e30\n+        for j in unvisited:\n+            dx = x[j] - cx\n+            dy = y[j] - cy\n+            d = dx * dx + dy * dy\n+            if d < bd:\n+                bd = d\n+                best = j\n+        unvisited.remove(best)\n+        in_tour[best] = True\n+        tour.append(best)\n+        cx, cy = x[best], y[best]\n+    # 2-opt with restricted neighbours via grid\n+    deadline = time.process_time() + time_limit * 0.85\n+    # build neighbour lists: for each city, keep K nearest using a grid\n+    K = 16\n+    # grid cell size ~ unit square / sqrt(n/K)\n+    cell = max(0.01, 1.0 / max(1.0, (n / 4.0) ** 0.5))\n+    grid = {}\n+    for i in range(n):\n+        gx = int(x[i] / cell)\n+        gy = int(y[i] / cell)\n+        key = (gx, gy)\n+        grid.setdefault(key, []).append(i)\n+    nbr = [[] for _ in range(n)]\n+    for i in range(n):\n+        cx0 = int(x[i] / cell)\n+        cy0 = int(y[i] / cell)\n+        cand = []\n+        for dx in (-1, 0, 1):\n+            for dy in (-1, 0, 1):\n+                c = grid.get((cx0 + dx, cy0 + dy))\n+                if c:\n+                    cand.extend(c)\n+        # sort by distance and keep K\n+        cxv, cyv = x[i], y[i]\n+        cand.sort(key=lambda j: (x[j] - cxv) * (x[j] - cxv) + (y[j] - cyv) * (y[j] - cyv))\n+        nbr[i] = cand[:K]\n+    # 2-opt\n+    improved = True\n+    while improved and time.process_time() < deadline:\n+        improved = False\n+        for i in range(n - 1):\n+            a = tour[i]\n+            b = tour[(i + 1) % n]\n+            da = x[a] * x[a] + y[a] * y[a]\n+            db = x[b] * x[b] + y[b] * y[b]\n+            dab = (x[a] - x[b]) * (x[a] - x[b]) + (y[a] - y[b]) * (y[a] - y[b])\n+            for j in range(i + 2, n):\n+                if j == (n - 1) and i == 0:\n+                    continue\n+                c = tour[j]\n+                d = tour[(j + 1) % n]\n+                if (j == i + 1) or (j == i):\n+                    continue\n+                dc = x[c] * x[c] + y[c] * y[c]\n+                dd = x[d] * x[d] + y[d] * y[d]\n+                dcd = (x[c] - x[d]) * (x[c] - x[d]) + (y[c] - y[d]) * (y[c] - y[d])\n+                # gain = dab + dcd - (da + dc - 2*(xa*xc+ya*yc)) - (db + dd - 2*(xb*xd+yb*yd))\n+                gain = (dab + dcd) - ((da + dc - 2.0 * (x[a] * x[c] + y[a] * y[c])) +\n+                                      (db + dd - 2.0 * (x[b] * x[d] + y[b] * y[d])))\n+                if gain > 1e-10:\n+                    tour[i + 1:j + 1] = tour[i + 1:j + 1][::-1]\n+                    improved = True\n     return tour\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 18.3,
+ "model_gpu_memory_gb": 18.3,
+ "context_length": 32768,
+ "load_seconds": 227.4,
+ "median_call_seconds": 217.7,
+ "p90_call_seconds": 405.1,
+ "prompt_tokens_per_s": 108.4,
+ "gen_tokens_per_s": 12.6,
+ "mean_prompt_tokens": 1694,
+ "mean_gen_tokens": 1919,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

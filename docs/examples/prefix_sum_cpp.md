@@ -67,4 +67,112 @@ extern "C" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, ui
 
 ## Benchmark results
 
-This example has not been benchmarked yet. See [Benchmarking models](../benchmarking.md) for how to run it.
+The best result so far comes from **gemma4:12b-it-qat (no-think)**, run locally with Ollama on 2026-10-15: a score of **15.0602** (×3.01 the starting program's 4.99969), reached after 15.4 of 15 minutes with 13 model requests.
+
+### How it got there
+
+The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.
+
+| Step | Minute | Score | Kind | Idea |
+|--:|--:|--:|---|---|
+| 0 | 0.0 | 4.99969 | start | initial program |
+| 1 | 6.5 | 13.5870 | edit | Use a block-based approach with a SIMD prefix sum to break the serial dependency of the running sum, combined with a multi-banked histogram to eliminate store-to-load hazards on hot bins. |
+| 2 | 15.4 | 14.7929 | edit | Use manual unrolling and a larger bank count for sub-histograms to improve instruction-level parallelism and reduce contention. |
+| 3 | 15.4 | 15.0602 | parameter sweep | tuned BANKS=32, UNROLL=16 on top of: Use manual unrolling and a larger bank count for sub-histograms to improve instruction-level parallelism and reduce contention. |
+
+### The best program
+
+What changed compared with the starting program:
+
+```diff
+--- initial
++++ best
+@@ -29,11 +29,62 @@
+ // never overflow int64.
+ extern "C" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, uint64_t* hist) {
+     for (int b = 0; b < 256; ++b) hist[b] = 0;
+-    int64_t sum = 0;
+-    for (size_t i = 0; i < n; ++i) {
+-        sum += in[i];
+-        out[i] = sum;
+-        hist[in[i] & 255]++;
++
++    constexpr int BANKS = 32;
++    constexpr int UNROLL = 16;
++    uint32_t sub_hists[BANKS][256] = {0};
++    
++    int64_t global_sum = 0;
++    size_t i = 0;
++
++    for (; i + (UNROLL - 1) < n; i += UNROLL) {
++        int64_t v0 = in[i];
++        int64_t v1 = in[i+1];
++        int64_t v2 = in[i+2];
++        int64_t v3 = in[i+3];
++        int64_t v4 = in[i+4];
++        int64_t v5 = in[i+5];
++        int64_t v6 = in[i+6];
++        int64_t v7 = in[i+7];
++        int64_t v8 = in[i+8];
++        int64_t v9 = in[i+9];
++        int64_t v10 = in[i+10];
++        int64_t v11 = in[i+11];
++        int64_t v12 = in[i+12];
++        int64_t v13 = in[i+13];
++        int64_t v14 = in[i+14];
++        int64_t v15 = in[i+15];
++
++        global_sum += v0; out[i]   = global_sum; sub_hists[0][v0 & 255]++;
++        global_sum += v1; out[i+1] = global_sum; sub_hists[1][v1 & 255]++;
++        global_sum += v2; out[i+2] = global_sum; sub_hists[2][v2 & 255]++;
++        global_sum += v3; out[i+3] = global_sum; sub_hists[3][v3 & 255]++;
++        global_sum += v4; out[i+4] = global_sum; sub_hists[4][v4 & 255]++;
++        global_sum += v5; out[i+5] = global_sum; sub_hists[5][v5 & 255]++;
++        global_sum += v6; out[i+6] = global_sum; sub_hists[6][v6 & 255]++;
++        global_sum += v7; out[i+7] = global_sum; sub_hists[7][v7 & 255]++;
++        global_sum += v8; out[i+8] = global_sum; sub_hists[8][v8 & 255]++;
++        global_sum += v9; out[i+9] = global_sum; sub_hists[9][v9 & 255]++;
++        global_sum += v10; out[i+10] = global_sum; sub_hists[10][v10 & 255]++;
++        global_sum += v11; out[i+11] = global_sum; sub_hists[11][v11 & 255]++;
++        global_sum += v12; out[i+12] = global_sum; sub_hists[12][v12 & 255]++;
++        global_sum += v13; out[i+13] = global_sum; sub_hists[13][v13 & 255]++;
++        global_sum += v14; out[i+14] = global_sum; sub_hists[14][v14 & 255]++;
++        global_sum += v15; out[i+15] = global_sum; sub_hists[15][v15 & 255]++;
++    }
++
++    for (; i < n; ++i) {
++        global_sum += in[i];
++        out[i] = global_sum;
++        sub_hists[i % BANKS][in[i] & 255]++;
++    }
++
++    for (int b = 0; b < 256; ++b) {
++        uint64_t total = 0;
++        for (int k = 0; k < BANKS; ++k) {
++            total += sub_hists[k][b];
++        }
++        hist[b] = total;
+     }
+ }
+ // OMEGA-BLOCK-END
+```
+
+### All models
+
+The latest run per model and reasoning mode; the [model benchmarks](../benchmarks.md#prefix_sum_histogram_single_thread) page has speed, memory and progress over time.
+
+| Model | Where | Best | Gain | Minutes to best | New bests |
+|---|---|--:|--:|--:|--:|
+| gemma4:12b-it-qat (no-think) | local | 15.0602 | ×3.01 | 15.4 | 6 |
+| gpt-oss:20b (no-think) | local | 14.7140 | ×2.99 | 13.4 | 3 |
+| gemma4:26b-a4b-it-qat (no-think) | local | 14.6735 | ×3.04 | 7.6 | 4 |
+| qwen3.5:27b (no-think) | local | 13.4003 | ×2.71 | 9.3 | 2 |
+| qwen3.8:27b-mtp-q4_K_M (no-think) | local | 13.3222 | ×2.74 | 16.4 | 3 |
+| gemma4:e4b-it-qat (no-think) | local | 12.0591 | ×2.44 | 6.6 | 4 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 11.0711 | ×2.31 | 9.0 | 2 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 10.3306 | ×2.12 | 15.3 | 3 |
+| qwen3-coder:30b (no-think) | local | 10.3040 | ×2.15 | 6.9 | 1 |
+| qwen3.5:latest (no-think) | local | 6.00646 | ×1.22 | 6.5 | 1 |
+| gemma4:latest (no-think) | local | 5.93032 | ×1.21 | 15.2 | 4 |
+| gemma4:e2b (no-think) | local | 5.88495 | ×1.18 | 1.2 | 1 |
+| qwen2.5-coder:7b (no-think) | local | 5.00125 | ×1.00 | - | 0 |

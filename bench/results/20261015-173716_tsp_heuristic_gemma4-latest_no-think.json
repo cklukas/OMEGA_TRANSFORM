@@ -1,0 +1,99 @@
+{
+ "schema": 2,
+ "example": "tsp_heuristic",
+ "model": "gemma4:latest",
+ "variant": "no-think",
+ "model_size_gb": 9.5,
+ "model_params": "",
+ "started": "2026-10-15T17:37:16",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.0,
+ "best_score": 1.1150546528792245,
+ "improvement": 1.1150546528792245,
+ "llm_calls": 38,
+ "mean_llm_seconds": 23.9,
+ "attempts": 38,
+ "ok": 22,
+ "statuses": {
+  "ok": 22,
+  "invalid": 8,
+  "timeout": 3,
+  "edit_error": 5
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 3,
+ "minutes_to_best": 13.32,
+ "best_idea": "Introduce a limited 2-opt local search after the initial nearest-neighbour construction, incorporating time checks to prevent timeouts and improve the tour length.",
+ "progress": [
+  [
+   0.0,
+   1.0
+  ],
+  [
+   2.28,
+   1.0946290251087685
+  ],
+  [
+   5.81,
+   1.1143670651706206
+  ],
+  [
+   13.32,
+   1.1150546528792245
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.0,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 13.32,
+   "score": 1.1150546528792245,
+   "model": "gemma4:latest",
+   "mode": "explore/diff/tune",
+   "status": "ok",
+   "idea": "Introduce a limited 2-opt local search after the initial nearest-neighbour construction, incorporating time checks to prevent timeouts and improve the tour length."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -20,14 +20,65 @@\n \n     Current method: plain nearest-neighbour construction starting at city 0.\n     \"\"\"\n+    import math\n+    import time\n+    \n     n = len(points)\n     unvisited = set(range(1, n))\n     tour = [0]\n     x, y = points[0]\n     while unvisited:\n-        nxt = min(unvisited, key=lambda j: (points[j][0] - x) ** 2 + (points[j][1] - y) ** 2)\n+        # Find nearest neighbor using squared distance for speed\n+        nxt = min(unvisited, key=lambda j: (points[j][0] - x)**2 + (points[j][1] - y)**2)\n         unvisited.remove(nxt)\n         tour.append(nxt)\n         x, y = points[nxt]\n-    return tour\n+\n+    # 2-opt local search\n+    current_tour = list(tour)\n+    \n+    while time.process_time() < time_limit * 1.5:\n+        best_improvement = 0.0\n+        best_i, best_j = -1, -1\n+        \n+        # O(N^2) search, but bounded by time\n+        for i in range(n - 2):\n+            for j in range(i + 1, n - 1):\n+                # Indices for 2-opt swap: (i-1, i) and (j, j+1)\n+                \n+                p_prev_idx = current_tour[(i - 1) % n]\n+                p_i_idx = current_tour[i]\n+                p_j_idx = current_tour[j]\n+                p_next_idx = current_tour[(j + 1) % n]\n+                \n+                p_prev = points[p_prev_idx]\n+                p_i = points[p_i_idx]\n+                p_j = points[p_j_idx]\n+                p_next = points[p_next_idx]\n+                \n+                # Old distance = d(p_prev, p_i) + d(p_j, p_next)\n+                old_dist = math.hypot(p_prev[0] - p_i[0], p_prev[1] - p_i[1]) + \\\n+                           math.hypot(p_j[0] - p_next[0], p_j[1] - p_next[1])\n+                \n+                # New distance = d(p_prev, p_j) + d(p_i, p_next)\n+                new_dist = math.hypot(p_prev[0] - p_j[0], p_prev[1] - p_j[1]) + \\\n+                           math.hypot(p_i[0] - p_next[0], p_i[1] - p_next[1])\n+                \n+                improvement = old_dist - new_dist\n+                \n+                if improvement > best_improvement:\n+                    best_improvement = improvement\n+                    best_i = i\n+                    best_j = j\n+\n+        if best_improvement > 0:\n+            i, j = best_i, best_j\n+            \n+            # Reverse segment tour[i:j+1]\n+            new_tour = current_tour[:i] + current_tour[i:j+1][::-1] + current_tour[j+1:]\n+            current_tour = new_tour\n+        else:\n+            break # Local optimum reached\n+            \n+    return current_tour\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 14.4,
+ "model_gpu_memory_gb": 14.4,
+ "context_length": 32768,
+ "load_seconds": 110.8,
+ "median_call_seconds": 20.9,
+ "p90_call_seconds": 35.6,
+ "prompt_tokens_per_s": 973.6,
+ "gen_tokens_per_s": 56.0,
+ "mean_prompt_tokens": 4425,
+ "mean_gen_tokens": 916,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

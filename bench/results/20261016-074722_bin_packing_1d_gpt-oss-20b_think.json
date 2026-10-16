@@ -1,0 +1,103 @@
+{
+ "schema": 2,
+ "example": "bin_packing_1d",
+ "model": "gpt-oss:20b",
+ "variant": "think",
+ "model_size_gb": 13.8,
+ "model_params": "20.9B",
+ "started": "2026-10-16T07:47:22",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.9,
+ "omega_version": "0.1.0",
+ "omega_commit": "0910551",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.7942635036246238,
+ "best_score": 0.953041176828067,
+ "improvement": 1.199905538248781,
+ "llm_calls": 19,
+ "mean_llm_seconds": 48.7,
+ "attempts": 19,
+ "ok": 16,
+ "statuses": {
+  "edit_error": 1,
+  "ok": 16,
+  "duplicate": 1,
+  "invalid": 1
+ },
+ "sweeps": 2,
+ "sweep_variants": 4,
+ "improvements": 2,
+ "minutes_to_best": 9.62,
+ "best_idea": "Add a simple post\u2011packing improvement that tries to empty bins by moving their items into other bins, reducing the total bin count with negligible extra cost.",
+ "progress": [
+  [
+   0.0,
+   0.7942635036246238
+  ],
+  [
+   3.93,
+   0.9512800819252432
+  ],
+  [
+   9.62,
+   0.953041176828067
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.7942635036246238,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 5.91,
+   "score": 0.9512800819252432,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Replace the next\u2011fit strategy with a best\u2011fit decreasing heuristic that keeps bins sorted by remaining capacity and places each item into the bin that leaves the least unused space, improving packing quality within the time limit."
+  },
+  {
+   "minutes": 9.62,
+   "score": 0.953041176828067,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Add a simple post\u2011packing improvement that tries to empty bins by moving their items into other bins, reducing the total bin count with negligible extra cost."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -10,6 +10,8 @@\n import time\n \n # OMEGA-BLOCK-START\n+import bisect\n+\n def pack(sizes, capacity):\n     \"\"\"Return a list of bins; each bin is a list of item indices into sizes.\n \n@@ -19,17 +21,69 @@\n     (time.process_time(); more than 1.5 x the limit makes the program invalid).\n     Only the Python standard library may be used.\n \n-    Current method: next fit (open a new bin whenever the next item does not fit).\n+    Current method: best fit decreasing (sort items descending, place each into the\n+    bin that leaves the least unused space).\n     \"\"\"\n+    # Sort indices by decreasing size (best\u2011fit decreasing)\n+    indices = sorted(range(len(sizes)), key=lambda i: -sizes[i])\n     bins = []\n-    current, load = [], 0\n-    for i, s in enumerate(sizes):\n-        if load + s > capacity:\n-            bins.append(current)\n-            current, load = [], 0\n-        current.append(i)\n-        load += s\n-    if current:\n-        bins.append(current)\n+    # sorted list of (remaining, bin_index) for quick best\u2011fit search\n+    sorted_rem = []  # will store tuples (remaining, bin_index)\n+    for idx in indices:\n+        s = sizes[idx]\n+        # find first bin with remaining >= s\n+        i = bisect.bisect_left(sorted_rem, (s, -1))\n+        if i < len(sorted_rem):\n+            remain, bi = sorted_rem[i]\n+            bins[bi].append(idx)\n+            new_rem = remain - s\n+            # remove old entry\n+            del sorted_rem[i]\n+            if new_rem > 0:\n+                bisect.insort(sorted_rem, (new_rem, bi))\n+        else:\n+            # open new bin\n+            bins.append([idx])\n+            new_rem = capacity - s\n+            bi = len(bins) - 1\n+            if new_rem > 0:\n+                bisect.insort(sorted_rem, (new_rem, bi))\n+    # Post\u2011packing improvement: try to empty bins by moving items\n+    loads = [sum(sizes[i] for i in bin_) for bin_ in bins]\n+    remaining = [capacity - l for l in loads]\n+    improved = True\n+    while improved:\n+        improved = False\n+        # attempt to empty bins with small remaining first\n+        for bi in sorted(range(len(bins)), key=lambda x: remaining[x]):\n+            if remaining[bi] == 0:\n+                continue\n+            items = bins[bi][:]\n+            moved = True\n+            for idx in items:\n+                s = sizes[idx]\n+                # find target bin with enough remaining, choose largest remaining that fits\n+                best_tj = None\n+                best_rem = -1\n+                for tj in range(len(bins)):\n+                    if tj == bi:\n+                        continue\n+                    if remaining[tj] >= s and remaining[tj] > best_rem:\n+                        best_rem = remaining[tj]\n+                        best_tj = tj\n+                if best_tj is None:\n+                    moved = False\n+                    break\n+                # move item\n+                bins[bi].remove(idx)\n+                bins[best_tj].append(idx)\n+                remaining[bi] += s\n+                remaining[best_tj] -= s\n+            if moved and remaining[bi] == capacity:\n+                # bin emptied; remove it\n+                bins.pop(bi)\n+                remaining.pop(bi)\n+                improved = True\n+                break\n     return bins\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 12.9,
+ "model_gpu_memory_gb": 12.9,
+ "context_length": 32768,
+ "load_seconds": 149.7,
+ "median_call_seconds": 40.3,
+ "p90_call_seconds": 74.6,
+ "prompt_tokens_per_s": 738.8,
+ "gen_tokens_per_s": 51.5,
+ "mean_prompt_tokens": 2901,
+ "mean_gen_tokens": 1893,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -1,0 +1,105 @@
+{
+ "schema": 2,
+ "example": "tsp_heuristic",
+ "model": "gpt-oss:20b",
+ "variant": "no-think",
+ "model_size_gb": 13.8,
+ "model_params": "20.9B",
+ "started": "2026-10-15T17:52:40",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.0,
+ "best_score": 1.1237316512355313,
+ "improvement": 1.1237316512355313,
+ "llm_calls": 12,
+ "mean_llm_seconds": 76.3,
+ "attempts": 12,
+ "ok": 9,
+ "statuses": {
+  "ok": 9,
+  "edit_error": 3
+ },
+ "sweeps": 2,
+ "sweep_variants": 6,
+ "improvements": 3,
+ "minutes_to_best": 6.46,
+ "best_idea": "Switch the 2\u2011opt loop to a best\u2011improvement strategy and use squared distances for speed, which yields tighter local optima for large instances while staying within the time limit.",
+ "progress": [
+  [
+   0.0,
+   1.0
+  ],
+  [
+   3.64,
+   1.025758117209045
+  ],
+  [
+   4.74,
+   1.1117275392539794
+  ],
+  [
+   6.46,
+   1.1237316512355313
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.0,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 4.74,
+   "score": 1.1117275392539794,
+   "model": "gpt-oss:20b",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Use a nearest\u2011neighbour start tour followed by a fast 2\u2011opt local search with early exit and time\u2011budget checks to reduce the tour length significantly."
+  },
+  {
+   "minutes": 6.46,
+   "score": 1.1237316512355313,
+   "model": "gpt-oss:20b",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Switch the 2\u2011opt loop to a best\u2011improvement strategy and use squared distances for speed, which yields tighter local optima for large instances while staying within the time limit."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -18,16 +18,57 @@\n     makes the program invalid). The tour returns from the last city to the first.\n     Only the Python standard library may be used.\n \n-    Current method: plain nearest-neighbour construction starting at city 0.\n+    This version builds a nearest\u2011neighbour tour and then applies a fast 2\u2011opt\n+    local search, checking the time budget regularly.\n     \"\"\"\n     n = len(points)\n+    # Pre\u2011extract coordinates for speed\n+    X = [p[0] for p in points]\n+    Y = [p[1] for p in points]\n+\n+    def dist(i, j):\n+        dx = X[i] - X[j]\n+        dy = Y[i] - Y[j]\n+        return dx*dx + dy*dy\n+\n+    # Initial tour: nearest neighbour from city 0\n     unvisited = set(range(1, n))\n     tour = [0]\n-    x, y = points[0]\n+    cur = 0\n     while unvisited:\n-        nxt = min(unvisited, key=lambda j: (points[j][0] - x) ** 2 + (points[j][1] - y) ** 2)\n+        nxt = min(unvisited, key=lambda j: (X[j] - X[cur]) ** 2 + (Y[j] - Y[cur]) ** 2)\n         unvisited.remove(nxt)\n         tour.append(nxt)\n-        x, y = points[nxt]\n+        cur = nxt\n+\n+    start_time = time.process_time()\n+    EPS = 1e-12\n+\n+    # 2\u2011opt improvement loop with best improvement per pass\n+    while True:\n+        if time.process_time() - start_time > time_limit:\n+            break\n+        best_delta = 0.0\n+        best_i = -1\n+        best_j = -1\n+        for i in range(n):\n+            a = tour[i]\n+            b = tour[(i + 1) % n]\n+            dab = dist(a, b)\n+            for j in range(i + 2, n):\n+                if i == 0 and j == n - 1:\n+                    continue\n+                c = tour[j]\n+                d = tour[(j + 1) % n]\n+                dcd = dist(c, d)\n+                delta = (dist(a, c) + dist(b, d)) - (dab + dcd)\n+                if delta < best_delta - EPS:\n+                    best_delta = delta\n+                    best_i = i\n+                    best_j = j\n+        if best_i == -1:\n+            break\n+        # Reverse segment between best_i+1 and best_j\n+        tour[best_i + 1:best_j + 1] = reversed(tour[best_i + 1:best_j + 1])\n     return tour\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 12.9,
+ "model_gpu_memory_gb": 12.9,
+ "context_length": 32768,
+ "load_seconds": 103.0,
+ "median_call_seconds": 63.4,
+ "p90_call_seconds": 142.2,
+ "prompt_tokens_per_s": 681.3,
+ "gen_tokens_per_s": 50.9,
+ "mean_prompt_tokens": 3127,
+ "mean_gen_tokens": 3200,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

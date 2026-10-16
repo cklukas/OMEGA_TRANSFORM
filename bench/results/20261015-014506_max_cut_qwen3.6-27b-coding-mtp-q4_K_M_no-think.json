@@ -1,0 +1,92 @@
+{
+ "schema": 2,
+ "example": "max_cut",
+ "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 17.8,
+ "model_params": "27.3B",
+ "started": "2026-10-15T01:45:06",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.5121828962692699,
+ "best_score": 0.7148817333586243,
+ "improvement": 1.3957547949488525,
+ "llm_calls": 4,
+ "mean_llm_seconds": 240.0,
+ "attempts": 4,
+ "ok": 4,
+ "statuses": {
+  "ok": 4
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 2,
+ "minutes_to_best": 9.19,
+ "best_idea": "Implement a greedy construction followed by one-flip local search to significantly improve the cut quality beyond random assignment.",
+ "progress": [
+  [
+   0.0,
+   0.5121828962692699
+  ],
+  [
+   8.23,
+   0.5750205146540001
+  ],
+  [
+   9.19,
+   0.7148817333586243
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.5121828962692699,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 9.19,
+   "score": 0.7148817333586243,
+   "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Implement a greedy construction followed by one-flip local search to significantly improve the cut quality beyond random assignment."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,7 +19,53 @@\n     time limit of 2.0 s (time.process_time(); more than 1.5 x the limit makes the program\n     invalid). Only the Python standard library may be used.\n \n-    Current method: alternate the sides by node index (ignores the edges entirely).\n+    Current method: greedy construction followed by one-flip local search.\n     \"\"\"\n-    return [i % 2 for i in range(n)]\n+    limit = 2.0\n+    start_time = time.process_time()\n+    \n+    # Build adjacency list\n+    adj = [[] for _ in range(n)]\n+    for u, v, w in edges:\n+        adj[u].append((v, w))\n+        adj[v].append((u, w))\n+        \n+    # Greedy construction\n+    sides = [0] * n\n+    for i in range(n):\n+        # Calculate gain for placing i on side 0 vs side 1\n+        gain_0 = 0\n+        gain_1 = 0\n+        for v, w in adj[i]:\n+            if sides[v] == 0:\n+                gain_0 += w  # Edge (i, v) is cut if i is on side 1\n+                gain_1 -= w # Edge (i, v) is NOT cut if i is on side 1 (both on 0)\n+            else:\n+                gain_0 -= w # Edge (i, v) is NOT cut if i is on side 0 (both on 1)\n+                gain_1 += w # Edge (i, v) is cut if i is on side 1\n+        \n+        # Choose the side that gives higher gain\n+        if gain_1 > gain_0:\n+            sides[i] = 1\n+            \n+    # One-flip local search\n+    improved = True\n+    while improved:\n+        if time.process_time() - start_time > limit:\n+            break\n+        improved = False\n+        for i in range(n):\n+            # Calculate gain for flipping node i\n+            flip_gain = 0\n+            for v, w in adj[i]:\n+                if sides[v] == sides[i]:\n+                    flip_gain += w # Edge becomes cut\n+                else:\n+                    flip_gain -= w # Edge stops being cut\n+            \n+            if flip_gain > 0:\n+                sides[i] = 1 - sides[i]\n+                improved = True\n+                \n+    return sides\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 18.2,
+ "model_gpu_memory_gb": 18.2,
+ "context_length": 32768,
+ "load_seconds": 12.8,
+ "median_call_seconds": 222.5,
+ "p90_call_seconds": 493.6,
+ "prompt_tokens_per_s": 105.0,
+ "gen_tokens_per_s": 15.8,
+ "mean_prompt_tokens": 2722,
+ "mean_gen_tokens": 1998,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

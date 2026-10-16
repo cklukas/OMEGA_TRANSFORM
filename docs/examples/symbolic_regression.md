@@ -88,4 +88,154 @@ def predict(params, x1, x2, x3):
 
 ## Benchmark results
 
-This example has not been benchmarked yet. See [Benchmarking models](../benchmarking.md) for how to run it.
+The best result so far comes from **qwen3.6:27b-coding-mtp-q4_K_M (no-think)**, run locally with Ollama on 2026-10-15: a score of **0.99869** (×3.19 the starting program's 0.31284), reached after 6.28 of 15 minutes with 6 model requests.
+
+### How it got there
+
+The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.
+
+| Step | Minute | Score | Kind | Idea |
+|--:|--:|--:|---|---|
+| 0 | 0.0 | 0.31284 | start | initial program |
+| 1 | 6.3 | 0.99869 | edit | Replace the simple linear basis with a candidate set including quadratic terms, interaction terms, and trigonometric functions, then use forward selection to pick the best subset of basis functions that explains the variance, which should capture the … |
+
+### The best program
+
+What changed compared with the starting program:
+
+```diff
+--- initial
++++ best
+@@ -33,9 +33,22 @@
+ 
+ 
+ # OMEGA-BLOCK-START
+-def basis(x1, x2, x3):
+-    """Basis functions of the model; the prediction is a weighted sum of them."""
+-    return [1.0, x1, x2, x3]
++def candidate_basis(x1, x2, x3):
++    """Generate a broad set of candidate basis functions."""
++    import math
++    return [
++        1.0,
++        x1, x2, x3,
++        x1**2, x2**2, x3**2,
++        x1*x2, x1*x3, x2*x3,
++        math.sin(x1), math.sin(x2), math.sin(x3),
++        math.cos(x1), math.cos(x2), math.cos(x3),
++        math.sin(x1)*x2, math.sin(x1)*x3,
++        math.cos(x1)*x2, math.cos(x1)*x3,
++        x1*math.sin(x2), x3*math.sin(x2),
++        x1**3, x2**3, x3**3,
++        x1*x2*x3,
++    ]
+ 
+ 
+ def fit(rows):
+@@ -48,13 +61,81 @@
+     x3 in [0, 3]. Only the Python standard library may be used (math, statistics,
+     random, ...; no numpy). fit plus all predictions must take at most 10 CPU seconds.
+ 
+-    Current method: linear regression on the raw inputs.
++    Current method: forward selection over candidate basis functions.
+     """
+-    cols = list(zip(*[basis(x1, x2, x3) for x1, x2, x3, _ in rows]))
+-    return least_squares([list(c) for c in cols], [y for *_, y in rows])
++    import math
++
++    # Split data into train and validation for cross-validation
++    n = len(rows)
++    train_idx = list(range(n))
++    val_idx = []
++    # Simple split: last 20% for validation
++    split = int(0.8 * n)
++    val_idx = list(range(split, n))
++    train_idx = list(range(split))
++
++    train_rows = [rows[i] for i in train_idx]
++    val_rows = [rows[i] for i in val_idx]
++
++    # Precompute candidate basis values for all rows
++    def get_basis_rows(data):
++        return [candidate_basis(x1, x2, x3) for x1, x2, x3, _ in data]
++
++    train_basis = get_basis_rows(train_rows)
++    val_basis = get_basis_rows(val_rows)
++    train_y = [y for _, _, _, y in train_rows]
++    val_y = [y for _, _, _, y in val_rows]
++
++    # Forward selection
++    selected_indices = [0]  # Start with intercept
++    best_val_mse = float('inf')
++
++    # Compute initial MSE with just intercept
++    def compute_mse(selected, basis_data, y_data):
++        cols = [[row[i] for row in basis_data] for i in selected]
++        coeffs = least_squares(cols, y_data)
++        preds = [sum(c * b for c, b in zip(coeffs, [row[i] for i in selected])) for row in basis_data]
++        mse = sum((p - t) ** 2 for p, t in zip(preds, y_data)) / len(y_data)
++        return mse, coeffs
++
++    # Iteratively add best basis function
++    for _ in range(15):  # Limit number of terms
++        best_mse = best_val_mse
++        best_coeffs = None
++        best_new_index = None
++
++        for j in range(len(candidate_basis(0, 0, 0))):
++            if j in selected_indices:
++                continue
++            new_selected = selected_indices + [j]
++            mse, coeffs = compute_mse(new_selected, train_basis, train_y)
++            # Also compute validation MSE
++            val_preds = [sum(c * b for c, b in zip(coeffs, [row[i] for i in new_selected])) for row in val_basis]
++            val_mse = sum((p - t) ** 2 for p, t in zip(val_preds, val_y)) / len(val_y)
++
++            if val_mse < best_mse:
++                best_mse = val_mse
++                best_coeffs = coeffs
++                best_new_index = j
++
++        if best_new_index is None:
++            break
++
++        selected_indices.append(best_new_index)
++        best_val_mse = best_mse
++
++    # Final fit on all data with selected basis
++    all_basis = get_basis_rows(rows)
++    all_y = [y for _, _, _, y in rows]
++    final_mse, final_coeffs = compute_mse(selected_indices, all_basis, all_y)
++
++    # Return coefficients and selected indices
++    return final_coeffs, selected_indices
+ 
+ 
+ def predict(params, x1, x2, x3):
+     """Return the predicted y (a finite float) for one input."""
+-    return sum(c * b for c, b in zip(params, basis(x1, x2, x3)))
++    coeffs, selected_indices = params
++    basis_vals = candidate_basis(x1, x2, x3)
++    return sum(c * basis_vals[i] for c, i in zip(coeffs, selected_indices))
+ # OMEGA-BLOCK-END
+```
+
+### All models
+
+The latest run per model and reasoning mode; the [model benchmarks](../benchmarks.md#symbolic_regression) page has speed, memory and progress over time.
+
+| Model | Where | Best | Gain | Minutes to best | New bests |
+|---|---|--:|--:|--:|--:|
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 0.99869 | ×3.19 | 6.3 | 2 |
+| gemma4:latest (no-think) | local | 0.99864 | ×3.19 | 12.3 | 7 |
+| gemma4:12b-it-qat (no-think) | local | 0.9978 | ×3.19 | 9.8 | 4 |
+| gemma4:26b-a4b-it-qat (no-think) | local | 0.99772 | ×3.19 | 4.7 | 3 |
+| gemma4:e4b-it-qat (no-think) | local | 0.99768 | ×3.19 | 13.4 | 6 |
+| qwen3.5:27b (no-think) | local | 0.99752 | ×3.19 | 5.2 | 2 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 0.99477 | ×3.18 | 10.2 | 2 |
+| qwen3.8:27b-mtp-q4_K_M (no-think) | local | 0.98968 | ×3.16 | 7.6 | 1 |
+| gpt-oss:20b (no-think) | local | 0.49719 | ×1.59 | 11.7 | 4 |
+| qwen2.5-coder:7b (no-think) | local | 0.44035 | ×1.41 | 10.5 | 5 |
+| qwen3.5:latest (no-think) | local | 0.39952 | ×1.28 | 9.8 | 6 |
+| gemma4:e2b (no-think) | local | 0.38046 | ×1.22 | 12.9 | 6 |
+| qwen3-coder:30b (no-think) | local | 0.37689 | ×1.20 | 2.8 | 2 |

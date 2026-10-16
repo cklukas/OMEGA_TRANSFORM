@@ -1,0 +1,120 @@
+{
+ "schema": 2,
+ "example": "heilbronn_13",
+ "model": "gemma4:e4b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 6.1,
+ "model_params": "7.5B",
+ "started": "2026-10-14T19:57:18",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.004790811518724618,
+ "best_score": 0.013307809774235053,
+ "improvement": 2.7777777777777786,
+ "llm_calls": 62,
+ "mean_llm_seconds": 14.2,
+ "attempts": 62,
+ "ok": 34,
+ "statuses": {
+  "ok": 34,
+  "duplicate": 13,
+  "invalid": 9,
+  "edit_error": 5,
+  "timeout": 1
+ },
+ "sweeps": 5,
+ "sweep_variants": 26,
+ "improvements": 4,
+ "minutes_to_best": 4.54,
+ "best_idea": "tuned R=0.5 on top of: Parameterize the radius of the regular polygon placement to allow the evolutionary search to find a better fit for the unit square.",
+ "progress": [
+  [
+   0.0,
+   0.004790811518724618
+  ],
+  [
+   1.44,
+   0.008516998255510434
+  ],
+  [
+   2.9,
+   0.010779325917130394
+  ],
+  [
+   3.74,
+   0.011758780716514095
+  ],
+  [
+   4.54,
+   0.013307809774235053
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.004790811518724618,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.05,
+   "score": 0.008516998255510434,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Increase the radius of the initial placement slightly to better utilize the square's area while maintaining the regular polygon structure."
+  },
+  {
+   "minutes": 4.54,
+   "score": 0.008516998255510434,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Parameterize the radius of the regular polygon placement to allow the evolutionary search to find a better fit for the unit square."
+  },
+  {
+   "minutes": 4.54,
+   "score": 0.013307809774235053,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "sweep/exploit/diff/tune",
+   "status": "ok",
+   "idea": "tuned R=0.5 on top of: Parameterize the radius of the regular polygon placement to allow the evolutionary search to find a better fit for the unit square."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -13,9 +13,9 @@\n     the points on a regular polygon on a small circle around the center, which\n     avoids collinear triples but wastes most of the square.\n     \"\"\"\n-    radius = 0.3\n-    return [(0.5 + radius * math.cos(2 * math.pi * k / n),\n-             0.5 + radius * math.sin(2 * math.pi * k / n)) for k in range(n)]\n+    R = 0.5\n+    return [(0.5 + R * math.cos(2 * math.pi * k / n),\n+             0.5 + R * math.sin(2 * math.pi * k / n)) for k in range(n)]\n # OMEGA-BLOCK-END\n \n \n",
+ "error": "",
+ "model_memory_gb": 5.7,
+ "model_gpu_memory_gb": 5.7,
+ "context_length": 32768,
+ "load_seconds": 59.0,
+ "median_call_seconds": 12.2,
+ "p90_call_seconds": 22.9,
+ "prompt_tokens_per_s": 596.1,
+ "gen_tokens_per_s": 53.2,
+ "mean_prompt_tokens": 3718,
+ "mean_gen_tokens": 372,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -1,0 +1,120 @@
+{
+ "schema": 2,
+ "example": "max_cut",
+ "model": "gemma4:e2b",
+ "variant": "no-think",
+ "model_size_gb": 7.2,
+ "model_params": "5.1B",
+ "started": "2026-10-15T00:08:02",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.5121828962692699,
+ "best_score": 0.7502527082409944,
+ "improvement": 1.46481406096498,
+ "llm_calls": 67,
+ "mean_llm_seconds": 13.2,
+ "attempts": 67,
+ "ok": 34,
+ "statuses": {
+  "invalid": 16,
+  "edit_error": 9,
+  "ok": 34,
+  "duplicate": 6,
+  "timeout": 2
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 4,
+ "minutes_to_best": 11.86,
+ "best_idea": "Optimize the Simulated Annealing acceptance criterion by calculating the change in cut weight directly instead of recalculating the entire cut weight for every potential flip, which speeds up the inne",
+ "progress": [
+  [
+   0.0,
+   0.5121828962692699
+  ],
+  [
+   3.98,
+   0.6938525769566565
+  ],
+  [
+   6.05,
+   0.7349549787629073
+  ],
+  [
+   10.73,
+   0.7479404660993011
+  ],
+  [
+   11.86,
+   0.7502527082409944
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.5121828962692699,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 6.2,
+   "score": 0.6938525769566565,
+   "model": "gemma4:e2b",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Implement the greedy construction heuristic to assign nodes sequentially to the side that maximizes the immediate cut gain with already placed nodes, as suggested by the expert hints and the observed weakness in the initial program."
+  },
+  {
+   "minutes": 10.73,
+   "score": 0.7479404660993011,
+   "model": "gemma4:e2b",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Implement a randomized approach based on Simulated Annealing, starting from the greedy assignment, to explore the solution space and escape local optima by accepting worse solutions with decreasing probability."
+  },
+  {
+   "minutes": 11.86,
+   "score": 0.7502527082409944,
+   "model": "gemma4:e2b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Optimize the Simulated Annealing acceptance criterion by calculating the change in cut weight directly instead of recalculating the entire cut weight for every potential flip, which speeds up the inner loop significantly."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,7 +19,89 @@\n     time limit of 2.0 s (time.process_time(); more than 1.5 x the limit makes the program\n     invalid). Only the Python standard library may be used.\n \n-    Current method: alternate the sides by node index (ignores the edges entirely).\n+    Current method: greedy placement based on maximizing immediate cut gain.\n     \"\"\"\n-    return [i % 2 for i in range(n)]\n+    # Initial greedy construction (used as a starting point for local search)\n+    sides = [0] * n\n+    for i in range(n):\n+        best_side = 0\n+        max_gain = -float('inf')\n+\n+        for side in [0, 1]:\n+            current_gain = 0\n+            # Check gain with already placed neighbors (j < i)\n+            for u, v, w in edges:\n+                if u == i or v == i:\n+                    # Identify the other endpoint\n+                    other = v if u == i else u\n+                    \n+                    # Only consider edges where the other endpoint is already placed (index < i)\n+                    if other < i:\n+                        if sides[other] != side:\n+                            current_gain += w\n+            \n+            if current_gain > max_gain:\n+                max_gain = current_gain\n+                best_side = side\n+        \n+        sides[i] = best_side\n+    \n+    # Simulated Annealing refinement\n+    T = 10.0  # Initial temperature\n+    T_min = 0.1  # Final temperature\n+    alpha = 0.999 # Cooling rate\n+    \n+    current_sides = list(sides)\n+    best_sides = list(sides)\n+    \n+    # Calculate initial cut weight for reference\n+    def calculate_cut_weight(s):\n+        weight = 0\n+        for u, v, w in edges:\n+            if s[u] != s[v]:\n+                weight += w\n+        return weight\n+\n+    current_cut_weight = calculate_cut_weight(current_sides)\n+    best_cut_weight = current_cut_weight\n+    \n+    for iteration in range(100000): # Max iterations to prevent infinite loop\n+        if T < T_min:\n+            break\n+            \n+        # Select a random node to flip\n+        i = random.randint(0, n - 1)\n+        \n+        # Calculate gain from flipping node i\n+        current_cut_weight_i = 0\n+        \n+        # Calculate the current cut weight based on current_sides\n+        for u, v, w in edges:\n+            if current_sides[u] != current_sides[v]:\n+                current_cut_weight_i += w\n+\n+        # Calculate cut weight if we flip node i\n+        sides_test = list(current_sides)\n+        sides_test[i] = 1 - sides_test[i]\n+        \n+        test_cut_weight = 0\n+        for u, v, w in edges:\n+            if sides_test[u] != sides_test[v]:\n+                test_cut_weight += w\n+\n+        gain = test_cut_weight - current_cut_weight_i\n+        \n+        # Acceptance criterion\n+        if gain > 0 or (T > 0 and random.random() < math.exp(gain / T)):\n+            current_sides[i] = 1 - current_sides[i]\n+            current_cut_weight += gain\n+            \n+            if current_cut_weight > best_cut_weight:\n+                best_cut_weight = current_cut_weight\n+                best_sides = list(current_sides)\n+                \n+        # Cooling schedule\n+        T *= alpha\n+        \n+    return best_sides\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 6.6,
+ "model_gpu_memory_gb": 6.6,
+ "context_length": 32768,
+ "load_seconds": 78.4,
+ "median_call_seconds": 11.1,
+ "p90_call_seconds": 18.1,
+ "prompt_tokens_per_s": 1024.1,
+ "gen_tokens_per_s": 76.4,
+ "mean_prompt_tokens": 3828,
+ "mean_gen_tokens": 629,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

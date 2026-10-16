@@ -1,0 +1,102 @@
+{
+ "schema": 2,
+ "example": "bin_packing_1d",
+ "model": "gpt-oss:20b",
+ "variant": "no-think",
+ "model_size_gb": 13.8,
+ "model_params": "20.9B",
+ "started": "2026-10-14T04:04:31",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.7942635036246238,
+ "best_score": 0.9541570660522273,
+ "improvement": 1.2013104740403262,
+ "llm_calls": 18,
+ "mean_llm_seconds": 52.2,
+ "attempts": 18,
+ "ok": 16,
+ "statuses": {
+  "ok": 16,
+  "invalid": 1,
+  "timeout": 1
+ },
+ "sweeps": 3,
+ "sweep_variants": 36,
+ "improvements": 2,
+ "minutes_to_best": 6.71,
+ "best_idea": "Add a lightweight improvement phase after the initial first\u2011fit decreasing packing that repeatedly re\u2011assigns items to other bins to reduce slack and drop empty bins, using random order to escape loca",
+ "progress": [
+  [
+   0.0,
+   0.7942635036246238
+  ],
+  [
+   1.61,
+   0.9512800819252432
+  ],
+  [
+   6.71,
+   0.9541570660522273
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.7942635036246238,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.19,
+   "score": 0.9512800819252432,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the trivial next\u2011fit implementation with a first\u2011fit decreasing heuristic to reduce the number of bins used."
+  },
+  {
+   "minutes": 6.71,
+   "score": 0.9541570660522273,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Add a lightweight improvement phase after the initial first\u2011fit decreasing packing that repeatedly re\u2011assigns items to other bins to reduce slack and drop empty bins, using random order to escape local minima."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,17 +19,53 @@\n     (time.process_time(); more than 1.5 x the limit makes the program invalid).\n     Only the Python standard library may be used.\n \n-    Current method: next fit (open a new bin whenever the next item does not fit).\n+    Current method: first-fit decreasing (sort items by decreasing size and place\n+    each in the first bin that fits).\n     \"\"\"\n+    # sort indices by decreasing size\n+    indices = sorted(range(len(sizes)), key=lambda i: -sizes[i])\n     bins = []\n-    current, load = [], 0\n-    for i, s in enumerate(sizes):\n-        if load + s > capacity:\n-            bins.append(current)\n-            current, load = [], 0\n-        current.append(i)\n-        load += s\n-    if current:\n-        bins.append(current)\n+    loads = []\n+    for i in indices:\n+        s = sizes[i]\n+        placed = False\n+        for b, l in enumerate(loads):\n+            if l + s <= capacity:\n+                bins[b].append(i)\n+                loads[b] += s\n+                placed = True\n+                break\n+        if not placed:\n+            bins.append([i])\n+            loads.append(s)\n+    # improvement phase: attempt to reassign items to reduce bins\n+    start_time = time.process_time()\n+    for _ in range(3):\n+        if time.process_time() - start_time > 1.8:\n+            break\n+        bin_order = list(range(len(bins)))\n+        random.shuffle(bin_order)\n+        for bi in bin_order:\n+            bin_items = bins[bi]\n+            if not bin_items:\n+                continue\n+            items = bin_items[:]\n+            random.shuffle(items)\n+            for idx in items:\n+                s = sizes[idx]\n+                other_order = list(range(len(bins)))\n+                random.shuffle(other_order)\n+                for bj in other_order:\n+                    if bj == bi:\n+                        continue\n+                    if loads[bj] + s <= capacity:\n+                        bin_items.remove(idx)\n+                        bins[bj].append(idx)\n+                        loads[bi] -= s\n+                        loads[bj] += s\n+                        break\n+        # remove empty bins\n+        bins = [b for b in bins if b]\n+        loads = [sum(sizes[i] for i in b) for b in bins]\n     return bins\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 12.9,
+ "model_gpu_memory_gb": 12.9,
+ "context_length": 32768,
+ "load_seconds": 54.6,
+ "median_call_seconds": 50.2,
+ "p90_call_seconds": 96.4,
+ "prompt_tokens_per_s": 741.3,
+ "gen_tokens_per_s": 52.4,
+ "mean_prompt_tokens": 2801,
+ "mean_gen_tokens": 2370,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

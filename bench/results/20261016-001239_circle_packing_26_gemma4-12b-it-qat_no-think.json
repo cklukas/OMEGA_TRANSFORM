@@ -1,0 +1,118 @@
+{
+ "schema": 2,
+ "example": "circle_packing_26",
+ "model": "gemma4:12b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 7.2,
+ "model_params": "11.9B",
+ "started": "2026-10-16T00:12:39",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.8,
+ "omega_version": "0.1.0",
+ "omega_commit": "0910551",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 1.7714213562373093,
+ "improvement": 1.1887920275864676,
+ "llm_calls": 20,
+ "mean_llm_seconds": 45.3,
+ "attempts": 20,
+ "ok": 16,
+ "statuses": {
+  "edit_error": 3,
+  "ok": 16,
+  "invalid": 1
+ },
+ "sweeps": 12,
+ "sweep_variants": 52,
+ "improvements": 2,
+ "minutes_to_best": 11.84,
+ "best_idea": "tuned SAMPLES=10 on top of: Increase sampling density and use a more refined local search (hill climbing) to improve circle positions and maximize the radii sum.",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   2.83,
+   1.741421356237309
+  ],
+  [
+   11.84,
+   1.7714213562373093
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.83,
+   "score": 1.2128000530029805,
+   "model": "gemma4:12b-it-qat",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "Use a more sophisticated \"Greedy Circle Packing\" approach where circles are placed one by one at the largest available space, which is much more likely to yield a higher sum of radii than a structured grid."
+  },
+  {
+   "minutes": 2.83,
+   "score": 1.741421356237309,
+   "model": "gemma4:12b-it-qat",
+   "mode": "sweep/exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "tuned samples=10 on top of: Use a more sophisticated \"Greedy Circle Packing\" approach where circles are placed one by one at the largest available space, which is much more likely to yield a higher sum of radii than a structured grid."
+  },
+  {
+   "minutes": 11.84,
+   "score": 1.6605207062388074,
+   "model": "gemma4:12b-it-qat",
+   "mode": "best/rewrite/refine",
+   "status": "ok",
+   "idea": "Increase sampling density and use a more refined local search (hill climbing) to improve circle positions and maximize the radii sum."
+  },
+  {
+   "minutes": 11.84,
+   "score": 1.7714213562373093,
+   "model": "gemma4:12b-it-qat",
+   "mode": "sweep/best/rewrite/refine",
+   "status": "ok",
+   "idea": "tuned SAMPLES=10 on top of: Increase sampling density and use a more refined local search (hill climbing) to improve circle positions and maximize the radii sum."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -9,27 +9,67 @@\n # OMEGA-BLOCK-START\n def construct_packing(n=26):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n-    cols = math.ceil(math.sqrt(n))\n-    rows = math.ceil(n / cols)\n-    centers = []\n-    for k in range(n):\n-        i, j = k % cols, k // cols\n-        centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n-    radii = max_radii(centers)\n-    return [(x, y, r) for (x, y), r in zip(centers, radii)]\n+    circles = []\n+    \n+    # Use a slightly higher sample count for initial greedy placement\n+    SAMPLES = 10\n+    for _ in range(n):\n+        best_r = -1\n+        best_pos = (0.5, 0.5)\n+        \n+        for i in range(SAMPLES):\n+            for j in range(SAMPLES):\n+                cx = (i + 0.5) / SAMPLES\n+                cy = (j + 0.5) / SAMPLES\n+                \n+                r_bound = min(cx, cy, 1 - cx, 1 - cy)\n+                r_overlap = r_bound\n+                for (ox, oy, or_val) in circles:\n+                    dist = math.sqrt((cx - ox)**2 + (cy - oy)**2)\n+                    r_overlap = min(r_overlap, dist - or_val)\n+                \n+                if r_overlap > best_r:\n+                    best_r = r_overlap\n+                    best_pos = (cx, cy)\n+        \n+        if best_r > 1e-9:\n+            circles.append((best_pos[0], best_pos[1], best_r))\n+        else:\n+            # Fallback for very tight spaces\n+            circles.append((0.5, 0.5, 1e-9))\n \n+    # Local optimization: Hill climbing to expand radii\n+    # We slightly jitter positions and grow radii if it doesn't cause overlap\n+    for _ in range(100):\n+        improved = False\n+        for i in range(len(circles)):\n+            cx, cy, cr = circles[i]\n+            # Try to expand radius slightly in 8 directions\n+            for dx, dy in [ (0,0.01), (0,-0.01), (0.01,0), (-0.01,0), \n+                            (0.01,0.01), (0.01,-0.01), (-0.01,0.01), (-0.01,-0.01) ]:\n+                nx, ny = cx + dx, cy + dy\n+                if nx < 0 or nx > 1 or ny < 0 or ny > 1: continue\n+                \n+                nr = min(nx, ny, 1 - nx, 1 - ny)\n+                # Check overlap with all other circles\n+                possible = True\n+                for j in range(len(circles)):\n+                    if i == j: continue\n+                    ox, oy, or_val = circles[j]\n+                    dist = math.sqrt((nx - ox)**2 + (ny - oy)**2)\n+                    if dist < (nr + or_val) - 1e-9:\n+                        possible = False\n+                        break\n+                \n+                if possible and nr > cr + 1e-7:\n+                    circles[i] = (nx, ny, nr)\n+                    improved = True\n+                    break\n+        if not improved:\n+            break\n+            \n+    return circles\n \n-def max_radii(centers):\n-    \"\"\"Largest radii for fixed centers: limit by walls, then shrink overlapping pairs.\"\"\"\n-    radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n-    for a in range(len(centers)):\n-        for b in range(a + 1, len(centers)):\n-            d = math.dist(centers[a], centers[b])\n-            if radii[a] + radii[b] > d:\n-                s = d / (radii[a] + radii[b])\n-                radii[a] *= s\n-                radii[b] *= s\n-    return radii\n # OMEGA-BLOCK-END\n \n \n",
+ "error": "",
+ "model_memory_gb": 8.0,
+ "model_gpu_memory_gb": 8.0,
+ "context_length": 32768,
+ "load_seconds": 65.5,
+ "median_call_seconds": 40.1,
+ "p90_call_seconds": 85.5,
+ "prompt_tokens_per_s": 219.7,
+ "gen_tokens_per_s": 28.6,
+ "mean_prompt_tokens": 3558,
+ "mean_gen_tokens": 723,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

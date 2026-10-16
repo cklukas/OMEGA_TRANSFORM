@@ -1,0 +1,135 @@
+{
+ "schema": 2,
+ "example": "circle_packing_26",
+ "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-10-16T02:24:33",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.7,
+ "omega_version": "0.1.0",
+ "omega_commit": "0910551",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 1.9257358223489538,
+ "improvement": 1.2923516953125291,
+ "llm_calls": 45,
+ "mean_llm_seconds": 19.1,
+ "attempts": 45,
+ "ok": 27,
+ "statuses": {
+  "invalid": 12,
+  "edit_error": 5,
+  "ok": 27,
+  "timeout": 1
+ },
+ "sweeps": 18,
+ "sweep_variants": 281,
+ "improvements": 2,
+ "minutes_to_best": 9.2,
+ "best_idea": "tuned h_spacing=0.1084, v_spacing=0.1594 on top of: Replace the fixed hexagonal lattice with a dynamic circle packing algorithm using Lloyd's relaxation to iteratively adjust centers toward optimal po",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   9.2,
+   1.8689299966124497
+  ],
+  [
+   9.2,
+   1.9257358223489538
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 6.13,
+   "score": 1.0213208894239272,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the uniform grid with a hexagonal lattice layout using optimized row/column counts and spacing to improve packing density and allow larger radii, especially in interior regions where space is better utilized."
+  },
+  {
+   "minutes": 6.13,
+   "score": 1.1944507909594375,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "sweep/exploit/diff/refine",
+   "status": "ok",
+   "idea": "tuned h_spacing=0.161, v_spacing=0.162 on top of: Replace the uniform grid with a hexagonal lattice layout using optimized row/column counts and spacing to improve packing density and allow larger radii, especially in interior regions where space is better utilized."
+  },
+  {
+   "minutes": 6.75,
+   "score": 1.1850285584095057,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Adjust the vertical spacing to be slightly smaller than horizontal to better fit the hexagonal lattice within the unit square, improving overall radius sum by reducing wasted space at the top and bottom."
+  },
+  {
+   "minutes": 6.75,
+   "score": 1.2234244690460074,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "sweep/exploit/diff/refine",
+   "status": "ok",
+   "idea": "tuned v_spacing=0.17 on top of: Adjust the vertical spacing to be slightly smaller than horizontal to better fit the hexagonal lattice within the unit square, improving overall radius sum by reducing wasted space at the top and bottom."
+  },
+  {
+   "minutes": 9.2,
+   "score": 1.8689299966124497,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Replace the fixed hexagonal lattice with a dynamic circle packing algorithm using Lloyd's relaxation to iteratively adjust centers toward optimal positions, enabling larger radii by improving spatial distribution and reducing wasted space."
+  },
+  {
+   "minutes": 9.2,
+   "score": 1.9257358223489538,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "sweep/exploit/diff/bold",
+   "status": "ok",
+   "idea": "tuned h_spacing=0.1084, v_spacing=0.1594 on top of: Replace the fixed hexagonal lattice with a dynamic circle packing algorithm using Lloyd's relaxation to iteratively adjust centers toward optimal positions, enabling larger radii by improving spatial distribution and reducing wasted space."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -9,13 +9,66 @@\n # OMEGA-BLOCK-START\n def construct_packing(n=26):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n-    cols = math.ceil(math.sqrt(n))\n-    rows = math.ceil(n / cols)\n+    # Initialize centers using hexagonal lattice as starting point\n+    rows = 5\n+    cols = [5, 6, 5, 6, 4]\n     centers = []\n-    for k in range(n):\n-        i, j = k % cols, k // cols\n-        centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n-    radii = max_radii(centers)\n+    h_spacing = 0.10840714527469808\n+    v_spacing = 0.15944542172482778\n+    for j in range(rows):\n+        row_offset = h_spacing * 0.5 if j % 2 == 1 else 0.0\n+        for i in range(cols[j]):\n+            x = (i + 0.5) * h_spacing + row_offset\n+            y = (j + 0.5) * v_spacing\n+            centers.append((x, y))\n+    \n+    # Apply Lloyd's algorithm: iteratively move centers to centroid of Voronoi cells\n+    # This improves spacing and allows larger radii\n+    for _ in range(50):  # 50 iterations for convergence\n+        # Compute Voronoi regions: for each center, find all points closer to it than any other\n+        # Use a coarse grid to estimate the centroid\n+        grid_size = 100\n+        grid = []\n+        for i in range(grid_size):\n+            for j in range(grid_size):\n+                x = (i + 0.5) / grid_size\n+                y = (j + 0.5) / grid_size\n+                # Find closest center\n+                best_idx = 0\n+                best_dist = math.dist((x, y), centers[0])\n+                for k in range(1, len(centers)):\n+                    d = math.dist((x, y), centers[k])\n+                    if d < best_dist:\n+                        best_dist = d\n+                        best_idx = k\n+                grid.append((best_idx, x, y))\n+        \n+        # Update centers to average of points in their Voronoi cell\n+        new_centers = []\n+        for k in range(len(centers)):\n+            total_x = 0.0\n+            total_y = 0.0\n+            count = 0\n+            for idx, x, y in grid:\n+                if idx == k:\n+                    total_x += x\n+                    total_y += y\n+                    count += 1\n+            if count > 0:\n+                new_centers.append((total_x / count, total_y / count))\n+            else:\n+                new_centers.append(centers[k])  # fallback\n+        centers = new_centers\n+    \n+    # Final radii from centers, with wall and overlap constraints\n+    radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n+    for a in range(len(centers)):\n+        for b in range(a + 1, len(centers)):\n+            d = math.dist(centers[a], centers[b])\n+            if radii[a] + radii[b] > d:\n+                s = d / (radii[a] + radii[b])\n+                radii[a] *= s\n+                radii[b] *= s\n     return [(x, y, r) for (x, y), r in zip(centers, radii)]\n \n \n",
+ "error": "",
+ "model_memory_gb": 21.8,
+ "model_gpu_memory_gb": 21.8,
+ "context_length": 32768,
+ "load_seconds": 148.6,
+ "median_call_seconds": 13.2,
+ "p90_call_seconds": 29.1,
+ "prompt_tokens_per_s": 650.6,
+ "gen_tokens_per_s": 52.6,
+ "mean_prompt_tokens": 3544,
+ "mean_gen_tokens": 528,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

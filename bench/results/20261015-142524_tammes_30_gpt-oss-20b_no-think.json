@@ -1,0 +1,146 @@
+{
+ "schema": 2,
+ "example": "tammes_30",
+ "model": "gpt-oss:20b",
+ "variant": "no-think",
+ "model_size_gb": 13.8,
+ "model_params": "20.9B",
+ "started": "2026-10-15T14:25:24",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.7,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 3.2013569883368893,
+ "best_score": 36.894698045458746,
+ "improvement": 11.5247059855782,
+ "llm_calls": 16,
+ "mean_llm_seconds": 57.2,
+ "attempts": 16,
+ "ok": 14,
+ "statuses": {
+  "ok": 14,
+  "edit_error": 1,
+  "duplicate": 1
+ },
+ "sweeps": 9,
+ "sweep_variants": 118,
+ "improvements": 7,
+ "minutes_to_best": 15.28,
+ "best_idea": "tuned POST_RELAX_STEPS=3, POST_RELAX_EPSILON=0.001 on top of: Add a short post\u2011polish Coulomb relaxation with a smaller step size to fine\u2011tune the configuration after the max\u2011min polish, which can sli",
+ "progress": [
+  [
+   0.0,
+   3.2013569883368893
+  ],
+  [
+   2.02,
+   34.88637343423708
+  ],
+  [
+   2.02,
+   35.38576405359178
+  ],
+  [
+   3.26,
+   35.777951584855984
+  ],
+  [
+   4.9,
+   36.32919306679232
+  ],
+  [
+   9.94,
+   36.54958401035994
+  ],
+  [
+   12.5,
+   36.87162906938177
+  ],
+  [
+   15.28,
+   36.894698045458746
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.2013569883368893,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 5.4,
+   "score": 32.740231081838175,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the random initialization with a deterministic Fibonacci spiral to distribute points uniformly on the sphere, which should raise the minimum angle significantly."
+  },
+  {
+   "minutes": 12.5,
+   "score": 36.32919306679232,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Add a Coulomb\u2011repulsion relaxation followed by a short max\u2011min polish to the deterministic Fibonacci spiral to push points apart and increase the minimum angle."
+  },
+  {
+   "minutes": 12.5,
+   "score": 36.87162906938177,
+   "model": "gpt-oss:20b",
+   "mode": "sweep/exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "tuned ITERATIONS=40, EPSILON=0.06, POLISH_STEPS=7, POLISH_STEP=0.01 on top of: Add a Coulomb\u2011repulsion relaxation followed by a short max\u2011min polish to the deterministic Fibonacci spiral to push points apart and increase the minimum angle."
+  },
+  {
+   "minutes": 15.28,
+   "score": 36.47762749614688,
+   "model": "gpt-oss:20b",
+   "mode": "best/rewrite/refine",
+   "status": "ok",
+   "idea": "Add a short post\u2011polish Coulomb relaxation with a smaller step size to fine\u2011tune the configuration after the max\u2011min polish, which can slightly increase the minimal angle."
+  },
+  {
+   "minutes": 15.28,
+   "score": 36.894698045458746,
+   "model": "gpt-oss:20b",
+   "mode": "sweep/best/rewrite/refine",
+   "status": "ok",
+   "idea": "tuned POST_RELAX_STEPS=3, POST_RELAX_EPSILON=0.001 on top of: Add a short post\u2011polish Coulomb relaxation with a smaller step size to fine\u2011tune the configuration after the max\u2011min polish, which can slightly increase the minimal angle."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -6,22 +6,118 @@\n import random\n \n # OMEGA-BLOCK-START\n+GOLDEN_ANGLE = math.pi * (3 - math.sqrt(5))\n+\n+ITERATIONS = 40\n+EPSILON = 0.06\n+POLISH_STEPS = 7\n+POLISH_STEP = 0.01\n+\n+# Fine\u2011tuning after polishing\n+POST_RELAX_STEPS = 3\n+POST_RELAX_EPSILON = 0.001  # EPSILON / 10\n+\n def construct(n=30):\n     \"\"\"Return a list of n points (x, y, z) on the unit sphere.\n \n-    Vectors need not be normalized (the evaluator normalizes them), but none may be\n-    zero. The score is the minimum angle in degrees between any two points. This\n-    start draws uniformly random points with a fixed seed, so some pairs end up\n-    close together.\n-    \"\"\"\n-    rng = random.Random(1)\n+    Start with a Fibonacci spiral, relax with Coulomb repulsion,\n+    polish the closest pair iteratively, then perform a short\n+    post\u2011polish relaxation with a smaller step size.\"\"\"\n+    # Fibonacci lattice initialization\n     points = []\n-    for _ in range(n):\n-        z = rng.uniform(-1.0, 1.0)\n-        phi = rng.uniform(0.0, 2 * math.pi)\n-        s = math.sqrt(1.0 - z * z)\n-        points.append((s * math.cos(phi), s * math.sin(phi), z))\n-    return points\n+    for i in range(n):\n+        z = 1.0 - 2.0 * (i + 0.5) / n\n+        r = math.sqrt(max(0.0, 1.0 - z * z))\n+        phi = GOLDEN_ANGLE * i\n+        points.append([r * math.cos(phi), r * math.sin(phi), z])\n+\n+    # Coulomb relaxation\n+    for _ in range(ITERATIONS):\n+        new_points = []\n+        for i, p in enumerate(points):\n+            dx = dy = dz = 0.0\n+            for j, q in enumerate(points):\n+                if i == j:\n+                    continue\n+                vx = p[0] - q[0]\n+                vy = p[1] - q[1]\n+                vz = p[2] - q[2]\n+                d2 = vx * vx + vy * vy + vz * vz\n+                if d2 == 0.0:\n+                    continue\n+                inv = 1.0 / (d2 * math.sqrt(d2))\n+                dx += vx * inv\n+                dy += vy * inv\n+                dz += vz * inv\n+            nx = p[0] + EPSILON * dx\n+            ny = p[1] + EPSILON * dy\n+            nz = p[2] + EPSILON * dz\n+            norm = math.sqrt(nx * nx + ny * ny + nz * nz)\n+            new_points.append([nx / norm, ny / norm, nz / norm])\n+        points = new_points\n+\n+    # Max\u2011min polish: separate the closest pair repeatedly\n+    for _ in range(POLISH_STEPS):\n+        max_dot = -2.0\n+        mi = mj = None\n+        for i in range(n):\n+            pi = points[i]\n+            for j in range(i + 1, n):\n+                pj = points[j]\n+                dot = pi[0] * pj[0] + pi[1] * pj[1] + pi[2] * pj[2]\n+                if dot > max_dot:\n+                    max_dot = dot\n+                    mi, mj = i, j\n+        if mi is None:\n+            break\n+        pi = points[mi]\n+        pj = points[mj]\n+        vx = pi[0] - pj[0]\n+        vy = pi[1] - pj[1]\n+        vz = pi[2] - pj[2]\n+        norm = math.sqrt(vx * vx + vy * vy + vz * vz)\n+        if norm == 0:\n+            continue\n+        step = POLISH_STEP\n+        points[mi][0] += step * vx / norm\n+        points[mi][1] += step * vy / norm\n+        points[mi][2] += step * vz / norm\n+        points[mj][0] -= step * vx / norm\n+        points[mj][1] -= step * vy / norm\n+        points[mj][2] -= step * vz / norm\n+        for idx in (mi, mj):\n+            p = points[idx]\n+            norm = math.sqrt(p[0] * p[0] + p[1] * p[1] + p[2] * p[2])\n+            p[0] /= norm\n+            p[1] /= norm\n+            p[2] /= norm\n+\n+    # Post\u2011polish Coulomb relaxation with smaller step\n+    for _ in range(POST_RELAX_STEPS):\n+        new_points = []\n+        for i, p in enumerate(points):\n+            dx = dy = dz = 0.0\n+            for j, q in enumerate(points):\n+                if i == j:\n+                    continue\n+                vx = p[0] - q[0]\n+                vy = p[1] - q[1]\n+                vz = p[2] - q[2]\n+                d2 = vx * vx + vy * vy + vz * vz\n+                if d2 == 0.0:\n+                    continue\n+                inv = 1.0 / (d2 * math.sqrt(d2))\n+                dx += vx * inv\n+                dy += vy * inv\n+                dz += vz * inv\n+            nx = p[0] + POST_RELAX_EPSILON * dx\n+            ny = p[1] + POST_RELAX_EPSILON * dy\n+            nz = p[2] + POST_RELAX_EPSILON * dz\n+            norm = math.sqrt(nx * nx + ny * ny + nz * nz)\n+            new_points.append([nx / norm, ny / norm, nz / norm])\n+        points = new_points\n+\n+    return [(p[0], p[1], p[2]) for p in points]\n # OMEGA-BLOCK-END\n \n \n",
+ "error": "",
+ "model_memory_gb": 12.9,
+ "model_gpu_memory_gb": 12.9,
+ "context_length": 32768,
+ "load_seconds": 55.7,
+ "median_call_seconds": 53.7,
+ "p90_call_seconds": 95.8,
+ "prompt_tokens_per_s": 629.0,
+ "gen_tokens_per_s": 50.9,
+ "mean_prompt_tokens": 4067,
+ "mean_gen_tokens": 2401,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

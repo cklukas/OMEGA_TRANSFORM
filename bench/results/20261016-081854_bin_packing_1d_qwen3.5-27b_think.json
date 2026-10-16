@@ -1,0 +1,89 @@
+{
+ "schema": 2,
+ "example": "bin_packing_1d",
+ "model": "qwen3.5:27b",
+ "variant": "think",
+ "model_size_gb": 17.4,
+ "model_params": "27.8B",
+ "started": "2026-10-16T08:18:54",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "0910551",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.7942635036246238,
+ "best_score": 0.9512800819252432,
+ "improvement": 1.1976882704342748,
+ "llm_calls": 5,
+ "mean_llm_seconds": 185.4,
+ "attempts": 5,
+ "ok": 4,
+ "statuses": {
+  "ok": 4,
+  "invalid": 1
+ },
+ "sweeps": 1,
+ "sweep_variants": 16,
+ "improvements": 1,
+ "minutes_to_best": 5.73,
+ "best_idea": "Implement First-Fit Decreasing (FFD) which sorts items by decreasing size before packing and uses first-fit placement, a well-known heuristic that significantly improves bin packing quality over next-",
+ "progress": [
+  [
+   0.0,
+   0.7942635036246238
+  ],
+  [
+   5.73,
+   0.9512800819252432
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.7942635036246238,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 5.73,
+   "score": 0.9512800819252432,
+   "model": "qwen3.5:27b",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Implement First-Fit Decreasing (FFD) which sorts items by decreasing size before packing and uses first-fit placement, a well-known heuristic that significantly improves bin packing quality over next-fit."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,17 +19,25 @@\n     (time.process_time(); more than 1.5 x the limit makes the program invalid).\n     Only the Python standard library may be used.\n \n-    Current method: next fit (open a new bin whenever the next item does not fit).\n+    Current method: first-fit decreasing (FFD) heuristic.\n     \"\"\"\n-    bins = []\n-    current, load = [], 0\n-    for i, s in enumerate(sizes):\n-        if load + s > capacity:\n-            bins.append(current)\n-            current, load = [], 0\n-        current.append(i)\n-        load += s\n-    if current:\n-        bins.append(current)\n-    return bins\n+    n = len(sizes)\n+    # Create (size, original_index) pairs and sort by size descending\n+    items = sorted(((sizes[i], i) for i in range(n)), reverse=True)\n+    \n+    bins = []  # Each bin is [load, [indices]]\n+    \n+    for size, idx in items:\n+        placed = False\n+        for bin_data in bins:\n+            if bin_data[0] + size <= capacity:\n+                bin_data[0] += size\n+                bin_data[1].append(idx)\n+                placed = True\n+                break\n+        if not placed:\n+            bins.append([size, [idx]])\n+    \n+    # Return just the index lists\n+    return [bin_data[1] for bin_data in bins]\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 18.6,
+ "model_gpu_memory_gb": 18.6,
+ "context_length": 32768,
+ "load_seconds": 234.5,
+ "median_call_seconds": 163.8,
+ "p90_call_seconds": 343.4,
+ "prompt_tokens_per_s": 104.3,
+ "gen_tokens_per_s": 11.2,
+ "mean_prompt_tokens": 2225,
+ "mean_gen_tokens": 1308,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

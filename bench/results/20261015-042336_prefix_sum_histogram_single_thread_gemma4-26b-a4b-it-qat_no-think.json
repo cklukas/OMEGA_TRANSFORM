@@ -1,0 +1,119 @@
+{
+ "schema": 2,
+ "example": "prefix_sum_histogram_single_thread",
+ "model": "gemma4:26b-a4b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 15.6,
+ "model_params": "25.2B",
+ "started": "2026-10-15T04:23:36",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.7,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 4.82247,
+ "best_score": 14.6735,
+ "improvement": 3.042735361754454,
+ "llm_calls": 21,
+ "mean_llm_seconds": 43.8,
+ "attempts": 21,
+ "ok": 18,
+ "statuses": {
+  "ok": 18,
+  "edit_error": 1,
+  "compile_error": 1,
+  "duplicate": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 4,
+ "minutes_to_best": 7.59,
+ "best_idea": "Use 16 sub-histograms and unroll the loop 16 times to further reduce RMW dependency chains and maximize instruction-level parallelism.",
+ "progress": [
+  [
+   0.0,
+   4.82247
+  ],
+  [
+   4.8,
+   9.99251
+  ],
+  [
+   5.4,
+   12.1599
+  ],
+  [
+   5.75,
+   13.1083
+  ],
+  [
+   7.59,
+   14.6735
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 4.82247,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 4.8,
+   "score": 9.99251,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Use a sub-histogram approach with 8 local 32-bit counters to break the dependency chain of frequent updates to the same histogram bins."
+  },
+  {
+   "minutes": 5.75,
+   "score": 13.1083,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Use unrolling and manually handle the sub-histogram indexing to eliminate the `i & 7` and `i++` overhead in the hot loop."
+  },
+  {
+   "minutes": 7.59,
+   "score": 14.6735,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Use 16 sub-histograms and unroll the loop 16 times to further reduce RMW dependency chains and maximize instruction-level parallelism."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -29,11 +29,47 @@\n // never overflow int64.\n extern \"C\" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, uint64_t* hist) {\n     for (int b = 0; b < 256; ++b) hist[b] = 0;\n+    \n+    // Use 16 sub-histograms to further break RMW dependency chains\n+    alignas(64) uint32_t sub_hist[16][256] = {0};\n     int64_t sum = 0;\n-    for (size_t i = 0; i < n; ++i) {\n-        sum += in[i];\n+\n+    size_t i = 0;\n+    if (n >= 16) {\n+        for (; i <= n - 16; i += 16) {\n+            int64_t v0 = in[i], v1 = in[i+1], v2 = in[i+2], v3 = in[i+3], v4 = in[i+4], v5 = in[i+5], v6 = in[i+6], v7 = in[i+7];\n+            int64_t v8 = in[i+8], v9 = in[i+9], v10 = in[i+10], v11 = in[i+11], v12 = in[i+12], v13 = in[i+13], v14 = in[i+14], v15 = in[i+15];\n+\n+            sum += v0; out[i] = sum; sub_hist[0][v0 & 255]++;\n+            sum += v1; out[i+1] = sum; sub_hist[1][v1 & 255]++;\n+            sum += v2; out[i+2] = sum; sub_hist[2][v2 & 255]++;\n+            sum += v3; out[i+3] = sum; sub_hist[3][v3 & 255]++;\n+            sum += v4; out[i+4] = sum; sub_hist[4][v4 & 255]++;\n+            sum += v5; out[i+5] = sum; sub_hist[5][v5 & 255]++;\n+            sum += v6; out[i+6] = sum; sub_hist[6][v6 & 255]++;\n+            sum += v7; out[i+7] = sum; sub_hist[7][v7 & 255]++;\n+            sum += v8; out[i+8] = sum; sub_hist[8][v8 & 255]++;\n+            sum += v9; out[i+9] = sum; sub_hist[9][v9 & 255]++;\n+            sum += v10; out[i+10] = sum; sub_hist[10][v10 & 255]++;\n+            sum += v11; out[i+11] = sum; sub_hist[11][v11 & 255]++;\n+            sum += v12; out[i+12] = sum; sub_hist[12][v12 & 255]++;\n+            sum += v13; out[i+13] = sum; sub_hist[13][v13 & 255]++;\n+            sum += v14; out[i+14] = sum; sub_hist[14][v14 & 255]++;\n+            sum += v15; out[i+15] = sum; sub_hist[15][v15 & 255]++;\n+        }\n+    }\n+    for (; i < n; ++i) {\n+        int64_t val = in[i];\n+        sum += val;\n         out[i] = sum;\n-        hist[in[i] & 255]++;\n+        sub_hist[i & 15][val & 255]++;\n+    }\n+\n+    // Merge sub-histograms into final result\n+    for (int b = 0; b < 256; ++b) {\n+        for (int s = 0; s < 16; ++s) {\n+            hist[b] += sub_hist[s][b];\n+        }\n     }\n }\n // OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 15.4,
+ "model_gpu_memory_gb": 15.4,
+ "context_length": 32768,
+ "load_seconds": 267.5,
+ "median_call_seconds": 35.5,
+ "p90_call_seconds": 42.8,
+ "prompt_tokens_per_s": 511.1,
+ "gen_tokens_per_s": 58.9,
+ "mean_prompt_tokens": 5786,
+ "mean_gen_tokens": 1120,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

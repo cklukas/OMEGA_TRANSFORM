@@ -1,0 +1,156 @@
+{
+ "schema": 2,
+ "example": "symbolic_regression",
+ "model": "gemma4:latest",
+ "variant": "no-think",
+ "model_size_gb": 9.5,
+ "model_params": "",
+ "started": "2026-10-15T10:45:54",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.3128434055615448,
+ "best_score": 0.9986364762116191,
+ "improvement": 3.1921289004609057,
+ "llm_calls": 68,
+ "mean_llm_seconds": 12.7,
+ "attempts": 68,
+ "ok": 51,
+ "statuses": {
+  "ok": 51,
+  "duplicate": 11,
+  "edit_error": 2,
+  "llm_error": 1,
+  "invalid": 3
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 7,
+ "minutes_to_best": 12.32,
+ "best_idea": "Replace the linear scaling of $x_3$ with a term that is more sensitive to the upper bound of $x_3$, like $x_3^2$, as the feedback suggests high errors at large $x_3$.",
+ "progress": [
+  [
+   0.0,
+   0.3128434055615448
+  ],
+  [
+   1.58,
+   0.3794462082124446
+  ],
+  [
+   1.91,
+   0.38367203622324875
+  ],
+  [
+   8.52,
+   0.9633582455089589
+  ],
+  [
+   10.74,
+   0.9634115575719275
+  ],
+  [
+   11.57,
+   0.9909169702169857
+  ],
+  [
+   11.86,
+   0.9986312088775335
+  ],
+  [
+   12.32,
+   0.9986364762116191
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.3128434055615448,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.58,
+   "score": 0.3794462082124446,
+   "model": "gemma4:latest",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Expand the basis set to include non-linear and interactive terms like powers and products, as the linear model is insufficient for good extrapolation."
+  },
+  {
+   "minutes": 2.06,
+   "score": 0.3785194730286788,
+   "model": "gemma4:latest",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Introduce periodic basis functions (sine and cosine) to capture potential oscillations which polynomial bases cannot model well for extrapolation."
+  },
+  {
+   "minutes": 7.95,
+   "score": 0.3836481281101992,
+   "model": "gemma4:latest",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Introduce higher-order interaction terms involving $x_3$ and $x_1$ to capture more complex relationships suggested by the extrapolation failures."
+  },
+  {
+   "minutes": 8.52,
+   "score": 0.9633582455089589,
+   "model": "gemma4:latest",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Replace the polynomial basis with a combination of sinusoidal and rational functions to better capture potential periodic or steep variations, which often improve extrapolation."
+  },
+  {
+   "minutes": 11.57,
+   "score": 0.9909169702169857,
+   "model": "gemma4:latest",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Introduce a term that captures a potential saturation or inverse relationship, as suggested by the high errors at larger input magnitudes, by adding a term involving $1/(1+x_3)$ to the basis functions."
+  },
+  {
+   "minutes": 12.32,
+   "score": 0.9986364762116191,
+   "model": "gemma4:latest",
+   "mode": "explore/diff/refine",
+   "status": "ok",
+   "idea": "Replace the linear scaling of $x_3$ with a term that is more sensitive to the upper bound of $x_3$, like $x_3^2$, as the feedback suggests high errors at large $x_3$."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -35,7 +35,7 @@\n # OMEGA-BLOCK-START\n def basis(x1, x2, x3):\n     \"\"\"Basis functions of the model; the prediction is a weighted sum of them.\"\"\"\n-    return [1.0, x1, x2, x3]\n+    return [1.0, x1, x2, x3, x1*math.cos(x2), x2*math.sin(x1), x3*x3, x1*x2, x2*x3, x1*x3, 1.0/(1.0+math.exp(-x1)), 1.0/(1.0+math.exp(-x2)), 1.0/(1.0+math.exp(-x1*x2)), 1.0/(1.0+x3)]\n \n \n def fit(rows):\n",
+ "error": "",
+ "model_memory_gb": 17.8,
+ "model_gpu_memory_gb": 17.8,
+ "context_length": 32768,
+ "load_seconds": 87.8,
+ "median_call_seconds": 11.4,
+ "p90_call_seconds": 14.7,
+ "prompt_tokens_per_s": 1060.8,
+ "gen_tokens_per_s": 45.6,
+ "mean_prompt_tokens": 5130,
+ "mean_gen_tokens": 296,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

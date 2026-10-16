@@ -1,0 +1,94 @@
+{
+ "schema": 2,
+ "example": "matmul_f32",
+ "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 17.8,
+ "model_params": "27.3B",
+ "started": "2026-10-15T22:36:15",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.7,
+ "omega_version": "0.1.0",
+ "omega_commit": "0910551",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.65835,
+ "best_score": 154.854,
+ "improvement": 93.3783580064522,
+ "llm_calls": 8,
+ "mean_llm_seconds": 120.7,
+ "attempts": 8,
+ "ok": 3,
+ "statuses": {
+  "edit_error": 1,
+  "invalid": 4,
+  "ok": 3
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 2,
+ "minutes_to_best": 16.33,
+ "best_idea": "Switch to an i-k-j loop order with cache blocking to improve data locality and enable better vectorization, which is a foundational optimization for matrix multiplication that typically yields signifi",
+ "progress": [
+  [
+   0.0,
+   1.65835
+  ],
+  [
+   16.2,
+   101.186
+  ],
+  [
+   16.33,
+   154.854
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.65835,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 16.33,
+   "score": 154.854,
+   "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Switch to an i-k-j loop order with cache blocking to improve data locality and enable better vectorization, which is a foundational optimization for matrix multiplication that typically yields significant speedups over the naive i-j-k order."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -21,12 +21,73 @@\n // OMEGA-BLOCK-START\n // Computes C = A * B. C is NOT zeroed by the caller. Any number of threads may be\n // used (std::thread is available); n is any size from 1 to 2048.\n+\n+static constexpr int BLOCK_SIZE = 64;\n+static constexpr int THREAD_COUNT = 10;\n+\n+// Helper to compute a tile of the result using i-k-j order for better cache utilization\n+static void compute_tile(int n, int i_start, int i_end, int k_start, int k_end, \n+                         const float* A, const float* B, float* C) {\n+    for (int i = i_start; i < i_end; ++i) {\n+        for (int k = k_start; k < k_end; ++k) {\n+            float a_ik = A[i * n + k];\n+            const float* b_row_k = B + k * n;\n+            float* c_row_i = C + i * n;\n+            for (int j = 0; j < n; ++j) {\n+                c_row_i[j] += a_ik * b_row_k[j];\n+            }\n+        }\n+    }\n+}\n+\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+    // Zero out C\n+    std::fill(C, C + n * n, 0.0f);\n+    \n+    // Determine block boundaries\n+    std::vector<std::pair<int, int>> row_blocks;\n+    for (int i = 0; i < n; i += BLOCK_SIZE) {\n+        int i_end = std::min(i + BLOCK_SIZE, n);\n+        row_blocks.push_back({i, i_end});\n+    }\n+    \n+    // Use threading to parallelize over row blocks\n+    std::vector<std::thread> threads;\n+    threads.reserve(THREAD_COUNT);\n+    \n+    // Simple work queue using atomic index\n+    std::atomic<int> next_block(0);\n+    \n+    auto worker = [&]() {\n+        while (true) {\n+            int idx = next_block.fetch_add(1);\n+            if (idx >= (int)row_blocks.size()) break;\n+            \n+            int i_start = row_blocks[idx].first;\n+            int i_end = row_blocks[idx].second;\n+            \n+            // Process this row block with inner k-j loops\n+            for (int i = i_start; i < i_end; ++i) {\n+                for (int k = 0; k < n; ++k) {\n+                    float a_ik = A[i * n + k];\n+                    const float* b_row_k = B + k * n;\n+                    float* c_row_i = C + i * n;\n+                    for (int j = 0; j < n; ++j) {\n+                        c_row_i[j] += a_ik * b_row_k[j];\n+                    }\n+                }\n+            }\n         }\n+    };\n+    \n+    // Launch threads\n+    for (int t = 0; t < THREAD_COUNT; ++t) {\n+        threads.emplace_back(worker);\n+    }\n+    \n+    // Wait for all threads to complete\n+    for (auto& t : threads) {\n+        t.join();\n+    }\n }\n // OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 17.4,
+ "model_gpu_memory_gb": 17.4,
+ "context_length": 32768,
+ "load_seconds": 277.0,
+ "median_call_seconds": 112.0,
+ "p90_call_seconds": 372.5,
+ "prompt_tokens_per_s": 174.6,
+ "gen_tokens_per_s": 14.8,
+ "mean_prompt_tokens": 2337,
+ "mean_gen_tokens": 1060,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

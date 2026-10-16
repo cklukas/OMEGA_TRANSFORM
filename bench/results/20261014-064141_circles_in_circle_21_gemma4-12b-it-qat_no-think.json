@@ -1,0 +1,94 @@
+{
+ "schema": 2,
+ "example": "circles_in_circle_21",
+ "model": "gemma4:12b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 7.2,
+ "model_params": "11.9B",
+ "started": "2026-10-14T06:41:41",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 3.1890454825108625,
+ "best_score": 3.9302038785425366,
+ "improvement": 1.2324075965978794,
+ "llm_calls": 17,
+ "mean_llm_seconds": 56.3,
+ "attempts": 17,
+ "ok": 11,
+ "statuses": {
+  "invalid": 4,
+  "ok": 11,
+  "edit_error": 2
+ },
+ "sweeps": 3,
+ "sweep_variants": 22,
+ "improvements": 2,
+ "minutes_to_best": 11.4,
+ "best_idea": "The current symmetric ring structure is very rigid; by making the radii of circles in different rings independent and optimizing the rings' radii, we can better maximize the sum of radii.",
+ "progress": [
+  [
+   0.0,
+   3.1890454825108625
+  ],
+  [
+   10.48,
+   3.616358435846482
+  ],
+  [
+   11.4,
+   3.9302038785425366
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.1890454825108625,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 11.4,
+   "score": 3.9302038785425366,
+   "model": "gemma4:12b-it-qat",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "The current symmetric ring structure is very rigid; by making the radii of circles in different rings independent and optimizing the rings' radii, we can better maximize the sum of radii."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -5,23 +5,76 @@\n \n # OMEGA-BLOCK-START\n def construct(n=21):\n-    \"\"\"Return a list of n circles (x, y, r) inside the unit circle (center (0,0),\n-    radius 1) without overlaps.\n+    \"\"\"\n+    Returns a list of n circles (x, y, r) inside a unit circle.\n+    Uses a configuration of 1 center circle and two concentric rings.\n+    The radii of the rings are optimized to maximize the sum of radii.\n+    \"\"\"\n+    # Configuration: 1 center, 7 in inner ring, (n-8) in outer ring\n+    n_center = 1\n+    n_inner = 7\n+    n_outer = n - 8\n+    \n+    # We want to find radii r_c, r_i, r_o for center, inner, and outer rings.\n+    # Constraints:\n+    # 1. Inner ring fits in unit circle: r_i + ring_dist_i <= 1\n+    # 2. Outer ring fits in unit circle: r_o + ring_dist_o <= 1\n+    # 3. Inner ring doesn't overlap center: ring_dist_i >= r_c + r_i\n+    # 4. Outer ring doesn't overlap center: ring_dist_o >= r_c + r_o\n+    # 5. Inner ring doesn't overlap itself: ring_dist_i * sin(pi/n_inner) >= r_i\n+    # 6. Outer ring doesn't overlap itself: ring_dist_o * sin(pi/n_outer) >= r_o\n+    # 7. Inner ring doesn't overlap outer ring: ring_dist_o - ring_dist_i >= r_i + r_o\n+    #    (Simplification: we assume they are separated by distance)\n+    \n+    # Since we want to maximize sum = r_c + n_inner*r_i + n_outer*r_o,\n+    # we can iterate over possible ring distances.\n+    best_sum = -1\n+    best_config = None\n+    \n+    # ring_dist_i is the distance from (0,0) to the centers of the inner ring\n+    # ring_dist_o is the distance from (0,0) to the centers of the outer ring\n+    # To maximize sum, r_c should be large, but it limits the others.\n+    # Let's try a range of ring distances.\n+    for dist_i in [0.4, 0.5, 0.6]:\n+        for dist_o in [0.7, 0.8, 0.9]:\n+            # Max r_i based on self-overlap and boundary\n+            max_ri = min((dist_i * math.sin(math.pi / n_inner)), (1.0 - dist_i))\n+            # Max r_o based on self-overlap and boundary\n+            max_ro = min((dist_o * math.sin(math.pi / n_outer) if n_outer > 0 else 1.0), (1.0 - dist_o))\n+            \n+            # r_c must satisfy:\n+            # r_c <= dist_i - r_i\n+            # r_c <= dist_o - r_o\n+            # Also we need r_i + r_o <= dist_o - dist_i\n+            \n+            # This is a small linear program. Let's just sample r_i and r_o.\n+            for ri in [max_ri * (0.8 + i*0.1) for i in range(3)]:\n+                for ro in [max_ro * (0.8 + i*0.1) for i in range(3)]:\n+                    rc = min(dist_i - ri, dist_o - ro)\n+                    # Check if they overlap each other\n+                    if ri + ro <= dist_o - dist_i:\n+                        if rc >= 0:\n+                            s = rc + n_inner * ri + n_outer * ro\n+                            if s > best_sum:\n+                                best_sum = s\n+                                best_config = (rc, ri, ro, dist_i, dist_o)\n \n-    This start places one circle at the center and two concentric rings of 7 and\n-    13 circles, all with the same radius: the largest one that keeps every pair\n-    apart and every circle inside the container.\n-    \"\"\"\n+    rc, ri, ro, di, do = best_config\n     centers = [(0.0, 0.0)]\n-    for count, ring in ((7, 0.35), (n - 8, 0.75)):\n-        centers += [(ring * math.cos(2 * math.pi * k / count),\n-                     ring * math.sin(2 * math.pi * k / count)) for k in range(count)]\n-    r = min(1.0 - math.hypot(x, y) for x, y in centers)\n-    for a in range(n):\n-        for b in range(a + 1, n):\n-            r = min(r, math.dist(centers[a], centers[b]) / 2)\n-    r *= 1 - 1e-12  # stay strictly feasible despite rounding\n-    return [(x, y, r) for x, y in centers]\n+    for k in range(n_inner):\n+        centers.append((di * math.cos(2 * math.pi * k / n_inner),\n+                         di * math.sin(2 * math.pi * k / n_inner)))\n+    for k in range(n_outer):\n+        centers.append((do * math.cos(2 * math.pi * k / n_outer),\n+                         do * math.sin(2 * math.pi * k / n_outer)))\n+    \n+    radii = [rc] + [ri] * n_inner + [ro] * n_outer\n+    \n+    # Final safety check and construction\n+    res = []\n+    for i in range(len(centers)):\n+        res.append((centers[i][0], centers[i][1], radii[i] * (1 - 1e-9)))\n+    return res\n # OMEGA-BLOCK-END\n \n \n",
+ "error": "",
+ "model_memory_gb": 8.0,
+ "model_gpu_memory_gb": 8.0,
+ "context_length": 32768,
+ "load_seconds": 65.1,
+ "median_call_seconds": 51.7,
+ "p90_call_seconds": 86.4,
+ "prompt_tokens_per_s": 256.2,
+ "gen_tokens_per_s": 30.6,
+ "mean_prompt_tokens": 2976,
+ "mean_gen_tokens": 1247,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

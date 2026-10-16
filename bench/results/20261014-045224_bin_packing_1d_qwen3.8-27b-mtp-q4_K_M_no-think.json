@@ -1,0 +1,88 @@
+{
+ "schema": 2,
+ "example": "bin_packing_1d",
+ "model": "qwen3.8:27b-mtp-q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 17.7,
+ "model_params": "27.3B",
+ "started": "2026-10-14T04:52:24",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.7942635036246238,
+ "best_score": 0.9512800819252432,
+ "improvement": 1.1976882704342748,
+ "llm_calls": 4,
+ "mean_llm_seconds": 226.6,
+ "attempts": 4,
+ "ok": 4,
+ "statuses": {
+  "ok": 4
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 12.51,
+ "best_idea": "Replace next-fit with First-Fit-Decreasing (a substantially different greedy construction) which is known to land near the lower bound on these instances and runs in milliseconds, leaving time for a l",
+ "progress": [
+  [
+   0.0,
+   0.7942635036246238
+  ],
+  [
+   12.51,
+   0.9512800819252432
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.7942635036246238,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 12.51,
+   "score": 0.9512800819252432,
+   "model": "qwen3.8:27b-mtp-q4_K_M",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Replace next-fit with First-Fit-Decreasing (a substantially different greedy construction) which is known to land near the lower bound on these instances and runs in milliseconds, leaving time for a later improvement."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,17 +19,23 @@\n     (time.process_time(); more than 1.5 x the limit makes the program invalid).\n     Only the Python standard library may be used.\n \n-    Current method: next fit (open a new bin whenever the next item does not fit).\n+    Method: first-fit decreasing (sort items by decreasing size, place each into the\n+    first bin where it fits, else open a new bin).\n     \"\"\"\n+    order = sorted(range(len(sizes)), key=lambda i: sizes[i], reverse=True)\n     bins = []\n-    current, load = [], 0\n-    for i, s in enumerate(sizes):\n-        if load + s > capacity:\n-            bins.append(current)\n-            current, load = [], 0\n-        current.append(i)\n-        load += s\n-    if current:\n-        bins.append(current)\n+    loads = []\n+    for i in order:\n+        s = sizes[i]\n+        placed = False\n+        for b in range(len(bins)):\n+            if loads[b] + s <= capacity:\n+                loads[b] += s\n+                bins[b].append(i)\n+                placed = True\n+                break\n+        if not placed:\n+            loads.append(s)\n+            bins.append([i])\n     return bins\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 17.6,
+ "model_gpu_memory_gb": 17.6,
+ "context_length": 32768,
+ "load_seconds": 306.2,
+ "median_call_seconds": 68.9,
+ "p90_call_seconds": 750.6,
+ "prompt_tokens_per_s": 114.8,
+ "gen_tokens_per_s": 15.7,
+ "mean_prompt_tokens": 2055,
+ "mean_gen_tokens": 541,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

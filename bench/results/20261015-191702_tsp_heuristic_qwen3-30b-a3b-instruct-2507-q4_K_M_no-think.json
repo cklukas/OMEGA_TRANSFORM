@@ -1,0 +1,98 @@
+{
+ "schema": 2,
+ "example": "tsp_heuristic",
+ "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-10-15T19:17:02",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.0,
+ "best_score": 1.0154046766689546,
+ "improvement": 1.0154046766689546,
+ "llm_calls": 23,
+ "mean_llm_seconds": 39.2,
+ "attempts": 23,
+ "ok": 16,
+ "statuses": {
+  "ok": 16,
+  "invalid": 1,
+  "edit_error": 6
+ },
+ "sweeps": 11,
+ "sweep_variants": 176,
+ "improvements": 1,
+ "minutes_to_best": 3.05,
+ "best_idea": "tuned grid_size=0.04154 on top of: Replace the slow O(n\u00b2) nearest neighbor search with a greedy construction using a grid-based spatial index to quickly find the nearest unvisited city, reducing the t",
+ "progress": [
+  [
+   0.0,
+   1.0
+  ],
+  [
+   3.05,
+   1.0154046766689546
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.0,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.05,
+   "score": 0.9822578239081744,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the slow O(n\u00b2) nearest neighbor search with a greedy construction using a grid-based spatial index to quickly find the nearest unvisited city, reducing the time complexity of the construction phase and enabling more time for local search improvements."
+  },
+  {
+   "minutes": 3.05,
+   "score": 1.0154046766689546,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "sweep/exploit/diff/refine",
+   "status": "ok",
+   "idea": "tuned grid_size=0.04154 on top of: Replace the slow O(n\u00b2) nearest neighbor search with a greedy construction using a grid-based spatial index to quickly find the nearest unvisited city, reducing the time complexity of the construction phase and enabling more time for local search improvements."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -21,13 +21,56 @@\n     Current method: plain nearest-neighbour construction starting at city 0.\n     \"\"\"\n     n = len(points)\n-    unvisited = set(range(1, n))\n+    # Use a grid to speed up nearest neighbor search\n+    # Grid cell size: 1 / sqrt(n) gives ~1 cell per city on average\n+    grid_size = 0.04153934343350092\n+    grid = {}\n+    # Initialize grid with all cities except the start\n+    for i in range(1, n):\n+        gx = int(points[i][0] / grid_size)\n+        gy = int(points[i][1] / grid_size)\n+        key = (gx, gy)\n+        if key not in grid:\n+            grid[key] = []\n+        grid[key].append(i)\n+    \n+    # Start tour at city 0\n     tour = [0]\n     x, y = points[0]\n+    unvisited = set(range(1, n))\n+    \n+    # Function to find nearest unvisited city using grid\n+    def find_nearest():\n+        # Consider a small neighborhood of grid cells around current position\n+        gx = int(x / grid_size)\n+        gy = int(y / grid_size)\n+        candidates = []\n+        for dx in (-1, 0, 1):\n+            for dy in (-1, 0, 1):\n+                key = (gx + dx, gy + dy)\n+                if key in grid:\n+                    candidates.extend(grid[key])\n+        # Filter out visited cities\n+        candidates = [c for c in candidates if c in unvisited]\n+        if not candidates:\n+            # Fall back to full scan if no candidates in grid\n+            return min(unvisited, key=lambda j: (points[j][0] - x)**2 + (points[j][1] - y)**2)\n+        # Return nearest candidate\n+        return min(candidates, key=lambda j: (points[j][0] - x)**2 + (points[j][1] - y)**2)\n+    \n     while unvisited:\n-        nxt = min(unvisited, key=lambda j: (points[j][0] - x) ** 2 + (points[j][1] - y) ** 2)\n+        nxt = find_nearest()\n         unvisited.remove(nxt)\n         tour.append(nxt)\n         x, y = points[nxt]\n+        # Remove city from grid\n+        gx = int(x / grid_size)\n+        gy = int(y / grid_size)\n+        key = (gx, gy)\n+        if key in grid and nxt in grid[key]:\n+            grid[key].remove(nxt)\n+            if not grid[key]:\n+                del grid[key]\n+    \n     return tour\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 21.8,
+ "model_gpu_memory_gb": 21.8,
+ "context_length": 32768,
+ "load_seconds": 152.0,
+ "median_call_seconds": 34.8,
+ "p90_call_seconds": 54.2,
+ "prompt_tokens_per_s": 586.8,
+ "gen_tokens_per_s": 44.8,
+ "mean_prompt_tokens": 4124,
+ "mean_gen_tokens": 1115,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -1,0 +1,101 @@
+{
+ "schema": 2,
+ "example": "prefix_sum_histogram_single_thread",
+ "model": "qwen3.5:27b",
+ "variant": "no-think",
+ "model_size_gb": 17.4,
+ "model_params": "27.8B",
+ "started": "2026-10-15T04:39:18",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 4.94376,
+ "best_score": 13.4003,
+ "improvement": 2.7105482466786412,
+ "llm_calls": 5,
+ "mean_llm_seconds": 188.3,
+ "attempts": 5,
+ "ok": 4,
+ "statuses": {
+  "ok": 4,
+  "edit_error": 1
+ },
+ "sweeps": 1,
+ "sweep_variants": 3,
+ "improvements": 2,
+ "minutes_to_best": 9.34,
+ "best_idea": "Replace the naive scalar loop with an unrolled vectorized loop using ARM NEON to process 4 `int64_t` values per iteration, reducing loop overhead and increasing instruction-level parallelism for both ",
+ "progress": [
+  [
+   0.0,
+   4.94376
+  ],
+  [
+   5.23,
+   11.7907
+  ],
+  [
+   9.34,
+   13.4003
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 4.94376,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 5.23,
+   "score": 11.7907,
+   "model": "qwen3.5:27b",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Replace the global histogram with 8 private sub-histograms of uint32_t to eliminate the store-to-load dependency chain on hot bins, accumulating them into the final uint64_t histogram only after the scan loop completes."
+  },
+  {
+   "minutes": 9.34,
+   "score": 13.4003,
+   "model": "qwen3.5:27b",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Replace the naive scalar loop with an unrolled vectorized loop using ARM NEON to process 4 `int64_t` values per iteration, reducing loop overhead and increasing instruction-level parallelism for both the prefix sum and histogram binning."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -28,12 +28,70 @@\n // hist is zeroed by the caller. n is any size from 0 to 20'000'000; the sums\n // never overflow int64.\n extern \"C\" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, uint64_t* hist) {\n-    for (int b = 0; b < 256; ++b) hist[b] = 0;\n+    // Use 8 private sub-histograms (uint32_t) to avoid hot-bin contention.\n+    // n <= 20M fits in uint32_t (max ~2.5e9), so no overflow per bin per sub-hist.\n+    constexpr int SUB_HIST_COUNT = 8;\n+    uint32_t sub_hist[SUB_HIST_COUNT][256];\n+    \n+    // Zero sub-histograms using memset for speed\n+    std::memset(sub_hist, 0, sizeof(sub_hist));\n+    \n+    // Zero final histogram (caller does not guarantee zero)\n+    std::memset(hist, 0, 256 * sizeof(uint64_t));\n+    \n     int64_t sum = 0;\n-    for (size_t i = 0; i < n; ++i) {\n+    size_t i = 0;\n+    \n+    // Unrolled vectorized loop: process 4 elements at a time\n+    // Prefetch next cache line\n+    size_t limit = (n >> 2) << 2;\n+    for (; i < limit; i += 4) {\n+        // Prefetch input for next block (approx 64 bytes ahead)\n+        __builtin_prefetch(in + i + 16, 0, 3);\n+        __builtin_prefetch(out + i + 16, 1, 3);\n+        \n+        int64_t v0 = in[i];\n+        int64_t v1 = in[i+1];\n+        int64_t v2 = in[i+2];\n+        int64_t v3 = in[i+3];\n+        \n+        sum += v0; out[i]   = sum;\n+        sum += v1; out[i+1] = sum;\n+        sum += v2; out[i+2] = sum;\n+        sum += v3; out[i+3] = sum;\n+        \n+        uint8_t b0 = static_cast<uint8_t>(v0);\n+        uint8_t b1 = static_cast<uint8_t>(v1);\n+        uint8_t b2 = static_cast<uint8_t>(v2);\n+        uint8_t b3 = static_cast<uint8_t>(v3);\n+        \n+        int k = static_cast<int>(i) & (SUB_HIST_COUNT - 1);\n+        int k1 = static_cast<int>(i+1) & (SUB_HIST_COUNT - 1);\n+        int k2 = static_cast<int>(i+2) & (SUB_HIST_COUNT - 1);\n+        int k3 = static_cast<int>(i+3) & (SUB_HIST_COUNT - 1);\n+        \n+        sub_hist[k][b0]++;\n+        sub_hist[k1][b1]++;\n+        sub_hist[k2][b2]++;\n+        sub_hist[k3][b3]++;\n+    }\n+    \n+    // Handle remainder\n+    for (; i < n; ++i) {\n         sum += in[i];\n         out[i] = sum;\n-        hist[in[i] & 255]++;\n+        uint8_t bin = static_cast<uint8_t>(in[i]);\n+        int k = static_cast<int>(i) & (SUB_HIST_COUNT - 1);\n+        sub_hist[k][bin]++;\n+    }\n+    \n+    // Accumulate sub-histograms into final hist\n+    for (int b = 0; b < 256; ++b) {\n+        uint64_t total = 0;\n+        for (int k = 0; k < SUB_HIST_COUNT; ++k) {\n+            total += sub_hist[k][b];\n+        }\n+        hist[b] = total;\n     }\n }\n // OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 18.6,
+ "model_gpu_memory_gb": 18.6,
+ "context_length": 32768,
+ "load_seconds": 198.7,
+ "median_call_seconds": 182.3,
+ "p90_call_seconds": 308.1,
+ "prompt_tokens_per_s": 112.5,
+ "gen_tokens_per_s": 11.1,
+ "mean_prompt_tokens": 4169,
+ "mean_gen_tokens": 1236,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

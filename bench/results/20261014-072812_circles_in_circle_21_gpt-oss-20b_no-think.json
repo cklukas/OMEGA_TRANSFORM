@@ -1,0 +1,93 @@
+{
+ "schema": 2,
+ "example": "circles_in_circle_21",
+ "model": "gpt-oss:20b",
+ "variant": "no-think",
+ "model_size_gb": 13.8,
+ "model_params": "20.9B",
+ "started": "2026-10-14T07:28:12",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.7,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 3.1890454825108625,
+ "best_score": 4.052783620202824,
+ "improvement": 1.2708453493149636,
+ "llm_calls": 8,
+ "mean_llm_seconds": 117.5,
+ "attempts": 8,
+ "ok": 5,
+ "statuses": {
+  "edit_error": 3,
+  "ok": 5
+ },
+ "sweeps": 1,
+ "sweep_variants": 16,
+ "improvements": 2,
+ "minutes_to_best": 10.35,
+ "best_idea": "Replace the equal\u2011radius construction with an analytic solution that computes distinct radii for the center, inner ring, and outer ring using sin(pi/7) and sin(pi/13), yielding a sum of radii \u2248\u202f4.05.",
+ "progress": [
+  [
+   0.0,
+   3.1890454825108625
+  ],
+  [
+   5.4,
+   4.052783620198771
+  ],
+  [
+   10.35,
+   4.052783620202824
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.1890454825108625,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 10.35,
+   "score": 4.052783620202824,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the equal\u2011radius construction with an analytic solution that computes distinct radii for the center, inner ring, and outer ring using sin(pi/7) and sin(pi/13), yielding a sum of radii \u2248 4.05."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -8,20 +8,29 @@\n     \"\"\"Return a list of n circles (x, y, r) inside the unit circle (center (0,0),\n     radius 1) without overlaps.\n \n-    This start places one circle at the center and two concentric rings of 7 and\n-    13 circles, all with the same radius: the largest one that keeps every pair\n-    apart and every circle inside the container.\n+    Uses analytic radii for center, inner, and outer rings based on sin(pi/7)\n+    and sin(pi/13), yielding a sum of radii \u2248 4.05.\n     \"\"\"\n+    # sin factors for the rings\n+    sin_s = math.sin(math.pi/7)   # inner ring chord factor\n+    sin_t = math.sin(math.pi/13)  # outer ring chord factor\n+    # outer ring center radius\n+    b = 1.0 / (1.0 + sin_t)\n+    r_outer = 1.0 - b\n+    # inner ring center radius\n+    a = (2.0 * b - 1.0) / (1.0 + sin_s)\n+    r_inner = a * sin_s\n+    r_center = a - r_inner\n+    # construct centers\n     centers = [(0.0, 0.0)]\n-    for count, ring in ((7, 0.35), (n - 8, 0.75)):\n-        centers += [(ring * math.cos(2 * math.pi * k / count),\n-                     ring * math.sin(2 * math.pi * k / count)) for k in range(count)]\n-    r = min(1.0 - math.hypot(x, y) for x, y in centers)\n-    for a in range(n):\n-        for b in range(a + 1, n):\n-            r = min(r, math.dist(centers[a], centers[b]) / 2)\n-    r *= 1 - 1e-12  # stay strictly feasible despite rounding\n-    return [(x, y, r) for x, y in centers]\n+    for k in range(7):\n+        centers.append((a * math.cos(2 * math.pi * k / 7),\n+                        a * math.sin(2 * math.pi * k / 7)))\n+    for k in range(13):\n+        centers.append((b * math.cos(2 * math.pi * k / 13),\n+                        b * math.sin(2 * math.pi * k / 13)))\n+    radii = [r_center] + [r_inner] * 7 + [r_outer] * 13\n+    return [(x, y, r) for (x, y), r in zip(centers, radii)]\n # OMEGA-BLOCK-END\n \n \n",
+ "error": "",
+ "model_memory_gb": 12.9,
+ "model_gpu_memory_gb": 12.9,
+ "context_length": 32768,
+ "load_seconds": 54.5,
+ "median_call_seconds": 131.9,
+ "p90_call_seconds": 191.7,
+ "prompt_tokens_per_s": 747.1,
+ "gen_tokens_per_s": 52.1,
+ "mean_prompt_tokens": 2303,
+ "mean_gen_tokens": 5601,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

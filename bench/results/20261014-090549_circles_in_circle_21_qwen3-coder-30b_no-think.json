@@ -1,0 +1,107 @@
+{
+ "schema": 2,
+ "example": "circles_in_circle_21",
+ "model": "qwen3-coder:30b",
+ "variant": "no-think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-10-14T09:05:49",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 3.1890454825108625,
+ "best_score": 3.9600498329558738,
+ "improvement": 1.2417664955464884,
+ "llm_calls": 36,
+ "mean_llm_seconds": 25.2,
+ "attempts": 36,
+ "ok": 16,
+ "statuses": {
+  "invalid": 9,
+  "ok": 16,
+  "edit_error": 6,
+  "duplicate": 5
+ },
+ "sweeps": 6,
+ "sweep_variants": 96,
+ "improvements": 3,
+ "minutes_to_best": 10.27,
+ "best_idea": "Replace the fixed ring-based construction with a gradient-free optimization approach that jointly adjusts circle positions and radii using a penalty method, starting from a good initial configuration ",
+ "progress": [
+  [
+   0.0,
+   3.1890454825108625
+  ],
+  [
+   2.87,
+   3.605362021370003
+  ],
+  [
+   7.25,
+   3.7286109367860427
+  ],
+  [
+   10.27,
+   3.9600498329558738
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.1890454825108625,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 6.34,
+   "score": 3.561469806185153,
+   "model": "qwen3-coder:30b",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Replace the fixed ring-based construction with a more efficient packing approach that allows varying radii and better utilization of space near the container boundary, using configurable ring parameters and a sweepable radius scaling factor to optimize the total radius sum."
+  },
+  {
+   "minutes": 10.27,
+   "score": 3.9600498329558738,
+   "model": "qwen3-coder:30b",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Replace the fixed ring-based construction with a gradient-free optimization approach that jointly adjusts circle positions and radii using a penalty method, starting from a good initial configuration found by sweeping ring parameters."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -8,20 +8,105 @@\n     \"\"\"Return a list of n circles (x, y, r) inside the unit circle (center (0,0),\n     radius 1) without overlaps.\n \n-    This start places one circle at the center and two concentric rings of 7 and\n-    13 circles, all with the same radius: the largest one that keeps every pair\n-    apart and every circle inside the container.\n+    This version uses a gradient-free optimization approach that jointly adjusts\n+    positions and radii to maximize sum of radii with a penalty method.\n     \"\"\"\n+    # Initial configuration from sweep\n+    INNER_RING_RADIUS = 0.4\n+    OUTER_RING_RADIUS = 0.8\n+    INNER_RING_COUNT = 6\n+    OUTER_RING_COUNT = n - 1 - INNER_RING_COUNT\n+    \n     centers = [(0.0, 0.0)]\n-    for count, ring in ((7, 0.35), (n - 8, 0.75)):\n-        centers += [(ring * math.cos(2 * math.pi * k / count),\n-                     ring * math.sin(2 * math.pi * k / count)) for k in range(count)]\n-    r = min(1.0 - math.hypot(x, y) for x, y in centers)\n-    for a in range(n):\n-        for b in range(a + 1, n):\n-            r = min(r, math.dist(centers[a], centers[b]) / 2)\n-    r *= 1 - 1e-12  # stay strictly feasible despite rounding\n-    return [(x, y, r) for x, y in centers]\n+    \n+    # Add inner ring\n+    for k in range(INNER_RING_COUNT):\n+        angle = 2 * math.pi * k / INNER_RING_COUNT\n+        x = INNER_RING_RADIUS * math.cos(angle)\n+        y = INNER_RING_RADIUS * math.sin(angle)\n+        centers.append((x, y))\n+        \n+    # Add outer ring\n+    for k in range(OUTER_RING_COUNT):\n+        angle = 2 * math.pi * k / OUTER_RING_COUNT\n+        x = OUTER_RING_RADIUS * math.cos(angle)\n+        y = OUTER_RING_RADIUS * math.sin(angle)\n+        centers.append((x, y))\n+\n+    # Initialize radii to small values\n+    radii = [0.0] * n\n+    for i in range(n):\n+        wall_dist = 1.0 - math.hypot(centers[i][0], centers[i][1])\n+        radii[i] = wall_dist / 2.0\n+    \n+    # Iteratively improve using a simple local search\n+    for _ in range(500):  # Number of iterations\n+        new_centers = list(centers)\n+        new_radii = list(radii)\n+        \n+        # Update each circle's radius based on constraints\n+        for i in range(n):\n+            wall_dist = 1.0 - math.hypot(centers[i][0], centers[i][1])\n+            min_dist = float('inf')\n+            \n+            for j in range(n):\n+                if i != j:\n+                    dist = math.dist(centers[i], centers[j])\n+                    min_dist = min(min_dist, dist)\n+            \n+            new_radii[i] = min(wall_dist, min_dist / 2.0)\n+        \n+        # Adjust positions to increase sum of radii\n+        for i in range(n):\n+            best_radius = new_radii[i]\n+            best_center = centers[i]\n+            best_sum = sum(new_radii)\n+            \n+            # Simple neighborhood search for center position\n+            step_size = 0.01\n+            for dx in [-step_size, 0, step_size]:\n+                for dy in [-step_size, 0, step_size]:\n+                    new_x = centers[i][0] + dx\n+                    new_y = centers[i][1] + dy\n+                    \n+                    # Check if new position is valid (inside unit circle)\n+                    if math.hypot(new_x, new_y) + best_radius > 1.0:\n+                        continue\n+                        \n+                    # Compute new radius for this position\n+                    new_wall_dist = 1.0 - math.hypot(new_x, new_y)\n+                    new_min_dist = float('inf')\n+                    \n+                    for j in range(n):\n+                        if i != j:\n+                            dist = math.dist((new_x, new_y), centers[j])\n+                            new_min_dist = min(new_min_dist, dist)\n+                    \n+                    new_r = min(new_wall_dist, new_min_dist / 2.0)\n+                    \n+                    # If we can increase the radius, try it\n+                    if new_r > best_radius:\n+                        # Check if this improves the total sum (with penalty for overlaps)\n+                        old_sum = sum(radii)\n+                        new_sum = old_sum - radii[i] + new_r\n+                        \n+                        if new_sum > best_sum:\n+                            best_radius = new_r\n+                            best_center = (new_x, new_y)\n+                            best_sum = new_sum\n+            \n+            new_centers[i] = best_center\n+            new_radii[i] = best_radius\n+        \n+        centers = new_centers\n+        radii = new_radii\n+    \n+    # Final scaling to ensure feasibility\n+    scale = 1.0 - 1e-10\n+    for i in range(n):\n+        radii[i] *= scale\n+        \n+    return [(centers[i][0], centers[i][1], radii[i]) for i in range(n)]\n # OMEGA-BLOCK-END\n \n \n",
+ "error": "",
+ "model_memory_gb": 21.8,
+ "model_gpu_memory_gb": 21.8,
+ "context_length": 32768,
+ "load_seconds": 130.4,
+ "median_call_seconds": 23.2,
+ "p90_call_seconds": 38.4,
+ "prompt_tokens_per_s": 701.9,
+ "gen_tokens_per_s": 53.3,
+ "mean_prompt_tokens": 3310,
+ "mean_gen_tokens": 889,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

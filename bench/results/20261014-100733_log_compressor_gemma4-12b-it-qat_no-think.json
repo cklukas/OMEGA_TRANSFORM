@@ -1,0 +1,116 @@
+{
+ "schema": 2,
+ "example": "log_compressor",
+ "model": "gemma4:12b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 7.2,
+ "model_params": "11.9B",
+ "started": "2026-10-14T10:07:33",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 11.28605206956168,
+ "best_score": 21.45702822892498,
+ "improvement": 1.9011987625676718,
+ "llm_calls": 24,
+ "mean_llm_seconds": 38.8,
+ "attempts": 24,
+ "ok": 14,
+ "statuses": {
+  "invalid": 5,
+  "ok": 14,
+  "duplicate": 3,
+  "llm_error": 1,
+  "edit_error": 1
+ },
+ "sweeps": 3,
+ "sweep_variants": 23,
+ "improvements": 3,
+ "minutes_to_best": 11.34,
+ "best_idea": "Use lzma.PRESET_EXTREME for maximum compression ratio as it is the highest quality preset for the lzma module.",
+ "progress": [
+  [
+   0.0,
+   11.28605206956168
+  ],
+  [
+   2.65,
+   17.631990784874482
+  ],
+  [
+   4.76,
+   19.662606307583275
+  ],
+  [
+   11.34,
+   21.45702822892498
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 11.28605206956168,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 4.76,
+   "score": 19.662606307583275,
+   "model": "gemma4:12b-it-qat",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Use lzma with a higher compression level and a safe fallback to zlib to achieve a better compression ratio than the current zlib level 1."
+  },
+  {
+   "minutes": 9.95,
+   "score": 19.662606307583275,
+   "model": "gemma4:12b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Switch to lzma.PRESET_EXTREME (preset 9) to maximize the compression ratio, as the current program is already using a high-quality lzma preset and the goal is to beat the lzma_ratio reference."
+  },
+  {
+   "minutes": 11.34,
+   "score": 21.45702822892498,
+   "model": "gemma4:12b-it-qat",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "Use lzma.PRESET_EXTREME for maximum compression ratio as it is the highest quality preset for the lzma module."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -10,6 +10,12 @@\n import zlib\n \n # OMEGA-BLOCK-START\n+import zlib\n+import lzma\n+\n+# Use the maximum compression preset for lzma\n+PRESET = lzma.PRESET_EXTREME\n+\n def compress(data: bytes) -> bytes:\n     \"\"\"Compress arbitrary bytes losslessly and return the compressed blob.\n \n@@ -19,14 +25,29 @@\n     Only the Python standard library may be used (zlib, lzma, bz2, struct, re, ...).\n     Compress plus decompress of the main input must stay within 20 CPU seconds.\n \n-    Current method: plain zlib at level 1.\n+    Current method: lzma with preset 6 and zlib fallback.\n     \"\"\"\n-    return zlib.compress(data, 1)\n+    if not data:\n+        return b\"\"\n+    try:\n+        # Use lzma with high compression level for high ratio on logs\n+        # PRESET_EXTREME (9) is used to maximize ratio for repetitive log data\n+        return lzma.compress(data, preset=PRESET)\n+    except Exception:\n+        # Fallback to zlib if lzma fails or data is incompatible\n+        return zlib.compress(data, 9)\n \n \n def decompress(blob: bytes) -> bytes:\n     \"\"\"Invert compress() exactly.\"\"\"\n-    return zlib.decompress(blob)\n+    if not blob:\n+        return b\"\"\n+    try:\n+        # Try lzma first\n+        return lzma.decompress(blob)\n+    except Exception:\n+        # Fallback to zlib\n+        return zlib.decompress(blob)\n # OMEGA-BLOCK-END\n \n \n",
+ "error": "",
+ "model_memory_gb": 8.0,
+ "model_gpu_memory_gb": 8.0,
+ "context_length": 32768,
+ "load_seconds": 65.0,
+ "median_call_seconds": 27.8,
+ "p90_call_seconds": 91.5,
+ "prompt_tokens_per_s": 274.5,
+ "gen_tokens_per_s": 29.5,
+ "mean_prompt_tokens": 3110,
+ "mean_gen_tokens": 597,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

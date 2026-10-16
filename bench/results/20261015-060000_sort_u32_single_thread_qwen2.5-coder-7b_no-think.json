@@ -1,0 +1,132 @@
+{
+ "schema": 2,
+ "example": "sort_u32_single_thread",
+ "model": "qwen2.5-coder:7b",
+ "variant": "no-think",
+ "model_size_gb": 4.7,
+ "model_params": "7.6B",
+ "started": "2026-10-15T06:00:00",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.7,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 23.618116338273854,
+ "best_score": 45.54478750855701,
+ "improvement": 1.9283835703167544,
+ "llm_calls": 36,
+ "mean_llm_seconds": 24.7,
+ "attempts": 36,
+ "ok": 9,
+ "statuses": {
+  "invalid": 13,
+  "compile_error": 7,
+  "edit_error": 1,
+  "ok": 9,
+  "duplicate": 6
+ },
+ "sweeps": 8,
+ "sweep_variants": 115,
+ "improvements": 3,
+ "minutes_to_best": 9.92,
+ "best_idea": "tuned INSERTION_SORT_THRESHOLD=26, QUICK_SORT_RECURSION_THRESHOLD=60 on top of: Define constants for the thresholds in quicksort and insertion sort to optimize for both large and small arrays.",
+ "progress": [
+  [
+   0.0,
+   23.618116338273854
+  ],
+  [
+   4.63,
+   43.99931154050569
+  ],
+  [
+   8.6,
+   44.88929239440344
+  ],
+  [
+   9.92,
+   45.54478750855701
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 23.618116338273854,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.8,
+   "score": null,
+   "model": "qwen2.5-coder:7b",
+   "mode": "best/diff/refine",
+   "status": "compile_error",
+   "idea": "Use a hybrid sorting algorithm that combines quicksort with insertion sort for small arrays to reduce the number of comparisons and swaps."
+  },
+  {
+   "minutes": 4.63,
+   "score": 43.99931154050569,
+   "model": "qwen2.5-coder:7b",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Define the `INSERTION_SORT_THRESHOLD` constant inside the OMEGA-BLOCK region."
+  },
+  {
+   "minutes": 8.6,
+   "score": 44.88929239440344,
+   "model": "qwen2.5-coder:7b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Define a constant for the quicksort recursion depth threshold to optimize for both large and small arrays."
+  },
+  {
+   "minutes": 9.92,
+   "score": 44.41285209887543,
+   "model": "qwen2.5-coder:7b",
+   "mode": "best/diff/tune",
+   "status": "ok",
+   "idea": "Define constants for the thresholds in quicksort and insertion sort to optimize for both large and small arrays."
+  },
+  {
+   "minutes": 9.92,
+   "score": 45.54478750855701,
+   "model": "qwen2.5-coder:7b",
+   "mode": "sweep/best/diff/tune",
+   "status": "ok",
+   "idea": "tuned INSERTION_SORT_THRESHOLD=26, QUICK_SORT_RECURSION_THRESHOLD=60 on top of: Define constants for the thresholds in quicksort and insertion sort to optimize for both large and small arrays."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,22 +19,37 @@\n #endif\n \n // OMEGA-BLOCK-START\n-// Sorts a[0..n) ascending, in place, on the calling thread. n is any size from\n-// 0 to 2'000'000. Extra memory may be allocated freely.\n-static void merge_sort_rec(uint32_t* a, uint32_t* tmp, size_t lo, size_t hi) {\n-    if (hi - lo < 2) return;\n-    size_t mid = lo + (hi - lo) / 2;\n-    merge_sort_rec(a, tmp, lo, mid);\n-    merge_sort_rec(a, tmp, mid, hi);\n-    size_t i = lo, j = mid, k = lo;\n-    while (i < mid && j < hi) tmp[k++] = (a[j] < a[i]) ? a[j++] : a[i++];\n-    while (i < mid) tmp[k++] = a[i++];\n-    while (j < hi) tmp[k++] = a[j++];\n-    for (size_t t = lo; t < hi; ++t) a[t] = tmp[t];\n+constexpr size_t INSERTION_SORT_THRESHOLD = 26; // Threshold for switching to insertion sort\n+constexpr size_t QUICK_SORT_RECURSION_THRESHOLD = 60; // Threshold for switching to insertion sort in quick sort\n+\n+static void quick_sort_rec(uint32_t* a, size_t lo, size_t hi, uint32_t* tmp) {\n+    while (hi - lo > INSERTION_SORT_THRESHOLD) {\n+        size_t mid = lo + (hi - lo) / 2;\n+        uint32_t pivot = a[mid];\n+        std::swap(a[mid], a[lo]);\n+        size_t i = lo + 1, j = hi - 1;\n+        while (true) {\n+            while (i <= j && a[i] < pivot) ++i;\n+            while (i <= j && a[j] > pivot) --j;\n+            if (i < j) std::swap(a[i++], a[j--]);\n+            else break;\n+        }\n+        std::swap(a[lo], a[j]);\n+        if (j - lo < hi - j) {\n+            quick_sort_rec(a, lo, j, tmp);\n+            lo = j + 1;\n+        } else {\n+            quick_sort_rec(a, j + 1, hi, tmp);\n+            hi = j;\n+        }\n+    }\n+    std::copy(a + lo, a + hi, tmp + lo);\n+    std::sort(tmp + lo, tmp + hi);\n+    std::copy(tmp + lo, tmp + hi, a + lo);\n }\n \n extern \"C\" void sort_u32(uint32_t* a, size_t n) {\n     std::vector<uint32_t> tmp(n);\n-    merge_sort_rec(a, tmp.data(), 0, n);\n+    quick_sort_rec(a, 0, n, tmp.data());\n }\n // OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 6.6,
+ "model_gpu_memory_gb": 6.6,
+ "context_length": 32768,
+ "load_seconds": 69.6,
+ "median_call_seconds": 22.8,
+ "p90_call_seconds": 33.5,
+ "prompt_tokens_per_s": 640.5,
+ "gen_tokens_per_s": 36.9,
+ "mean_prompt_tokens": 4507,
+ "mean_gen_tokens": 579,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -1,0 +1,92 @@
+{
+ "schema": 2,
+ "example": "bin_packing_1d",
+ "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-10-14T05:23:28",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.7942635036246238,
+ "best_score": 0.9512800819252432,
+ "improvement": 1.1976882704342748,
+ "llm_calls": 44,
+ "mean_llm_seconds": 20.0,
+ "attempts": 44,
+ "ok": 21,
+ "statuses": {
+  "ok": 21,
+  "invalid": 17,
+  "timeout": 1,
+  "edit_error": 4,
+  "duplicate": 1
+ },
+ "sweeps": 4,
+ "sweep_variants": 50,
+ "improvements": 1,
+ "minutes_to_best": 2.48,
+ "best_idea": "Replace next-fit with First-Fit Decreasing (FFD) to improve bin utilization by packing larger items first, reducing fragmentation and enabling better packing efficiency, especially for the 250-500 and",
+ "progress": [
+  [
+   0.0,
+   0.7942635036246238
+  ],
+  [
+   2.48,
+   0.9512800819252432
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.7942635036246238,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.48,
+   "score": 0.9512800819252432,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Replace next-fit with First-Fit Decreasing (FFD) to improve bin utilization by packing larger items first, reducing fragmentation and enabling better packing efficiency, especially for the 250-500 and 150-450 instances where large items dominate the packing structure."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -11,25 +11,29 @@\n \n # OMEGA-BLOCK-START\n def pack(sizes, capacity):\n-    \"\"\"Return a list of bins; each bin is a list of item indices into sizes.\n+    \"\"\"Return a list of bins using First-Fit Decreasing (FFD): sort items by size descending,\n+    then place each item in the first bin that can accommodate it.\n+    \"\"\"\n+    # Create list of (size, index) pairs and sort by size descending\n+    items = [(s, i) for i, s in enumerate(sizes)]\n+    items.sort(reverse=True)\n \n-    sizes: list of ints, each between 1 and capacity; capacity: int bin capacity.\n-    Every item index must appear in exactly one bin and the sizes in a bin must sum\n-    to at most capacity. Fewer bins is better. The call has a CPU time limit of 2.0 s\n-    (time.process_time(); more than 1.5 x the limit makes the program invalid).\n-    Only the Python standard library may be used.\n+    bins = []  # List of lists of indices\n+    bin_loads = []  # Current load of each bin\n \n-    Current method: next fit (open a new bin whenever the next item does not fit).\n-    \"\"\"\n-    bins = []\n-    current, load = [], 0\n-    for i, s in enumerate(sizes):\n-        if load + s > capacity:\n-            bins.append(current)\n-            current, load = [], 0\n-        current.append(i)\n-        load += s\n-    if current:\n-        bins.append(current)\n+    for s, i in items:\n+        # Find first bin that can fit this item\n+        placed = False\n+        for j in range(len(bins)):\n+            if bin_loads[j] + s <= capacity:\n+                bins[j].append(i)\n+                bin_loads[j] += s\n+                placed = True\n+                break\n+        if not placed:\n+            # Open a new bin\n+            bins.append([i])\n+            bin_loads.append(s)\n+\n     return bins\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 21.8,
+ "model_gpu_memory_gb": 21.8,
+ "context_length": 32768,
+ "load_seconds": 138.0,
+ "median_call_seconds": 16.1,
+ "p90_call_seconds": 31.5,
+ "prompt_tokens_per_s": 713.1,
+ "gen_tokens_per_s": 55.2,
+ "mean_prompt_tokens": 3437,
+ "mean_gen_tokens": 645,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

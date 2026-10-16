@@ -1,0 +1,121 @@
+{
+ "schema": 2,
+ "example": "tammes_30",
+ "model": "qwen3.5:27b",
+ "variant": "no-think",
+ "model_size_gb": 17.4,
+ "model_params": "27.8B",
+ "started": "2026-10-15T14:56:42",
+ "minutes_budget": 15.0,
+ "wall_minutes": 18.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 3.2013569883368893,
+ "best_score": 38.55048221512906,
+ "improvement": 12.041919209752393,
+ "llm_calls": 9,
+ "mean_llm_seconds": 122.5,
+ "attempts": 9,
+ "ok": 8,
+ "statuses": {
+  "ok": 8,
+  "duplicate": 1
+ },
+ "sweeps": 2,
+ "sweep_variants": 31,
+ "improvements": 5,
+ "minutes_to_best": 15.0,
+ "best_idea": "tuned n_polish=4000, polish_step=0.05, polish_decay=0.999 on top of: Add a dedicated \"max-min polish\" phase that targets only the closest pairs to push them apart, as the feedback indicates a single b",
+ "progress": [
+  [
+   0.0,
+   3.2013569883368893
+  ],
+  [
+   4.06,
+   35.259729953021676
+  ],
+  [
+   7.59,
+   36.643935957470035
+  ],
+  [
+   9.7,
+   36.92346030815062
+  ],
+  [
+   9.7,
+   38.305569018015234
+  ],
+  [
+   15.0,
+   38.55048221512906
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.2013569883368893,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 6.65,
+   "score": 35.259729953021676,
+   "model": "qwen3.5:27b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the random initialization and lack of optimization with a Fibonacci lattice start followed by a gradient-based repulsion optimization to significantly increase the minimum angle, as random points yield a very poor min angle of ~3 degrees."
+  },
+  {
+   "minutes": 15.0,
+   "score": 38.26978297716672,
+   "model": "qwen3.5:27b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Add a dedicated \"max-min polish\" phase that targets only the closest pairs to push them apart, as the feedback indicates a single bottleneck pair (1, 2) limits the score while the rest are well-separated."
+  },
+  {
+   "minutes": 15.0,
+   "score": 38.55048221512906,
+   "model": "qwen3.5:27b",
+   "mode": "sweep/exploit/diff/refine",
+   "status": "ok",
+   "idea": "tuned n_polish=4000, polish_step=0.05, polish_decay=0.999 on top of: Add a dedicated \"max-min polish\" phase that targets only the closest pairs to push them apart, as the feedback indicates a single bottleneck pair (1, 2) limits the score while the rest are well-separated."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -9,19 +9,149 @@\n def construct(n=30):\n     \"\"\"Return a list of n points (x, y, z) on the unit sphere.\n \n-    Vectors need not be normalized (the evaluator normalizes them), but none may be\n-    zero. The score is the minimum angle in degrees between any two points. This\n-    start draws uniformly random points with a fixed seed, so some pairs end up\n-    close together.\n+    Uses Fibonacci lattice initialization followed by repulsive force optimization.\n     \"\"\"\n-    rng = random.Random(1)\n+    # Fibonacci sphere distribution for uniform initial spread\n+    phi = math.pi * (3.0 - math.sqrt(5.0))  # golden angle\n     points = []\n-    for _ in range(n):\n-        z = rng.uniform(-1.0, 1.0)\n-        phi = rng.uniform(0.0, 2 * math.pi)\n-        s = math.sqrt(1.0 - z * z)\n-        points.append((s * math.cos(phi), s * math.sin(phi), z))\n-    return points\n+    for i in range(n):\n+        y = 1 - (2 * i + 1) / n  # y goes from 1 to -1\n+        r = math.sqrt(1.0 - y * y)  # radius at y\n+        theta = phi * i\n+        x = math.cos(theta) * r\n+        z = math.sin(theta) * r\n+        points.append([x, y, z])\n+\n+    # Optimization parameters\n+    n_iter = 500\n+    decay = 0.998\n+    s = 2.0  # Exponent for repulsion force\n+    step_size = 0.1\n+    \n+    # Phase 1: Global gradient descent\n+    for it in range(n_iter):\n+        # Compute forces\n+        forces = [[0.0, 0.0, 0.0] for _ in range(n)]\n+        for i in range(n):\n+            for j in range(i + 1, n):\n+                # Vector difference\n+                dx = points[i][0] - points[j][0]\n+                dy = points[i][1] - points[j][1]\n+                dz = points[i][2] - points[j][2]\n+                dist_sq = dx*dx + dy*dy + dz*dz\n+                if dist_sq == 0:\n+                    continue\n+                dist = math.sqrt(dist_sq)\n+                # Repulsive force magnitude ~ 1 / dist^(s+1)\n+                force_mag = 1.0 / (dist ** (s + 1))\n+                \n+                fx = dx * force_mag\n+                fy = dy * force_mag\n+                fz = dz * force_mag\n+                \n+                forces[i][0] += fx\n+                forces[i][1] += fy\n+                forces[i][2] += fz\n+                forces[j][0] -= fx\n+                forces[j][1] -= fy\n+                forces[j][2] -= fz\n+\n+        # Update points\n+        for i in range(n):\n+            # Current position\n+            px, py, pz = points[i]\n+            fx, fy, fz = forces[i]\n+            \n+            # Project force onto tangent plane: F_tan = F - (F . p) * p\n+            dot = fx*px + fy*py + fz*pz\n+            tx = fx - dot * px\n+            ty = fy - dot * py\n+            tz = fz - dot * pz\n+            \n+            # Move\n+            new_x = px + step_size * tx\n+            new_y = py + step_size * ty\n+            new_z = pz + step_size * tz\n+            \n+            # Renormalize\n+            norm = math.sqrt(new_x*new_x + new_y*new_y + new_z*new_z)\n+            points[i] = [new_x/norm, new_y/norm, new_z/norm]\n+        \n+        step_size *= decay\n+\n+    # Phase 2: Max-min polish (push only closest pairs)\n+    # Repeatedly identify the minimum distance pair and push them apart.\n+    # This directly optimizes the objective function (min angle).\n+    n_polish = 4000\n+    polish_step = 0.05\n+    polish_decay = 0.999\n+    \n+    current_step = polish_step\n+    for _ in range(n_polish):\n+        # Find the pair with minimum distance\n+        min_d_sq = float('inf')\n+        min_i, min_j = -1, -1\n+        for i in range(n):\n+            for j in range(i + 1, n):\n+                dx = points[i][0] - points[j][0]\n+                dy = points[i][1] - points[j][1]\n+                dz = points[i][2] - points[j][2]\n+                d_sq = dx*dx + dy*dy + dz*dz\n+                if d_sq < min_d_sq:\n+                    min_d_sq = d_sq\n+                    min_i, min_j = i, j\n+        \n+        if min_i == -1: break # Should not happen\n+        \n+        # Push points min_i and min_j apart along the line connecting them\n+        # Direction for i: away from j\n+        dist = math.sqrt(min_d_sq)\n+        if dist < 1e-12: continue\n+        \n+        # Force direction\n+        dir_i = (points[min_i][0] - points[min_j][0]) / dist\n+        dir_j = (points[min_j][0] - points[min_i][0]) / dist\n+        \n+        # Apply step projected onto tangent plane\n+        def update_point(idx, dx_dir, dy_dir, dz_dir, step):\n+            px, py, pz = points[idx]\n+            # Project onto tangent: F_tan = F - (F.p)p\n+            dot = dx_dir*px + dy_dir*py + dz_dir*pz\n+            tx = dx_dir - dot*px\n+            ty = dy_dir - dot*py\n+            tz = dz_dir - dot*pz\n+            \n+            # Normalize tangent vector to ensure step size is consistent\n+            t_norm = math.sqrt(tx*tx + ty*ty + tz*tz)\n+            if t_norm < 1e-12: return # Point is at pole or direction is radial\n+            \n+            nx = px + step * (tx / t_norm)\n+            ny = py + step * (ty / t_norm)\n+            nz = pz + step * (tz / t_norm)\n+            \n+            norm = math.sqrt(nx*nx + ny*ny + nz*nz)\n+            points[idx] = [nx/norm, ny/norm, nz/norm]\n+            \n+        # Move both points\n+        dx_dir = points[min_i][0] - points[min_j][0]\n+        dy_dir = points[min_i][1] - points[min_j][1]\n+        dz_dir = points[min_i][2] - points[min_j][2]\n+        \n+        # Normalize direction vector for force\n+        d_len = math.sqrt(dx_dir*dx_dir + dy_dir*dy_dir + dz_dir*dz_dir)\n+        if d_len > 1e-12:\n+            ux = dx_dir / d_len\n+            uy = dy_dir / d_len\n+            uz = dz_dir / d_len\n+            \n+            # Push i away from j\n+            update_point(min_i, ux, uy, uz, current_step)\n+            # Push j away from i (symmetric)\n+            update_point(min_j, -ux, -uy, -uz, current_step)\n+            \n+        current_step *= polish_decay\n+\n+    return [(p[0], p[1], p[2]) for p in points]\n # OMEGA-BLOCK-END\n \n \n",
+ "error": "",
+ "model_memory_gb": 18.6,
+ "model_gpu_memory_gb": 18.6,
+ "context_length": 32768,
+ "load_seconds": 129.5,
+ "median_call_seconds": 110.9,
+ "p90_call_seconds": 243.1,
+ "prompt_tokens_per_s": 112.7,
+ "gen_tokens_per_s": 11.1,
+ "mean_prompt_tokens": 2835,
+ "mean_gen_tokens": 917,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

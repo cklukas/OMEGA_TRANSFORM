@@ -57,4 +57,82 @@ def run():
 
 ## Benchmark results
 
-This example has not been benchmarked yet. See [Benchmarking models](../benchmarking.md) for how to run it.
+The best result so far comes from **gpt-oss:20b (no-think)**, run locally with Ollama on 2026-10-14: a score of **4.05278** (×1.27 the starting program's 3.18905), reached after 10.35 of 15 minutes with 8 model requests.
+
+### How it got there
+
+The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.
+
+| Step | Minute | Score | Kind | Idea |
+|--:|--:|--:|---|---|
+| 0 | 0.0 | 3.18905 | start | initial program |
+| 1 | 10.3 | 4.05278 | edit | Replace the equal‑radius construction with an analytic solution that computes distinct radii for the center, inner ring, and outer ring using sin(pi/7) and sin(pi/13), yielding a sum of radii ≈ 4.05. |
+
+### The best program
+
+What changed compared with the starting program:
+
+```diff
+--- initial
++++ best
+@@ -8,20 +8,29 @@
+     """Return a list of n circles (x, y, r) inside the unit circle (center (0,0),
+     radius 1) without overlaps.
+ 
+-    This start places one circle at the center and two concentric rings of 7 and
+-    13 circles, all with the same radius: the largest one that keeps every pair
+-    apart and every circle inside the container.
++    Uses analytic radii for center, inner, and outer rings based on sin(pi/7)
++    and sin(pi/13), yielding a sum of radii ≈ 4.05.
+     """
++    # sin factors for the rings
++    sin_s = math.sin(math.pi/7)   # inner ring chord factor
++    sin_t = math.sin(math.pi/13)  # outer ring chord factor
++    # outer ring center radius
++    b = 1.0 / (1.0 + sin_t)
++    r_outer = 1.0 - b
++    # inner ring center radius
++    a = (2.0 * b - 1.0) / (1.0 + sin_s)
++    r_inner = a * sin_s
++    r_center = a - r_inner
++    # construct centers
+     centers = [(0.0, 0.0)]
+-    for count, ring in ((7, 0.35), (n - 8, 0.75)):
+-        centers += [(ring * math.cos(2 * math.pi * k / count),
+-                     ring * math.sin(2 * math.pi * k / count)) for k in range(count)]
+-    r = min(1.0 - math.hypot(x, y) for x, y in centers)
+-    for a in range(n):
+-        for b in range(a + 1, n):
+-            r = min(r, math.dist(centers[a], centers[b]) / 2)
+-    r *= 1 - 1e-12  # stay strictly feasible despite rounding
+-    return [(x, y, r) for x, y in centers]
++    for k in range(7):
++        centers.append((a * math.cos(2 * math.pi * k / 7),
++                        a * math.sin(2 * math.pi * k / 7)))
++    for k in range(13):
++        centers.append((b * math.cos(2 * math.pi * k / 13),
++                        b * math.sin(2 * math.pi * k / 13)))
++    radii = [r_center] + [r_inner] * 7 + [r_outer] * 13
++    return [(x, y, r) for (x, y), r in zip(centers, radii)]
+ # OMEGA-BLOCK-END
+```
+
+### All models
+
+The latest run per model and reasoning mode; the [model benchmarks](../benchmarks.md#circles_in_circle_21) page has speed, memory and progress over time.
+
+| Model | Where | Best | Gain | Minutes to best | New bests |
+|---|---|--:|--:|--:|--:|
+| gpt-oss:20b (no-think) | local | 4.05278 | ×1.27 | 10.3 | 2 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 4.05117 | ×1.27 | 15.2 | 8 |
+| gemma4:26b-a4b-it-qat (no-think) | local | 3.9964 | ×1.25 | 10.4 | 3 |
+| qwen3.8:27b-mtp-q4_K_M (no-think) | local | 3.99294 | ×1.25 | 14.7 | 2 |
+| qwen3-coder:30b (no-think) | local | 3.96005 | ×1.24 | 10.3 | 3 |
+| gemma4:e4b-it-qat (no-think) | local | 3.9302 | ×1.23 | 13.6 | 3 |
+| gemma4:12b-it-qat (no-think) | local | 3.9302 | ×1.23 | 11.4 | 2 |
+| gemma4:latest (no-think) | local | 3.90376 | ×1.22 | 14.4 | 4 |
+| gemma4:e2b (no-think) | local | 3.70711 | ×1.16 | 8.2 | 2 |
+| qwen2.5-coder:7b (no-think) | local | 3.18905 | ×1.00 | - | 0 |
+| qwen3.5:latest (no-think) | local | 3.18905 | ×1.00 | - | 0 |
+| qwen3.5:27b (no-think) | local | 3.18905 | ×1.00 | - | 0 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 3.18905 | ×1.00 | - | 0 |

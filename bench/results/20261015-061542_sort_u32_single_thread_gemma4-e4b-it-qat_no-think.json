@@ -1,0 +1,145 @@
+{
+ "schema": 2,
+ "example": "sort_u32_single_thread",
+ "model": "gemma4:e4b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 6.1,
+ "model_params": "7.5B",
+ "started": "2026-10-15T06:15:42",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 23.327093401237395,
+ "best_score": 216.90095030709384,
+ "improvement": 9.298241601569968,
+ "llm_calls": 40,
+ "mean_llm_seconds": 23.3,
+ "attempts": 40,
+ "ok": 8,
+ "statuses": {
+  "compile_error": 11,
+  "ok": 8,
+  "invalid": 11,
+  "edit_error": 5,
+  "duplicate": 4,
+  "llm_error": 1
+ },
+ "sweeps": 4,
+ "sweep_variants": 56,
+ "improvements": 6,
+ "minutes_to_best": 10.13,
+ "best_idea": "tuned BITS=16, PASSES=2 on top of: Replace fixed 8-bit passes with a parameter that allows sweeping over different bit widths and number of passes to find the optimal LSD radix sort configuration for ",
+ "progress": [
+  [
+   0.0,
+   23.327093401237395
+  ],
+  [
+   2.25,
+   46.86917064296247
+  ],
+  [
+   3.06,
+   193.02035071138954
+  ],
+  [
+   4.19,
+   193.14697067063622
+  ],
+  [
+   7.93,
+   194.72682569464322
+  ],
+  [
+   10.01,
+   216.11343935547407
+  ],
+  [
+   10.13,
+   216.90095030709384
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 23.327093401237395,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.06,
+   "score": 193.02035071138954,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Replace the recursive merge sort implementation with an iterative LSD Radix Sort using 8-bit passes, as it offers superior worst-case and average-case performance for fixed-size integer sorting on modern CPUs, especially with NEON support."
+  },
+  {
+   "minutes": 6.38,
+   "score": null,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/bold",
+   "status": "compile_error",
+   "idea": "Replace the generic LSD Radix Sort with a hybrid approach that uses a highly optimized counting sort pass leveraging NEON intrinsics for the counting step, which is a common bottleneck in radix sort implementations."
+  },
+  {
+   "minutes": 7.93,
+   "score": 194.72682569464322,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Replace the failed NEON intrinsic usage in the counting pass with a simple, standard loop that is highly likely to be auto-vectorized by the compiler, as direct intrinsic mapping for accumulation into a large index array is overly complex and error-prone compared to letting the compiler handle the dependency chain."
+  },
+  {
+   "minutes": 10.13,
+   "score": 185.37747989793664,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "best/diff/tune",
+   "status": "ok",
+   "idea": "Replace fixed 8-bit passes with a parameter that allows sweeping over different bit widths and number of passes to find the optimal LSD radix sort configuration for 32-bit integers."
+  },
+  {
+   "minutes": 10.13,
+   "score": 216.90095030709384,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "sweep/best/diff/tune",
+   "status": "ok",
+   "idea": "tuned BITS=16, PASSES=2 on top of: Replace fixed 8-bit passes with a parameter that allows sweeping over different bit widths and number of passes to find the optimal LSD radix sort configuration for 32-bit integers."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -21,20 +21,54 @@\n // OMEGA-BLOCK-START\n // Sorts a[0..n) ascending, in place, on the calling thread. n is any size from\n // 0 to 2'000'000. Extra memory may be allocated freely.\n-static void merge_sort_rec(uint32_t* a, uint32_t* tmp, size_t lo, size_t hi) {\n-    if (hi - lo < 2) return;\n-    size_t mid = lo + (hi - lo) / 2;\n-    merge_sort_rec(a, tmp, lo, mid);\n-    merge_sort_rec(a, tmp, mid, hi);\n-    size_t i = lo, j = mid, k = lo;\n-    while (i < mid && j < hi) tmp[k++] = (a[j] < a[i]) ? a[j++] : a[i++];\n-    while (i < mid) tmp[k++] = a[i++];\n-    while (j < hi) tmp[k++] = a[j++];\n-    for (size_t t = lo; t < hi; ++t) a[t] = tmp[t];\n+static void sort_radix_lsd(uint32_t* a, uint32_t* tmp, size_t n) {\n+    constexpr int BITS = 16; // Will be swept\n+    constexpr int RADIX = 1 << BITS;\n+    constexpr int PASSES = 2; // Will be swept\n+    constexpr size_t MASK = RADIX - 1;\n+    constexpr int SHIFT = BITS;\n+\n+    std::vector<uint32_t> counts(RADIX, 0);\n+    std::vector<size_t> pos(RADIX);\n+\n+    for (int p = 0; p < PASSES; ++p) {\n+        // Reset counts and positions\n+        if (n > 0) {\n+            // Use NEON to zero out counts if possible, though std::fill is often optimized well.\n+            // We will focus on optimizing the counting loop itself.\n+            std::fill(counts.begin(), counts.end(), 0);\n+        }\n+        \n+        // Optimized counting pass using NEON if available\n+        if (n > 0) {\n+            // Optimized counting pass using standard loop, relying on compiler auto-vectorization\n+            for (size_t j = 0; j < n; ++j) {\n+                counts[(a[j] >> (p * SHIFT)) & MASK]++;\n+            }\n+        }\n+\n+\n+        // Calculate starting positions (cumulative sum)\n+        size_t current_pos = 0;\n+        for (int r = 0; r < RADIX; ++r) {\n+            pos[r] = current_pos;\n+            current_pos += counts[r];\n+        }\n+\n+        // Stable sort using counting sort, ping-pong between a and tmp\n+        for (size_t i = 0; i < n; ++i) {\n+            int r = (a[i] >> (p * SHIFT)) & MASK;\n+            tmp[pos[r]++] = a[i];\n+        }\n+        \n+        // Swap roles: tmp becomes the source for the next pass, a becomes the destination\n+        std::swap(a, tmp);\n+    }\n }\n \n extern \"C\" void sort_u32(uint32_t* a, size_t n) {\n+    if (n == 0) return;\n     std::vector<uint32_t> tmp(n);\n-    merge_sort_rec(a, tmp.data(), 0, n);\n+    sort_radix_lsd(a, tmp.data(), n);\n }\n // OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 5.7,
+ "model_gpu_memory_gb": 5.7,
+ "context_length": 32768,
+ "load_seconds": 89.6,
+ "median_call_seconds": 19.0,
+ "p90_call_seconds": 33.1,
+ "prompt_tokens_per_s": 538.3,
+ "gen_tokens_per_s": 57.6,
+ "mean_prompt_tokens": 5235,
+ "mean_gen_tokens": 609,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

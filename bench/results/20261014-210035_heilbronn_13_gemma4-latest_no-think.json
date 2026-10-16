@@ -1,0 +1,100 @@
+{
+ "schema": 2,
+ "example": "heilbronn_13",
+ "model": "gemma4:latest",
+ "variant": "no-think",
+ "model_size_gb": 9.5,
+ "model_params": "",
+ "started": "2026-10-14T21:00:35",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.7,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.004790811518724618,
+ "best_score": 0.013307809774235053,
+ "improvement": 2.7777777777777786,
+ "llm_calls": 58,
+ "mean_llm_seconds": 15.3,
+ "attempts": 58,
+ "ok": 39,
+ "statuses": {
+  "invalid": 13,
+  "ok": 39,
+  "edit_error": 4,
+  "duplicate": 1,
+  "llm_error": 1
+ },
+ "sweeps": 8,
+ "sweep_variants": 109,
+ "improvements": 1,
+ "minutes_to_best": 4.74,
+ "best_idea": "tuned radius=0.5, center_offset_x=0.5, center_offset_y=0.5 on top of: Introduce parameters for the radius and center offset of the regular polygon to enable systematic search for better placement.",
+ "progress": [
+  [
+   0.0,
+   0.004790811518724618
+  ],
+  [
+   4.74,
+   0.013307809774235053
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.004790811518724618,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 4.74,
+   "score": 0.004790811518724618,
+   "model": "gemma4:latest",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Introduce parameters for the radius and center offset of the regular polygon to enable systematic search for better placement."
+  },
+  {
+   "minutes": 4.74,
+   "score": 0.013307809774235053,
+   "model": "gemma4:latest",
+   "mode": "sweep/exploit/diff/tune",
+   "status": "ok",
+   "idea": "tuned radius=0.5, center_offset_x=0.5, center_offset_y=0.5 on top of: Introduce parameters for the radius and center offset of the regular polygon to enable systematic search for better placement."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -13,9 +13,11 @@\n     the points on a regular polygon on a small circle around the center, which\n     avoids collinear triples but wastes most of the square.\n     \"\"\"\n-    radius = 0.3\n-    return [(0.5 + radius * math.cos(2 * math.pi * k / n),\n-             0.5 + radius * math.sin(2 * math.pi * k / n)) for k in range(n)]\n+    radius = 0.5\n+    center_offset_x = 0.5\n+    center_offset_y = 0.5\n+    return [(center_offset_x + radius * math.cos(2 * math.pi * k / n),\n+             center_offset_y + radius * math.sin(2 * math.pi * k / n)) for k in range(n)]\n # OMEGA-BLOCK-END\n \n \n",
+ "error": "",
+ "model_memory_gb": 15.9,
+ "model_gpu_memory_gb": 15.9,
+ "context_length": 32768,
+ "load_seconds": 134.6,
+ "median_call_seconds": 12.5,
+ "p90_call_seconds": 22.6,
+ "prompt_tokens_per_s": 1076.4,
+ "gen_tokens_per_s": 48.8,
+ "mean_prompt_tokens": 3623,
+ "mean_gen_tokens": 456,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

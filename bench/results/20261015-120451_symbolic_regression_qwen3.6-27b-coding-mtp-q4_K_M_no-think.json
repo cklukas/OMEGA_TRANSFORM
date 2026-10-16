@@ -1,0 +1,92 @@
+{
+ "schema": 2,
+ "example": "symbolic_regression",
+ "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 17.8,
+ "model_params": "27.3B",
+ "started": "2026-10-15T12:04:51",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.3128434055615448,
+ "best_score": 0.998687896285554,
+ "improvement": 3.1922932640786796,
+ "llm_calls": 6,
+ "mean_llm_seconds": 165.0,
+ "attempts": 6,
+ "ok": 6,
+ "statuses": {
+  "ok": 6
+ },
+ "sweeps": 1,
+ "sweep_variants": 16,
+ "improvements": 2,
+ "minutes_to_best": 6.28,
+ "best_idea": "Replace the simple linear basis with a candidate set including quadratic terms, interaction terms, and trigonometric functions, then use forward selection to pick the best subset of basis functions th",
+ "progress": [
+  [
+   0.0,
+   0.3128434055615448
+  ],
+  [
+   4.46,
+   0.993407005099018
+  ],
+  [
+   6.28,
+   0.998687896285554
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.3128434055615448,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 6.28,
+   "score": 0.998687896285554,
+   "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Replace the simple linear basis with a candidate set including quadratic terms, interaction terms, and trigonometric functions, then use forward selection to pick the best subset of basis functions that explains the variance, which should capture the underlying non-linear structure and improve extrapolation."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -33,9 +33,22 @@\n \n \n # OMEGA-BLOCK-START\n-def basis(x1, x2, x3):\n-    \"\"\"Basis functions of the model; the prediction is a weighted sum of them.\"\"\"\n-    return [1.0, x1, x2, x3]\n+def candidate_basis(x1, x2, x3):\n+    \"\"\"Generate a broad set of candidate basis functions.\"\"\"\n+    import math\n+    return [\n+        1.0,\n+        x1, x2, x3,\n+        x1**2, x2**2, x3**2,\n+        x1*x2, x1*x3, x2*x3,\n+        math.sin(x1), math.sin(x2), math.sin(x3),\n+        math.cos(x1), math.cos(x2), math.cos(x3),\n+        math.sin(x1)*x2, math.sin(x1)*x3,\n+        math.cos(x1)*x2, math.cos(x1)*x3,\n+        x1*math.sin(x2), x3*math.sin(x2),\n+        x1**3, x2**3, x3**3,\n+        x1*x2*x3,\n+    ]\n \n \n def fit(rows):\n@@ -48,13 +61,81 @@\n     x3 in [0, 3]. Only the Python standard library may be used (math, statistics,\n     random, ...; no numpy). fit plus all predictions must take at most 10 CPU seconds.\n \n-    Current method: linear regression on the raw inputs.\n+    Current method: forward selection over candidate basis functions.\n     \"\"\"\n-    cols = list(zip(*[basis(x1, x2, x3) for x1, x2, x3, _ in rows]))\n-    return least_squares([list(c) for c in cols], [y for *_, y in rows])\n+    import math\n+\n+    # Split data into train and validation for cross-validation\n+    n = len(rows)\n+    train_idx = list(range(n))\n+    val_idx = []\n+    # Simple split: last 20% for validation\n+    split = int(0.8 * n)\n+    val_idx = list(range(split, n))\n+    train_idx = list(range(split))\n+\n+    train_rows = [rows[i] for i in train_idx]\n+    val_rows = [rows[i] for i in val_idx]\n+\n+    # Precompute candidate basis values for all rows\n+    def get_basis_rows(data):\n+        return [candidate_basis(x1, x2, x3) for x1, x2, x3, _ in data]\n+\n+    train_basis = get_basis_rows(train_rows)\n+    val_basis = get_basis_rows(val_rows)\n+    train_y = [y for _, _, _, y in train_rows]\n+    val_y = [y for _, _, _, y in val_rows]\n+\n+    # Forward selection\n+    selected_indices = [0]  # Start with intercept\n+    best_val_mse = float('inf')\n+\n+    # Compute initial MSE with just intercept\n+    def compute_mse(selected, basis_data, y_data):\n+        cols = [[row[i] for row in basis_data] for i in selected]\n+        coeffs = least_squares(cols, y_data)\n+        preds = [sum(c * b for c, b in zip(coeffs, [row[i] for i in selected])) for row in basis_data]\n+        mse = sum((p - t) ** 2 for p, t in zip(preds, y_data)) / len(y_data)\n+        return mse, coeffs\n+\n+    # Iteratively add best basis function\n+    for _ in range(15):  # Limit number of terms\n+        best_mse = best_val_mse\n+        best_coeffs = None\n+        best_new_index = None\n+\n+        for j in range(len(candidate_basis(0, 0, 0))):\n+            if j in selected_indices:\n+                continue\n+            new_selected = selected_indices + [j]\n+            mse, coeffs = compute_mse(new_selected, train_basis, train_y)\n+            # Also compute validation MSE\n+            val_preds = [sum(c * b for c, b in zip(coeffs, [row[i] for i in new_selected])) for row in val_basis]\n+            val_mse = sum((p - t) ** 2 for p, t in zip(val_preds, val_y)) / len(val_y)\n+\n+            if val_mse < best_mse:\n+                best_mse = val_mse\n+                best_coeffs = coeffs\n+                best_new_index = j\n+\n+        if best_new_index is None:\n+            break\n+\n+        selected_indices.append(best_new_index)\n+        best_val_mse = best_mse\n+\n+    # Final fit on all data with selected basis\n+    all_basis = get_basis_rows(rows)\n+    all_y = [y for _, _, _, y in rows]\n+    final_mse, final_coeffs = compute_mse(selected_indices, all_basis, all_y)\n+\n+    # Return coefficients and selected indices\n+    return final_coeffs, selected_indices\n \n \n def predict(params, x1, x2, x3):\n     \"\"\"Return the predicted y (a finite float) for one input.\"\"\"\n-    return sum(c * b for c, b in zip(params, basis(x1, x2, x3)))\n+    coeffs, selected_indices = params\n+    basis_vals = candidate_basis(x1, x2, x3)\n+    return sum(c * basis_vals[i] for c, i in zip(coeffs, selected_indices))\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 18.2,
+ "model_gpu_memory_gb": 18.2,
+ "context_length": 32768,
+ "load_seconds": 189.0,
+ "median_call_seconds": 154.6,
+ "p90_call_seconds": 282.8,
+ "prompt_tokens_per_s": 103.2,
+ "gen_tokens_per_s": 14.7,
+ "mean_prompt_tokens": 4141,
+ "mean_gen_tokens": 1362,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

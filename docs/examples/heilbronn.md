@@ -51,4 +51,122 @@ def run():
 
 ## Benchmark results
 
-This example has not been benchmarked yet. See [Benchmarking models](../benchmarking.md) for how to run it.
+The best result so far comes from **gemma4:12b-it-qat (no-think)**, run locally with Ollama on 2026-10-14: a score of **0.01662** (×3.47 the starting program's 0.00479), reached after 17.36 of 15 minutes with 19 model requests.
+
+### How it got there
+
+The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.
+
+| Step | Minute | Score | Kind | Idea |
+|--:|--:|--:|---|---|
+| 0 | 0.0 | 0.00479 | start | initial program |
+| 1 | 4.3 | 0.01329 | edit | Implement a simple hill-climbing optimization with random restarts to maximize the minimum triangle area, as the current circular layout is far from optimal. |
+| 2 | 4.3 | 0.01636 | parameter sweep | tuned temp=0.5 on top of: Implement a simple hill-climbing optimization with random restarts to maximize the minimum triangle area, as the current circular layout is far from optimal. |
+| 3 | 17.4 | 0.01457 | edit | Replace the fixed iteration count with a time-bound loop and introduce a variable for the starting temperature and cooling rate to allow for better exploration of the search space. |
+| 4 | 17.4 | 0.01662 | parameter sweep | tuned START_TEMP=0.8, COOLING_RATE=0.995 on top of: Replace the fixed iteration count with a time-bound loop and introduce a variable for the starting temperature and cooling rate to allow for better exploration of the search space. |
+
+### The best program
+
+What changed compared with the starting program:
+
+```diff
+--- initial
++++ best
+@@ -5,17 +5,69 @@
+ import math
+ 
+ # OMEGA-BLOCK-START
++import random
++import time
++
+ def construct(n=13):
+-    """Return a list of n points (x, y) inside the closed unit square [0,1]^2.
++    """Return a list of n points (x, y) inside the closed unit square [0,1]^2."""
++    start_time = time.time()
++    best_points = []
++    best_min_area = -1.0
+ 
+-    The score is the smallest area among all triangles with corners at three of
+-    the points, so no three points may be (nearly) collinear. This start puts
+-    the points on a regular polygon on a small circle around the center, which
+-    avoids collinear triples but wastes most of the square.
+-    """
+-    radius = 0.3
+-    return [(0.5 + radius * math.cos(2 * math.pi * k / n),
+-             0.5 + radius * math.sin(2 * math.pi * k / n)) for k in range(n)]
++    def get_min_area(points):
++        m_area = float('inf')
++        for i in range(n):
++            x1, y1 = points[i]
++            for j in range(i + 1, n):
++                x2, y2 = points[j]
++                for k in range(j + 1, n):
++                    x3, y3 = points[k]
++                    area = 0.5 * abs(x1*(y2 - y3) + x2*(y3 - y1) + x3*(y1 - y2))
++                    if area < m_area:
++                        m_area = area
++        return m_area
++
++    # Initial guess: slightly perturbed grid-like or random
++    while time.time() - start_time < 55:
++        # Try a few different initial configurations
++        curr_points = []
++        if random.random() > 0.5:
++            # Random points
++            for _ in range(n):
++                curr_points.append((random.random(), random.random()))
++        else:
++            # Quasi-grid
++            for i in range(n):
++                curr_points.append(( (i % 4) / 3.5, (i // 4) / 3.5 ))
++
++        curr_min_area = get_min_area(curr_points)
++        
++        # Local search / Hill climbing
++        START_TEMP = 0.8
++        COOLING_RATE = 0.995
++        temp = START_TEMP
++        
++        # Use a inner time budget to ensure we maximize the search time
++        inner_start = time.time()
++        while time.time() - inner_start < 0.05:
++            idx = random.randint(0, n - 1)
++            old_x, old_y = curr_points[idx]
++            curr_points[idx] = (
++                max(0, min(1, old_x + random.uniform(-temp, temp))),
++                max(0, min(1, old_y + random.uniform(-temp, temp)))
++            )
++            new_min_area = get_min_area(curr_points)
++            if new_min_area > curr_min_area:
++                curr_min_area = new_min_area
++            else:
++                curr_points[idx] = (old_x, old_y)
++            temp *= COOLING_RATE
++            
++        if curr_min_area > best_min_area:
++            best_min_area = curr_min_area
++            best_points = curr_points
++            
++    return best_points
+ # OMEGA-BLOCK-END
+```
+
+### All models
+
+The latest run per model and reasoning mode; the [model benchmarks](../benchmarks.md#heilbronn_13) page has speed, memory and progress over time.
+
+| Model | Where | Best | Gain | Minutes to best | New bests |
+|---|---|--:|--:|--:|--:|
+| gemma4:12b-it-qat (no-think) | local | 0.01662 | ×3.47 | 17.4 | 4 |
+| gemma4:26b-a4b-it-qat (no-think) | local | 0.0141 | ×2.94 | 12.7 | 6 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 0.01332 | ×2.78 | 12.3 | 9 |
+| gemma4:e4b-it-qat (no-think) | local | 0.01331 | ×2.78 | 4.5 | 4 |
+| gemma4:e2b (no-think) | local | 0.01331 | ×2.78 | 2.8 | 2 |
+| gemma4:latest (no-think) | local | 0.01331 | ×2.78 | 4.7 | 1 |
+| gpt-oss:20b (no-think) | local | 0.01331 | ×2.78 | 11.7 | 1 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 0.00896 | ×1.87 | 11.6 | 1 |
+| qwen3.8:27b-mtp-q4_K_M (no-think) | local | 0.00834 | ×1.74 | 9.8 | 2 |
+| qwen2.5-coder:7b (no-think) | local | 0.00479 | ×1.00 | - | 0 |
+| qwen3.5:latest (no-think) | local | 0.00479 | ×1.00 | - | 0 |
+| qwen3.5:27b (no-think) | local | 0.00479 | ×1.00 | - | 0 |
+| qwen3-coder:30b (no-think) | local | 0.00479 | ×1.00 | - | 0 |

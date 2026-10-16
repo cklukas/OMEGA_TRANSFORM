@@ -1,0 +1,105 @@
+{
+ "schema": 2,
+ "example": "symbolic_regression",
+ "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-10-15T12:21:27",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.7,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.3128434055615448,
+ "best_score": 0.9947688723052615,
+ "improvement": 3.179766153356119,
+ "llm_calls": 35,
+ "mean_llm_seconds": 26.3,
+ "attempts": 35,
+ "ok": 22,
+ "statuses": {
+  "invalid": 6,
+  "ok": 22,
+  "edit_error": 4,
+  "timeout": 1,
+  "llm_error": 1,
+  "duplicate": 1
+ },
+ "sweeps": 2,
+ "sweep_variants": 32,
+ "improvements": 2,
+ "minutes_to_best": 10.25,
+ "best_idea": "Add x3-dependent frequency modulation to trigonometric terms (e.g., sin(f*x1) where f is a learned scale like x3) to better capture periodic behavior that varies with x3, especially in extrapolation w",
+ "progress": [
+  [
+   0.0,
+   0.3128434055615448
+  ],
+  [
+   2.83,
+   0.9945756435186923
+  ],
+  [
+   10.25,
+   0.9947688723052615
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.3128434055615448,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.83,
+   "score": 0.9945756435186923,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Add higher-order polynomial terms and trigonometric interactions to capture non-linear and periodic patterns that the linear model misses, especially since extrapolation errors suggest incorrect growth behavior."
+  },
+  {
+   "minutes": 10.25,
+   "score": 0.9947688723052615,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "best/diff/tune",
+   "status": "ok",
+   "idea": "Add x3-dependent frequency modulation to trigonometric terms (e.g., sin(f*x1) where f is a learned scale like x3) to better capture periodic behavior that varies with x3, especially in extrapolation where large x3 values show large errors."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -35,7 +35,19 @@\n # OMEGA-BLOCK-START\n def basis(x1, x2, x3):\n     \"\"\"Basis functions of the model; the prediction is a weighted sum of them.\"\"\"\n-    return [1.0, x1, x2, x3]\n+    return [\n+        1.0,\n+        x1, x2, x3,\n+        x1*x1, x2*x2, x3*x3,\n+        x1*x2, x1*x3, x2*x3,\n+        x1*x1*x1, x2*x2*x2, x3*x3*x3,\n+        math.sin(x1), math.sin(x2), math.sin(x3),\n+        math.cos(x1), math.cos(x2), math.cos(x3),\n+        math.sin(x1)*x2, math.sin(x2)*x3, math.sin(x3)*x1,\n+        math.cos(x1)*x2, math.cos(x2)*x3, math.cos(x3)*x1,\n+        math.sin(x3 * x1), math.sin(x3 * x2), math.sin(x3 * x3),\n+        math.cos(x3 * x1), math.cos(x3 * x2), math.cos(x3 * x3)\n+    ]\n \n \n def fit(rows):\n",
+ "error": "",
+ "model_memory_gb": 21.8,
+ "model_gpu_memory_gb": 21.8,
+ "context_length": 32768,
+ "load_seconds": 138.2,
+ "median_call_seconds": 17.7,
+ "p90_call_seconds": 43.2,
+ "prompt_tokens_per_s": 666.2,
+ "gen_tokens_per_s": 46.1,
+ "mean_prompt_tokens": 4811,
+ "mean_gen_tokens": 585,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

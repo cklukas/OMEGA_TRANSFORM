@@ -1,0 +1,111 @@
+{
+ "schema": 2,
+ "example": "bin_packing_1d",
+ "model": "gemma4:12b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 7.2,
+ "model_params": "11.9B",
+ "started": "2026-10-14T03:18:13",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.7942635036246238,
+ "best_score": 0.9540950185601996,
+ "improvement": 1.201232354509787,
+ "llm_calls": 21,
+ "mean_llm_seconds": 43.3,
+ "attempts": 21,
+ "ok": 17,
+ "statuses": {
+  "ok": 17,
+  "duplicate": 1,
+  "invalid": 2,
+  "edit_error": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 2,
+ "minutes_to_best": 8.33,
+ "best_idea": "Fix the bug where `bin_loads` and `bins` list indices become desynchronized by ensuring that when an empty bin is removed, the `bin_loads` list is updated correctly and the `min_bin_idx` logic is safe",
+ "progress": [
+  [
+   0.0,
+   0.7942635036246238
+  ],
+  [
+   1.41,
+   0.9512800819252432
+  ],
+  [
+   8.33,
+   0.9540950185601996
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.7942635036246238,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.41,
+   "score": 0.9512800819252432,
+   "model": "gemma4:12b-it-qat",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Replace the next-fit heuristic with First-Fit Decreasing (FFD) to significantly improve the packing efficiency by processing larger items first and placing them in the first available bin."
+  },
+  {
+   "minutes": 5.45,
+   "score": null,
+   "model": "gemma4:12b-it-qat",
+   "mode": "exploit/rewrite/bold",
+   "status": "invalid",
+   "idea": "Implement a Best-Fit Decreasing (BFD) strategy with a secondary \"Best-Fit\" local search to optimize bin occupancy by swapping items between bins to maximize the sum of squares of bin loads."
+  },
+  {
+   "minutes": 8.33,
+   "score": 0.9540950185601996,
+   "model": "gemma4:12b-it-qat",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Fix the bug where `bin_loads` and `bins` list indices become desynchronized by ensuring that when an empty bin is removed, the `bin_loads` list is updated correctly and the `min_bin_idx` logic is safe."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -18,18 +18,120 @@\n     to at most capacity. Fewer bins is better. The call has a CPU time limit of 2.0 s\n     (time.process_time(); more than 1.5 x the limit makes the program invalid).\n     Only the Python standard library may be used.\n+    \"\"\"\n+    start_time = time.process_time()\n+    \n+    # First-Fit Decreasing (FFD) - Standard baseline\n+    indexed_sizes = sorted(enumerate(sizes), key=lambda x: x[1], reverse=True)\n+    bins = []\n+    bin_loads = []\n+    \n+    for idx, s in indexed_sizes:\n+        placed = False\n+        # Best-Fit: find bin with smallest remaining capacity that fits s\n+        best_idx = -1\n+        min_rem = capacity + 1\n+        \n+        for i in range(len(bins)):\n+            rem = capacity - bin_loads[i]\n+            if rem >= s and rem < min_rem:\n+                min_rem = rem\n+                best_idx = i\n+        \n+        if best_idx != -1:\n+            bins[best_idx].append(idx)\n+            bin_loads[best_idx] += s\n+            placed = True\n+        \n+        if not placed:\n+            bins.append([idx])\n+            bin_loads.append(s)\n \n-    Current method: next fit (open a new bin whenever the next item does not fit).\n-    \"\"\"\n-    bins = []\n-    current, load = [], 0\n-    for i, s in enumerate(sizes):\n-        if load + s > capacity:\n-            bins.append(current)\n-            current, load = [], 0\n-        current.append(i)\n-        load += s\n-    if current:\n-        bins.append(current)\n+    # Local Search: Try to eliminate the emptiest bin (least load)\n+    # or pack items tighter by swapping to maximize sum of squared loads\n+    # (which pushes items together).\n+    def get_score(loads):\n+        return sum(x*x for x in loads)\n+\n+    # Simple local search: Try to move items from the least full bin to others\n+    # to potentially empty that bin.\n+    while time.process_time() - start_time < 1.5:\n+        if len(bins) < 2:\n+            break\n+            \n+        # Find bin with minimum load (excluding full ones for efficiency)\n+        min_load = float('inf')\n+        min_bin_idx = -1\n+        for i, load in enumerate(bin_loads):\n+            if load < min_load:\n+                min_load = load\n+                min_bin_idx = i\n+        \n+        # Try to move items from this bin to other bins\n+        moved_any = False\n+        current_bin = bins[min_bin_idx]\n+        \n+        # Try moving items from the smallest bin to others\n+        for i in range(len(current_bin) - 1, -1, -1):\n+            item_idx = current_bin[i]\n+            item_size = sizes[item_idx]\n+            \n+            best_target = -1\n+            max_score_gain = 0\n+            \n+            for j in range(len(bins)):\n+                if j == min_bin_idx: continue\n+                if bin_loads[j] + item_size <= capacity:\n+                    # Calculate score gain: sum of squares\n+                    new_load_j = bin_loads[j] + item_size\n+                    new_load_min = bin_loads[min_bin_idx] - item_size\n+                    gain = (new_load_j**2 + new_load_min**2) - (bin_loads[j]**2 + bin_loads[min_bin_idx]**2)\n+                    if gain > max_score_gain:\n+                        max_score_gain = gain\n+                        best_target = j\n+            \n+            if best_target != -1:\n+                bin_loads[min_bin_idx] -= item_size\n+                bin_loads[best_target] += item_size\n+                current_bin.pop(i)\n+                bins[best_target].append(item_idx)\n+                moved_any = True\n+                break\n+        \n+        if not moved_any:\n+            # If no single move works, try a simple 1-1 swap to increase sum of squares\n+            # This helps consolidate items.\n+            for i in range(len(bins)):\n+                for j in range(i + 1, len(bins)):\n+                    for k_idx, k_val in enumerate(bins[i]):\n+                        for l_idx, l_val in enumerate(bins[j]):\n+                            s1 = sizes[k_val]\n+                            s2 = sizes[l_val]\n+                            # Check if swapping s1 and s2 is valid\n+                            if bin_loads[i] - s1 + s2 <= capacity and \\\n+                               bin_loads[j] - s2 + s1 <= capacity:\n+                                if (bin_loads[i]-s1+s2)**2 + (bin_loads[j]-s2+s1)**2 > \\\n+                                   bin_loads[i]**2 + bin_loads[j]**2:\n+                                    bins[i][k_idx], bins[j][l_idx] = bins[j][l_idx], bins[i][k_idx]\n+                                    bin_loads[i] = bin_loads[i] - s1 + s2\n+                                    bin_loads[j] = bin_loads[j] - s2 + s1\n+                                    moved_any = True\n+                                    break\n+                        if moved_any: break\n+                    if moved_any: break\n+                if moved_any: break\n+            \n+            if not moved_any: break # No more improvements possible\n+\n+        # Remove empty bins if any were created\n+        new_bins = []\n+        new_loads = []\n+        for b, l in zip(bins, bin_loads):\n+            if b:\n+                new_bins.append(b)\n+                new_loads.append(l)\n+        bins = new_bins\n+        bin_loads = new_loads\n+\n     return bins\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 8.0,
+ "model_gpu_memory_gb": 8.0,
+ "context_length": 32768,
+ "load_seconds": 65.8,
+ "median_call_seconds": 36.3,
+ "p90_call_seconds": 84.4,
+ "prompt_tokens_per_s": 252.3,
+ "gen_tokens_per_s": 30.4,
+ "mean_prompt_tokens": 3272,
+ "mean_gen_tokens": 818,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

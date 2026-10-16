@@ -1,0 +1,77 @@
+{
+ "schema": 2,
+ "example": "heilbronn_13",
+ "model": "qwen3.5:27b",
+ "variant": "no-think",
+ "model_size_gb": 17.4,
+ "model_params": "27.8B",
+ "started": "2026-10-14T21:49:46",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.004790811518724618,
+ "best_score": 0.004790811518724618,
+ "improvement": 1.0,
+ "llm_calls": 7,
+ "mean_llm_seconds": 128.7,
+ "attempts": 7,
+ "ok": 6,
+ "statuses": {
+  "invalid": 1,
+  "ok": 6
+ },
+ "sweeps": 2,
+ "sweep_variants": 18,
+ "improvements": 0,
+ "minutes_to_best": null,
+ "best_idea": "initial program",
+ "progress": [
+  [
+   0.0,
+   0.004790811518724618
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.004790811518724618,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  }
+ ],
+ "best_diff": "",
+ "error": "",
+ "model_memory_gb": 18.4,
+ "model_gpu_memory_gb": 18.4,
+ "context_length": 32768,
+ "load_seconds": 218.3,
+ "median_call_seconds": 94.0,
+ "p90_call_seconds": 338.5,
+ "prompt_tokens_per_s": 103.9,
+ "gen_tokens_per_s": 11.0,
+ "mean_prompt_tokens": 1788,
+ "mean_gen_tokens": 872,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

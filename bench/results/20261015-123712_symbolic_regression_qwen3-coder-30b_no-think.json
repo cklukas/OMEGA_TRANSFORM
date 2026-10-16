@@ -1,0 +1,95 @@
+{
+ "schema": 2,
+ "example": "symbolic_regression",
+ "model": "qwen3-coder:30b",
+ "variant": "no-think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-10-15T12:37:12",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.3128434055615448,
+ "best_score": 0.3768949818267955,
+ "improvement": 1.2047400556526995,
+ "llm_calls": 33,
+ "mean_llm_seconds": 27.6,
+ "attempts": 33,
+ "ok": 22,
+ "statuses": {
+  "ok": 22,
+  "duplicate": 8,
+  "llm_error": 2,
+  "invalid": 1
+ },
+ "sweeps": 4,
+ "sweep_variants": 64,
+ "improvements": 2,
+ "minutes_to_best": 2.83,
+ "best_idea": "Expand the basis functions to include interaction terms, powers, and transcendental functions that can capture the underlying structure better than a simple linear model.",
+ "progress": [
+  [
+   0.0,
+   0.3128434055615448
+  ],
+  [
+   2.58,
+   0.3713084928766477
+  ],
+  [
+   2.83,
+   0.3768949818267955
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.3128434055615448,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.83,
+   "score": 0.3768949818267955,
+   "model": "qwen3-coder:30b",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Expand the basis functions to include interaction terms, powers, and transcendental functions that can capture the underlying structure better than a simple linear model."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -35,7 +35,9 @@\n # OMEGA-BLOCK-START\n def basis(x1, x2, x3):\n     \"\"\"Basis functions of the model; the prediction is a weighted sum of them.\"\"\"\n-    return [1.0, x1, x2, x3]\n+    return [1.0, x1, x2, x3, x1*x2, x1*x3, x2*x3, x1**2, x2**2, x3**2, \n+            math.sin(x1), math.sin(x2), math.sin(x3), math.cos(x1), math.cos(x2), math.cos(x3),\n+            math.exp(x1), math.exp(x2), math.exp(x3), math.log(1 + x3)]\n \n \n def fit(rows):\n@@ -48,7 +50,7 @@\n     x3 in [0, 3]. Only the Python standard library may be used (math, statistics,\n     random, ...; no numpy). fit plus all predictions must take at most 10 CPU seconds.\n \n-    Current method: linear regression on the raw inputs.\n+    Current method: linear regression on expanded basis functions.\n     \"\"\"\n     cols = list(zip(*[basis(x1, x2, x3) for x1, x2, x3, _ in rows]))\n     return least_squares([list(c) for c in cols], [y for *_, y in rows])\n",
+ "error": "",
+ "model_memory_gb": 21.8,
+ "model_gpu_memory_gb": 21.8,
+ "context_length": 32768,
+ "load_seconds": 133.7,
+ "median_call_seconds": 21.8,
+ "p90_call_seconds": 39.5,
+ "prompt_tokens_per_s": 673.9,
+ "gen_tokens_per_s": 46.3,
+ "mean_prompt_tokens": 4857,
+ "mean_gen_tokens": 742,
+ "stopped_calls": 2,
+ "provider": "ollama",
+ "cost_usd": 0
+}

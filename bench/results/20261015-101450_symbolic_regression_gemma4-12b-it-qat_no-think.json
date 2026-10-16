@@ -1,0 +1,125 @@
+{
+ "schema": 2,
+ "example": "symbolic_regression",
+ "model": "gemma4:12b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 7.2,
+ "model_params": "11.9B",
+ "started": "2026-10-15T10:14:50",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.8,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.3128434055615448,
+ "best_score": 0.9977971283343388,
+ "improvement": 3.18944593555783,
+ "llm_calls": 21,
+ "mean_llm_seconds": 43.7,
+ "attempts": 21,
+ "ok": 18,
+ "statuses": {
+  "ok": 18,
+  "invalid": 3
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 4,
+ "minutes_to_best": 9.84,
+ "best_idea": "The current basis might be over-parameterized or missing the correct interaction for extrapolation; I will add a term for $x_1 \\cdot \\sin(x_2)$ and $x_2 \\cdot \\sin(x_1)$ to better capture periodic-int",
+ "progress": [
+  [
+   0.0,
+   0.3128434055615448
+  ],
+  [
+   3.03,
+   0.37620553231374443
+  ],
+  [
+   4.15,
+   0.3794462082138174
+  ],
+  [
+   9.3,
+   0.3795009770688002
+  ],
+  [
+   9.84,
+   0.9977971283343388
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.3128434055615448,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.55,
+   "score": null,
+   "model": "gemma4:12b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "invalid",
+   "idea": "The feedback shows very large errors at large coordinates, suggesting the model needs higher-order terms (like $x^2$, $x^3$) and interactions (like $x_1 x_2$) to capture the growth, as the current linear model fails to extrapolate."
+  },
+  {
+   "minutes": 6.43,
+   "score": 0.37244046859207597,
+   "model": "gemma4:12b-it-qat",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Fix the syntax error by correcting the brackets and parentheses in the `fit` function's return statement."
+  },
+  {
+   "minutes": 7.84,
+   "score": 0.3763487907008398,
+   "model": "gemma4:12b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "The feedback shows extreme negative values in extrapolation, suggesting that the cubic terms $x_1^3$ and $x_2^3$ are causing the model to diverge; removing them should improve stability while keeping interaction and quadratic terms."
+  },
+  {
+   "minutes": 9.84,
+   "score": 0.9977971283343388,
+   "model": "gemma4:12b-it-qat",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "The current basis might be over-parameterized or missing the correct interaction for extrapolation; I will add a term for $x_1 \\cdot \\sin(x_2)$ and $x_2 \\cdot \\sin(x_1)$ to better capture periodic-interaction behavior while maintaining stability."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -35,23 +35,25 @@\n # OMEGA-BLOCK-START\n def basis(x1, x2, x3):\n     \"\"\"Basis functions of the model; the prediction is a weighted sum of them.\"\"\"\n-    return [1.0, x1, x2, x3]\n+    # Include polynomial terms and interactions to handle extrapolation and non-linearity\n+    return [\n+        1.0, x1, x2, x3,\n+        x1**2, x2**2, x3**2,\n+        x1*x2, x1*x3, x2*x3,\n+        x1*x2*x3,\n+        math.sin(x1), math.cos(x1),\n+        math.sin(x2), math.cos(x2),\n+        math.sin(x3), math.cos(x3),\n+        x1 * math.sin(x2),\n+        x2 * math.sin(x1)\n+    ]\n \n \n def fit(rows):\n-    \"\"\"Fit the model on the training rows and return its parameters.\n-\n-    The parameters must be plain data (numbers, strings, lists, dicts), not functions\n-    or class instances. predict() receives them as JSON would carry them: tuples become\n-    lists and dict keys become strings.\n-    rows: list of [x1, x2, x3, y] float lists, x1 in [-3, 3], x2 in [-2, 2],\n-    x3 in [0, 3]. Only the Python standard library may be used (math, statistics,\n-    random, ...; no numpy). fit plus all predictions must take at most 10 CPU seconds.\n-\n-    Current method: linear regression on the raw inputs.\n-    \"\"\"\n+    \"\"\"Fit the model on the training rows and return its parameters.\"\"\"\n+    # Use a slightly higher ridge to maintain stability with many terms\n     cols = list(zip(*[basis(x1, x2, x3) for x1, x2, x3, _ in rows]))\n-    return least_squares([list(c) for c in cols], [y for *_, y in rows])\n+    return least_squares([list(c) for c in cols], [y for *_, y in rows], ridge=1e-6)\n \n \n def predict(params, x1, x2, x3):\n",
+ "error": "",
+ "model_memory_gb": 8.0,
+ "model_gpu_memory_gb": 8.0,
+ "context_length": 32768,
+ "load_seconds": 142.4,
+ "median_call_seconds": 35.7,
+ "p90_call_seconds": 49.9,
+ "prompt_tokens_per_s": 212.7,
+ "gen_tokens_per_s": 29.2,
+ "mean_prompt_tokens": 3943,
+ "mean_gen_tokens": 525,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

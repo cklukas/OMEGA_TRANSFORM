@@ -63,4 +63,116 @@ def pack(sizes, capacity):
 
 ## Benchmark results
 
-This example has not been benchmarked yet. See [Benchmarking models](../benchmarking.md) for how to run it.
+The best result so far comes from **gpt-oss:20b (no-think)**, run locally with Ollama on 2026-10-14: a score of **0.95416** (×1.20 the starting program's 0.79426), reached after 6.71 of 15 minutes with 18 model requests.
+
+### How it got there
+
+The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.
+
+| Step | Minute | Score | Kind | Idea |
+|--:|--:|--:|---|---|
+| 0 | 0.0 | 0.79426 | start | initial program |
+| 1 | 2.2 | 0.95128 | edit | Replace the trivial next‑fit implementation with a first‑fit decreasing heuristic to reduce the number of bins used. |
+| 2 | 6.7 | 0.95416 | edit | Add a lightweight improvement phase after the initial first‑fit decreasing packing that repeatedly re‑assigns items to other bins to reduce slack and drop empty bins, using random order to escape local minima. |
+
+### The best program
+
+What changed compared with the starting program:
+
+```diff
+--- initial
++++ best
+@@ -19,17 +19,53 @@
+     (time.process_time(); more than 1.5 x the limit makes the program invalid).
+     Only the Python standard library may be used.
+ 
+-    Current method: next fit (open a new bin whenever the next item does not fit).
++    Current method: first-fit decreasing (sort items by decreasing size and place
++    each in the first bin that fits).
+     """
++    # sort indices by decreasing size
++    indices = sorted(range(len(sizes)), key=lambda i: -sizes[i])
+     bins = []
+-    current, load = [], 0
+-    for i, s in enumerate(sizes):
+-        if load + s > capacity:
+-            bins.append(current)
+-            current, load = [], 0
+-        current.append(i)
+-        load += s
+-    if current:
+-        bins.append(current)
++    loads = []
++    for i in indices:
++        s = sizes[i]
++        placed = False
++        for b, l in enumerate(loads):
++            if l + s <= capacity:
++                bins[b].append(i)
++                loads[b] += s
++                placed = True
++                break
++        if not placed:
++            bins.append([i])
++            loads.append(s)
++    # improvement phase: attempt to reassign items to reduce bins
++    start_time = time.process_time()
++    for _ in range(3):
++        if time.process_time() - start_time > 1.8:
++            break
++        bin_order = list(range(len(bins)))
++        random.shuffle(bin_order)
++        for bi in bin_order:
++            bin_items = bins[bi]
++            if not bin_items:
++                continue
++            items = bin_items[:]
++            random.shuffle(items)
++            for idx in items:
++                s = sizes[idx]
++                other_order = list(range(len(bins)))
++                random.shuffle(other_order)
++                for bj in other_order:
++                    if bj == bi:
++                        continue
++                    if loads[bj] + s <= capacity:
++                        bin_items.remove(idx)
++                        bins[bj].append(idx)
++                        loads[bi] -= s
++                        loads[bj] += s
++                        break
++        # remove empty bins
++        bins = [b for b in bins if b]
++        loads = [sum(sizes[i] for i in b) for b in bins]
+     return bins
+ # OMEGA-BLOCK-END
+```
+
+### All models
+
+The latest run per model and reasoning mode; the [model benchmarks](../benchmarks.md#bin_packing_1d) page has speed, memory and progress over time.
+
+| Model | Where | Best | Gain | Minutes to best | New bests |
+|---|---|--:|--:|--:|--:|
+| gpt-oss:20b (no-think) | local | 0.95416 | ×1.20 | 6.7 | 2 |
+| gemma4:12b-it-qat (no-think) | local | 0.9541 | ×1.20 | 8.3 | 2 |
+| gemma4:26b-a4b-it-qat (no-think) | local | 0.95304 | ×1.20 | 11.5 | 3 |
+| gpt-oss:20b (think) | local | 0.95304 | ×1.20 | 9.6 | 2 |
+| gemma4:e4b-it-qat (no-think) | local | 0.95128 | ×1.20 | 1.1 | 1 |
+| qwen3.5:latest (no-think) | local | 0.95128 | ×1.20 | 3.5 | 2 |
+| gemma4:e2b (no-think) | local | 0.95128 | ×1.20 | 1.2 | 2 |
+| gemma4:latest (no-think) | local | 0.95128 | ×1.20 | 1.9 | 1 |
+| qwen3.5:27b (no-think) | local | 0.95128 | ×1.20 | 5.4 | 1 |
+| qwen3.8:27b-mtp-q4_K_M (no-think) | local | 0.95128 | ×1.20 | 12.5 | 1 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 0.95128 | ×1.20 | 5.2 | 1 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 0.95128 | ×1.20 | 2.5 | 1 |
+| qwen3-coder:30b (no-think) | local | 0.95128 | ×1.20 | 2.5 | 1 |
+| gemma4:e4b-it-qat (think) | local | 0.95128 | ×1.20 | 1.9 | 1 |
+| qwen3.5:latest (think) | local | 0.95128 | ×1.20 | 3.4 | 1 |
+| gemma4:12b-it-qat (think) | local | 0.95128 | ×1.20 | 6.1 | 1 |
+| gemma4:e2b (think) | local | 0.95128 | ×1.20 | 1.9 | 2 |
+| gemma4:latest (think) | local | 0.95128 | ×1.20 | 2.2 | 1 |
+| gemma4:26b-a4b-it-qat (think) | local | 0.95128 | ×1.20 | 10.2 | 1 |
+| qwen3.5:27b (think) | local | 0.95128 | ×1.20 | 5.7 | 1 |
+| qwen2.5-coder:7b (no-think) | local | 0.79426 | ×1.00 | - | 0 |
+| qwen3.8:27b-mtp-q4_K_M (think) | local | | | | failed: all 1 model requests failed: qwen3.8:27b-mtp-q4_K_M: answer … |

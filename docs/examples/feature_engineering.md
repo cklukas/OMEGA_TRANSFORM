@@ -53,4 +53,77 @@ def features(row):
 
 ## Benchmark results
 
-This example has not been benchmarked yet. See [Benchmarking models](../benchmarking.md) for how to run it.
+The best result so far comes from **gemma4:e4b-it-qat (no-think)**, run locally with Ollama on 2026-10-14: a score of **0.891** (×1.43 the starting program's 0.623), reached after 12.36 of 15 minutes with 66 model requests.
+
+### How it got there
+
+The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.
+
+| Step | Minute | Score | Kind | Idea |
+|--:|--:|--:|---|---|
+| 0 | 0.0 | 0.623 | start | initial program |
+| 1 | 2.3 | 0.628 | edit | Introduce squared terms for the standard-normal-like inputs (x1, x2, x6) as suggested by previous high-scoring attempts to capture variance and quadratic effects that a linear model can approximate. |
+| 2 | 2.8 | 0.678 | edit | Introduce log transformation for the right-skewed input x3, as suggested by successful strategies and the hint regarding skewed inputs, to make its non-linear relationship with the hidden rule more linearly separable. |
+| 3 | 3.7 | 0.737 | edit | Introduce feature bins over the skewed input $x_3$ to allow the linear model to fit non-monotone relationships in $x_3$ that the log transform might miss. |
+| 4 | 4.8 | 0.75 | edit | The feedback indicates that the largest standardized weights correspond to f9, f2, f0, etc., which are likely early features, suggesting the raw inputs or early transformations have strong signals; I will introduce pairwise interaction features for the … |
+| 5 | 6.4 | 0.756 | edit | Replace the fixed binning strategy for $x_3$ with a logarithmic transformation, as this is a known successful strategy for skewed data and is simpler than hard binning. |
+| 6 | 7.0 | 0.758 | edit | Since $x_3$ is lognormal-like, exploring different transformations of $x_3$ like $\log(x_3)$ vs $\sqrt{x_3}$ or $\log(1+x_3)$ could improve feature representation compared to the current $\log(x_3)$. |
+| 7 | 8.7 | 0.89 | edit | Since the largest standardized weights are on f12 (which is $\log(1+x_3)$) and f2 ($\text{sign}(x_1 x_2)$), I will incorporate the squared terms for the uniform features $x_4$ and $x_5$ and investigate interaction features involving the log-transformed $x_3$. |
+| 8 | 12.4 | 0.891 | edit | Introduce sign features for the interaction between $\log(1+x_3)$ and the strong features $x_1$ and $x_2$ to capture quadrant information related to the linearized skewed variable. |
+
+### The best program
+
+What changed compared with the starting program:
+
+```diff
+--- initial
++++ best
+@@ -21,5 +21,26 @@
+ 
+     Current method: the raw inputs.
+     """
+-    return list(row)
++    x1, x2, x3, x4, x5, x6 = row
++    # Raw features
++    features_list = [x1, x2, x3, x4, x5, x6]
++    # Squared features for standard normal-like inputs
++    features_list.append(x1 * x1)
++    features_list.append(x2 * x2)
++    features_list.append(x6 * x6)
++    # Pairwise interaction features for standard normal-like inputs (x1, x2, x6)
++    features_list.append(math.copysign(1.0, x1 * x2)) # sign(x1*x2)
++    features_list.append(math.copysign(1.0, x1 * x6)) # sign(x1*x6)
++    features_list.append(math.copysign(1.0, x2 * x6)) # sign(x2*x6)
++    # Transformation of skewed input x3 (using log(1+x3) as it was strong)
++    transform_x3 = math.log(1.0 + x3)
++    features_list.append(transform_x3)
++    # Squared features for uniform inputs x4 and x5
++    features_list.append(x4 * x4)
++    features_list.append(x5 * x5)
++    # Interaction between log(1+x3) and x1
++    features_list.append(math.copysign(1.0, x1 * transform_x3))
++    # Interaction between log(1+x3) and x2
++    features_list.append(math.copysign(1.0, x2 * transform_x3))
++    return features_list
+ # OMEGA-BLOCK-END
+```
+
+### All models
+
+The latest run per model and reasoning mode; the [model benchmarks](../benchmarks.md#feature_engineering) page has speed, memory and progress over time.
+
+| Model | Where | Best | Gain | Minutes to best | New bests |
+|---|---|--:|--:|--:|--:|
+| gemma4:e4b-it-qat (no-think) | local | 0.891 | ×1.43 | 12.4 | 10 |
+| gemma4:latest (no-think) | local | 0.889 | ×1.43 | 12.1 | 11 |
+| qwen3-coder:30b (no-think) | local | 0.88 | ×1.41 | 7.6 | 4 |
+| gemma4:26b-a4b-it-qat (no-think) | local | 0.859 | ×1.38 | 8.9 | 4 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 0.859 | ×1.38 | 5.5 | 1 |
+| gpt-oss:20b (no-think) | local | 0.858 | ×1.38 | 8.1 | 4 |
+| qwen2.5-coder:7b (no-think) | local | 0.837 | ×1.34 | 14.6 | 4 |
+| qwen3.5:latest (no-think) | local | 0.82 | ×1.32 | 9.0 | 4 |
+| gemma4:12b-it-qat (no-think) | local | 0.813 | ×1.30 | 13.3 | 2 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 0.805 | ×1.29 | 15.0 | 6 |
+| gemma4:e2b (no-think) | local | 0.774 | ×1.24 | 14.2 | 8 |
+| qwen3.8:27b-mtp-q4_K_M (no-think) | local | 0.765 | ×1.23 | 13.7 | 3 |
+| qwen3.5:27b (no-think) | local | 0.732 | ×1.17 | 15.2 | 4 |

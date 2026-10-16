@@ -1,0 +1,94 @@
+{
+ "schema": 2,
+ "example": "bin_packing_1d",
+ "model": "gemma4:e2b",
+ "variant": "think",
+ "model_size_gb": 7.2,
+ "model_params": "5.1B",
+ "started": "2026-10-16T07:16:21",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "0910551",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.7942635036246238,
+ "best_score": 0.9512800819252432,
+ "improvement": 1.1976882704342748,
+ "llm_calls": 26,
+ "mean_llm_seconds": 34.4,
+ "attempts": 26,
+ "ok": 18,
+ "statuses": {
+  "ok": 18,
+  "edit_error": 4,
+  "invalid": 4
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 2,
+ "minutes_to_best": 1.86,
+ "best_idea": "Sort items by decreasing size and use First Fit (FFD) to place items into existing bins to reduce fragmentation.",
+ "progress": [
+  [
+   0.0,
+   0.7942635036246238
+  ],
+  [
+   1.48,
+   0.795872454551847
+  ],
+  [
+   1.86,
+   0.9512800819252432
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.7942635036246238,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.86,
+   "score": 0.9512800819252432,
+   "model": "gemma4:e2b",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Sort items by decreasing size and use First Fit (FFD) to place items into existing bins to reduce fragmentation."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -21,15 +21,25 @@\n \n     Current method: next fit (open a new bin whenever the next item does not fit).\n     \"\"\"\n+    # Sort items by size descending, keeping original indices\n+    indexed_sizes = sorted([(sizes[i], i) for i in range(len(sizes))], reverse=True)\n+    \n+    # bins stores the resulting packing: list of lists of original indices\n     bins = []\n-    current, load = [], 0\n-    for i, s in enumerate(sizes):\n-        if load + s > capacity:\n-            bins.append(current)\n-            current, load = [], 0\n-        current.append(i)\n-        load += s\n-    if current:\n-        bins.append(current)\n+    \n+    for s, original_index in indexed_sizes:\n+        placed = False\n+        # Try to fit into existing bins (First Fit)\n+        for b_idx, bin_indices in enumerate(bins):\n+            current_load = sum(sizes[idx] for idx in bin_indices)\n+            if current_load + s <= capacity:\n+                bins[b_idx].append(original_index)\n+                placed = True\n+                break\n+        \n+        if not placed:\n+            # Open a new bin\n+            bins.append([original_index])\n+            \n     return bins\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 6.6,
+ "model_gpu_memory_gb": 6.6,
+ "context_length": 32768,
+ "load_seconds": 64.1,
+ "median_call_seconds": 31.0,
+ "p90_call_seconds": 45.8,
+ "prompt_tokens_per_s": 1074.6,
+ "gen_tokens_per_s": 78.2,
+ "mean_prompt_tokens": 3025,
+ "mean_gen_tokens": 2271,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -1,0 +1,123 @@
+{
+ "schema": 2,
+ "example": "circle_packing_26",
+ "model": "gemma4:latest",
+ "variant": "no-think",
+ "model_size_gb": 9.5,
+ "model_params": "",
+ "started": "2026-10-16T00:44:33",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "0910551",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 1.950984972206883,
+ "improvement": 1.3092962737149254,
+ "llm_calls": 56,
+ "mean_llm_seconds": 15.6,
+ "attempts": 56,
+ "ok": 32,
+ "statuses": {
+  "ok": 32,
+  "invalid": 19,
+  "edit_error": 4,
+  "duplicate": 1
+ },
+ "sweeps": 3,
+ "sweep_variants": 34,
+ "improvements": 3,
+ "minutes_to_best": 14.3,
+ "best_idea": "tuned ITERATIONS=150, LEARNING_RATE=0.01 on top of: Expose the iteration count and the learning rate in `max_radii` as named constants to allow for systematic searching for better convergence dynamics",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   11.42,
+   1.4920583947817598
+  ],
+  [
+   11.78,
+   1.5034702685260086
+  ],
+  [
+   14.3,
+   1.950984972206883
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.35,
+   "score": 0.7879355968231869,
+   "model": "gemma4:latest",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Implement a simple iterative refinement (gradient-like step) on the radii based on overlap and boundary constraints to improve the initial grid packing."
+  },
+  {
+   "minutes": 7.78,
+   "score": 0.7261065896060347,
+   "model": "gemma4:latest",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Replace the uniform square grid initialization with a staggered (hexagonal-like) packing initialization to achieve a denser initial configuration."
+  },
+  {
+   "minutes": 14.3,
+   "score": 0.7261065896060347,
+   "model": "gemma4:latest",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Expose the iteration count and the learning rate in `max_radii` as named constants to allow for systematic searching for better convergence dynamics."
+  },
+  {
+   "minutes": 14.3,
+   "score": 1.950984972206883,
+   "model": "gemma4:latest",
+   "mode": "sweep/exploit/diff/tune",
+   "status": "ok",
+   "idea": "tuned ITERATIONS=150, LEARNING_RATE=0.01 on top of: Expose the iteration count and the learning rate in `max_radii` as named constants to allow for systematic searching for better convergence dynamics."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -13,22 +13,67 @@\n     rows = math.ceil(n / cols)\n     centers = []\n     for k in range(n):\n-        i, j = k % cols, k // cols\n-        centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n+        j = k // cols\n+        i = k % cols\n+        # Staggering: offset odd rows by half a column width\n+        x_coord = (i + 0.5) / cols\n+        y_coord = (j + 0.5) / rows\n+        if j % 2 != 0:\n+            x_coord += 0.5 / cols # Apply half-column offset for odd rows\n+        centers.append((x_coord, y_coord))\n     radii = max_radii(centers)\n     return [(x, y, r) for (x, y), r in zip(centers, radii)]\n \n \n def max_radii(centers):\n-    \"\"\"Largest radii for fixed centers: limit by walls, then shrink overlapping pairs.\"\"\"\n+    \"\"\"Iterative refinement of radii.\"\"\"\n     radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n+    # Constants for refinement\n+    ITERATIONS = 150\n+    LEARNING_RATE = 0.010000000000000005\n+    \n+    for _ in range(ITERATIONS): # Iteration count\n+        new_radii = list(radii)\n+        for i in range(len(centers)):\n+            # Boundary constraint adjustment\n+            r_bound = min(centers[i][0], centers[i][1], 1 - centers[i][0], 1 - centers[i][1])\n+            new_radii[i] = min(new_radii[i], r_bound)\n+            \n+            # Overlap adjustment (simple repulsion)\n+            overlap_reduction = 0.0\n+            for j in range(len(centers)):\n+                if i != j:\n+                    d = math.dist(centers[i], centers[j])\n+                    overlap = radii[i] + radii[j] - d\n+                    if overlap > 1e-9:\n+                        # Reduce radius based on overlap magnitude\n+                        overlap_reduction += overlap\n+            \n+            # Decrease radius proportionally to overlap, but respect boundaries\n+            new_radii[i] = max(0.0, new_radii[i] - LEARNING_RATE * overlap_reduction)\n+            new_radii[i] = max(0.0, new_radii[i])\n+            \n+        radii = new_radii\n+        \n+    # Final pass to ensure non-overlap after iterative shrinking\n     for a in range(len(centers)):\n         for b in range(a + 1, len(centers)):\n             d = math.dist(centers[a], centers[b])\n-            if radii[a] + radii[b] > d:\n-                s = d / (radii[a] + radii[b])\n-                radii[a] *= s\n-                radii[b] *= s\n+            target_sum = d\n+            current_sum = radii[a] + radii[b]\n+            if current_sum > target_sum + 1e-9:\n+                scale = target_sum / current_sum\n+                radii[a] *= scale\n+                radii[b] *= scale\n+    \n+    # Final wall clipping\n+    for i in range(len(centers)):\n+        x, y = centers[i]\n+        radii[i] = min(radii[i], x)\n+        radii[i] = min(radii[i], y)\n+        radii[i] = min(radii[i], 1 - x)\n+        radii[i] = min(radii[i], 1 - y)\n+        \n     return radii\n # OMEGA-BLOCK-END\n \n",
+ "error": "",
+ "model_memory_gb": 15.4,
+ "model_gpu_memory_gb": 15.4,
+ "context_length": 32768,
+ "load_seconds": 124.2,
+ "median_call_seconds": 11.6,
+ "p90_call_seconds": 25.9,
+ "prompt_tokens_per_s": 909.3,
+ "gen_tokens_per_s": 45.2,
+ "mean_prompt_tokens": 3111,
+ "mean_gen_tokens": 448,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

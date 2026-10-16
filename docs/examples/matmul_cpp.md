@@ -60,7 +60,7 @@ extern "C" void matmul(int n, const float* A, const float* B, float* C) {
 
 ## Benchmark results
 
-The best result so far comes from **gemma4:e2b (no-think)**, run locally with Ollama on 2026-10-10: a score of **1.65962** (×1.12 the starting program's 1.4879), reached after 3.16 of 15 minutes with 66 model requests.
+The best result so far comes from **qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)**, run locally with Ollama on 2026-10-15: a score of **167.9280** (×102.91 the starting program's 1.63177), reached after 15.16 of 15 minutes with 48 model requests.
 
 ### How it got there
 
@@ -68,8 +68,11 @@ The best program's ancestry, from the starting program on. "Edit" and "rewrite" 
 
 | Step | Minute | Score | Kind | Idea |
 |--:|--:|--:|---|---|
-| 0 | 0.0 | 1.4879 | start | initial program |
-| 1 | 3.2 | 1.65962 | edit | Implement loop tiling with a block size optimized for cache utilization and NEON vectorization to improve data locality and leverage SIMD instructions. |
+| 0 | 0.0 | 1.63177 | start | initial program |
+| 1 | 6.5 | compile error | edit | Reorder loops to i-k-j for better streaming of B and C, enable NEON vectorization with fma intrinsics, apply cache blocking with tunable tile size to improve spatial locality, and use multithreading over row blocks to exploit all 10 cores, with parameters … |
+| 2 | 10.8 | 3.60979 | fix-up | Fix the lambda capture syntax by using `&` for all captured variables to avoid the compile error, ensuring correct thread-safe access to shared data while preserving the multithreaded tiling and loop reordering strategy. |
+| 3 | 12.3 | invalid | edit | Reorder loops to i-k-j to enable better streaming of B and C, reduce cache misses, and improve NEON vectorization potential, which should significantly increase performance on Apple Silicon. |
+| 4 | 15.2 | 167.9280 | edit | Fix the incorrect accumulation in the inner loop by initializing C to zero before the k-loop, as the current code assumes C is already zeroed but the harness does not guarantee this, leading to wrong results for n=1. |
 
 ### The best program
 
@@ -78,32 +81,41 @@ What changed compared with the starting program:
 ```diff
 --- initial
 +++ best
-@@ -17,12 +17,23 @@
+@@ -22,11 +22,30 @@
  // Computes C = A * B. C is NOT zeroed by the caller. Any number of threads may be
  // used (std::thread is available); n is any size from 1 to 2048.
- void matmul(int n, const float* A, const float* B, float* C) {
+ extern "C" void matmul(int n, const float* A, const float* B, float* C) {
 -    for (int i = 0; i < n; ++i)
 -        for (int j = 0; j < n; ++j) {
 -            float s = 0.0f;
 -            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];
 -            C[i * n + j] = s;
-+    constexpr int BLOCK_SIZE = 32;
-+    for (int ii = 0; ii < n; ii += BLOCK_SIZE) {
-+        for (int jj = 0; jj < n; jj += BLOCK_SIZE) {
-+            int i_end = std::min(ii + BLOCK_SIZE, n);
-+            int j_end = std::min(jj + BLOCK_SIZE, n);
+-        }
++    constexpr int TILE = 64;
++    constexpr int NUM_THREADS = 10;
 +
-+            for (int i = ii; i < i_end; ++i) {
-+                for (int j = jj; j < j_end; ++j) {
-+                    float sum = 0.0f;
-+                    for (int k = 0; k < n; ++k) {
-+                        sum += A[i * n + k] * B[k * n + j];
++    const int num_tiles = (n + TILE - 1) / TILE;
++    std::vector<std::thread> threads;
++
++    for (int i0 = 0; i0 < n; i0 += TILE) {
++        int i1 = std::min(i0 + TILE, n);
++        threads.emplace_back([&A, &B, &C, n, i0, i1]() {
++            // Process tile of C rows [i0, i1)
++            for (int i = i0; i < i1; ++i) {
++                for (int j = 0; j < n; ++j) {
++                    C[i * n + j] = 0.0f; // Initialize C[i][j] to zero before accumulation
++                }
++                for (int k = 0; k < n; ++k) {
++                    float a = A[i * n + k];
++                    for (int j = 0; j < n; ++j) {
++                        C[i * n + j] += a * B[k * n + j];
 +                    }
-+                    C[i * n + j] = sum;
 +                }
 +            }
-         }
++        });
 +    }
++
++    for (auto& t : threads) t.join();
  }
  // OMEGA-BLOCK-END
 ```
@@ -114,7 +126,18 @@ The latest run per model and reasoning mode; the [model benchmarks](../benchmark
 
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|
-| gemma4:e2b (no-think) | local | 1.65962 | ×1.12 | 3.2 | 1 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 167.9280 | ×102.91 | 15.2 | 2 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 154.8540 | ×93.38 | 16.3 | 2 |
+| gemma4:latest (no-think) | local | 151.3840 | ×95.53 | 15.6 | 5 |
+| gemma4:e4b-it-qat (no-think) | local | 140.1020 | ×85.54 | 15.5 | 6 |
+| qwen3.8:27b-mtp-q4_K_M (no-think) | local | 120.7810 | ×72.88 | 16.4 | 1 |
+| gemma4:12b-it-qat (no-think) | local | 68.4243 | ×41.57 | 15.4 | 1 |
+| qwen3.5:27b (no-think) | local | 25.6098 | ×15.46 | 16.8 | 3 |
+| qwen2.5-coder:7b (no-think) | local | 12.1382 | ×7.25 | 15.4 | 2 |
+| qwen3-coder:30b (no-think) | local | 8.45239 | ×5.08 | 16.7 | 2 |
+| gemma4:e2b (no-think) | local | 1.68469 | ×1.05 | 15.8 | 3 |
+| qwen3.5:latest (no-think) | local | 1.6743 | ×1.00 | - | 0 |
 | qwen3.5:latest (think) | local | 1.62938 | ×1.00 | - | 0 |
+| gpt-oss:20b (no-think) | local | 1.61662 | ×1.00 | - | 0 |
+| gemma4:26b-a4b-it-qat (no-think) | local | | | | failed: all 1 model requests failed: gemma4:26b-a4b-it-qat: no … |
 | gemma4:e2b (think) | local | 1.55072 | ×1.00 | - | 0 |
-| qwen3.5:latest (no-think) | local | 1.50421 | ×1.00 | - | 0 |

@@ -57,4 +57,203 @@ def run():
 
 ## Benchmark results
 
-This example has not been benchmarked yet. See [Benchmarking models](../benchmarking.md) for how to run it.
+The best result so far comes from **qwen3.5:27b (no-think)**, run locally with Ollama on 2026-10-15: a score of **38.5505** (×12.04 the starting program's 3.20136), reached after 15 of 15 minutes with 9 model requests.
+
+### How it got there
+
+The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.
+
+| Step | Minute | Score | Kind | Idea |
+|--:|--:|--:|---|---|
+| 0 | 0.0 | 3.20136 | start | initial program |
+| 1 | 6.7 | 35.2597 | edit | Replace the random initialization and lack of optimization with a Fibonacci lattice start followed by a gradient-based repulsion optimization to significantly increase the minimum angle, as random points yield a very poor min angle of ~3 degrees. |
+| 2 | 15.0 | 38.2698 | edit | Add a dedicated "max-min polish" phase that targets only the closest pairs to push them apart, as the feedback indicates a single bottleneck pair (1, 2) limits the score while the rest are well-separated. |
+| 3 | 15.0 | 38.5505 | parameter sweep | tuned n_polish=4000, polish_step=0.05, polish_decay=0.999 on top of: Add a dedicated "max-min polish" phase that targets only the closest pairs to push them apart, as the feedback indicates a single bottleneck pair (1, 2) limits the score while the rest are … |
+
+### The best program
+
+What changed compared with the starting program:
+
+```diff
+--- initial
++++ best
+@@ -9,19 +9,149 @@
+ def construct(n=30):
+     """Return a list of n points (x, y, z) on the unit sphere.
+ 
+-    Vectors need not be normalized (the evaluator normalizes them), but none may be
+-    zero. The score is the minimum angle in degrees between any two points. This
+-    start draws uniformly random points with a fixed seed, so some pairs end up
+-    close together.
++    Uses Fibonacci lattice initialization followed by repulsive force optimization.
+     """
+-    rng = random.Random(1)
++    # Fibonacci sphere distribution for uniform initial spread
++    phi = math.pi * (3.0 - math.sqrt(5.0))  # golden angle
+     points = []
+-    for _ in range(n):
+-        z = rng.uniform(-1.0, 1.0)
+-        phi = rng.uniform(0.0, 2 * math.pi)
+-        s = math.sqrt(1.0 - z * z)
+-        points.append((s * math.cos(phi), s * math.sin(phi), z))
+-    return points
++    for i in range(n):
++        y = 1 - (2 * i + 1) / n  # y goes from 1 to -1
++        r = math.sqrt(1.0 - y * y)  # radius at y
++        theta = phi * i
++        x = math.cos(theta) * r
++        z = math.sin(theta) * r
++        points.append([x, y, z])
++
++    # Optimization parameters
++    n_iter = 500
++    decay = 0.998
++    s = 2.0  # Exponent for repulsion force
++    step_size = 0.1
++    
++    # Phase 1: Global gradient descent
++    for it in range(n_iter):
++        # Compute forces
++        forces = [[0.0, 0.0, 0.0] for _ in range(n)]
++        for i in range(n):
++            for j in range(i + 1, n):
++                # Vector difference
++                dx = points[i][0] - points[j][0]
++                dy = points[i][1] - points[j][1]
++                dz = points[i][2] - points[j][2]
++                dist_sq = dx*dx + dy*dy + dz*dz
++                if dist_sq == 0:
++                    continue
++                dist = math.sqrt(dist_sq)
++                # Repulsive force magnitude ~ 1 / dist^(s+1)
++                force_mag = 1.0 / (dist ** (s + 1))
++                
++                fx = dx * force_mag
++                fy = dy * force_mag
++                fz = dz * force_mag
++                
++                forces[i][0] += fx
++                forces[i][1] += fy
++                forces[i][2] += fz
++                forces[j][0] -= fx
++                forces[j][1] -= fy
++                forces[j][2] -= fz
++
++        # Update points
++        for i in range(n):
++            # Current position
++            px, py, pz = points[i]
++            fx, fy, fz = forces[i]
++            
++            # Project force onto tangent plane: F_tan = F - (F . p) * p
++            dot = fx*px + fy*py + fz*pz
++            tx = fx - dot * px
++            ty = fy - dot * py
++            tz = fz - dot * pz
++            
++            # Move
++            new_x = px + step_size * tx
++            new_y = py + step_size * ty
++            new_z = pz + step_size * tz
++            
++            # Renormalize
++            norm = math.sqrt(new_x*new_x + new_y*new_y + new_z*new_z)
++            points[i] = [new_x/norm, new_y/norm, new_z/norm]
++        
++        step_size *= decay
++
++    # Phase 2: Max-min polish (push only closest pairs)
++    # Repeatedly identify the minimum distance pair and push them apart.
++    # This directly optimizes the objective function (min angle).
++    n_polish = 4000
++    polish_step = 0.05
++    polish_decay = 0.999
++    
++    current_step = polish_step
++    for _ in range(n_polish):
++        # Find the pair with minimum distance
++        min_d_sq = float('inf')
++        min_i, min_j = -1, -1
++        for i in range(n):
++            for j in range(i + 1, n):
++                dx = points[i][0] - points[j][0]
++                dy = points[i][1] - points[j][1]
++                dz = points[i][2] - points[j][2]
++                d_sq = dx*dx + dy*dy + dz*dz
++                if d_sq < min_d_sq:
++                    min_d_sq = d_sq
++                    min_i, min_j = i, j
++        
++        if min_i == -1: break # Should not happen
++        
++        # Push points min_i and min_j apart along the line connecting them
++        # Direction for i: away from j
++        dist = math.sqrt(min_d_sq)
++        if dist < 1e-12: continue
++        
++        # Force direction
++        dir_i = (points[min_i][0] - points[min_j][0]) / dist
++        dir_j = (points[min_j][0] - points[min_i][0]) / dist
++        
++        # Apply step projected onto tangent plane
++        def update_point(idx, dx_dir, dy_dir, dz_dir, step):
++            px, py, pz = points[idx]
++            # Project onto tangent: F_tan = F - (F.p)p
++            dot = dx_dir*px + dy_dir*py + dz_dir*pz
++            tx = dx_dir - dot*px
++            ty = dy_dir - dot*py
++            tz = dz_dir - dot*pz
++            
++            # Normalize tangent vector to ensure step size is consistent
++            t_norm = math.sqrt(tx*tx + ty*ty + tz*tz)
++            if t_norm < 1e-12: return # Point is at pole or direction is radial
++            
++            nx = px + step * (tx / t_norm)
++            ny = py + step * (ty / t_norm)
++            nz = pz + step * (tz / t_norm)
++            
++            norm = math.sqrt(nx*nx + ny*ny + nz*nz)
++            points[idx] = [nx/norm, ny/norm, nz/norm]
++            
++        # Move both points
++        dx_dir = points[min_i][0] - points[min_j][0]
++        dy_dir = points[min_i][1] - points[min_j][1]
++        dz_dir = points[min_i][2] - points[min_j][2]
++        
++        # Normalize direction vector for force
++        d_len = math.sqrt(dx_dir*dx_dir + dy_dir*dy_dir + dz_dir*dz_dir)
++        if d_len > 1e-12:
++            ux = dx_dir / d_len
++            uy = dy_dir / d_len
++            uz = dz_dir / d_len
++            
++            # Push i away from j
++            update_point(min_i, ux, uy, uz, current_step)
++            # Push j away from i (symmetric)
++            update_point(min_j, -ux, -uy, -uz, current_step)
++            
++        current_step *= polish_decay
++
++    return [(p[0], p[1], p[2]) for p in points]
+ # OMEGA-BLOCK-END
+```
+
+### All models
+
+The latest run per model and reasoning mode; the [model benchmarks](../benchmarks.md#tammes_30) page has speed, memory and progress over time.
+
+| Model | Where | Best | Gain | Minutes to best | New bests |
+|---|---|--:|--:|--:|--:|
+| qwen3.5:27b (no-think) | local | 38.5505 | ×12.04 | 15.0 | 5 |
+| gemma4:26b-a4b-it-qat (no-think) | local | 38.2264 | ×11.94 | 8.1 | 4 |
+| gemma4:12b-it-qat (no-think) | local | 38.2018 | ×11.93 | 10.8 | 4 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 37.9644 | ×11.86 | 14.5 | 4 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 37.7428 | ×11.79 | 7.0 | 6 |
+| gemma4:latest (no-think) | local | 37.0129 | ×11.56 | 11.3 | 7 |
+| gpt-oss:20b (no-think) | local | 36.8947 | ×11.52 | 15.3 | 7 |
+| qwen2.5-coder:7b (no-think) | local | 36.8186 | ×11.50 | 9.5 | 7 |
+| gemma4:e4b-it-qat (no-think) | local | 34.9872 | ×10.93 | 14.2 | 5 |
+| qwen3-coder:30b (no-think) | local | 34.0461 | ×10.63 | 14.3 | 4 |
+| qwen3.5:latest (no-think) | local | 32.7402 | ×10.23 | 1.3 | 1 |
+| qwen3.8:27b-mtp-q4_K_M (no-think) | local | 29.5856 | ×9.24 | 13.5 | 2 |
+| gemma4:e2b (no-think) | local | 12.0000 | ×3.75 | 13.0 | 5 |

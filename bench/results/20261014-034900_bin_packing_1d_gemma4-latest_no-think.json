@@ -1,0 +1,91 @@
+{
+ "schema": 2,
+ "example": "bin_packing_1d",
+ "model": "gemma4:latest",
+ "variant": "no-think",
+ "model_size_gb": 9.5,
+ "model_params": "",
+ "started": "2026-10-14T03:49:00",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "d9fa9bc",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.7942635036246238,
+ "best_score": 0.9512800819252432,
+ "improvement": 1.1976882704342748,
+ "llm_calls": 61,
+ "mean_llm_seconds": 14.5,
+ "attempts": 61,
+ "ok": 49,
+ "statuses": {
+  "ok": 49,
+  "invalid": 7,
+  "edit_error": 3,
+  "duplicate": 2
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 1.92,
+ "best_idea": "Implement First Fit Decreasing (FFD) by sorting items by size in descending order and then applying the First Fit strategy.",
+ "progress": [
+  [
+   0.0,
+   0.7942635036246238
+  ],
+  [
+   1.92,
+   0.9512800819252432
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.7942635036246238,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.92,
+   "score": 0.9512800819252432,
+   "model": "gemma4:latest",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Implement First Fit Decreasing (FFD) by sorting items by size in descending order and then applying the First Fit strategy."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,16 +19,47 @@\n     (time.process_time(); more than 1.5 x the limit makes the program invalid).\n     Only the Python standard library may be used.\n \n-    Current method: next fit (open a new bin whenever the next item does not fit).\n+    Current method: First Fit Decreasing (FFD).\n     \"\"\"\n     bins = []\n     current, load = [], 0\n-    for i, s in enumerate(sizes):\n-        if load + s > capacity:\n-            bins.append(current)\n-            current, load = [], 0\n-        current.append(i)\n-        load += s\n+    # Create (size, original_index) pairs\n+    indexed_sizes = sorted([(size, i) for i, size in enumerate(sizes)], key=lambda x: x[0], reverse=True)\n+    \n+    # First Fit strategy\n+    bins = [[] for _ in range(len(sizes))] # Initialize with enough potential bins, though we will manage them dynamically\n+    bin_loads = [0] * len(sizes)\n+    \n+    # We need to track which bins are actually in use to manage the result structure\n+    active_bins = []\n+    \n+    for size, original_index in indexed_sizes:\n+        placed = False\n+        # Try to fit into existing bins\n+        for b_idx in range(len(active_bins)):\n+            if bin_loads[b_idx] + size <= capacity:\n+                # Place item\n+                bins[b_idx].append(original_index)\n+                bin_loads[b_idx] += size\n+                placed = True\n+                break\n+        \n+        # If no existing bin fits, open a new one\n+        if not placed:\n+            new_bin_index = len(active_bins)\n+            # Ensure we have a slot for this new bin in our bookkeeping structures\n+            if new_bin_index >= len(bins):\n+                # Resize if necessary (shouldn't happen if we manage active_bins correctly, but defensive coding)\n+                bins.extend([[]] * (new_bin_index + 1 - len(bins)))\n+                bin_loads.extend([0] * (new_bin_index + 1 - len(bin_loads)))\n+                \n+            bins[new_bin_index].append(original_index)\n+            bin_loads[new_bin_index] += size\n+            active_bins.append(new_bin_index)\n+\n+    # Final result extraction: only return the contents of the active bins\n+    final_bins = [bins[idx] for idx in active_bins]\n+    return final_bins\n     if current:\n         bins.append(current)\n     return bins\n",
+ "error": "",
+ "model_memory_gb": 16.6,
+ "model_gpu_memory_gb": 16.6,
+ "context_length": 32768,
+ "load_seconds": 102.3,
+ "median_call_seconds": 11.9,
+ "p90_call_seconds": 19.2,
+ "prompt_tokens_per_s": 1096.8,
+ "gen_tokens_per_s": 54.2,
+ "mean_prompt_tokens": 4021,
+ "mean_gen_tokens": 493,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

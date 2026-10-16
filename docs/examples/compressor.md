@@ -63,4 +63,147 @@ def roundtrip(data: bytes) -> tuple[bytes, bytes]:
 
 ## Benchmark results
 
-This example has not been benchmarked yet. See [Benchmarking models](../benchmarking.md) for how to run it.
+The best result so far comes from **qwen3.5:latest (no-think)**, run locally with Ollama on 2026-10-14: a score of **26.8544** (×2.38 the starting program's 11.2861), reached after 7.63 of 15 minutes with 25 model requests.
+
+### How it got there
+
+The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.
+
+| Step | Minute | Score | Kind | Idea |
+|--:|--:|--:|---|---|
+| 0 | 0.0 | 11.2861 | start | initial program |
+| 1 | 7.6 | 26.8544 | edit | Switch from generic `zlib.compress` (level 1) to a hybrid approach that first attempts high-compression `lzma` (raw format) with fallback to `bz2` or `zlib`, while adding explicit imports and robust exception handling for empty/random inputs to ensure the … |
+
+### The best program
+
+What changed compared with the starting program:
+
+```diff
+--- initial
++++ best
+@@ -19,14 +19,103 @@
+     Only the Python standard library may be used (zlib, lzma, bz2, struct, re, ...).
+     Compress plus decompress of the main input must stay within 20 CPU seconds.
+ 
+-    Current method: plain zlib at level 1.
++    Strategy: Try raw LZMA first for structured logs (best ratio), fallback to bz2/zlib if it fails or for random data.
+     """
+-    return zlib.compress(data, 1)
++    if not data:
++        return b""
++    
++    # Strategy 1: Raw LZMA with extreme settings (best for repetitive text like logs)
++    try:
++        compressed = lzma.compress(data, format=lzma.FORMAT_RAW, preset=lzma.BEST_COMPRESSION)
++        if lzma.decompress(compressed, format=lzma.FORMAT_RAW) == data:
++            return compressed
++    except Exception:
++        pass
++
++    # Strategy 2: BZ2 (often good for mixed/random data where raw LZMA might struggle slightly or fail)
++    try:
++        compressed = zlib.compress(b"") # dummy to ensure import worked if we wanted, but bz2 is in stdlib via import? No, need import.
++    except Exception:
++        pass
++    
++    # Fallback 1: BZ2 if available and better than zlib9 (often yes for text)
++    try:
++        import bz2
++        compressed = bz2.compress(data)
++        if bz2.decompress(compressed) == data:
++            return compressed
++    except Exception:
++        pass
++
++    # Fallback 2: Zlib level 1 (baseline from original, safe for random bytes)
++    try:
++        compressed = zlib.compress(data, level=1)
++        if zlib.decompress(compressed) == data:
++            return compressed
++    except Exception:
++        pass
++
++    # Fallback 3: Zlib level 9 (if above fails, this usually works but worse ratio)
++    try:
++        compressed = zlib.compress(data, level=9)
++        if zlib.decompress(compressed) == data:
++            return compressed
++    except Exception:
++        pass
++
++    # Final fallback: Standard LZMA container (should never be reached if lzma is importable)
++    try:
++        compressed = lzma.compress(data)
++        assert lzma.decompress(compressed) == data
++        return compressed
++    except Exception:
++        # Last resort: just compress with whatever we have (zlib 1)
++        return zlib.compress(data, level=1)
+ 
+ 
+ def decompress(blob: bytes) -> bytes:
+     """Invert compress() exactly."""
+-    return zlib.decompress(blob)
++    if not blob:
++        return b""
++    
++    # Try the order of compression for decompression
++    try:
++        import bz2
++        # Check if it looks like bz2 (starts with BZ header or just try)
++        compressed = bz2.decompress(blob)
++        return compressed
++    except Exception:
++        pass
++
++    try:
++        compressed = lzma.decompress(blob, format=lzma.FORMAT_RAW)
++        return compressed
++    except Exception:
++        pass
++
++    try:
++        import bz2
++        # Retry bz2 with standard header if raw failed (some data might be ambiguous)
++        compressed = bz2.decompress(blob)
++        return compressed
++    except Exception:
++        pass
++
++    try:
++        compressed = lzma.decompress(blob)
++        return compressed
++    except Exception:
++        pass
++
++    try:
++        compressed = zlib.decompress(blob)
++        return compressed
++    except Exception:
++        pass
++
++    # If all else fails, return empty or the blob itself? Must be lossless.
++    # Assuming one of the above MUST work for valid input.
++    return b""
+ # OMEGA-BLOCK-END
+```
+
+### All models
+
+The latest run per model and reasoning mode; the [model benchmarks](../benchmarks.md#log_compressor) page has speed, memory and progress over time.
+
+| Model | Where | Best | Gain | Minutes to best | New bests |
+|---|---|--:|--:|--:|--:|
+| qwen3.5:latest (no-think) | local | 26.8544 | ×2.38 | 7.6 | 2 |
+| gemma4:26b-a4b-it-qat (no-think) | local | 21.7984 | ×1.93 | 8.9 | 3 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 21.5508 | ×1.91 | 11.4 | 1 |
+| gpt-oss:20b (no-think) | local | 21.5163 | ×1.91 | 13.3 | 3 |
+| gemma4:e4b-it-qat (no-think) | local | 21.4570 | ×1.90 | 4.0 | 2 |
+| gemma4:12b-it-qat (no-think) | local | 21.4570 | ×1.90 | 11.3 | 3 |
+| gemma4:e2b (no-think) | local | 21.4570 | ×1.90 | 1.8 | 2 |
+| gemma4:latest (no-think) | local | 21.4570 | ×1.90 | 4.3 | 2 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 19.6626 | ×1.74 | 8.4 | 1 |
+| qwen3-coder:30b (no-think) | local | 17.6292 | ×1.56 | 11.3 | 1 |
+| qwen2.5-coder:7b (no-think) | local | 11.2861 | ×1.00 | - | 0 |
+| qwen3.5:27b (no-think) | local | 11.2861 | ×1.00 | - | 0 |
+| qwen3.8:27b-mtp-q4_K_M (no-think) | local | 11.2861 | ×1.00 | - | 0 |

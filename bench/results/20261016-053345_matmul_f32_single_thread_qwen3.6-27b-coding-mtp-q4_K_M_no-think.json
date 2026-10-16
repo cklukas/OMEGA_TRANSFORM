@@ -1,0 +1,102 @@
+{
+ "schema": 2,
+ "example": "matmul_f32_single_thread",
+ "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 17.8,
+ "model_params": "27.3B",
+ "started": "2026-10-16T05:33:45",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "0910551",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.75879,
+ "best_score": 21.3526,
+ "improvement": 12.140505688569982,
+ "llm_calls": 8,
+ "mean_llm_seconds": 119.9,
+ "attempts": 8,
+ "ok": 2,
+ "statuses": {
+  "compile_error": 2,
+  "invalid": 4,
+  "ok": 2
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 2,
+ "minutes_to_best": 13.79,
+ "best_idea": "Zero out matrix C at the start of matmul to match the reference computation's semantics (the harness writes garbage into C expecting it to be overwritten, and accumulation += requires an initial zero)",
+ "progress": [
+  [
+   0.0,
+   1.75879
+  ],
+  [
+   13.17,
+   8.13792
+  ],
+  [
+   13.79,
+   21.3526
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.75879,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 5.22,
+   "score": null,
+   "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+   "mode": "explore/diff/bold",
+   "status": "invalid",
+   "idea": "Replace naive i-j-k loops with cache-blocked i-k-j order and NEON-optimized inner j-loop using 4x4 micro-kernel accumulation via vfmaq_f32, improving data reuse and vectorization."
+  },
+  {
+   "minutes": 13.79,
+   "score": 21.3526,
+   "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Zero out matrix C at the start of matmul to match the reference computation's semantics (the harness writes garbage into C expecting it to be overwritten, and accumulation += requires an initial zero)."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -23,12 +23,41 @@\n // OMEGA-BLOCK-START\n // Computes C = A * B on the calling thread. C is NOT zeroed by the caller.\n // n is any size from 1 to 2048.\n+// Uses cache blocking and NEON-optimized inner loop (i-k-j order, 4-wide FMA).\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+    // Zero out C first; the harness does not do it for us and we accumulate.\n+    std::fill(C, C + (size_t)n * n, 0.0f);\n+    constexpr int BM = 64, BK = 64;\n+    constexpr int NR = 4;  // NEON vector width in elements\n+\n+    for (int ii = 0; ii < n; ii += BM) {\n+        int imax = std::min(ii + BM, n);\n+        for (int kk = 0; kk < n; kk += BK) {\n+            int kmax = std::min(kk + BK, n);\n+            for (int i = ii; i < imax; ++i) {\n+                const float* a_row = A + i * n + kk;\n+                float* c_row = C + i * n;\n+\n+                for (int k = kk; k < kmax; ++k) {\n+                    float a_val = a_row[k - kk];\n+                    const float* b_row = B + k * n;\n+\n+                    // Process 4 elements at a time with NEON\n+                    for (int j = 0; j + NR <= n; j += NR) {\n+                        float32x4_t c_vec = vld1q_f32(c_row + j);\n+                        float32x4_t b_vec = vld1q_f32(b_row + j);\n+                        float32x4_t a_broadcast = vdupq_n_f32(a_val);\n+                        c_vec = vfmaq_f32(c_vec, b_vec, a_broadcast);\n+                        vst1q_f32(c_row + j, c_vec);\n+                    }\n+\n+                    // Scalar tail\n+                    for (int j = n - (n % NR); j < n; ++j) {\n+                        c_row[j] += a_val * b_row[j];\n+                    }\n+                }\n+            }\n         }\n+    }\n }\n // OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 18.2,
+ "model_gpu_memory_gb": 18.2,
+ "context_length": 32768,
+ "load_seconds": 189.0,
+ "median_call_seconds": 128.4,
+ "p90_call_seconds": 256.8,
+ "prompt_tokens_per_s": 108.0,
+ "gen_tokens_per_s": 15.3,
+ "mean_prompt_tokens": 2558,
+ "mean_gen_tokens": 1101,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}
