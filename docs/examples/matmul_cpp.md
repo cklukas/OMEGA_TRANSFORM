@@ -147,12 +147,15 @@ The latest run per model and reasoning mode; the [model benchmarks](../benchmark
 |---|---|--:|--:|--:|--:|
 | gemma4:latest (think) | local | 174.1030 | ×108.89 | 15.8 | 8 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 167.9280 | ×102.91 | 15.2 | 2 |
+| gemma4:26b-a4b-it-qat (no-think) | local | 160.2310 | ×100.73 | 7.5 | 4 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 154.8540 | ×93.38 | 16.3 | 2 |
+| gpt-oss:20b (no-think) | local | 152.3910 | ×91.99 | 17.4 | 4 |
 | gemma4:latest (no-think) | local | 151.3840 | ×95.53 | 15.6 | 5 |
 | gpt-oss:20b (think) | local | 144.0540 | ×88.08 | 15.3 | 5 |
 | gemma4:e4b-it-qat (no-think) | local | 140.1020 | ×85.54 | 15.5 | 6 |
 | gemma4:e4b-it-qat (think) | local | 126.0000 | ×82.93 | 15.5 | 4 |
 | qwen3.8:27b-mtp-q4_K_M (no-think) | local | 120.7810 | ×72.88 | 16.4 | 1 |
+| qwen3.8:27b-mtp-q4_K_M (think) | local | 109.8530 | ×71.24 | 18.3 | 1 |
 | gemma4:12b-it-qat (no-think) | local | 68.4243 | ×41.57 | 15.4 | 1 |
 | gemma4:12b-it-qat (think) | local | 66.2698 | ×55.31 | 18.3 | 1 |
 | gemma4:26b-a4b-it-qat (think) | local | 41.8195 | ×27.48 | 15.7 | 1 |
@@ -162,9 +165,6 @@ The latest run per model and reasoning mode; the [model benchmarks](../benchmark
 | qwen3-coder:30b (no-think) | local | 8.45239 | ×5.08 | 16.7 | 2 |
 | gemma4:e2b (no-think) | local | 1.68469 | ×1.05 | 15.8 | 3 |
 | qwen3.5:latest (no-think) | local | 1.6743 | ×1.00 | - | 0 |
-| gpt-oss:20b (no-think) | local | 1.61662 | ×1.00 | - | 0 |
-| gemma4:26b-a4b-it-qat (no-think) | local | | | | failed: all 1 model requests failed: gemma4:26b-a4b-it-qat: no … |
-| qwen3.8:27b-mtp-q4_K_M (think) | local | | | | failed: all 1 model requests failed: qwen3.8:27b-mtp-q4_K_M … |
 | gemma4:e2b (think) | local | 1.53353 | ×1.58 | 10.1 | 4 |
 | qwen3.5:latest (think) | local | 1.33259 | ×1.00 | - | 0 |
 | qwen3.6:27b-coding-mtp-q4_K_M (think) | local | 1.32423 | ×1.00 | - | 0 |

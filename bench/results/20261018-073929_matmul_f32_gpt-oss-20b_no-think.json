@@ -1,0 +1,111 @@
+{
+ "schema": 2,
+ "example": "matmul_f32",
+ "model": "gpt-oss:20b",
+ "variant": "no-think",
+ "model_size_gb": 13.8,
+ "model_params": "20.9B",
+ "started": "2026-10-18T07:39:29",
+ "minutes_budget": 15.0,
+ "wall_minutes": 17.7,
+ "omega_version": "0.1.0",
+ "omega_commit": "fa8d287",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.65652,
+ "best_score": 152.391,
+ "improvement": 91.99466351145774,
+ "llm_calls": 11,
+ "mean_llm_seconds": 91.4,
+ "attempts": 11,
+ "ok": 8,
+ "statuses": {
+  "edit_error": 1,
+  "compile_error": 1,
+  "invalid": 1,
+  "ok": 8
+ },
+ "sweeps": 1,
+ "sweep_variants": 16,
+ "improvements": 4,
+ "minutes_to_best": 17.35,
+ "best_idea": "tuned TILE_K=73 on top of: Replace the naive triple loop with a row\u2011parallel, i\u2011k\u2011j loop that zeros C, uses a k\u2011blocking tile, and unrolls the inner j loop for better cache locality and potential vect",
+ "progress": [
+  [
+   0.0,
+   1.65652
+  ],
+  [
+   11.56,
+   22.0148
+  ],
+  [
+   17.02,
+   87.3496
+  ],
+  [
+   17.35,
+   136.661
+  ],
+  [
+   17.35,
+   152.391
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.65652,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 17.35,
+   "score": 136.661,
+   "model": "gpt-oss:20b",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Replace the naive triple loop with a row\u2011parallel, i\u2011k\u2011j loop that zeros C, uses a k\u2011blocking tile, and unrolls the inner j loop for better cache locality and potential vectorization, thereby reducing memory traffic and improving GFLOPS."
+  },
+  {
+   "minutes": 17.35,
+   "score": 152.391,
+   "model": "gpt-oss:20b",
+   "mode": "sweep/best/diff/refine",
+   "status": "ok",
+   "idea": "tuned TILE_K=73 on top of: Replace the naive triple loop with a row\u2011parallel, i\u2011k\u2011j loop that zeros C, uses a k\u2011blocking tile, and unrolls the inner j loop for better cache locality and potential vectorization, thereby reducing memory traffic and improving GFLOPS."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -21,12 +21,51 @@\n // OMEGA-BLOCK-START\n // Computes C = A * B. C is NOT zeroed by the caller. Any number of threads may be\n // used (std::thread is available); n is any size from 1 to 2048.\n+constexpr int TILE_K = 73; // size of k\u2011tile (swept)\n+\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n-        }\n+    // zero the result matrix\n+    std::fill(C, C + (size_t)n * n, 0.0f);\n+\n+    // determine number of threads\n+    unsigned thr = std::thread::hardware_concurrency();\n+    if (thr == 0) thr = 1;\n+    unsigned rows_per_thread = (n + thr - 1) / thr;\n+\n+    std::vector<std::thread> ts;\n+    ts.reserve(thr);\n+\n+    for (unsigned t = 0; t < thr; ++t) {\n+        int start = (int)(t * rows_per_thread);\n+        int end   = std::min(start + (int)rows_per_thread, n);\n+        if (start >= end) continue;\n+\n+        ts.emplace_back([=, &A, &B, &C]() {\n+            for (int i = start; i < end; ++i) {\n+                for (int kk = 0; kk < n; kk += TILE_K) {\n+                    int k_end = std::min(kk + TILE_K, n);\n+                    for (int k = kk; k < k_end; ++k) {\n+                        float a = A[i * n + k];\n+                        int j = 0;\n+                        for (; j + 3 < n; j += 4) {\n+                            float b0 = B[k * n + j];\n+                            float b1 = B[k * n + j + 1];\n+                            float b2 = B[k * n + j + 2];\n+                            float b3 = B[k * n + j + 3];\n+                            C[i * n + j]     += a * b0;\n+                            C[i * n + j + 1] += a * b1;\n+                            C[i * n + j + 2] += a * b2;\n+                            C[i * n + j + 3] += a * b3;\n+                        }\n+                        for (; j < n; ++j) {\n+                            C[i * n + j] += a * B[k * n + j];\n+                        }\n+                    }\n+                }\n+            }\n+        });\n+    }\n+\n+    for (auto& t : ts) t.join();\n }\n // OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 12.8,
+ "model_gpu_memory_gb": 12.8,
+ "context_length": 32768,
+ "load_seconds": 99.5,
+ "median_call_seconds": 69.3,
+ "p90_call_seconds": 153.1,
+ "prompt_tokens_per_s": 663.8,
+ "gen_tokens_per_s": 46.6,
+ "mean_prompt_tokens": 2559,
+ "mean_gen_tokens": 3638,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

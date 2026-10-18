@@ -155,7 +155,7 @@ The latest run per model and reasoning mode; the [model benchmarks](../benchmark
 | qwen3.8:27b-mtp-q4_K_M (no-think) | local | 0.765 | ×1.23 | 13.7 | 3 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | 0.764 | ×1.23 | 10.5 | 2 |
 | gemma4:latest (think) | local | 0.761 | ×1.22 | 10.4 | 4 |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | 0.76 | ×1.22 | 13.4 | 2 |
 | qwen3.5:27b (think) | local | 0.756 | ×1.21 | 17.5 | 3 |
 | qwen3.5:27b (no-think) | local | 0.732 | ×1.17 | 15.2 | 4 |
 | gemma4:e2b (think) | local | 0.732 | ×1.17 | 1.2 | 2 |
-| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | | | | failed: all 1 model requests failed: qwen3.6:27b-coding-mtp-q4_K_M … |

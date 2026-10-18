@@ -175,4 +175,4 @@ The latest run per model and reasoning mode; the [model benchmarks](../benchmark
 | qwen3.5:latest (think) | local | 0.00479 | ×1.00 | - | 0 |
 | gemma4:12b-it-qat (think) | local | | | | failed: all 2 model requests failed: gemma4:12b-it-qat: answer … |
 | gemma4:e2b (think) | local | 0.00479 | ×1.00 | - | 0 |
-| qwen3.8:27b-mtp-q4_K_M (think) | local | | | | failed: all 1 model requests failed: qwen3.8:27b-mtp-q4_K_M … |
+| qwen3.8:27b-mtp-q4_K_M (think) | local | 0.00479 | ×1.00 | - | 0 |

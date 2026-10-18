@@ -170,6 +170,31 @@ class BenchTest(unittest.TestCase):
         self.assertNotIn("**Mistral AI**", g)  # only developers with results
         self.assertIn("| 1 | b | **83%** |", page)
 
+    def test_timeline_by_developer_and_size(self):
+        from omega_transform.releases import params_b
+        from omega_transform.report import size_class, timeline, timeline_section
+        self.assertEqual([params_b(x) for x in ("25.2B", "350M", "nvidia/nemotron-3-super-120b-a12b:free",
+                                                "qwen3.5:latest", None)],
+                         [25.2, 0.35, 120.0, None, None])
+        self.assertEqual([size_class(x) for x in (7.5, 15.0, 30.0, None)],
+                         ["under 15B", "15B and up", "15B and up", "size unknown"])
+        ranked = [{"label": "a (no-think)", "model": "qwen-a", "share": 0.4},
+                  {"label": "a (think)", "model": "qwen-a", "share": 0.5},
+                  {"label": "b (no-think)", "model": "qwen-b", "share": 0.3},
+                  {"label": "c (no-think)", "model": "qwen-c", "share": 0.7},
+                  {"label": "d (no-think)", "model": "qwen-d", "share": 0.9}]
+        releases = {"qwen-a": {"released": "2025-01-01", "params_b": 30},
+                    "qwen-b": {"released": "2026-01-01", "params_b": 8},  # newer but smaller
+                    "qwen-c": {"released": "2026-02-01", "params_b": 27},
+                    "qwen-d": {"released": "2026-03-01", "params_b": 27}}
+        lines = timeline(ranked, releases)
+        big = lines[("Alibaba (Qwen)", "15B and up")]
+        self.assertEqual([e["label"] for e in big], ["a (think)", "c (no-think)", "d (no-think)"])
+        self.assertEqual([e["label"] for e in lines[("Alibaba (Qwen)", "under 15B")]], ["b (no-think)"])
+        page = timeline_section(ranked, releases, "local")
+        self.assertIn("| Alibaba (Qwen) | 15B and up | 2025-01-01 | a (think) | 30B | 50% |", page)
+        self.assertEqual(page.count("xychart-beta"), 1)  # only the class with three dates
+
     def test_model_check_section(self):
         check = {"checked": "2026-10-09T21:30:00", "models": [
             {"model": "good:1", "size_gb": 6.6, "verdict": "ok", "hello_ok": True, "edit_ok": True},

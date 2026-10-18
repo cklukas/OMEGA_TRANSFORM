@@ -168,6 +168,19 @@ omega report [-h] [--results RESULTS] [-o OUTPUT] [--openrouter-snapshots OPENRO
 | `-o, --output` | page to write Default: `docs/benchmarks.md`. |
 | `--openrouter-snapshots` | OpenRouter snapshots; the newest becomes docs/openrouter-models.md Default: `bench/openrouter`. |
 
+## `model-releases`
+
+Fill in when each benchmarked model was released (Hugging Face and OpenRouter; for the timeline per developer).
+
+```text
+omega model-releases [-h] [--file FILE] [--results RESULTS]
+```
+
+| Argument | Meaning |
+|---|---|
+| `--file` | release dates; local models need their Hugging Face repository there Default: `bench/model-releases.json`. |
+| `--results` | result JSON directory Default: `bench/results`. |
+
 ## `openrouter-snapshot`
 
 Record OpenRouter's most used models with their prices.

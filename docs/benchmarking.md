@@ -139,6 +139,22 @@ ranked model (the country of a model is that of its developer's
 headquarters), and every other country's lag behind the leader is given as
 the relative shortfall of its share, 1 − share / leader's share.
 
+## Progress over time
+
+Under each ranking, the page lists every developer's models by release date,
+to show whether a developer's newer models do better. Release dates come from
+the original publication: the creation date of the model's Hugging Face
+repository for local models (`bench/model-releases.json` names the repository
+of each Ollama model, since an Ollama name does not tell), and OpenRouter's
+listing date for cloud models. Models are compared only within a size class
+(under 15B and 15B and up, total parameters), so that a newer but smaller
+model does not read as a step back. Add a newly benchmarked local model's
+repository to the file, then fill in the dates and sizes:
+
+```bash
+python3 -m omega_transform model-releases
+```
+
 ## Publishing results
 
 After each run, the benchmark regenerates `docs/benchmarks.md`. To publish,

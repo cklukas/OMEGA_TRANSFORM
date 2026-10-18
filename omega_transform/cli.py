@@ -321,6 +321,23 @@ def cmd_bench_details(a) -> int:
     return 0
 
 
+def cmd_model_releases(a) -> int:
+    """Fill in the release dates of the benchmarked models."""
+    from .releases import load, refresh, save
+    from .report import load_results
+    results = load_results(Path(a.results))
+    cloud = sorted({r["model"] for r in results if r.get("provider", "ollama") != "ollama"})
+    models = refresh(load(Path(a.file)), cloud)
+    save(models, Path(a.file))
+    dated = sum(1 for m in models.values() if m.get("released"))
+    local = {r["model"] for r in results if r.get("provider", "ollama") == "ollama"}
+    missing = sorted(local - set(models))
+    print(f"wrote {a.file}: {dated} of {len(models)} models dated")
+    if missing:
+        print("local models without a repository entry: " + ", ".join(missing))
+    return 0
+
+
 def cmd_report(a) -> int:
     from .report import write_report
     path = write_report(Path(a.results), Path(a.output))
@@ -543,6 +560,13 @@ def build_parser() -> argparse.ArgumentParser:
     rpt.add_argument("--openrouter-snapshots", default="bench/openrouter",
                      help="OpenRouter snapshots; the newest becomes docs/openrouter-models.md")
     rpt.set_defaults(fn=cmd_report)
+
+    mr = sub.add_parser("model-releases", help="fill in when each benchmarked model was released "
+                        "(Hugging Face and OpenRouter; for the timeline per developer)")
+    mr.add_argument("--file", default="bench/model-releases.json",
+                    help="release dates; local models need their Hugging Face repository there")
+    mr.add_argument("--results", default="bench/results", help="result JSON directory")
+    mr.set_defaults(fn=cmd_model_releases)
 
     osn = sub.add_parser("openrouter-snapshot",
                          help="record OpenRouter's most used models with their prices")

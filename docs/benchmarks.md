@@ -65,14 +65,14 @@ Every benchmarked model and the company that develops it, which the comparisons 
 
 | # | Model | Share of best gain | Geometric-mean gain | Wins | No gain | Examples |
 |--:|---|--:|--:|--:|--:|--:|
-| 1 | gpt-oss:20b (think) | **79%** | ×3.30 | 2 | 0 | 15 |
-| 2 | gemma4:e4b-it-qat (think) | **76%** | ×3.29 | 2 | 0 | 15 |
-| 3 | gemma4:26b-a4b-it-qat (no-think) | **73%** | ×2.54 | 0 | 1 | 15 |
+| 1 | gemma4:26b-a4b-it-qat (no-think) | **79%** | ×3.45 | 0 | 0 | 15 |
+| 2 | gpt-oss:20b (think) | **79%** | ×3.30 | 2 | 0 | 15 |
+| 3 | gemma4:e4b-it-qat (think) | **76%** | ×3.29 | 2 | 0 | 15 |
 | 4 | gemma4:latest (no-think) | **72%** | ×3.10 | 0 | 0 | 15 |
-| 5 | gemma4:e4b-it-qat (no-think) | **65%** | ×3.05 | 1 | 1 | 15 |
-| 6 | gemma4:12b-it-qat (no-think) | **65%** | ×3.10 | 0 | 1 | 15 |
-| 7 | gemma4:latest (think) | **61%** | ×2.85 | 2 | 1 | 15 |
-| 8 | gpt-oss:20b (no-think) | **60%** | ×2.26 | 2 | 2 | 15 |
+| 5 | gpt-oss:20b (no-think) | **66%** | ×3.06 | 2 | 1 | 15 |
+| 6 | gemma4:e4b-it-qat (no-think) | **65%** | ×3.05 | 1 | 1 | 15 |
+| 7 | gemma4:12b-it-qat (no-think) | **65%** | ×3.10 | 0 | 1 | 15 |
+| 8 | gemma4:latest (think) | **61%** | ×2.85 | 2 | 1 | 15 |
 | 9 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | **60%** | ×2.71 | 0 | 1 | 15 |
 | 10 | qwen3.8:27b-mtp-q4_K_M (no-think) | **57%** | ×2.79 | 0 | 1 | 15 |
 | 11 | qwen3:30b-a3b-instruct-2507-q4_K_M (think) | **56%** | ×2.48 | 2 | 2 | 15 |
@@ -81,12 +81,12 @@ Every benchmarked model and the company that develops it, which the comparisons 
 | 14 | qwen3-coder:30b (no-think) | **43%** | ×1.81 | 0 | 2 | 15 |
 | 15 | qwen3.5:latest (think) | **42%** | ×2.02 | 0 | 5 | 15 |
 | 16 | gemma4:26b-a4b-it-qat (think) | **41%** | ×2.32 | 0 | 5 | 15 |
-| 17 | qwen3.5:27b (think) | **40%** | ×2.13 | 0 | 5 | 15 |
-| 18 | qwen3.8:27b-mtp-q4_K_M (think) | **36%** | ×1.66 | 1 | 9 | 15 |
+| 17 | qwen3.8:27b-mtp-q4_K_M (think) | **41%** | ×2.20 | 1 | 8 | 15 |
+| 18 | qwen3.5:27b (think) | **40%** | ×2.13 | 0 | 5 | 15 |
 | 19 | gemma4:e2b (no-think) | **34%** | ×1.55 | 0 | 2 | 15 |
 | 20 | qwen3.5:latest (no-think) | **33%** | ×1.39 | 1 | 6 | 15 |
 | 21 | gemma4:12b-it-qat (think) | **30%** | ×2.26 | 0 | 6 | 15 |
-| 22 | qwen3.6:27b-coding-mtp-q4_K_M (think) | **23%** | ×1.66 | 0 | 10 | 15 |
+| 22 | qwen3.6:27b-coding-mtp-q4_K_M (think) | **26%** | ×1.68 | 0 | 9 | 15 |
 | 23 | qwen2.5-coder:7b (no-think) | **20%** | ×1.63 | 0 | 6 | 15 |
 | 24 | gemma4:e2b (think) | **19%** | ×1.21 | 0 | 8 | 15 |
 
@@ -96,9 +96,9 @@ The ranked models above, grouped by the company that develops them: the develope
 
 | Developer | Models | Best model | Best model's share | Mean over its models | Best per example |
 |---|--:|---|--:|--:|--:|
-| OpenAI | 2 | gpt-oss:20b (think) | **79%** | 70% | 79% |
-| Google | 10 | gemma4:e4b-it-qat (think) | **76%** | 54% | 93% |
-| Alibaba (Qwen) | 12 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | **60%** | 42% | 88% |
+| Google | 10 | gemma4:26b-a4b-it-qat (no-think) | **79%** | 54% | 93% |
+| OpenAI | 2 | gpt-oss:20b (think) | **79%** | 72% | 80% |
+| Alibaba (Qwen) | 12 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | **60%** | 43% | 88% |
 
 #### By country
 
@@ -106,15 +106,43 @@ Each country is represented by its best ranked model; the country of a model is 
 
 | # | Country | Best model | Developer | Share | Lag behind #1 | Models |
 |--:|---|---|---|--:|--:|--:|
-| 1 | USA | gpt-oss:20b (think) | OpenAI | **79%** | – | 12 |
-| 2 | China | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | Alibaba (Qwen) | **60%** | −24% | 12 |
+| 1 | USA | gemma4:26b-a4b-it-qat (no-think) | Google | **79%** | – | 12 |
+| 2 | China | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | Alibaba (Qwen) | **60%** | −25% | 12 |
+
+#### Progress over time
+
+Each developer's ranked models by release date (the original publication on Hugging Face, or OpenRouter's listing date), with the share of the better of their two modes. Models are compared only within a size class (total parameters, under 15B, 15B and up), so that a newer but smaller model does not read as a step back; mixture-of-experts models use only part of their parameters per token. Variants of one release share its date. A chart is drawn where a developer has three or more release dates in one size class.
+
+| Developer | Size class | Released | Model | Parameters | Share |
+|---|---|---|---|--:|--:|
+| Alibaba (Qwen) | under 15B | 2024-09-17 | qwen2.5-coder:7b (no-think) | 7.6B | 20% |
+| Alibaba (Qwen) | under 15B | 2026-02-27 | qwen3.5:latest (think) | 9.7B | 42% |
+| Alibaba (Qwen) | 15B and up | 2025-07-28 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | 30.5B | 60% |
+| Alibaba (Qwen) | 15B and up | 2025-07-31 | qwen3-coder:30b (no-think) | 30.5B | 43% |
+| Alibaba (Qwen) | 15B and up | 2026-02-24 | qwen3.5:27b (no-think) | 27.8B | 43% |
+| Alibaba (Qwen) | 15B and up | 2026-04-21 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 27.3B | 52% |
+| Alibaba (Qwen) | 15B and up | 2026-08-05 | qwen3.8:27b-mtp-q4_K_M (no-think) | 27.3B | 57% |
+| Google | under 15B | 2026-03-02 | gemma4:e2b (no-think) | 5.1B | 34% |
+| Google | under 15B | 2026-03-02 | gemma4:e4b-it-qat (think) | 7.5B | 76% |
+| Google | under 15B | 2026-03-02 | gemma4:latest (no-think) | 8.1B | 72% |
+| Google | under 15B | 2026-05-23 | gemma4:12b-it-qat (no-think) | 11.9B | 65% |
+| Google | 15B and up | 2026-03-11 | gemma4:26b-a4b-it-qat (no-think) | 25.2B | 79% |
+| OpenAI | 15B and up | 2025-08-04 | gpt-oss:20b (think) | 20.9B | 79% |
+
+```mermaid
+xychart-beta
+    title "Alibaba (Qwen), local, 15B and up: share by release date"
+    x-axis ["qwen3:30b-a3b-instruct-2507-q4_K_M (2025-07)", "qwen3-coder:30b (2025-07)", "qwen3.5:27b (2026-02)", "qwen3.6:27b-coding-mtp-q4_K_M (2026-04)", "qwen3.8:27b-mtp-q4_K_M (2026-08)"]
+    y-axis "% of the best gain" 0 --> 100
+    line [59.56, 42.58, 43.21, 51.93, 57.26]
+```
 
 ```mermaid
 xychart-beta
     title "Overall, local: mean share of the best gain (%)"
-    x-axis ["gpt-oss:20b (think)", "gemma4:e4b-it-qat (think)", "gemma4:26b-a4b-it-qat (no-think)", "gemma4:latest (no-think)", "gemma4:e4b-it-qat (no-think)", "gemma4:12b-it-qat (no-think)", "gemma4:latest (think)", "gpt-oss:20b (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.5:27b (no-think)", "qwen3-coder:30b (no-think)", "qwen3.5:latest (think)", "gemma4:26b-a4b-it-qat (think)", "qwen3.5:27b (think)", "qwen3.8:27b-mtp-q4_K_M (think)", "gemma4:e2b (no-think)", "qwen3.5:latest (no-think)", "gemma4:12b-it-qat (think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "qwen2.5-coder:7b (no-think)", "gemma4:e2b (think)"]
-    y-axis "% of the best gain" 0 --> 86.66
-    bar [78.78, 75.9, 72.8, 71.86, 65.4, 65.03, 61.04, 60.41, 59.56, 57.26, 56.27, 51.93, 43.21, 42.58, 42.22, 41.1, 40.3, 36.32, 33.54, 32.99, 29.67, 22.96, 20.3, 19.25]
+    x-axis ["gemma4:26b-a4b-it-qat (no-think)", "gpt-oss:20b (think)", "gemma4:e4b-it-qat (think)", "gemma4:latest (no-think)", "gpt-oss:20b (no-think)", "gemma4:e4b-it-qat (no-think)", "gemma4:12b-it-qat (no-think)", "gemma4:latest (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.5:27b (no-think)", "qwen3-coder:30b (no-think)", "qwen3.5:latest (think)", "gemma4:26b-a4b-it-qat (think)", "qwen3.8:27b-mtp-q4_K_M (think)", "qwen3.5:27b (think)", "gemma4:e2b (no-think)", "qwen3.5:latest (no-think)", "gemma4:12b-it-qat (think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "qwen2.5-coder:7b (no-think)", "gemma4:e2b (think)"]
+    y-axis "% of the best gain" 0 --> 86.86
+    bar [78.97, 78.78, 75.9, 71.86, 66.03, 65.4, 65.03, 61.04, 59.56, 57.26, 56.27, 51.93, 43.21, 42.58, 42.22, 41.1, 40.66, 40.3, 33.54, 32.99, 29.67, 25.84, 20.3, 19.25]
 ```
 
 ### Cloud models (OpenRouter)
@@ -149,6 +177,17 @@ Each country is represented by its best ranked model; the country of a model is 
 | 1 | USA | nvidia/nemotron-3-ultra-550b-a55b:free (think) | NVIDIA | **85%** | – | 4 |
 | 2 | Canada | cohere/north-mini-code:free (no-think) | Cohere | **40%** | −53% | 2 |
 | 3 | France | poolside/laguna-s-2.1:free (no-think) | Poolside | **36%** | −58% | 2 |
+
+#### Progress over time
+
+Each developer's ranked models by release date (the original publication on Hugging Face, or OpenRouter's listing date), with the share of the better of their two modes. Models are compared only within a size class (total parameters, under 15B, 15B and up), so that a newer but smaller model does not read as a step back; mixture-of-experts models use only part of their parameters per token. Variants of one release share its date. A chart is drawn where a developer has three or more release dates in one size class.
+
+| Developer | Size class | Released | Model | Parameters | Share |
+|---|---|---|---|--:|--:|
+| Cohere | 15B and up | 2026-06-17 | cohere/north-mini-code:free (no-think) | 30B | 40% |
+| NVIDIA | 15B and up | 2026-03-11 | nvidia/nemotron-3-super-120b-a12b:free (think) | 120B | 84% |
+| NVIDIA | 15B and up | 2026-06-04 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | 550B | 85% |
+| Poolside | size unknown | 2026-07-21 | poolside/laguna-s-2.1:free (no-think) | ? | 36% |
 
 ```mermaid
 xychart-beta
@@ -664,30 +703,30 @@ Ollama on this machine.
 | gemma4:e2b (think) | 5.1B | 3.18905 | **3.18905** | ×1.00 | 20 | 46 | 40% | 0 | - |
 | gemma4:26b-a4b-it-qat (think) | 25.2B | 3.18905 | **3.18905** | ×1.00 | 3 | 351 | 0% | 0 | - |
 | qwen3.8:27b-mtp-q4_K_M (think) | 27.3B | | | | | | | | failed: all 1 model requests failed: qwen3.8:27b-mtp-q4_K_M: answer  |
-| qwen3.6:27b-coding-mtp-q4_K_M (think) | 27.3B | | | | | | | | failed: all 1 model requests failed: qwen3.6:27b-coding-mtp-q4_K_M:  |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | 27.3B | 3.18905 | **3.18905** | ×1.00 | 2 | 708 | 0% | 0 | - |
 
 ```mermaid
 xychart-beta
     title "circles_in_circle_21, local: best score"
-    x-axis ["gpt-oss:20b (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "gemma4:e4b-it-qat (think)", "gemma4:26b-a4b-it-qat (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "gpt-oss:20b (think)", "qwen3-coder:30b (no-think)", "gemma4:e4b-it-qat (no-think)", "gemma4:12b-it-qat (no-think)", "gemma4 (no-think)", "gemma4:e2b (no-think)", "gemma4 (think)", "qwen3.5:27b (think)", "qwen2.5-coder:7b (no-think)", "qwen3.5 (no-think)", "qwen3.5:27b (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.5 (think)", "gemma4:e2b (think)", "gemma4:26b-a4b-it-qat (think)"]
+    x-axis ["gpt-oss:20b (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "gemma4:e4b-it-qat (think)", "gemma4:26b-a4b-it-qat (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "gpt-oss:20b (think)", "qwen3-coder:30b (no-think)", "gemma4:e4b-it-qat (no-think)", "gemma4:12b-it-qat (no-think)", "gemma4 (no-think)", "gemma4:e2b (no-think)", "gemma4 (think)", "qwen3.5:27b (think)", "qwen2.5-coder:7b (no-think)", "qwen3.5 (no-think)", "qwen3.5:27b (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.5 (think)", "gemma4:e2b (think)", "gemma4:26b-a4b-it-qat (think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)"]
     y-axis "score" 0 --> 4.458
-    bar [4.053, 4.051, 4.05, 4.038, 3.996, 3.993, 3.99, 3.96, 3.93, 3.93, 3.904, 3.707, 3.576, 3.415, 3.189, 3.189, 3.189, 3.189, 3.189, 3.189, 3.189]
+    bar [4.053, 4.051, 4.05, 4.038, 3.996, 3.993, 3.99, 3.96, 3.93, 3.93, 3.904, 3.707, 3.576, 3.415, 3.189, 3.189, 3.189, 3.189, 3.189, 3.189, 3.189, 3.189]
 ```
 
 ```mermaid
 xychart-beta
     title "circles_in_circle_21, local: valid answers (%)"
-    x-axis ["gpt-oss:20b (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "gemma4:e4b-it-qat (think)", "gemma4:26b-a4b-it-qat (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "gpt-oss:20b (think)", "qwen3-coder:30b (no-think)", "gemma4:e4b-it-qat (no-think)", "gemma4:12b-it-qat (no-think)", "gemma4 (no-think)", "gemma4:e2b (no-think)", "gemma4 (think)", "qwen3.5:27b (think)", "qwen2.5-coder:7b (no-think)", "qwen3.5 (no-think)", "qwen3.5:27b (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.5 (think)", "gemma4:e2b (think)", "gemma4:26b-a4b-it-qat (think)"]
+    x-axis ["gpt-oss:20b (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "gemma4:e4b-it-qat (think)", "gemma4:26b-a4b-it-qat (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "gpt-oss:20b (think)", "qwen3-coder:30b (no-think)", "gemma4:e4b-it-qat (no-think)", "gemma4:12b-it-qat (no-think)", "gemma4 (no-think)", "gemma4:e2b (no-think)", "gemma4 (think)", "qwen3.5:27b (think)", "qwen2.5-coder:7b (no-think)", "qwen3.5 (no-think)", "qwen3.5:27b (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.5 (think)", "gemma4:e2b (think)", "gemma4:26b-a4b-it-qat (think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)"]
     y-axis "% of answers" 0 --> 94.29
-    bar [62.5, 74.29, 59.18, 73.68, 65.22, 55.56, 54.55, 44.44, 54.55, 64.71, 65.22, 55.93, 83.33, 50, 20.51, 0, 0, 85.71, 0, 40, 0]
+    bar [62.5, 74.29, 59.18, 73.68, 65.22, 55.56, 54.55, 44.44, 54.55, 64.71, 65.22, 55.93, 83.33, 50, 20.51, 0, 0, 85.71, 0, 40, 0, 0]
 ```
 
 ```mermaid
 xychart-beta
     title "circles_in_circle_21, local: seconds per LLM call"
-    x-axis ["gpt-oss:20b (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "gemma4:e4b-it-qat (think)", "gemma4:26b-a4b-it-qat (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "gpt-oss:20b (think)", "qwen3-coder:30b (no-think)", "gemma4:e4b-it-qat (no-think)", "gemma4:12b-it-qat (no-think)", "gemma4 (no-think)", "gemma4:e2b (no-think)", "gemma4 (think)", "qwen3.5:27b (think)", "qwen2.5-coder:7b (no-think)", "qwen3.5 (no-think)", "qwen3.5:27b (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.5 (think)", "gemma4:e2b (think)", "gemma4:26b-a4b-it-qat (think)"]
-    y-axis "seconds" 0 --> 386.1
-    bar [117.5, 24.7, 17.7, 48.7, 35.3, 102.7, 84.7, 25.2, 20.2, 56.3, 19.1, 15.2, 50.3, 228.7, 23.5, 39.8, 131.1, 130.1, 112.4, 46.5, 351]
+    x-axis ["gpt-oss:20b (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "gemma4:e4b-it-qat (think)", "gemma4:26b-a4b-it-qat (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "gpt-oss:20b (think)", "qwen3-coder:30b (no-think)", "gemma4:e4b-it-qat (no-think)", "gemma4:12b-it-qat (no-think)", "gemma4 (no-think)", "gemma4:e2b (no-think)", "gemma4 (think)", "qwen3.5:27b (think)", "qwen2.5-coder:7b (no-think)", "qwen3.5 (no-think)", "qwen3.5:27b (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.5 (think)", "gemma4:e2b (think)", "gemma4:26b-a4b-it-qat (think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)"]
+    y-axis "seconds" 0 --> 778.7
+    bar [117.5, 24.7, 17.7, 48.7, 35.3, 102.7, 84.7, 25.2, 20.2, 56.3, 19.1, 15.2, 50.3, 228.7, 23.5, 39.8, 131.1, 130.1, 112.4, 46.5, 351, 707.9]
 ```
 
 #### Inference speed and memory
@@ -711,6 +750,7 @@ RAM is what Ollama reports for the loaded model (weights, context cache and buff
 | gemma4:26b-a4b-it-qat (think) | 25.2B | 15.2 | 316 | 601 | 57.6 | 257 | 562 | 14038 | 2 |
 | gemma4:26b-a4b-it-qat (no-think) | 25.2B | 15.4 | 199 | 611 | 63.9 | 28 | 38 | 1233 | 0 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 27.3B | 18.2 | 255 | 139 | 15.6 | 92 | 357 | 1242 | 0 |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | 27.3B | 18.2 | 265 | 135 | 13.2 | 852 | 852 | 7446 | 0 |
 | qwen3.8:27b-mtp-q4_K_M (no-think) | 27.3B | 18.3 | 239 | 107 | 14.2 | 76 | 353 | 810 | 0 |
 | qwen3.5:27b (think) | 27.8B | 18.4 | 181 | 109 | 10.9 | 299 | 307 | 1799 | 0 |
 | qwen3.5:27b (no-think) | 27.8B | 18.6 | 129 | 110 | 11.4 | 117 | 265 | 1099 | 0 |
@@ -721,17 +761,17 @@ RAM is what Ollama reports for the loaded model (weights, context cache and buff
 ```mermaid
 xychart-beta
     title "circles_in_circle_21, local: generation speed (tokens/s)"
-    x-axis ["gemma4:e4b-it-qat (think)", "gemma4:e4b-it-qat (no-think)", "gemma4:e2b (no-think)", "qwen2.5-coder:7b (no-think)", "gemma4:e2b (think)", "qwen3.5 (no-think)", "qwen3.5 (think)", "gemma4:12b-it-qat (no-think)", "gemma4 (think)", "gpt-oss:20b (think)", "gpt-oss:20b (no-think)", "gemma4 (no-think)", "gemma4:26b-a4b-it-qat (think)", "gemma4:26b-a4b-it-qat (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen3.5:27b (think)", "qwen3.5:27b (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen3-coder:30b (no-think)"]
+    x-axis ["gemma4:e4b-it-qat (think)", "gemma4:e4b-it-qat (no-think)", "gemma4:e2b (no-think)", "qwen2.5-coder:7b (no-think)", "gemma4:e2b (think)", "qwen3.5 (no-think)", "qwen3.5 (think)", "gemma4:12b-it-qat (no-think)", "gemma4 (think)", "gpt-oss:20b (think)", "gpt-oss:20b (no-think)", "gemma4 (no-think)", "gemma4:26b-a4b-it-qat (think)", "gemma4:26b-a4b-it-qat (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen3.5:27b (think)", "qwen3.5:27b (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen3-coder:30b (no-think)"]
     y-axis "tokens/s" 0 --> 86.35
-    bar [56.1, 61.2, 78.5, 39.8, 73.5, 36.2, 32.3, 30.6, 48.8, 48.2, 52.1, 52.2, 57.6, 63.9, 15.6, 14.2, 10.9, 11.4, 51.3, 52.8, 53.3]
+    bar [56.1, 61.2, 78.5, 39.8, 73.5, 36.2, 32.3, 30.6, 48.8, 48.2, 52.1, 52.2, 57.6, 63.9, 15.6, 13.2, 14.2, 10.9, 11.4, 51.3, 52.8, 53.3]
 ```
 
 ```mermaid
 xychart-beta
     title "circles_in_circle_21, local: model memory (GB)"
-    x-axis ["gemma4:e4b-it-qat (think)", "gemma4:e4b-it-qat (no-think)", "gemma4:e2b (no-think)", "qwen2.5-coder:7b (no-think)", "gemma4:e2b (think)", "qwen3.5 (no-think)", "qwen3.5 (think)", "gemma4:12b-it-qat (no-think)", "gemma4 (think)", "gpt-oss:20b (think)", "gpt-oss:20b (no-think)", "gemma4 (no-think)", "gemma4:26b-a4b-it-qat (think)", "gemma4:26b-a4b-it-qat (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen3.5:27b (think)", "qwen3.5:27b (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen3-coder:30b (no-think)"]
+    x-axis ["gemma4:e4b-it-qat (think)", "gemma4:e4b-it-qat (no-think)", "gemma4:e2b (no-think)", "qwen2.5-coder:7b (no-think)", "gemma4:e2b (think)", "qwen3.5 (no-think)", "qwen3.5 (think)", "gemma4:12b-it-qat (no-think)", "gemma4 (think)", "gpt-oss:20b (think)", "gpt-oss:20b (no-think)", "gemma4 (no-think)", "gemma4:26b-a4b-it-qat (think)", "gemma4:26b-a4b-it-qat (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen3.5:27b (think)", "qwen3.5:27b (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen3-coder:30b (no-think)"]
     y-axis "GB" 0 --> 23.98
-    bar [5.7, 5.7, 6.6, 6.6, 6.6, 6.8, 6.8, 8, 11.7, 12.8, 12.9, 14.8, 15.2, 15.4, 18.2, 18.3, 18.4, 18.6, 21.8, 21.8, 21.8]
+    bar [5.7, 5.7, 6.6, 6.6, 6.6, 6.8, 6.8, 8, 11.7, 12.8, 12.9, 14.8, 15.2, 15.4, 18.2, 18.2, 18.3, 18.4, 18.6, 21.8, 21.8, 21.8]
 ```
 
 #### Best score over time
@@ -759,6 +799,7 @@ xychart-beta
 | qwen3.5:latest (think) | 3.18905 | 3.18905 | 3.18905 | 3.18905 |
 | gemma4:e2b (think) | 3.18905 | 3.18905 | 3.18905 | 3.18905 |
 | gemma4:26b-a4b-it-qat (think) | 3.18905 | 3.18905 | 3.18905 | 3.18905 |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | 3.18905 | 3.18905 | 3.18905 | 3.18905 |
 
 #### Outcome of the LLM answers
 
@@ -785,6 +826,7 @@ xychart-beta
 | qwen3.5:latest (think) | 0 | 2 | 7 | 0 | 0 | 0 |
 | gemma4:e2b (think) | 0 | 2 | 10 | 0 | 8 | 0 |
 | gemma4:26b-a4b-it-qat (think) | 0 | 1 | 0 | 2 | 0 | 0 |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | 0 | 0 | 2 | 0 | 0 | 0 |
 
 #### Best idea per model
 
@@ -809,6 +851,7 @@ xychart-beta
 - **qwen3.5:latest (think)**: initial program
 - **gemma4:e2b (think)**: initial program
 - **gemma4:26b-a4b-it-qat (think)**: initial program
+- **qwen3.6:27b-coding-mtp-q4_K_M (think)**: initial program
 
 ## feature_engineering
 
@@ -840,33 +883,33 @@ Ollama on this machine.
 | qwen3.8:27b-mtp-q4_K_M (no-think) | 27.3B | 0.623 | **0.765** | ×1.23 | 10 | 91 | 90% | 3 | 13.7 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (think) | 30.5B | 0.623 | **0.764** | ×1.23 | 35 | 24 | 74% | 2 | 10.5 |
 | gemma4:latest (think) |  | 0.623 | **0.761** | ×1.22 | 25 | 35 | 28% | 4 | 10.4 |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | 27.3B | 0.623 | **0.76** | ×1.22 | 3 | 383 | 100% | 2 | 13.4 |
 | qwen3.5:27b (think) | 27.8B | 0.623 | **0.756** | ×1.21 | 7 | 150 | 100% | 3 | 17.5 |
 | qwen3.5:27b (no-think) | 27.8B | 0.623 | **0.732** | ×1.17 | 9 | 101 | 89% | 4 | 15.2 |
 | gemma4:e2b (think) | 5.1B | 0.623 | **0.732** | ×1.17 | 39 | 23 | 59% | 2 | 1.2 |
-| qwen3.6:27b-coding-mtp-q4_K_M (think) | 27.3B | | | | | | | | failed: all 1 model requests failed: qwen3.6:27b-coding-mtp-q4_K_M:  |
 
 ```mermaid
 xychart-beta
     title "feature_engineering, local: best score"
-    x-axis ["gpt-oss:20b (think)", "qwen3.8:27b-mtp-q4_K_M (think)", "gemma4:e4b-it-qat (no-think)", "gemma4 (no-think)", "qwen3-coder:30b (no-think)", "gemma4:26b-a4b-it-qat (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "gpt-oss:20b (no-think)", "qwen2.5-coder:7b (no-think)", "qwen3.5 (think)", "qwen3.5 (no-think)", "gemma4:12b-it-qat (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "gemma4:12b-it-qat (think)", "gemma4:e4b-it-qat (think)", "gemma4:26b-a4b-it-qat (think)", "gemma4:e2b (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "gemma4 (think)", "qwen3.5:27b (think)", "qwen3.5:27b (no-think)", "gemma4:e2b (think)"]
+    x-axis ["gpt-oss:20b (think)", "qwen3.8:27b-mtp-q4_K_M (think)", "gemma4:e4b-it-qat (no-think)", "gemma4 (no-think)", "qwen3-coder:30b (no-think)", "gemma4:26b-a4b-it-qat (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "gpt-oss:20b (no-think)", "qwen2.5-coder:7b (no-think)", "qwen3.5 (think)", "qwen3.5 (no-think)", "gemma4:12b-it-qat (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "gemma4:12b-it-qat (think)", "gemma4:e4b-it-qat (think)", "gemma4:26b-a4b-it-qat (think)", "gemma4:e2b (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "gemma4 (think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "qwen3.5:27b (think)", "qwen3.5:27b (no-think)", "gemma4:e2b (think)"]
     y-axis "score" 0 --> 1.034
-    bar [0.94, 0.931, 0.891, 0.889, 0.88, 0.859, 0.859, 0.858, 0.837, 0.825, 0.82, 0.813, 0.805, 0.799, 0.793, 0.793, 0.774, 0.765, 0.764, 0.761, 0.756, 0.732, 0.732]
+    bar [0.94, 0.931, 0.891, 0.889, 0.88, 0.859, 0.859, 0.858, 0.837, 0.825, 0.82, 0.813, 0.805, 0.799, 0.793, 0.793, 0.774, 0.765, 0.764, 0.761, 0.76, 0.756, 0.732, 0.732]
 ```
 
 ```mermaid
 xychart-beta
     title "feature_engineering, local: valid answers (%)"
-    x-axis ["gpt-oss:20b (think)", "qwen3.8:27b-mtp-q4_K_M (think)", "gemma4:e4b-it-qat (no-think)", "gemma4 (no-think)", "qwen3-coder:30b (no-think)", "gemma4:26b-a4b-it-qat (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "gpt-oss:20b (no-think)", "qwen2.5-coder:7b (no-think)", "qwen3.5 (think)", "qwen3.5 (no-think)", "gemma4:12b-it-qat (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "gemma4:12b-it-qat (think)", "gemma4:e4b-it-qat (think)", "gemma4:26b-a4b-it-qat (think)", "gemma4:e2b (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "gemma4 (think)", "qwen3.5:27b (think)", "qwen3.5:27b (no-think)", "gemma4:e2b (think)"]
+    x-axis ["gpt-oss:20b (think)", "qwen3.8:27b-mtp-q4_K_M (think)", "gemma4:e4b-it-qat (no-think)", "gemma4 (no-think)", "qwen3-coder:30b (no-think)", "gemma4:26b-a4b-it-qat (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "gpt-oss:20b (no-think)", "qwen2.5-coder:7b (no-think)", "qwen3.5 (think)", "qwen3.5 (no-think)", "gemma4:12b-it-qat (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "gemma4:12b-it-qat (think)", "gemma4:e4b-it-qat (think)", "gemma4:26b-a4b-it-qat (think)", "gemma4:e2b (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "gemma4 (think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "qwen3.5:27b (think)", "qwen3.5:27b (no-think)", "gemma4:e2b (think)"]
     y-axis "% of answers" 0 --> 110
-    bar [81.25, 100, 84.85, 83.33, 71.88, 71.05, 100, 76.92, 53.49, 78.57, 74.07, 86.67, 71.15, 100, 96.3, 66.67, 72.73, 90, 74.29, 28, 100, 88.89, 58.97]
+    bar [81.25, 100, 84.85, 83.33, 71.88, 71.05, 100, 76.92, 53.49, 78.57, 74.07, 86.67, 71.15, 100, 96.3, 66.67, 72.73, 90, 74.29, 28, 100, 100, 88.89, 58.97]
 ```
 
 ```mermaid
 xychart-beta
     title "feature_engineering, local: seconds per LLM call"
-    x-axis ["gpt-oss:20b (think)", "qwen3.8:27b-mtp-q4_K_M (think)", "gemma4:e4b-it-qat (no-think)", "gemma4 (no-think)", "qwen3-coder:30b (no-think)", "gemma4:26b-a4b-it-qat (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "gpt-oss:20b (no-think)", "qwen2.5-coder:7b (no-think)", "qwen3.5 (think)", "qwen3.5 (no-think)", "gemma4:12b-it-qat (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "gemma4:12b-it-qat (think)", "gemma4:e4b-it-qat (think)", "gemma4:26b-a4b-it-qat (think)", "gemma4:e2b (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "gemma4 (think)", "qwen3.5:27b (think)", "qwen3.5:27b (no-think)", "gemma4:e2b (think)"]
-    y-axis "seconds" 0 --> 403.2
-    bar [58.1, 339.6, 13.2, 12.1, 27.7, 23.6, 112.8, 70.6, 20.3, 64.4, 33.7, 29.9, 16.4, 366.5, 32.8, 173.3, 13.2, 91.2, 24.4, 34.9, 149.6, 101.2, 22.9]
+    x-axis ["gpt-oss:20b (think)", "qwen3.8:27b-mtp-q4_K_M (think)", "gemma4:e4b-it-qat (no-think)", "gemma4 (no-think)", "qwen3-coder:30b (no-think)", "gemma4:26b-a4b-it-qat (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "gpt-oss:20b (no-think)", "qwen2.5-coder:7b (no-think)", "qwen3.5 (think)", "qwen3.5 (no-think)", "gemma4:12b-it-qat (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "gemma4:12b-it-qat (think)", "gemma4:e4b-it-qat (think)", "gemma4:26b-a4b-it-qat (think)", "gemma4:e2b (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "gemma4 (think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "qwen3.5:27b (think)", "qwen3.5:27b (no-think)", "gemma4:e2b (think)"]
+    y-axis "seconds" 0 --> 421.1
+    bar [58.1, 339.6, 13.2, 12.1, 27.7, 23.6, 112.8, 70.6, 20.3, 64.4, 33.7, 29.9, 16.4, 366.5, 32.8, 173.3, 13.2, 91.2, 24.4, 34.9, 382.8, 149.6, 101.2, 22.9]
 ```
 
 #### Inference speed and memory
@@ -891,6 +934,7 @@ RAM is what Ollama reports for the loaded model (weights, context cache and buff
 | gemma4:26b-a4b-it-qat (no-think) | 25.2B | 15.4 | 200 | 624 | 63.1 | 18 | 31 | 640 | 0 |
 | gemma4:latest (no-think) |  | 17.9 | 106 | 1082 | 50.0 | 10 | 18 | 333 | 0 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 27.3B | 18.2 | 246 | 104 | 16.4 | 91 | 328 | 862 | 0 |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | 27.3B | 18.2 | 9 | 107 | 12.6 | 380 | 422 | 4542 | 0 |
 | qwen3.8:27b-mtp-q4_K_M (think) | 27.3B | 18.3 | 182 | 107 | 12.3 | 391 | 578 | 3369 | 0 |
 | qwen3.8:27b-mtp-q4_K_M (no-think) | 27.3B | 18.3 | 235 | 103 | 14.3 | 72 | 313 | 601 | 0 |
 | qwen3.5:27b (think) | 27.8B | 18.4 | 84 | 103 | 10.9 | 133 | 201 | 1221 | 0 |
@@ -902,17 +946,17 @@ RAM is what Ollama reports for the loaded model (weights, context cache and buff
 ```mermaid
 xychart-beta
     title "feature_engineering, local: generation speed (tokens/s)"
-    x-axis ["gemma4:e4b-it-qat (no-think)", "gemma4:e4b-it-qat (think)", "qwen2.5-coder:7b (no-think)", "gemma4:e2b (no-think)", "gemma4:e2b (think)", "qwen3.5 (think)", "qwen3.5 (no-think)", "gemma4:12b-it-qat (no-think)", "gemma4:12b-it-qat (think)", "gemma4 (think)", "gpt-oss:20b (think)", "gpt-oss:20b (no-think)", "gemma4:26b-a4b-it-qat (think)", "gemma4:26b-a4b-it-qat (no-think)", "gemma4 (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.8:27b-mtp-q4_K_M (think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen3.5:27b (think)", "qwen3.5:27b (no-think)", "qwen3-coder:30b (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)"]
+    x-axis ["gemma4:e4b-it-qat (no-think)", "gemma4:e4b-it-qat (think)", "qwen2.5-coder:7b (no-think)", "gemma4:e2b (no-think)", "gemma4:e2b (think)", "qwen3.5 (think)", "qwen3.5 (no-think)", "gemma4:12b-it-qat (no-think)", "gemma4:12b-it-qat (think)", "gemma4 (think)", "gpt-oss:20b (think)", "gpt-oss:20b (no-think)", "gemma4:26b-a4b-it-qat (think)", "gemma4:26b-a4b-it-qat (no-think)", "gemma4 (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "qwen3.8:27b-mtp-q4_K_M (think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen3.5:27b (think)", "qwen3.5:27b (no-think)", "qwen3-coder:30b (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)"]
     y-axis "tokens/s" 0 --> 86.46
-    bar [60.6, 59.3, 39.1, 77, 78.6, 35.8, 34.7, 30.1, 29.4, 50.2, 50.6, 52.1, 61.4, 63.1, 50, 16.4, 12.3, 14.3, 10.9, 11.3, 48.8, 50.8, 48.1]
+    bar [60.6, 59.3, 39.1, 77, 78.6, 35.8, 34.7, 30.1, 29.4, 50.2, 50.6, 52.1, 61.4, 63.1, 50, 16.4, 12.6, 12.3, 14.3, 10.9, 11.3, 48.8, 50.8, 48.1]
 ```
 
 ```mermaid
 xychart-beta
     title "feature_engineering, local: model memory (GB)"
-    x-axis ["gemma4:e4b-it-qat (no-think)", "gemma4:e4b-it-qat (think)", "qwen2.5-coder:7b (no-think)", "gemma4:e2b (no-think)", "gemma4:e2b (think)", "qwen3.5 (think)", "qwen3.5 (no-think)", "gemma4:12b-it-qat (no-think)", "gemma4:12b-it-qat (think)", "gemma4 (think)", "gpt-oss:20b (think)", "gpt-oss:20b (no-think)", "gemma4:26b-a4b-it-qat (think)", "gemma4:26b-a4b-it-qat (no-think)", "gemma4 (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.8:27b-mtp-q4_K_M (think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen3.5:27b (think)", "qwen3.5:27b (no-think)", "qwen3-coder:30b (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)"]
+    x-axis ["gemma4:e4b-it-qat (no-think)", "gemma4:e4b-it-qat (think)", "qwen2.5-coder:7b (no-think)", "gemma4:e2b (no-think)", "gemma4:e2b (think)", "qwen3.5 (think)", "qwen3.5 (no-think)", "gemma4:12b-it-qat (no-think)", "gemma4:12b-it-qat (think)", "gemma4 (think)", "gpt-oss:20b (think)", "gpt-oss:20b (no-think)", "gemma4:26b-a4b-it-qat (think)", "gemma4:26b-a4b-it-qat (no-think)", "gemma4 (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "qwen3.8:27b-mtp-q4_K_M (think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen3.5:27b (think)", "qwen3.5:27b (no-think)", "qwen3-coder:30b (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)"]
     y-axis "GB" 0 --> 23.98
-    bar [5.7, 5.7, 6.6, 6.6, 6.6, 6.8, 6.8, 8, 8, 12.2, 12.8, 12.9, 15.2, 15.4, 17.9, 18.2, 18.3, 18.3, 18.4, 18.6, 21.8, 21.8, 21.8]
+    bar [5.7, 5.7, 6.6, 6.6, 6.6, 6.8, 6.8, 8, 8, 12.2, 12.8, 12.9, 15.2, 15.4, 17.9, 18.2, 18.2, 18.3, 18.3, 18.4, 18.6, 21.8, 21.8, 21.8]
 ```
 
 #### Best score over time
@@ -939,6 +983,7 @@ xychart-beta
 | qwen3.8:27b-mtp-q4_K_M (no-think) | 0.623 | 0.755 | 0.759 | 0.765 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (think) | 0.623 | 0.76 | 0.764 | 0.764 |
 | gemma4:latest (think) | 0.623 | 0.678 | 0.761 | 0.761 |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | 0.623 | 0.757 | 0.757 | 0.76 |
 | qwen3.5:27b (think) | 0.731 | 0.733 | 0.733 | 0.733 |
 | qwen3.5:27b (no-think) | 0.712 | 0.725 | 0.728 | 0.728 |
 | gemma4:e2b (think) | 0.732 | 0.732 | 0.732 | 0.732 |
@@ -967,6 +1012,7 @@ xychart-beta
 | qwen3.8:27b-mtp-q4_K_M (no-think) | 0 | 0 | 1 | 0 | 9 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (think) | 1 | 2 | 6 | 0 | 26 |
 | gemma4:latest (think) | 0 | 3 | 15 | 0 | 7 |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | 0 | 0 | 0 | 0 | 3 |
 | qwen3.5:27b (think) | 0 | 0 | 0 | 0 | 7 |
 | qwen3.5:27b (no-think) | 0 | 1 | 0 | 0 | 8 |
 | gemma4:e2b (think) | 16 | 0 | 0 | 0 | 23 |
@@ -993,6 +1039,7 @@ xychart-beta
 - **qwen3.8:27b-mtp-q4_K_M (no-think)**: The weak weight on x6 (f5) and the fact that the strongest features are the x1*x2 product and its sign suggest the hidden rule is primarily the x1*x2 quadrant/XOR with log(x3) as …
 - **qwen3:30b-a3b-instruct-2507-q4_K_M (think)**: tuned THRESHOLD_P12=0.01391, THRESHOLD_P13=0.001472, THRESHOLD_P23=0.6577 on top of: Replace the hard-coded threshold for `s12`, `s13`, `s23` (set to 0.0) with sweepable smooth …
 - **gemma4:latest (think)**: Introduce cross-interactions between the skewed input $x_3$ and bounded input $x_4$, and add the squared feature $x_4^2$ to capture non-linear effects from the bounded variable.
+- **qwen3.6:27b-coding-mtp-q4_K_M (think)**: tuned LOG_THRESH=0.7459 on top of: Introduce a log-transform of the skewed input, pairwise products and their signs for the Gaussian-like inputs, a radius term, and a threshold …
 - **qwen3.5:27b (think)**: Add radius features (sqrt of sum of squares) and sign features to capture distance-based and quadrant-based nonlinear patterns that products alone cannot express.
 - **qwen3.5:27b (no-think)**: The feedback shows x2 is the dominant feature, and the hidden rule is likely nonlinear; adding the pairwise product x1*x2 captures XOR-like or quadrant interactions involving the …
 - **gemma4:e2b (think)**: Add the log transformation of $x_3$ to capture the non-linear relationship in the skewed variable, which is suggested by the hints.
@@ -1217,30 +1264,30 @@ Ollama on this machine.
 | qwen3.5:latest (think) | 9.7B | 0.00479 | **0.00479** | ×1.00 | 21 | 44 | 43% | 0 | - |
 | gemma4:12b-it-qat (think) | 11.9B | | | | | | | | failed: all 2 model requests failed: gemma4:12b-it-qat: answer stopp |
 | gemma4:e2b (think) | 5.1B | 0.00479 | **0.00479** | ×1.00 | 24 | 38 | 33% | 0 | - |
-| qwen3.8:27b-mtp-q4_K_M (think) | 27.3B | | | | | | | | failed: all 1 model requests failed: qwen3.8:27b-mtp-q4_K_M: request |
+| qwen3.8:27b-mtp-q4_K_M (think) | 27.3B | 0.00479 | **0.00479** | ×1.00 | 1 | 1019 | 100% | 0 | - |
 
 ```mermaid
 xychart-beta
     title "heilbronn_13, local: best score"
-    x-axis ["gemma4 (think)", "gemma4:e4b-it-qat (think)", "gemma4:12b-it-qat (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "gemma4:26b-a4b-it-qat (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "gemma4:e4b-it-qat (no-think)", "gemma4:e2b (no-think)", "gemma4 (no-think)", "gpt-oss:20b (no-think)", "gpt-oss:20b (think)", "qwen3.5:27b (think)", "gemma4:26b-a4b-it-qat (think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen2.5-coder:7b (no-think)", "qwen3.5 (no-think)", "qwen3.5:27b (no-think)", "qwen3-coder:30b (no-think)", "qwen3.5 (think)", "gemma4:e2b (think)"]
+    x-axis ["gemma4 (think)", "gemma4:e4b-it-qat (think)", "gemma4:12b-it-qat (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "gemma4:26b-a4b-it-qat (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "gemma4:e4b-it-qat (no-think)", "gemma4:e2b (no-think)", "gemma4 (no-think)", "gpt-oss:20b (no-think)", "gpt-oss:20b (think)", "qwen3.5:27b (think)", "gemma4:26b-a4b-it-qat (think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen2.5-coder:7b (no-think)", "qwen3.5 (no-think)", "qwen3.5:27b (no-think)", "qwen3-coder:30b (no-think)", "qwen3.5 (think)", "gemma4:e2b (think)", "qwen3.8:27b-mtp-q4_K_M (think)"]
     y-axis "score" 0 --> 0.02253
-    bar [0.02049, 0.01814, 0.01662, 0.01543, 0.0141, 0.01394, 0.01332, 0.01331, 0.01331, 0.01331, 0.01331, 0.01331, 0.01287, 0.01072, 0.008962, 0.008339, 0.004791, 0.004791, 0.004791, 0.004791, 0.004791, 0.004791]
+    bar [0.02049, 0.01814, 0.01662, 0.01543, 0.0141, 0.01394, 0.01332, 0.01331, 0.01331, 0.01331, 0.01331, 0.01331, 0.01287, 0.01072, 0.008962, 0.008339, 0.004791, 0.004791, 0.004791, 0.004791, 0.004791, 0.004791, 0.004791]
 ```
 
 ```mermaid
 xychart-beta
     title "heilbronn_13, local: valid answers (%)"
-    x-axis ["gemma4 (think)", "gemma4:e4b-it-qat (think)", "gemma4:12b-it-qat (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "gemma4:26b-a4b-it-qat (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "gemma4:e4b-it-qat (no-think)", "gemma4:e2b (no-think)", "gemma4 (no-think)", "gpt-oss:20b (no-think)", "gpt-oss:20b (think)", "qwen3.5:27b (think)", "gemma4:26b-a4b-it-qat (think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen2.5-coder:7b (no-think)", "qwen3.5 (no-think)", "qwen3.5:27b (no-think)", "qwen3-coder:30b (no-think)", "qwen3.5 (think)", "gemma4:e2b (think)"]
+    x-axis ["gemma4 (think)", "gemma4:e4b-it-qat (think)", "gemma4:12b-it-qat (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "gemma4:26b-a4b-it-qat (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "gemma4:e4b-it-qat (no-think)", "gemma4:e2b (no-think)", "gemma4 (no-think)", "gpt-oss:20b (no-think)", "gpt-oss:20b (think)", "qwen3.5:27b (think)", "gemma4:26b-a4b-it-qat (think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen2.5-coder:7b (no-think)", "qwen3.5 (no-think)", "qwen3.5:27b (no-think)", "qwen3-coder:30b (no-think)", "qwen3.5 (think)", "gemma4:e2b (think)", "qwen3.8:27b-mtp-q4_K_M (think)"]
     y-axis "% of answers" 0 --> 110
-    bar [71.43, 65, 63.16, 100, 63.16, 72.73, 63.64, 54.84, 29.41, 67.24, 57.14, 70, 66.67, 100, 50, 57.14, 28.57, 46.67, 85.71, 0, 42.86, 33.33]
+    bar [71.43, 65, 63.16, 100, 63.16, 72.73, 63.64, 54.84, 29.41, 67.24, 57.14, 70, 66.67, 100, 50, 57.14, 28.57, 46.67, 85.71, 0, 42.86, 33.33, 100]
 ```
 
 ```mermaid
 xychart-beta
     title "heilbronn_13, local: seconds per LLM call"
-    x-axis ["gemma4 (think)", "gemma4:e4b-it-qat (think)", "gemma4:12b-it-qat (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "gemma4:26b-a4b-it-qat (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "gemma4:e4b-it-qat (no-think)", "gemma4:e2b (no-think)", "gemma4 (no-think)", "gpt-oss:20b (no-think)", "gpt-oss:20b (think)", "qwen3.5:27b (think)", "gemma4:26b-a4b-it-qat (think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen2.5-coder:7b (no-think)", "qwen3.5 (no-think)", "qwen3.5:27b (no-think)", "qwen3-coder:30b (no-think)", "qwen3.5 (think)", "gemma4:e2b (think)"]
+    x-axis ["gemma4 (think)", "gemma4:e4b-it-qat (think)", "gemma4:12b-it-qat (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "gemma4:26b-a4b-it-qat (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "gemma4:e4b-it-qat (no-think)", "gemma4:e2b (no-think)", "gemma4 (no-think)", "gpt-oss:20b (no-think)", "gpt-oss:20b (think)", "qwen3.5:27b (think)", "gemma4:26b-a4b-it-qat (think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen2.5-coder:7b (no-think)", "qwen3.5 (no-think)", "qwen3.5:27b (no-think)", "qwen3-coder:30b (no-think)", "qwen3.5 (think)", "gemma4:e2b (think)", "qwen3.8:27b-mtp-q4_K_M (think)"]
     y-axis "seconds" 0 --> 1384
-    bar [42.9, 46.9, 49, 1258, 48.2, 26.7, 15.1, 14.2, 8.6, 15.3, 152, 45.8, 319.5, 361.3, 159.8, 131.4, 25.8, 29.2, 128.7, 23.5, 44.3, 37.8]
+    bar [42.9, 46.9, 49, 1258, 48.2, 26.7, 15.1, 14.2, 8.6, 15.3, 152, 45.8, 319.5, 361.3, 159.8, 131.4, 25.8, 29.2, 128.7, 23.5, 44.3, 37.8, 1019]
 ```
 
 #### Inference speed and memory
@@ -1266,6 +1313,7 @@ RAM is what Ollama reports for the loaded model (weights, context cache and buff
 | qwen3.6:27b-coding-mtp-q4_K_M (think) | 27.3B | 17.4 | 324 | 83 | 12.5 | 1258 | 1258 | 7640 | 0 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 27.3B | 17.4 | 244 | 102 | 15.6 | 131 | 374 | 1468 | 0 |
 | qwen3.8:27b-mtp-q4_K_M (no-think) | 27.3B | 17.6 | 310 | 99 | 14.2 | 119 | 394 | 903 | 0 |
+| qwen3.8:27b-mtp-q4_K_M (think) | 27.3B | 18.3 | 306 | 90 | 13.1 | 1019 | 1019 | 9114 | 0 |
 | qwen3.5:27b (think) | 27.8B | 18.4 | 164 | 98 | 9.8 | 316 | 436 | 2366 | 0 |
 | qwen3.5:27b (no-think) | 27.8B | 18.4 | 218 | 104 | 11.0 | 94 | 338 | 872 | 0 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (think) | 30.5B | 21.8 | 139 | 602 | 43.9 | 20 | 44 | 688 | 1 |
@@ -1275,17 +1323,17 @@ RAM is what Ollama reports for the loaded model (weights, context cache and buff
 ```mermaid
 xychart-beta
     title "heilbronn_13, local: generation speed (tokens/s)"
-    x-axis ["gemma4:e4b-it-qat (think)", "gemma4:e4b-it-qat (no-think)", "gemma4:e2b (no-think)", "qwen2.5-coder:7b (no-think)", "gemma4:e2b (think)", "qwen3.5 (no-think)", "qwen3.5 (think)", "gemma4:12b-it-qat (no-think)", "gemma4 (think)", "gpt-oss:20b (no-think)", "gpt-oss:20b (think)", "gemma4:26b-a4b-it-qat (no-think)", "gemma4:26b-a4b-it-qat (think)", "gemma4 (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen3.5:27b (think)", "qwen3.5:27b (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3-coder:30b (no-think)"]
+    x-axis ["gemma4:e4b-it-qat (think)", "gemma4:e4b-it-qat (no-think)", "gemma4:e2b (no-think)", "qwen2.5-coder:7b (no-think)", "gemma4:e2b (think)", "qwen3.5 (no-think)", "qwen3.5 (think)", "gemma4:12b-it-qat (no-think)", "gemma4 (think)", "gpt-oss:20b (no-think)", "gpt-oss:20b (think)", "gemma4:26b-a4b-it-qat (no-think)", "gemma4:26b-a4b-it-qat (think)", "gemma4 (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen3.8:27b-mtp-q4_K_M (think)", "qwen3.5:27b (think)", "qwen3.5:27b (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3-coder:30b (no-think)"]
     y-axis "tokens/s" 0 --> 83.71
-    bar [51.7, 53.2, 76.1, 34.3, 67.9, 33.3, 31.2, 29.2, 44.5, 50.8, 45.2, 55.2, 47.9, 48.8, 12.5, 15.6, 14.2, 9.8, 11, 43.9, 50.5, 57]
+    bar [51.7, 53.2, 76.1, 34.3, 67.9, 33.3, 31.2, 29.2, 44.5, 50.8, 45.2, 55.2, 47.9, 48.8, 12.5, 15.6, 14.2, 13.1, 9.8, 11, 43.9, 50.5, 57]
 ```
 
 ```mermaid
 xychart-beta
     title "heilbronn_13, local: model memory (GB)"
-    x-axis ["gemma4:e4b-it-qat (think)", "gemma4:e4b-it-qat (no-think)", "gemma4:e2b (no-think)", "qwen2.5-coder:7b (no-think)", "gemma4:e2b (think)", "qwen3.5 (no-think)", "qwen3.5 (think)", "gemma4:12b-it-qat (no-think)", "gemma4 (think)", "gpt-oss:20b (no-think)", "gpt-oss:20b (think)", "gemma4:26b-a4b-it-qat (no-think)", "gemma4:26b-a4b-it-qat (think)", "gemma4 (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen3.5:27b (think)", "qwen3.5:27b (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3-coder:30b (no-think)"]
+    x-axis ["gemma4:e4b-it-qat (think)", "gemma4:e4b-it-qat (no-think)", "gemma4:e2b (no-think)", "qwen2.5-coder:7b (no-think)", "gemma4:e2b (think)", "qwen3.5 (no-think)", "qwen3.5 (think)", "gemma4:12b-it-qat (no-think)", "gemma4 (think)", "gpt-oss:20b (no-think)", "gpt-oss:20b (think)", "gemma4:26b-a4b-it-qat (no-think)", "gemma4:26b-a4b-it-qat (think)", "gemma4 (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen3.8:27b-mtp-q4_K_M (think)", "qwen3.5:27b (think)", "qwen3.5:27b (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3-coder:30b (no-think)"]
     y-axis "GB" 0 --> 23.98
-    bar [5.7, 5.7, 6.6, 6.6, 6.6, 6.8, 6.8, 8, 12.1, 12.8, 12.8, 15.2, 15.2, 15.9, 17.4, 17.4, 17.6, 18.4, 18.4, 21.8, 21.8, 21.8]
+    bar [5.7, 5.7, 6.6, 6.6, 6.6, 6.8, 6.8, 8, 12.1, 12.8, 12.8, 15.2, 15.2, 15.9, 17.4, 17.4, 17.6, 18.3, 18.4, 18.4, 21.8, 21.8, 21.8]
 ```
 
 #### Best score over time
@@ -1314,6 +1362,7 @@ xychart-beta
 | qwen3-coder:30b (no-think) | 0.00479 | 0.00479 | 0.00479 | 0.00479 |
 | qwen3.5:latest (think) | 0.00479 | 0.00479 | 0.00479 | 0.00479 |
 | gemma4:e2b (think) | 0.00479 | 0.00479 | 0.00479 | 0.00479 |
+| qwen3.8:27b-mtp-q4_K_M (think) | 0.00479 | 0.00479 | 0.00479 | 0.00479 |
 
 #### Outcome of the LLM answers
 
@@ -1341,6 +1390,7 @@ xychart-beta
 | qwen3-coder:30b (no-think) | 1 | 17 | 20 | 0 | 0 | 0 |
 | qwen3.5:latest (think) | 0 | 3 | 9 | 0 | 9 | 0 |
 | gemma4:e2b (think) | 1 | 11 | 4 | 0 | 8 | 0 |
+| qwen3.8:27b-mtp-q4_K_M (think) | 0 | 0 | 0 | 0 | 1 | 0 |
 
 #### Best idea per model
 
@@ -1366,6 +1416,7 @@ xychart-beta
 - **qwen3-coder:30b (no-think)**: initial program
 - **qwen3.5:latest (think)**: initial program
 - **gemma4:e2b (think)**: initial program
+- **qwen3.8:27b-mtp-q4_K_M (think)**: initial program
 
 ## log_compressor
 
@@ -1566,12 +1617,15 @@ Ollama on this machine.
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
 | gemma4:latest (think) |  | 1.59883 | **174.1030** | ×108.89 | 17 | 53 | 65% | 8 | 15.8 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | 30.5B | 1.63177 | **167.9280** | ×102.91 | 48 | 18 | 4% | 2 | 15.2 |
+| gemma4:26b-a4b-it-qat (no-think) | 25.2B | 1.59064 | **160.2310** | ×100.73 | 31 | 28 | 81% | 4 | 7.5 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 27.3B | 1.65835 | **154.8540** | ×93.38 | 8 | 121 | 38% | 2 | 16.3 |
+| gpt-oss:20b (no-think) | 20.9B | 1.65652 | **152.3910** | ×91.99 | 11 | 91 | 73% | 4 | 17.4 |
 | gemma4:latest (no-think) |  | 1.58471 | **151.3840** | ×95.53 | 45 | 19 | 42% | 5 | 15.6 |
 | gpt-oss:20b (think) | 20.9B | 1.63546 | **144.0540** | ×88.08 | 18 | 49 | 83% | 5 | 15.3 |
 | gemma4:e4b-it-qat (no-think) | 7.5B | 1.63783 | **140.1020** | ×85.54 | 51 | 17 | 29% | 6 | 15.5 |
 | gemma4:e4b-it-qat (think) | 7.5B | 1.51942 | **126.0000** | ×82.93 | 15 | 60 | 53% | 4 | 15.5 |
 | qwen3.8:27b-mtp-q4_K_M (no-think) | 27.3B | 1.65734 | **120.7810** | ×72.88 | 8 | 122 | 50% | 1 | 16.4 |
+| qwen3.8:27b-mtp-q4_K_M (think) | 27.3B | 1.54195 | **109.8530** | ×71.24 | 1 | 1092 | 100% | 1 | 18.3 |
 | gemma4:12b-it-qat (no-think) | 11.9B | 1.64615 | **68.4243** | ×41.57 | 16 | 58 | 12% | 1 | 15.4 |
 | gemma4:12b-it-qat (think) | 11.9B | 1.19814 | **66.2698** | ×55.31 | 2 | 540 | 50% | 1 | 18.3 |
 | gemma4:26b-a4b-it-qat (think) | 25.2B | 1.5217 | **41.8195** | ×27.48 | 3 | 310 | 100% | 1 | 15.7 |
@@ -1581,9 +1635,6 @@ Ollama on this machine.
 | qwen3-coder:30b (no-think) | 30.5B | 1.66293 | **8.45239** | ×5.08 | 23 | 40 | 9% | 2 | 16.7 |
 | gemma4:e2b (no-think) | 5.1B | 1.61153 | **1.68469** | ×1.05 | 56 | 12 | 16% | 3 | 15.8 |
 | qwen3.5:latest (no-think) | 9.7B | 1.6743 | **1.6743** | ×1.00 | 14 | 68 | 0% | 0 | - |
-| gpt-oss:20b (no-think) | 20.9B | 1.61662 | **1.61662** | ×1.00 | 1 | 1313 | 0% | 0 | - |
-| gemma4:26b-a4b-it-qat (no-think) | 25.2B | | | | | | | | failed: all 1 model requests failed: gemma4:26b-a4b-it-qat: no answe |
-| qwen3.8:27b-mtp-q4_K_M (think) | 27.3B | | | | | | | | failed: all 1 model requests failed: qwen3.8:27b-mtp-q4_K_M: request |
 | gemma4:e2b (think) | 5.1B | 0.97164 | **1.53353** | ×1.58 | 15 | 51 | 27% | 4 | 10.1 |
 | qwen3.5:latest (think) | 9.7B | 1.33259 | **1.33259** | ×1.00 | 12 | 78 | 0% | 0 | - |
 | qwen3.6:27b-coding-mtp-q4_K_M (think) | 27.3B | 1.32423 | **1.32423** | ×1.00 | 2 | 676 | 0% | 0 | - |
@@ -1592,25 +1643,25 @@ Ollama on this machine.
 ```mermaid
 xychart-beta
     title "matmul_f32, local: best score"
-    x-axis ["gemma4 (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "gemma4 (no-think)", "gpt-oss:20b (think)", "gemma4:e4b-it-qat (no-think)", "gemma4:e4b-it-qat (think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "gemma4:12b-it-qat (no-think)", "gemma4:12b-it-qat (think)", "gemma4:26b-a4b-it-qat (think)", "qwen3.5:27b (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen2.5-coder:7b (no-think)", "qwen3-coder:30b (no-think)", "gemma4:e2b (no-think)", "qwen3.5 (no-think)", "gpt-oss:20b (no-think)", "gemma4:e2b (think)", "qwen3.5 (think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)"]
+    x-axis ["gemma4 (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "gemma4:26b-a4b-it-qat (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "gpt-oss:20b (no-think)", "gemma4 (no-think)", "gpt-oss:20b (think)", "gemma4:e4b-it-qat (no-think)", "gemma4:e4b-it-qat (think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen3.8:27b-mtp-q4_K_M (think)", "gemma4:12b-it-qat (no-think)", "gemma4:12b-it-qat (think)", "gemma4:26b-a4b-it-qat (think)", "qwen3.5:27b (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen2.5-coder:7b (no-think)", "qwen3-coder:30b (no-think)", "gemma4:e2b (no-think)", "qwen3.5 (no-think)", "gemma4:e2b (think)", "qwen3.5 (think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)"]
     y-axis "score" 0 --> 191.5
-    bar [174.1, 167.9, 154.9, 151.4, 144.1, 140.1, 126, 120.8, 68.42, 66.27, 41.82, 25.61, 25.29, 12.14, 8.452, 1.685, 1.674, 1.617, 1.534, 1.333, 1.324]
+    bar [174.1, 167.9, 160.2, 154.9, 152.4, 151.4, 144.1, 140.1, 126, 120.8, 109.9, 68.42, 66.27, 41.82, 25.61, 25.29, 12.14, 8.452, 1.685, 1.674, 1.534, 1.333, 1.324]
 ```
 
 ```mermaid
 xychart-beta
     title "matmul_f32, local: valid answers (%)"
-    x-axis ["gemma4 (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "gemma4 (no-think)", "gpt-oss:20b (think)", "gemma4:e4b-it-qat (no-think)", "gemma4:e4b-it-qat (think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "gemma4:12b-it-qat (no-think)", "gemma4:12b-it-qat (think)", "gemma4:26b-a4b-it-qat (think)", "qwen3.5:27b (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen2.5-coder:7b (no-think)", "qwen3-coder:30b (no-think)", "gemma4:e2b (no-think)", "qwen3.5 (no-think)", "gpt-oss:20b (no-think)", "gemma4:e2b (think)", "qwen3.5 (think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)"]
+    x-axis ["gemma4 (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "gemma4:26b-a4b-it-qat (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "gpt-oss:20b (no-think)", "gemma4 (no-think)", "gpt-oss:20b (think)", "gemma4:e4b-it-qat (no-think)", "gemma4:e4b-it-qat (think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen3.8:27b-mtp-q4_K_M (think)", "gemma4:12b-it-qat (no-think)", "gemma4:12b-it-qat (think)", "gemma4:26b-a4b-it-qat (think)", "qwen3.5:27b (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen2.5-coder:7b (no-think)", "qwen3-coder:30b (no-think)", "gemma4:e2b (no-think)", "qwen3.5 (no-think)", "gemma4:e2b (think)", "qwen3.5 (think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)"]
     y-axis "% of answers" 0 --> 110
-    bar [64.71, 4.167, 37.5, 42.22, 83.33, 29.41, 53.33, 50, 12.5, 50, 100, 90, 22.22, 8.333, 8.696, 16.07, 0, 0, 26.67, 0, 0]
+    bar [64.71, 4.167, 80.65, 37.5, 72.73, 42.22, 83.33, 29.41, 53.33, 50, 100, 12.5, 50, 100, 90, 22.22, 8.333, 8.696, 16.07, 0, 26.67, 0, 0]
 ```
 
 ```mermaid
 xychart-beta
     title "matmul_f32, local: seconds per LLM call"
-    x-axis ["gemma4 (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "gemma4 (no-think)", "gpt-oss:20b (think)", "gemma4:e4b-it-qat (no-think)", "gemma4:e4b-it-qat (think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "gemma4:12b-it-qat (no-think)", "gemma4:12b-it-qat (think)", "gemma4:26b-a4b-it-qat (think)", "qwen3.5:27b (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen2.5-coder:7b (no-think)", "qwen3-coder:30b (no-think)", "gemma4:e2b (no-think)", "qwen3.5 (no-think)", "gpt-oss:20b (no-think)", "gemma4:e2b (think)", "qwen3.5 (think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)"]
-    y-axis "seconds" 0 --> 1444
-    bar [53.2, 17.7, 120.7, 18.7, 49.4, 16.9, 60.5, 121.9, 57.5, 540, 309.8, 98.3, 15.4, 17.7, 40.1, 11.8, 68, 1313, 50.9, 78.1, 676.1]
+    x-axis ["gemma4 (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "gemma4:26b-a4b-it-qat (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "gpt-oss:20b (no-think)", "gemma4 (no-think)", "gpt-oss:20b (think)", "gemma4:e4b-it-qat (no-think)", "gemma4:e4b-it-qat (think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen3.8:27b-mtp-q4_K_M (think)", "gemma4:12b-it-qat (no-think)", "gemma4:12b-it-qat (think)", "gemma4:26b-a4b-it-qat (think)", "qwen3.5:27b (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen2.5-coder:7b (no-think)", "qwen3-coder:30b (no-think)", "gemma4:e2b (no-think)", "qwen3.5 (no-think)", "gemma4:e2b (think)", "qwen3.5 (think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)"]
+    y-axis "seconds" 0 --> 1201
+    bar [53.2, 17.7, 28.4, 120.7, 91.4, 18.7, 49.4, 16.9, 60.5, 121.9, 1092, 57.5, 540, 309.8, 98.3, 15.4, 17.7, 40.1, 11.8, 68, 50.9, 78.1, 676.1]
 ```
 
 #### Inference speed and memory
@@ -1629,13 +1680,15 @@ RAM is what Ollama reports for the loaded model (weights, context cache and buff
 | gemma4:12b-it-qat (no-think) | 11.9B | 8.0 | 66 | 294 | 28.2 | 42 | 129 | 1044 | 2 |
 | gemma4:12b-it-qat (think) | 11.9B | 8.0 | 0 | 416 | 24.8 | 730 | 730 | 8481 | 1 |
 | gemma4:latest (think) |  | 11.4 | 109 | 1268 | 48.6 | 51 | 80 | 2149 | 0 |
+| gpt-oss:20b (no-think) | 20.9B | 12.8 | 100 | 664 | 46.6 | 69 | 153 | 3638 | 0 |
 | gpt-oss:20b (think) | 20.9B | 12.8 | 101 | 614 | 48.4 | 47 | 79 | 1873 | 0 |
-| gpt-oss:20b (no-think) | 20.9B | 12.9 | 73 | 157 | 43.6 | 1313 | 1313 | 8192 | 0 |
 | gemma4:latest (no-think) |  | 14.2 | 95 | 1276 | 50.9 | 14 | 37 | 676 | 0 |
+| gemma4:26b-a4b-it-qat (no-think) | 25.2B | 15.2 | 200 | 516 | 56.7 | 21 | 37 | 612 | 4 |
 | gemma4:26b-a4b-it-qat (think) | 25.2B | 15.2 | 278 | 1001 | 41.3 | 286 | 553 | 8845 | 0 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 27.3B | 17.4 | 277 | 175 | 14.8 | 112 | 372 | 1060 | 0 |
 | qwen3.6:27b-coding-mtp-q4_K_M (think) | 27.3B | 17.4 | 210 | 147 | 13.0 | 706 | 706 | 7180 | 0 |
 | qwen3.8:27b-mtp-q4_K_M (no-think) | 27.3B | 17.6 | 209 | 130 | 13.2 | 102 | 272 | 1015 | 0 |
+| qwen3.8:27b-mtp-q4_K_M (think) | 27.3B | 17.6 | 281 | 95 | 12.0 | 1092 | 1092 | 5725 | 0 |
 | qwen3.5:27b (no-think) | 27.8B | 18.4 | 183 | 165 | 10.9 | 71 | 325 | 684 | 0 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | 30.5B | 21.8 | 141 | 900 | 47.1 | 11 | 29 | 422 | 1 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (think) | 30.5B | 21.8 | 137 | 889 | 48.7 | 13 | 26 | 423 | 0 |
@@ -1644,17 +1697,17 @@ RAM is what Ollama reports for the loaded model (weights, context cache and buff
 ```mermaid
 xychart-beta
     title "matmul_f32, local: generation speed (tokens/s)"
-    x-axis ["gemma4:e4b-it-qat (no-think)", "gemma4:e4b-it-qat (think)", "qwen2.5-coder:7b (no-think)", "gemma4:e2b (no-think)", "gemma4:e2b (think)", "qwen3.5 (no-think)", "qwen3.5 (think)", "gemma4:12b-it-qat (no-think)", "gemma4:12b-it-qat (think)", "gemma4 (think)", "gpt-oss:20b (think)", "gpt-oss:20b (no-think)", "gemma4 (no-think)", "gemma4:26b-a4b-it-qat (think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen3.5:27b (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen3-coder:30b (no-think)"]
+    x-axis ["gemma4:e4b-it-qat (no-think)", "gemma4:e4b-it-qat (think)", "qwen2.5-coder:7b (no-think)", "gemma4:e2b (no-think)", "gemma4:e2b (think)", "qwen3.5 (no-think)", "qwen3.5 (think)", "gemma4:12b-it-qat (no-think)", "gemma4:12b-it-qat (think)", "gemma4 (think)", "gpt-oss:20b (no-think)", "gpt-oss:20b (think)", "gemma4 (no-think)", "gemma4:26b-a4b-it-qat (no-think)", "gemma4:26b-a4b-it-qat (think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen3.8:27b-mtp-q4_K_M (think)", "qwen3.5:27b (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen3-coder:30b (no-think)"]
     y-axis "tokens/s" 0 --> 81.84
-    bar [58.7, 51.8, 39.1, 74.4, 60.7, 33.4, 30.8, 28.2, 24.8, 48.6, 48.4, 43.6, 50.9, 41.3, 14.8, 13, 13.2, 10.9, 47.1, 48.7, 47.4]
+    bar [58.7, 51.8, 39.1, 74.4, 60.7, 33.4, 30.8, 28.2, 24.8, 48.6, 46.6, 48.4, 50.9, 56.7, 41.3, 14.8, 13, 13.2, 12, 10.9, 47.1, 48.7, 47.4]
 ```
 
 ```mermaid
 xychart-beta
     title "matmul_f32, local: model memory (GB)"
-    x-axis ["gemma4:e4b-it-qat (no-think)", "gemma4:e4b-it-qat (think)", "qwen2.5-coder:7b (no-think)", "gemma4:e2b (no-think)", "gemma4:e2b (think)", "qwen3.5 (no-think)", "qwen3.5 (think)", "gemma4:12b-it-qat (no-think)", "gemma4:12b-it-qat (think)", "gemma4 (think)", "gpt-oss:20b (think)", "gpt-oss:20b (no-think)", "gemma4 (no-think)", "gemma4:26b-a4b-it-qat (think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen3.5:27b (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen3-coder:30b (no-think)"]
+    x-axis ["gemma4:e4b-it-qat (no-think)", "gemma4:e4b-it-qat (think)", "qwen2.5-coder:7b (no-think)", "gemma4:e2b (no-think)", "gemma4:e2b (think)", "qwen3.5 (no-think)", "qwen3.5 (think)", "gemma4:12b-it-qat (no-think)", "gemma4:12b-it-qat (think)", "gemma4 (think)", "gpt-oss:20b (no-think)", "gpt-oss:20b (think)", "gemma4 (no-think)", "gemma4:26b-a4b-it-qat (no-think)", "gemma4:26b-a4b-it-qat (think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen3.8:27b-mtp-q4_K_M (think)", "qwen3.5:27b (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen3-coder:30b (no-think)"]
     y-axis "GB" 0 --> 23.98
-    bar [5.7, 5.7, 6.6, 6.6, 6.6, 6.8, 6.8, 8, 8, 11.4, 12.8, 12.9, 14.2, 15.2, 17.4, 17.4, 17.6, 18.4, 21.8, 21.8, 21.8]
+    bar [5.7, 5.7, 6.6, 6.6, 6.6, 6.8, 6.8, 8, 8, 11.4, 12.8, 12.8, 14.2, 15.2, 15.2, 17.4, 17.4, 17.6, 17.6, 18.4, 21.8, 21.8, 21.8]
 ```
 
 #### Best score over time
@@ -1663,12 +1716,15 @@ xychart-beta
 |---|--:|--:|--:|--:|
 | gemma4:latest (think) | 1.59883 | 1.59883 | 24.7383 | 133.5950 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | 1.63177 | 1.63177 | 3.60979 | 3.60979 |
+| gemma4:26b-a4b-it-qat (no-think) | 1.59064 | 160.2310 | 160.2310 | 160.2310 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 1.65835 | 1.65835 | 1.65835 | 1.65835 |
+| gpt-oss:20b (no-think) | 1.65652 | 1.65652 | 1.65652 | 22.0148 |
 | gemma4:latest (no-think) | 9.66047 | 9.66698 | 9.66698 | 9.89172 |
 | gpt-oss:20b (think) | 1.63546 | 76.5920 | 76.5920 | 76.5920 |
 | gemma4:e4b-it-qat (no-think) | 1.63783 | 25.9352 | 25.9352 | 128.8490 |
 | gemma4:e4b-it-qat (think) | 1.51942 | 1.51942 | 1.51942 | 23.9803 |
 | qwen3.8:27b-mtp-q4_K_M (no-think) | 1.65734 | 1.65734 | 1.65734 | 1.65734 |
+| qwen3.8:27b-mtp-q4_K_M (think) | 1.54195 | 1.54195 | 1.54195 | 1.54195 |
 | gemma4:12b-it-qat (no-think) | 1.64615 | 1.64615 | 1.64615 | 1.64615 |
 | gemma4:12b-it-qat (think) | 1.19814 | 1.19814 | 1.19814 | 1.19814 |
 | gemma4:26b-a4b-it-qat (think) | 1.5217 | 1.5217 | 1.5217 | 1.5217 |
@@ -1678,7 +1734,6 @@ xychart-beta
 | qwen3-coder:30b (no-think) | 1.66293 | 1.66293 | 1.66293 | 1.66293 |
 | gemma4:e2b (no-think) | 1.61153 | 1.63627 | 1.63627 | 1.63627 |
 | qwen3.5:latest (no-think) | 1.6743 | 1.6743 | 1.6743 | 1.6743 |
-| gpt-oss:20b (no-think) | 1.61662 | 1.61662 | 1.61662 | 1.61662 |
 | gemma4:e2b (think) | 0.97164 | 1.46192 | 1.53353 | 1.53353 |
 | qwen3.5:latest (think) | 1.33259 | 1.33259 | 1.33259 | 1.33259 |
 | qwen3.6:27b-coding-mtp-q4_K_M (think) | 1.32423 | 1.32423 | 1.32423 | 1.32423 |
@@ -1689,12 +1744,15 @@ xychart-beta
 |---|--:|--:|--:|--:|--:|--:|--:|
 | gemma4:latest (think) | 4 | 2 | 0 | 0 | 0 | 11 | 0 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | 13 | 18 | 2 | 12 | 1 | 2 | 0 |
+| gemma4:26b-a4b-it-qat (no-think) | 0 | 0 | 2 | 0 | 4 | 25 | 0 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 0 | 0 | 1 | 4 | 0 | 3 | 0 |
+| gpt-oss:20b (no-think) | 1 | 0 | 1 | 1 | 0 | 8 | 0 |
 | gemma4:latest (no-think) | 13 | 0 | 7 | 6 | 0 | 19 | 0 |
 | gpt-oss:20b (think) | 3 | 0 | 0 | 0 | 0 | 15 | 0 |
 | gemma4:e4b-it-qat (no-think) | 24 | 0 | 1 | 9 | 2 | 15 | 0 |
 | gemma4:e4b-it-qat (think) | 2 | 0 | 1 | 4 | 0 | 8 | 0 |
 | qwen3.8:27b-mtp-q4_K_M (no-think) | 2 | 0 | 0 | 2 | 0 | 4 | 0 |
+| qwen3.8:27b-mtp-q4_K_M (think) | 0 | 0 | 0 | 0 | 0 | 1 | 0 |
 | gemma4:12b-it-qat (no-think) | 5 | 0 | 3 | 4 | 2 | 2 | 0 |
 | gemma4:12b-it-qat (think) | 0 | 0 | 0 | 0 | 1 | 1 | 0 |
 | gemma4:26b-a4b-it-qat (think) | 0 | 0 | 0 | 0 | 0 | 3 | 0 |
@@ -1704,7 +1762,6 @@ xychart-beta
 | qwen3-coder:30b (no-think) | 1 | 1 | 0 | 15 | 4 | 2 | 0 |
 | gemma4:e2b (no-think) | 14 | 5 | 16 | 10 | 2 | 9 | 0 |
 | qwen3.5:latest (no-think) | 8 | 0 | 2 | 0 | 4 | 0 | 0 |
-| gpt-oss:20b (no-think) | 0 | 0 | 1 | 0 | 0 | 0 | 0 |
 | gemma4:e2b (think) | 6 | 0 | 3 | 1 | 0 | 4 | 1 |
 | qwen3.5:latest (think) | 3 | 0 | 3 | 6 | 0 | 0 | 0 |
 | qwen3.6:27b-coding-mtp-q4_K_M (think) | 0 | 0 | 0 | 2 | 0 | 0 | 0 |
@@ -1713,12 +1770,15 @@ xychart-beta
 
 - **gemma4:latest (think)**: tuned NUM_THREADS=30 on top of: Implement multi-threading over the row dimension (i) combined with the i-k-j loop order to maximize cache locality and leverage multiple cores.
 - **qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)**: Fix the incorrect accumulation in the inner loop by initializing C to zero before the k-loop, as the current code assumes C is already zeroed but the harness does not guarantee …
+- **gemma4:26b-a4b-it-qat (no-think)**: Use multithreading to distribute rows of the computation across available CPU cores to increase GFLOPS.
 - **qwen3.6:27b-coding-mtp-q4_K_M (no-think)**: Switch to an i-k-j loop order with cache blocking to improve data locality and enable better vectorization, which is a foundational optimization for matrix multiplication that …
+- **gpt-oss:20b (no-think)**: tuned TILE_K=73 on top of: Replace the naive triple loop with a row‑parallel, i‑k‑j loop that zeros C, uses a k‑blocking tile, and unrolls the inner j loop for better cache …
 - **gemma4:latest (no-think)**: Initialize C elements to zero before the main calculation loop to ensure correctness when accumulation starts from arbitrary values.
 - **gpt-oss:20b (think)**: Parallelize over row blocks with up to 10 threads to utilize all CPU cores and reduce total runtime while keeping the existing cache‑friendly i‑k‑j order.
 - **gemma4:e4b-it-qat (no-think)**: Implement thread partitioning over the outer loop (i) using `std::thread` to utilize all 10 available cores, building upon the existing $i-k-j$ loop order for cache efficiency.
 - **gemma4:e4b-it-qat (think)**: Initialize matrix C to zero at the start of matmul to ensure correct accumulation, as the input C is not guaranteed to be zeroed by the caller.
 - **qwen3.8:27b-mtp-q4_K_M (no-think)**: The tiling loop is correct but slow/uninitialized-prone; replace the body with a correct tiled i-k-j implementation and add multithreading over row-blocks to raise GFLOPS.
+- **qwen3.8:27b-mtp-q4_K_M (think)**: Replace the naive scalar triple-loop with a multithreaded i-k-j loop order using explicit NEON fma intrinsics (4-wide) on the inner j-loop, which streams contiguous rows of B and …
 - **gemma4:12b-it-qat (no-think)**: Reorder loops to i-k-j to improve cache locality and use a multi-threaded approach with basic SIMD to significantly increase GFLOPS.
 - **gemma4:12b-it-qat (think)**: Implement multithreading and the i-k-j loop order to significantly improve cache locality and utilize all 10 cores.
 - **gemma4:26b-a4b-it-qat (think)**: Use i-k-j loop order with ARM NEON SIMD vectorization and multithreading to maximize cache locality and throughput.
@@ -1728,7 +1788,6 @@ xychart-beta
 - **qwen3-coder:30b (no-think)**: tuned TILE_SIZE=32, THREAD_THRESHOLD=128 on top of: Introduce a cache-blocking approach with loop reordering i-k-j and NEON vectorization to improve memory access patterns and …
 - **gemma4:e2b (no-think)**: tuned BLOCK_SIZE=32 on top of: Implement loop interchange ($j-i-k$) combined with cache blocking to improve data locality and leverage NEON vectorization for inner loop …
 - **qwen3.5:latest (no-think)**: initial program
-- **gpt-oss:20b (no-think)**: initial program
 - **gemma4:e2b (think)**: Implement cache tiling over blocks of size $B=64$ and parallelize the outer loop over $i$ using threads to exploit the 10 cores, significantly reducing the constant factor for …
 - **qwen3.5:latest (think)**: initial program
 - **qwen3.6:27b-coding-mtp-q4_K_M (think)**: initial program

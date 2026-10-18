@@ -1,0 +1,100 @@
+{
+ "schema": 2,
+ "example": "feature_engineering",
+ "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+ "variant": "think",
+ "model_size_gb": 17.8,
+ "model_params": "27.3B",
+ "started": "2026-10-18T08:36:45",
+ "minutes_budget": 15.0,
+ "wall_minutes": 19.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "fa8d287",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.623,
+ "best_score": 0.76,
+ "improvement": 1.2199036918138042,
+ "llm_calls": 3,
+ "mean_llm_seconds": 382.8,
+ "attempts": 3,
+ "ok": 3,
+ "statuses": {
+  "ok": 3
+ },
+ "sweeps": 1,
+ "sweep_variants": 16,
+ "improvements": 2,
+ "minutes_to_best": 13.42,
+ "best_idea": "tuned LOG_THRESH=0.7459 on top of: Introduce a log-transform of the skewed input, pairwise products and their signs for the Gaussian-like inputs, a radius term, and a threshold indicator to expose the",
+ "progress": [
+  [
+   0.0,
+   0.623
+  ],
+  [
+   7.04,
+   0.757
+  ],
+  [
+   13.42,
+   0.76
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.623,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 13.42,
+   "score": 0.743,
+   "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Introduce a log-transform of the skewed input, pairwise products and their signs for the Gaussian-like inputs, a radius term, and a threshold indicator to expose the hidden nonlinear decision boundary to the linear classifier."
+  },
+  {
+   "minutes": 13.42,
+   "score": 0.76,
+   "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+   "mode": "sweep/exploit/diff/refine",
+   "status": "ok",
+   "idea": "tuned LOG_THRESH=0.7459 on top of: Introduce a log-transform of the skewed input, pairwise products and their signs for the Gaussian-like inputs, a radius term, and a threshold indicator to expose the hidden nonlinear decision boundary to the linear classifier."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -9,17 +9,21 @@\n import math\n \n # OMEGA-BLOCK-START\n+LOG_THRESH = 0.745935416716319\n+\n def features(row):\n-    \"\"\"Return the feature vector (a list of at most 30 finite floats) for one row.\n-\n-    row: list of 6 floats [x1, x2, x3, x4, x5, x6]. Roughly: x1, x2, x6 are\n-    standard-normal-like, x3 is positive and right-skewed (lognormal-like), x4 and x5\n-    lie in [-2, 2]. The label is a hidden NONLINEAR function of the inputs plus noise.\n-    Every row must give the same number of features. The classifier is linear in the\n-    features (they are standardized and a bias is added), so nonlinear structure only\n-    helps if a feature expresses it. Only the Python standard library may be used.\n-\n-    Current method: the raw inputs.\n-    \"\"\"\n-    return list(row)\n+    \"\"\"Return engineered features that linearize the hidden nonlinear boundary.\"\"\"\n+    x1, x2, x3, _, _, x6 = row\n+    lx3 = math.log(max(x3, 1e-9))\n+    x1x2 = x1 * x2\n+    x1x6 = x1 * x6\n+    x2x6 = x2 * x6\n+    return [\n+        x1, x2, x6,\n+        lx3, 1.0 if lx3 > LOG_THRESH else 0.0,\n+        x1x2, math.copysign(1.0, x1x2),\n+        x1x6, math.copysign(1.0, x1x6),\n+        x2x6, math.copysign(1.0, x2x6),\n+        x1*x1 + x2*x2\n+    ]\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 18.2,
+ "model_gpu_memory_gb": 18.2,
+ "context_length": 32768,
+ "load_seconds": 9.0,
+ "median_call_seconds": 380.1,
+ "p90_call_seconds": 422.0,
+ "prompt_tokens_per_s": 106.7,
+ "gen_tokens_per_s": 12.6,
+ "mean_prompt_tokens": 1920,
+ "mean_gen_tokens": 4542,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

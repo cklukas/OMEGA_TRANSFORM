@@ -379,7 +379,67 @@ def country_ranking(ranked: list[dict]) -> list[dict]:
              "lag": (1 - e["share"] / lead) if lead > 0 else 0.0} for c, e in rows]
 
 
-def ranking_section(results: list[dict]) -> str:
+# Size classes for the timeline: a developer's newer but smaller model must not
+# read as a step back. Total parameters (all experts of a mixture-of-experts model).
+SIZE_CLASSES = [(15.0, "under 15B"), (float("inf"), "15B and up")]
+
+
+def size_class(params_b: float | None) -> str:
+    if not params_b:
+        return "size unknown"
+    return next(name for limit, name in SIZE_CLASSES if params_b < limit)
+
+
+def timeline(ranked: list[dict], releases: dict[str, dict]) -> dict[tuple[str, str], list[dict]]:
+    """Per developer and size class: its ranked models by release date, each with the
+    better of its reasoning modes. Models without a known release date are left out."""
+    best: dict[str, dict] = {}
+    for e in ranked:
+        info = releases.get(e["model"]) or {}
+        if info.get("released") and (e["model"] not in best
+                                     or e["share"] > best[e["model"]]["share"]):
+            best[e["model"]] = dict(e, released=info["released"], params_b=info.get("params_b"))
+    out: dict[tuple[str, str], list[dict]] = defaultdict(list)
+    for e in best.values():
+        out[(developer(e["model"]), size_class(e["params_b"]))].append(e)
+    order = {name: i for i, (_, name) in enumerate(SIZE_CLASSES)}
+    return {key: sorted(rows, key=lambda e: (e["released"], e["model"]))
+            for key, rows in sorted(out.items(), key=lambda kv: (kv[0][0], order.get(kv[0][1], 9)))}
+
+
+def timeline_section(ranked: list[dict], releases: dict[str, dict], tag: str) -> str:
+    """Each developer's models in the order they were released: does a developer's
+    newer model do better on these examples?"""
+    lines = timeline(ranked, releases)
+    if not lines:
+        return ""
+    parts = ["\n#### Progress over time\n\nEach developer's ranked models by release date "
+             "(the original publication on Hugging Face, or OpenRouter's listing date), with "
+             "the share of the better of their two modes. Models are compared only within a "
+             "size class (total parameters, " + ", ".join(n for _, n in SIZE_CLASSES) + "), so "
+             "that a newer but smaller model does not read as a step back; mixture-of-experts "
+             "models use only part of their parameters per token. Variants of one release "
+             "share its date. A chart is drawn where a developer has three or more release "
+             "dates in one size class.\n\n"
+             "| Developer | Size class | Released | Model | Parameters | Share |\n"
+             "|---|---|---|---|--:|--:|\n"]
+    for (who, size), rows in lines.items():
+        for e in rows:
+            params = f"{e['params_b']:g}B" if e.get("params_b") else "?"
+            parts.append(f"| {who} | {size} | {e['released']} | {e['label']} | {params} | "
+                         f"{e['share']:.0%} |\n")
+    for (who, size), rows in lines.items():
+        if len({e["released"] for e in rows}) >= 3:
+            labels = [f"{chart_label({'model': e['model']})} ({e['released'][:7]})" for e in rows]
+            vals = ", ".join(f"{100 * e['share']:.4g}" for e in rows)
+            title = f"{who}, {tag}, {size}: share by release date"
+            parts.append(f"\n```mermaid\nxychart-beta\n    title {_q(title)}\n"
+                         f"    x-axis [{', '.join(_q(lbl) for lbl in labels)}]\n"
+                         f"    y-axis {_q('% of the best gain')} 0 --> 100\n    line [{vals}]\n```\n")
+    return "".join(parts)
+
+
+def ranking_section(results: list[dict], releases: dict[str, dict] | None = None) -> str:
     """The overall ranking, one table per group (local and cloud models)."""
     latest = latest_per_model(results)
     parts = ["\n## Overall ranking\n\n"
@@ -456,6 +516,8 @@ def ranking_section(results: list[dict]) -> str:
                 lag = "–" if i == 1 else f"−{c['lag']:.0%}"
                 parts.append(f"| {i} | {c['country']} | {c['label']} | {c['developer']} | "
                              f"**{c['share']:.0%}** | {lag} | {c['models']} |\n")
+        if releases:
+            parts.append(timeline_section(full, releases, "local" if local else "cloud"))
         if len(full) > 1:
             tag = "local" if local else "cloud"
             parts.append("\n" + bar_chart(
@@ -465,7 +527,8 @@ def ranking_section(results: list[dict]) -> str:
     return "".join(parts)
 
 
-def render(results: list[dict], check: dict | None = None) -> str:
+def render(results: list[dict], check: dict | None = None,
+           releases: dict[str, dict] | None = None) -> str:
     parts = [HEADER]
     if check:
         parts.append(check_section(check))
@@ -478,7 +541,7 @@ def render(results: list[dict], check: dict | None = None) -> str:
                  f"cores, {m.get('memory_gb', '?')} GB"
                  + (f" — results come from {len(machines)} different machines" if len(machines) > 1
                     else "") + ".\n")
-    parts.append(ranking_section(results))
+    parts.append(ranking_section(results, releases))
     for example, by_model in sorted(latest_per_model(results).items()):
         rows = list(by_model.values())
         budget = max(r.get("minutes_budget", 0) for r in rows)
@@ -553,5 +616,7 @@ def write_report(results_dir: Path, out: Path) -> Path:
     out.parent.mkdir(parents=True, exist_ok=True)
     check_file = results_dir.parent / "model-check.json"
     check = json.loads(check_file.read_text()) if check_file.exists() else None
-    out.write_text(render(load_results(results_dir), check))
+    from .releases import load
+    releases = load(results_dir.parent / "model-releases.json")
+    out.write_text(render(load_results(results_dir), check, releases))
     return out

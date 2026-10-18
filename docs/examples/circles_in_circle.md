@@ -146,4 +146,4 @@ The latest run per model and reasoning mode; the [model benchmarks](../benchmark
 | gemma4:e2b (think) | local | 3.18905 | ×1.00 | - | 0 |
 | gemma4:26b-a4b-it-qat (think) | local | 3.18905 | ×1.00 | - | 0 |
 | qwen3.8:27b-mtp-q4_K_M (think) | local | | | | failed: all 1 model requests failed: qwen3.8:27b-mtp-q4_K_M: answer … |
-| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | | | | failed: all 1 model requests failed: qwen3.6:27b-coding-mtp-q4_K_M … |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | 3.18905 | ×1.00 | - | 0 |
