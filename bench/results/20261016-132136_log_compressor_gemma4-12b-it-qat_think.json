@@ -1,0 +1,76 @@
+{
+ "schema": 2,
+ "example": "log_compressor",
+ "model": "gemma4:12b-it-qat",
+ "variant": "think",
+ "model_size_gb": 7.2,
+ "model_params": "11.9B",
+ "started": "2026-10-16T13:21:36",
+ "minutes_budget": 15.0,
+ "wall_minutes": 20.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 11.28605206956168,
+ "best_score": 11.28605206956168,
+ "improvement": 1.0,
+ "llm_calls": 2,
+ "mean_llm_seconds": 606.7,
+ "attempts": 2,
+ "ok": 0,
+ "statuses": {
+  "llm_error": 2
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 0,
+ "minutes_to_best": null,
+ "best_idea": "initial program",
+ "progress": [
+  [
+   0.0,
+   11.28605206956168
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 11.28605206956168,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  }
+ ],
+ "best_diff": "",
+ "error": "all 2 model requests failed: gemma4:12b-it-qat: answer stopped: reasoning exceeded 42760 characters",
+ "model_memory_gb": 8.0,
+ "model_gpu_memory_gb": 8.0,
+ "context_length": 32768,
+ "load_seconds": 0,
+ "median_call_seconds": 700.1,
+ "p90_call_seconds": 700.1,
+ "prompt_tokens_per_s": null,
+ "gen_tokens_per_s": null,
+ "mean_prompt_tokens": 0,
+ "mean_gen_tokens": 0,
+ "stopped_calls": 2,
+ "provider": "ollama",
+ "cost_usd": 0
+}

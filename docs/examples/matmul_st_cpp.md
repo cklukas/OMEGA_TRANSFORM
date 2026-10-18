@@ -62,7 +62,7 @@ extern "C" void matmul(int n, const float* A, const float* B, float* C) {
 
 ## Benchmark results
 
-The best result so far comes from **nvidia/nemotron-3-super-120b-a12b:free (no-think)**, run through OpenRouter on 2026-10-10: a score of **49.1573** (×28.94 the starting program's 1.69859), reached after 13.05 of 15 minutes with 88 model requests.
+The best result so far comes from **qwen3:30b-a3b-instruct-2507-q4_K_M (think)**, run locally with Ollama on 2026-10-18: a score of **62.9670** (×37.29 the starting program's 1.68841), reached after 4.45 of 15 minutes with 48 model requests.
 
 ### How it got there
 
@@ -70,13 +70,8 @@ The best program's ancestry, from the starting program on. "Edit" and "rewrite" 
 
 | Step | Minute | Score | Kind | Idea |
 |--:|--:|--:|---|---|
-| 0 | 0.0 | 1.69859 | start | initial program |
-| 1 | 0.3 | invalid | rewrite | Change loop order to i-k-j to improve cache reuse of A and enable efficient streaming of B and C rows, reducing memory latency and increasing FLOP/s. |
-| 2 | 1.0 | 25.9011 | fix-up | Initialize C to zero before accumulation to fix incorrect results caused by uninitialized values, while maintaining the i-k-j loop order for cache efficiency. |
-| 3 | 1.6 | 21.1039 | edit | Use cache blocking (tiling) with i-k-j loop order within tiles to improve data reuse and reduce memory bandwidth pressure, with BLOCK_SIZE set to 64 as a starting point for tuning. |
-| 4 | 1.6 | 28.5723 | parameter sweep | tuned BLOCK_SIZE=128 on top of: Use cache blocking (tiling) with i-k-j loop order within tiles to improve data reuse and reduce memory bandwidth pressure, with BLOCK_SIZE set to 64 as a starting point for tuning. |
-| 5 | 13.1 | 46.3578 | edit | Increase UNROLL factor to 8 and add NEON vectorization of the inner j-loop to process 4 columns per iteration, improving instruction-level parallelism and memory throughput while maintaining correctness via proper tail handling. |
-| 6 | 13.1 | 49.1573 | parameter sweep | tuned BLOCK_SIZE=112, UNROLL=8 on top of: Increase UNROLL factor to 8 and add NEON vectorization of the inner j-loop to process 4 columns per iteration, improving instruction-level parallelism and memory throughput while maintaining correctness via proper … |
+| 0 | 0.0 | 1.68841 | start | initial program |
+| 1 | 4.5 | 62.9670 | rewrite | Use i-k-j loop order with 8x16 register blocking and NEON FMA intrinsics to maximize data reuse, enable vectorization, and reduce memory bandwidth, while ensuring correct initialization and handling of non-aligned sizes via unrolling and tiling. |
 
 ### The best program
 
@@ -85,79 +80,67 @@ What changed compared with the starting program:
 ```diff
 --- initial
 +++ best
-@@ -20,12 +20,71 @@
- // Computes C = A * B on the calling thread. C is NOT zeroed by the caller.
- // n is any size from 1 to 2048.
- void matmul(int n, const float* A, const float* B, float* C) {
--    for (int i = 0; i < n; ++i)
-+    for (int i = 0; i < n; ++i) {
-         for (int j = 0; j < n; ++j) {
+@@ -21,14 +21,56 @@
+ #endif
+ 
+ // OMEGA-BLOCK-START
+-// Computes C = A * B on the calling thread. C is NOT zeroed by the caller.
+-// n is any size from 1 to 2048.
+ extern "C" void matmul(int n, const float* A, const float* B, float* C) {
++    constexpr int TILE_M = 8;
++    constexpr int TILE_N = 16;
++    constexpr int K_UNROLL = 4;
++
++    // Initialize C to zero
+     for (int i = 0; i < n; ++i)
+-        for (int j = 0; j < n; ++j) {
 -            float s = 0.0f;
 -            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];
 -            C[i * n + j] = s;
++        for (int j = 0; j < n; ++j)
 +            C[i * n + j] = 0.0f;
++
++    // Tile loop: process C in blocks of TILE_M x TILE_N
++    for (int i = 0; i < n; i += TILE_M) {
++        for (int j = 0; j < n; j += TILE_N) {
++            // Compute the actual tile dimensions (handle boundary)
++            int m_end = std::min(i + TILE_M, n);
++            int n_end = std::min(j + TILE_N, n);
++
++            // Temporary registers for C tile (8x16 floats)
++            float C_reg[TILE_M][TILE_N];
++            for (int mi = 0; mi < TILE_M; ++mi)
++                for (int nj = 0; nj < TILE_N; ++nj)
++                    C_reg[mi][nj] = 0.0f;
++
++            // Process k loop in chunks for better vectorization and reuse
++            for (int k = 0; k < n; k += K_UNROLL) {
++                // Load B tile (k x TILE_N) into registers, transposed
++                float B_reg[TILE_N][K_UNROLL];
++                for (int nj = 0; nj < TILE_N; ++nj)
++                    for (int ki = 0; ki < K_UNROLL; ++ki)
++                        B_reg[nj][ki] = B[(k + ki) * n + (j + nj)];
++
++                // Load A row segment (TILE_M x K_UNROLL) into registers
++                float A_row[TILE_M][K_UNROLL];
++                for (int mi = 0; mi < TILE_M; ++mi)
++                    for (int ki = 0; ki < K_UNROLL; ++ki)
++                        A_row[mi][ki] = A[(i + mi) * n + (k + ki)];
++
++                // Compute inner product with FMA
++                for (int mi = 0; mi < TILE_M; ++mi)
++                    for (int nj = 0; nj < TILE_N; ++nj)
++                        for (int ki = 0; ki < K_UNROLL; ++ki) {
++                            C_reg[mi][nj] += A_row[mi][ki] * B_reg[nj][ki];
++                        }
++            }
++
++            // Write back C tile
++            for (int mi = 0; mi < m_end - i; ++mi)
++                for (int nj = 0; nj < n_end - j; ++nj)
++                    C[(i + mi) * n + (j + nj)] += C_reg[mi][nj];
          }
 +    }
-+    constexpr int BLOCK_SIZE = 112;
-+    constexpr int UNROLL = 8;
-+    for (int i0 = 0; i0 < n; i0 += BLOCK_SIZE)
-+        for (int k0 = 0; k0 < n; k0 += BLOCK_SIZE)
-+            for (int j0 = 0; j0 < n; j0 += BLOCK_SIZE) {
-+                const int i1 = std::min(i0 + BLOCK_SIZE, n);
-+                const int k1 = std::min(k0 + BLOCK_SIZE, n);
-+                const int j1 = std::min(j0 + BLOCK_SIZE, n);
-+                for (int i = i0; i < i1; ++i) {
-+                    int k = k0;
-+                    for (; k + UNROLL <= k1; k += UNROLL) {
-+                        float a0 = A[i * n + k];
-+                        float a1 = A[i * n + k + 1];
-+                        float a2 = A[i * n + k + 2];
-+                        float a3 = A[i * n + k + 3];
-+                        float a4 = A[i * n + k + 4];
-+                        float a5 = A[i * n + k + 5];
-+                        float a6 = A[i * n + k + 6];
-+                        float a7 = A[i * n + k + 7];
-+                        int j = j0;
-+                        for (; j + 4 <= j1; j += 4) {
-+                            float32x4_t c_vec = vld1q_f32(&C[i * n + j]);
-+                            float32x4_t b0_vec = vld1q_f32(&B[k * n + j]);
-+                            float32x4_t b1_vec = vld1q_f32(&B[(k + 1) * n + j]);
-+                            float32x4_t b2_vec = vld1q_f32(&B[(k + 2) * n + j]);
-+                            float32x4_t b3_vec = vld1q_f32(&B[(k + 3) * n + j]);
-+                            float32x4_t b4_vec = vld1q_f32(&B[(k + 4) * n + j]);
-+                            float32x4_t b5_vec = vld1q_f32(&B[(k + 5) * n + j]);
-+                            float32x4_t b6_vec = vld1q_f32(&B[(k + 6) * n + j]);
-+                            float32x4_t b7_vec = vld1q_f32(&B[(k + 7) * n + j]);
-+                            c_vec = vfmaq_f32(c_vec, b0_vec, vdupq_n_f32(a0));
-+                            c_vec = vfmaq_f32(c_vec, b1_vec, vdupq_n_f32(a1));
-+                            c_vec = vfmaq_f32(c_vec, b2_vec, vdupq_n_f32(a2));
-+                            c_vec = vfmaq_f32(c_vec, b3_vec, vdupq_n_f32(a3));
-+                            c_vec = vfmaq_f32(c_vec, b4_vec, vdupq_n_f32(a4));
-+                            c_vec = vfmaq_f32(c_vec, b5_vec, vdupq_n_f32(a5));
-+                            c_vec = vfmaq_f32(c_vec, b6_vec, vdupq_n_f32(a6));
-+                            c_vec = vfmaq_f32(c_vec, b7_vec, vdupq_n_f32(a7));
-+                            vst1q_f32(&C[i * n + j], c_vec);
-+                        }
-+                        for (; j < j1; ++j) {
-+                            float* c_ptr = &C[i * n + j];
-+                            const float* b_ptr = &B[k * n + j];
-+                            *c_ptr += a0 * b_ptr[0];
-+                            *c_ptr += a1 * b_ptr[n];
-+                            *c_ptr += a2 * b_ptr[2 * n];
-+                            *c_ptr += a3 * b_ptr[3 * n];
-+                            *c_ptr += a4 * b_ptr[4 * n];
-+                            *c_ptr += a5 * b_ptr[5 * n];
-+                            *c_ptr += a6 * b_ptr[6 * n];
-+                            *c_ptr += a7 * b_ptr[7 * n];
-+                        }
-+                    }
-+                    for (; k < k1; ++k) {
-+                        float a = A[i * n + k];
-+                        for (int j = j0; j < j1; ++j)
-+                            C[i * n + j] += a * B[k * n + j];
-+                    }
-+                }
-+            }
  }
  // OMEGA-BLOCK-END
 ```
@@ -168,26 +151,35 @@ The latest run per model and reasoning mode; the [model benchmarks](../benchmark
 
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|
+| qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | 62.9670 | ×37.29 | 4.5 | 2 |
 | nvidia/nemotron-3-super-120b-a12b:free (no-think) | cloud | 49.1573 | ×28.94 | 13.1 | 10 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | cloud | 35.3384 | ×23.17 | 16.1 | 4 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 31.1619 | ×18.10 | 14.7 | 5 |
 | nvidia/nemotron-3-super-120b-a12b:free (think) | cloud | 31.1191 | ×19.81 | 7.8 | 4 |
+| gemma4:e4b-it-qat (think) | local | 28.5732 | ×16.50 | 12.8 | 3 |
 | poolside/laguna-s-2.1:free (no-think) | cloud | 28.1830 | ×16.78 | 8.4 | 9 |
 | gemma4:latest (no-think) | local | 28.0668 | ×16.75 | 11.2 | 5 |
 | cohere/north-mini-code:free (no-think) | cloud | 27.7760 | ×15.88 | 8.5 | 4 |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | 27.7123 | ×16.05 | 20.9 | 2 |
 | gemma4:26b-a4b-it-qat (no-think) | local | 26.3310 | ×15.01 | 4.7 | 2 |
 | qwen3.5:27b (no-think) | local | 26.0561 | ×15.43 | 7.4 | 2 |
+| gemma4:12b-it-qat (think) | local | 26.0321 | ×15.32 | 15.3 | 1 |
 | gemma4:12b-it-qat (no-think) | local | 26.0112 | ×15.22 | 5.3 | 3 |
 | gemma4:e4b-it-qat (no-think) | local | 26.0030 | ×14.85 | 11.3 | 4 |
 | qwen3.8:27b-mtp-q4_K_M (no-think) | local | 25.9650 | ×14.88 | 15.7 | 2 |
+| gpt-oss:20b (think) | local | 25.9501 | ×14.81 | 3.1 | 3 |
+| gemma4:latest (think) | local | 25.8752 | ×14.64 | 4.2 | 1 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 25.7986 | ×15.20 | 11.9 | 3 |
-| qwen3.5:latest (think) | local | 25.5246 | ×14.78 | 18.2 | 2 |
+| qwen3.5:27b (think) | local | 25.6155 | ×14.90 | 6.2 | 1 |
+| gemma4:26b-a4b-it-qat (think) | local | 25.4129 | ×14.83 | 14.3 | 1 |
+| qwen3.5:latest (think) | local | 25.4115 | ×14.81 | 12.1 | 1 |
 | gpt-oss:20b (no-think) | local | 25.0933 | ×14.83 | 3.8 | 2 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 21.3526 | ×12.14 | 13.8 | 2 |
 | qwen2.5-coder:7b (no-think) | local | 6.93427 | ×3.96 | 10.6 | 5 |
 | qwen3-coder:30b (no-think) | local | 1.76048 | ×1.00 | - | 0 |
+| gemma4:e2b (think) | local | 1.73554 | ×1.00 | - | 0 |
+| qwen3.8:27b-mtp-q4_K_M (think) | local | 1.7263 | ×1.00 | - | 0 |
 | gemma4:e2b (no-think) | local | 1.71127 | ×1.02 | 12.0 | 2 |
-| gemma4:e2b (think) | local | 1.7021 | ×1.00 | - | 0 |
 | poolside/laguna-s-2.1:free (think) | cloud | 1.6705 | ×1.00 | - | 0 |
 | qwen3.5:latest (no-think) | local | 1.59806 | ×1.00 | - | 0 |
 | cohere/north-mini-code:free (think) | cloud | 1.54957 | ×1.00 | - | 0 |

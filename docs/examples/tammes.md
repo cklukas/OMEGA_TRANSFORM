@@ -245,15 +245,26 @@ The latest run per model and reasoning mode; the [model benchmarks](../benchmark
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|
 | qwen3.5:27b (no-think) | local | 38.5505 | ×12.04 | 15.0 | 5 |
+| qwen3.8:27b-mtp-q4_K_M (think) | local | 38.5061 | ×12.03 | 15.7 | 1 |
 | gemma4:26b-a4b-it-qat (no-think) | local | 38.2264 | ×11.94 | 8.1 | 4 |
 | gemma4:12b-it-qat (no-think) | local | 38.2018 | ×11.93 | 10.8 | 4 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 37.9644 | ×11.86 | 14.5 | 4 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 37.7428 | ×11.79 | 7.0 | 6 |
+| gemma4:latest (think) | local | 37.0936 | ×11.59 | 15.5 | 6 |
 | gemma4:latest (no-think) | local | 37.0129 | ×11.56 | 11.3 | 7 |
 | gpt-oss:20b (no-think) | local | 36.8947 | ×11.52 | 15.3 | 7 |
 | qwen2.5-coder:7b (no-think) | local | 36.8186 | ×11.50 | 9.5 | 7 |
+| gemma4:e4b-it-qat (think) | local | 36.6117 | ×11.44 | 6.0 | 3 |
+| gpt-oss:20b (think) | local | 36.4916 | ×11.40 | 8.3 | 5 |
 | gemma4:e4b-it-qat (no-think) | local | 34.9872 | ×10.93 | 14.2 | 5 |
+| qwen3.5:27b (think) | local | 34.7277 | ×10.85 | 9.0 | 3 |
 | qwen3-coder:30b (no-think) | local | 34.0461 | ×10.63 | 14.3 | 4 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | 33.1981 | ×10.37 | 9.4 | 6 |
 | qwen3.5:latest (no-think) | local | 32.7402 | ×10.23 | 1.3 | 1 |
+| qwen3.5:latest (think) | local | 32.7402 | ×10.23 | 9.7 | 2 |
 | qwen3.8:27b-mtp-q4_K_M (no-think) | local | 29.5856 | ×9.24 | 13.5 | 2 |
+| gemma4:12b-it-qat (think) | local | 14.3392 | ×4.48 | 5.2 | 1 |
 | gemma4:e2b (no-think) | local | 12.0000 | ×3.75 | 13.0 | 5 |
+| gemma4:e2b (think) | local | 10.8343 | ×3.38 | 2.4 | 2 |
+| gemma4:26b-a4b-it-qat (think) | local | | | | failed: all 3 model requests failed: gemma4:26b-a4b-it-qat: answer … |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | | | | failed: all 1 model requests failed: qwen3.6:27b-coding-mtp-q4_K_M … |

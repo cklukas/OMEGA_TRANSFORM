@@ -60,7 +60,7 @@ extern "C" void matmul(int n, const float* A, const float* B, float* C) {
 
 ## Benchmark results
 
-The best result so far comes from **qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)**, run locally with Ollama on 2026-10-15: a score of **167.9280** (×102.91 the starting program's 1.63177), reached after 15.16 of 15 minutes with 48 model requests.
+The best result so far comes from **gemma4:latest (think)**, run locally with Ollama on 2026-10-17: a score of **174.1030** (×108.89 the starting program's 1.59883), reached after 15.8 of 15 minutes with 17 model requests.
 
 ### How it got there
 
@@ -68,11 +68,9 @@ The best program's ancestry, from the starting program on. "Edit" and "rewrite" 
 
 | Step | Minute | Score | Kind | Idea |
 |--:|--:|--:|---|---|
-| 0 | 0.0 | 1.63177 | start | initial program |
-| 1 | 6.5 | compile error | edit | Reorder loops to i-k-j for better streaming of B and C, enable NEON vectorization with fma intrinsics, apply cache blocking with tunable tile size to improve spatial locality, and use multithreading over row blocks to exploit all 10 cores, with parameters … |
-| 2 | 10.8 | 3.60979 | fix-up | Fix the lambda capture syntax by using `&` for all captured variables to avoid the compile error, ensuring correct thread-safe access to shared data while preserving the multithreaded tiling and loop reordering strategy. |
-| 3 | 12.3 | invalid | edit | Reorder loops to i-k-j to enable better streaming of B and C, reduce cache misses, and improve NEON vectorization potential, which should significantly increase performance on Apple Silicon. |
-| 4 | 15.2 | 167.9280 | edit | Fix the incorrect accumulation in the inner loop by initializing C to zero before the k-loop, as the current code assumes C is already zeroed but the harness does not guarantee this, leading to wrong results for n=1. |
+| 0 | 0.0 | 1.59883 | start | initial program |
+| 1 | 15.8 | 140.1360 | rewrite | Implement multi-threading over the row dimension (i) combined with the i-k-j loop order to maximize cache locality and leverage multiple cores. |
+| 2 | 15.8 | 174.1030 | parameter sweep | tuned NUM_THREADS=30 on top of: Implement multi-threading over the row dimension (i) combined with the i-k-j loop order to maximize cache locality and leverage multiple cores. |
 
 ### The best program
 
@@ -81,7 +79,22 @@ What changed compared with the starting program:
 ```diff
 --- initial
 +++ best
-@@ -22,11 +22,30 @@
+@@ -19,14 +19,52 @@
+ #endif
+ 
+ // OMEGA-BLOCK-START
++#include <algorithm>
++#include <chrono>
++#include <cmath>
++#include <cstdio>
++#include <cstdlib>
++#include <cstring>
++#include <thread>
++#include <vector>
++#if defined(__ARM_NEON)
++#include <arm_neon.h>
++#endif
++
  // Computes C = A * B. C is NOT zeroed by the caller. Any number of threads may be
  // used (std::thread is available); n is any size from 1 to 2048.
  extern "C" void matmul(int n, const float* A, const float* B, float* C) {
@@ -90,32 +103,38 @@ What changed compared with the starting program:
 -            float s = 0.0f;
 -            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];
 -            C[i * n + j] = s;
--        }
-+    constexpr int TILE = 64;
-+    constexpr int NUM_THREADS = 10;
-+
-+    const int num_tiles = (n + TILE - 1) / TILE;
++    constexpr int NUM_THREADS = 30;
 +    std::vector<std::thread> threads;
++    int rows_per_thread = (n + NUM_THREADS - 1) / NUM_THREADS;
 +
-+    for (int i0 = 0; i0 < n; i0 += TILE) {
-+        int i1 = std::min(i0 + TILE, n);
-+        threads.emplace_back([&A, &B, &C, n, i0, i1]() {
-+            // Process tile of C rows [i0, i1)
-+            for (int i = i0; i < i1; ++i) {
++    auto worker = [&](int start_i, int end_i) {
++        for (int i = start_i; i < end_i; ++i) {
++            // Row initialization: C[i, j] = 0 for all j
++            for (int j = 0; j < n; ++j) {
++                C[i * n + j] = 0.0f;
++            }
++            
++            // i-k-j loop order (better locality for C and B)
++            for (int k = 0; k < n; ++k) {
++                float a_ik = A[i * n + k];
++                // Innermost loop over j
 +                for (int j = 0; j < n; ++j) {
-+                    C[i * n + j] = 0.0f; // Initialize C[i][j] to zero before accumulation
-+                }
-+                for (int k = 0; k < n; ++k) {
-+                    float a = A[i * n + k];
-+                    for (int j = 0; j < n; ++j) {
-+                        C[i * n + j] += a * B[k * n + j];
-+                    }
++                    C[i * n + j] += a_ik * B[k * n + j];
 +                }
 +            }
-+        });
+         }
++    };
++
++    for (int t = 0; t < NUM_THREADS; ++t) {
++        int start_i = t * rows_per_thread;
++        int end_i = std::min(n, (t + 1) * rows_per_thread);
++        if (start_i >= n) break;
++        threads.emplace_back(worker, start_i, end_i);
 +    }
 +
-+    for (auto& t : threads) t.join();
++    for (auto& t : threads) {
++        t.join();
++    }
  }
  // OMEGA-BLOCK-END
 ```
@@ -126,18 +145,27 @@ The latest run per model and reasoning mode; the [model benchmarks](../benchmark
 
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|
+| gemma4:latest (think) | local | 174.1030 | ×108.89 | 15.8 | 8 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 167.9280 | ×102.91 | 15.2 | 2 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 154.8540 | ×93.38 | 16.3 | 2 |
 | gemma4:latest (no-think) | local | 151.3840 | ×95.53 | 15.6 | 5 |
+| gpt-oss:20b (think) | local | 144.0540 | ×88.08 | 15.3 | 5 |
 | gemma4:e4b-it-qat (no-think) | local | 140.1020 | ×85.54 | 15.5 | 6 |
+| gemma4:e4b-it-qat (think) | local | 126.0000 | ×82.93 | 15.5 | 4 |
 | qwen3.8:27b-mtp-q4_K_M (no-think) | local | 120.7810 | ×72.88 | 16.4 | 1 |
 | gemma4:12b-it-qat (no-think) | local | 68.4243 | ×41.57 | 15.4 | 1 |
+| gemma4:12b-it-qat (think) | local | 66.2698 | ×55.31 | 18.3 | 1 |
+| gemma4:26b-a4b-it-qat (think) | local | 41.8195 | ×27.48 | 15.7 | 1 |
 | qwen3.5:27b (no-think) | local | 25.6098 | ×15.46 | 16.8 | 3 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | 25.2873 | ×15.64 | 15.3 | 2 |
 | qwen2.5-coder:7b (no-think) | local | 12.1382 | ×7.25 | 15.4 | 2 |
 | qwen3-coder:30b (no-think) | local | 8.45239 | ×5.08 | 16.7 | 2 |
 | gemma4:e2b (no-think) | local | 1.68469 | ×1.05 | 15.8 | 3 |
 | qwen3.5:latest (no-think) | local | 1.6743 | ×1.00 | - | 0 |
-| qwen3.5:latest (think) | local | 1.62938 | ×1.00 | - | 0 |
 | gpt-oss:20b (no-think) | local | 1.61662 | ×1.00 | - | 0 |
 | gemma4:26b-a4b-it-qat (no-think) | local | | | | failed: all 1 model requests failed: gemma4:26b-a4b-it-qat: no … |
-| gemma4:e2b (think) | local | 1.55072 | ×1.00 | - | 0 |
+| qwen3.8:27b-mtp-q4_K_M (think) | local | | | | failed: all 1 model requests failed: qwen3.8:27b-mtp-q4_K_M … |
+| gemma4:e2b (think) | local | 1.53353 | ×1.58 | 10.1 | 4 |
+| qwen3.5:latest (think) | local | 1.33259 | ×1.00 | - | 0 |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | 1.32423 | ×1.00 | - | 0 |
+| qwen3.5:27b (think) | local | | | | failed: all 1 model requests failed: qwen3.5:27b: answer stopped … |

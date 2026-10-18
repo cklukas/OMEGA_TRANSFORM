@@ -1,0 +1,104 @@
+{
+ "schema": 2,
+ "example": "feature_engineering",
+ "model": "qwen3.8:27b-mtp-q4_K_M",
+ "variant": "think",
+ "model_size_gb": 17.7,
+ "model_params": "27.3B",
+ "started": "2026-10-16T18:19:28",
+ "minutes_budget": 15.0,
+ "wall_minutes": 22.7,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.623,
+ "best_score": 0.931,
+ "improvement": 1.4943820224719102,
+ "llm_calls": 4,
+ "mean_llm_seconds": 339.6,
+ "attempts": 4,
+ "ok": 4,
+ "statuses": {
+  "ok": 4
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 3,
+ "minutes_to_best": 22.65,
+ "best_idea": "Replace the unbounded polynomial basis with a bounded multi-scale tanh activation set plus hard threshold indicators and sign/quadrant features, which directly captures step-function and XOR-like boun",
+ "progress": [
+  [
+   0.0,
+   0.623
+  ],
+  [
+   6.52,
+   0.788
+  ],
+  [
+   13.01,
+   0.882
+  ],
+  [
+   22.65,
+   0.931
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.623,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 6.52,
+   "score": 0.788,
+   "model": "qwen3.8:27b-mtp-q4_K_M",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Replace raw inputs with a comprehensive 2nd-order polynomial feature set (raw inputs + log(x3) + all 15 pairwise products + all 6 squares) so the linear classifier can represent any quadratic nonlinear boundary in the original space, which is the most common form of hidden rule in synthetic data."
+  },
+  {
+   "minutes": 22.65,
+   "score": 0.931,
+   "model": "qwen3.8:27b-mtp-q4_K_M",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Replace the unbounded polynomial basis with a bounded multi-scale tanh activation set plus hard threshold indicators and sign/quadrant features, which directly captures step-function and XOR-like boundaries that polynomials can only approximate with many terms, and the multi-scale tanh lets a single linear weight fit different sharpnesses of the same threshold."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -10,16 +10,40 @@\n \n # OMEGA-BLOCK-START\n def features(row):\n-    \"\"\"Return the feature vector (a list of at most 30 finite floats) for one row.\n+    \"\"\"28-dim: bounded tanh multi-scale + hard thresholds + sign/quadrant features.\"\"\"\n+    x1, x2, x3, x4, x5, x6 = row\n+    log3 = math.log(max(x3, 1e-12))\n+    r2 = x4 * x4 + x5 * x5 + x6 * x6\n+    prod = x1 * x2\n+    s1 = 1.0 if x1 >= 0.0 else -1.0\n+    s2 = 1.0 if x2 >= 0.0 else -1.0\n \n-    row: list of 6 floats [x1, x2, x3, x4, x5, x6]. Roughly: x1, x2, x6 are\n-    standard-normal-like, x3 is positive and right-skewed (lognormal-like), x4 and x5\n-    lie in [-2, 2]. The label is a hidden NONLINEAR function of the inputs plus noise.\n-    Every row must give the same number of features. The classifier is linear in the\n-    features (they are standardized and a bias is added), so nonlinear structure only\n-    helps if a feature expresses it. Only the Python standard library may be used.\n-\n-    Current method: the raw inputs.\n-    \"\"\"\n-    return list(row)\n+    out = [\n+        # Core smooth (6)\n+        log3, prod, r2, x1, x2, x6,\n+        # Multi-scale tanh: bounded, captures thresholds (6)\n+        math.tanh(2.0 * log3),\n+        math.tanh(5.0 * log3),\n+        math.tanh(2.0 * prod),\n+        math.tanh(5.0 * prod),\n+        math.tanh(2.0 * (2.0 - r2)),\n+        math.tanh(5.0 * (2.0 - r2)),\n+        # Hard sign / quadrant (3)\n+        s1 * s2,\n+        s1 * x2,\n+        s2 * x1,\n+        # Cross with log3 (2)\n+        x1 * log3,\n+        x2 * log3,\n+        # Other products (4)\n+        x1 * x6, x2 * x6, x4 * x4, x5 * x5,\n+        # Hard threshold indicators (4)\n+        1.0 if log3 > 0.0 else 0.0,\n+        1.0 if prod > 0.0 else 0.0,\n+        1.0 if r2 < 2.0 else 0.0,\n+        1.0 if r2 < 4.0 else 0.0,\n+        # Remaining raw (3)\n+        x6 * x6, x4, x5,\n+    ]\n+    return out\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 18.3,
+ "model_gpu_memory_gb": 18.3,
+ "context_length": 32768,
+ "load_seconds": 181.8,
+ "median_call_seconds": 390.9,
+ "p90_call_seconds": 578.5,
+ "prompt_tokens_per_s": 107.1,
+ "gen_tokens_per_s": 12.3,
+ "mean_prompt_tokens": 2095,
+ "mean_gen_tokens": 3369,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

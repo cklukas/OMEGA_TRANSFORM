@@ -1,0 +1,106 @@
+{
+ "schema": 2,
+ "example": "feature_engineering",
+ "model": "qwen3.5:latest",
+ "variant": "think",
+ "model_size_gb": 6.6,
+ "model_params": "9.7B",
+ "started": "2026-10-16T16:24:49",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.623,
+ "best_score": 0.825,
+ "improvement": 1.3242375601926164,
+ "llm_calls": 14,
+ "mean_llm_seconds": 64.4,
+ "attempts": 14,
+ "ok": 11,
+ "statuses": {
+  "invalid": 2,
+  "ok": 11,
+  "llm_error": 1
+ },
+ "sweeps": 2,
+ "sweep_variants": 6,
+ "improvements": 3,
+ "minutes_to_best": 9.65,
+ "best_idea": "Fix the domain error by using abs() before log(x6), since x6 is normal-like (can be negative) but we want a bounded monotonic transformation of its magnitude",
+ "progress": [
+  [
+   0.0,
+   0.623
+  ],
+  [
+   1.92,
+   0.717
+  ],
+  [
+   9.34,
+   0.757
+  ],
+  [
+   9.65,
+   0.825
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.623,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.35,
+   "score": null,
+   "model": "qwen3.5:latest",
+   "mode": "explore/diff/bold",
+   "status": "invalid",
+   "idea": "Transform the skewed x3 with log(x3 + eps) to linearize its relationship, add squared terms for potential quadratic effects, and include pairwise products like x1*x2 for interaction structure\u2014this captures nonlinearity while keeping feature count reasonable for regularization"
+  },
+  {
+   "minutes": 9.65,
+   "score": 0.825,
+   "model": "qwen3.5:latest",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Fix the domain error by using abs() before log(x6), since x6 is normal-like (can be negative) but we want a bounded monotonic transformation of its magnitude"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -9,6 +9,7 @@\n import math\n \n # OMEGA-BLOCK-START\n+EPS = 1e-8\n def features(row):\n     \"\"\"Return the feature vector (a list of at most 30 finite floats) for one row.\n \n@@ -19,7 +20,29 @@\n     features (they are standardized and a bias is added), so nonlinear structure only\n     helps if a feature expresses it. Only the Python standard library may be used.\n \n-    Current method: the raw inputs.\n+    Transformations: raw inputs, log(x3), squared terms, and pairwise products.\n     \"\"\"\n-    return list(row)\n+    x1, x2, x3, x4, x5, x6 = row\n+    f0 = x1\n+    f1 = x2\n+    f2 = x3\n+    f3 = x6\n+    f4 = math.log(x3 + EPS)\n+    f5 = x4\n+    f6 = x5\n+    f7 = x1 * x2\n+    f8 = x1 * x3\n+    f9 = x2 * x3\n+    f10 = x4 * x5\n+    f11 = x1 ** 2\n+    f12 = x2 ** 2\n+    f13 = math.log(abs(x6) + EPS)\n+    f14 = x4 ** 2\n+    f15 = sign_feature(x1, x2)\n+    return [f0, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15]\n+\n+def sign_feature(a, b):\n+    \"\"\"Return 1 if a*b > 0 else -1 (captures XOR-like quadrant structure).\"\"\"\n+    prod = a * b\n+    return 1.0 if prod > EPS else (-1.0 if prod < -EPS else 0.0)\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 6.8,
+ "model_gpu_memory_gb": 6.8,
+ "context_length": 32768,
+ "load_seconds": 33.9,
+ "median_call_seconds": 41.0,
+ "p90_call_seconds": 89.3,
+ "prompt_tokens_per_s": 447.5,
+ "gen_tokens_per_s": 35.8,
+ "mean_prompt_tokens": 2804,
+ "mean_gen_tokens": 1268,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

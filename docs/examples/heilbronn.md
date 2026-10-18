@@ -51,7 +51,7 @@ def run():
 
 ## Benchmark results
 
-The best result so far comes from **gemma4:12b-it-qat (no-think)**, run locally with Ollama on 2026-10-14: a score of **0.01662** (×3.47 the starting program's 0.00479), reached after 17.36 of 15 minutes with 19 model requests.
+The best result so far comes from **gemma4:latest (think)**, run locally with Ollama on 2026-10-16: a score of **0.02049** (×4.28 the starting program's 0.00479), reached after 5.91 of 15 minutes with 21 model requests.
 
 ### How it got there
 
@@ -60,10 +60,9 @@ The best program's ancestry, from the starting program on. "Edit" and "rewrite" 
 | Step | Minute | Score | Kind | Idea |
 |--:|--:|--:|---|---|
 | 0 | 0.0 | 0.00479 | start | initial program |
-| 1 | 4.3 | 0.01329 | edit | Implement a simple hill-climbing optimization with random restarts to maximize the minimum triangle area, as the current circular layout is far from optimal. |
-| 2 | 4.3 | 0.01636 | parameter sweep | tuned temp=0.5 on top of: Implement a simple hill-climbing optimization with random restarts to maximize the minimum triangle area, as the current circular layout is far from optimal. |
-| 3 | 17.4 | 0.01457 | edit | Replace the fixed iteration count with a time-bound loop and introduce a variable for the starting temperature and cooling rate to allow for better exploration of the search space. |
-| 4 | 17.4 | 0.01662 | parameter sweep | tuned START_TEMP=0.8, COOLING_RATE=0.995 on top of: Replace the fixed iteration count with a time-bound loop and introduce a variable for the starting temperature and cooling rate to allow for better exploration of the search space. |
+| 1 | 2.6 | 0.01331 | edit | Increase the radius from 0.3 to 0.5 to ensure the generated points span the entire unit square, significantly increasing the minimum possible triangle area compared to a small circumscribed circle. |
+| 2 | 4.2 | 0.01323 | edit | Implement a randomized local search optimization starting from the regular polygon configuration to iteratively perturb points and maximize the minimum triangle area, as suggested by successful prior attempts. |
+| 3 | 5.9 | 0.02049 | edit | Replace the heuristic acceptance criteria with a proper Simulated Annealing cooling schedule to allow for broader exploration while gradually converging towards local maxima. |
 
 ### The best program
 
@@ -72,82 +71,78 @@ What changed compared with the starting program:
 ```diff
 --- initial
 +++ best
-@@ -5,17 +5,69 @@
- import math
- 
- # OMEGA-BLOCK-START
-+import random
-+import time
-+
- def construct(n=13):
--    """Return a list of n points (x, y) inside the closed unit square [0,1]^2.
-+    """Return a list of n points (x, y) inside the closed unit square [0,1]^2."""
-+    start_time = time.time()
-+    best_points = []
-+    best_min_area = -1.0
- 
--    The score is the smallest area among all triangles with corners at three of
--    the points, so no three points may be (nearly) collinear. This start puts
--    the points on a regular polygon on a small circle around the center, which
--    avoids collinear triples but wastes most of the square.
--    """
+@@ -13,9 +13,71 @@
+     the points on a regular polygon on a small circle around the center, which
+     avoids collinear triples but wastes most of the square.
+     """
 -    radius = 0.3
 -    return [(0.5 + radius * math.cos(2 * math.pi * k / n),
 -             0.5 + radius * math.sin(2 * math.pi * k / n)) for k in range(n)]
++    import random
++    random.seed(42) # Fixed seed for reproducibility
++
++    def triangle_area(p1, p2, p3):
++        return 0.5 * abs(p1[0] * (p2[1] - p3[1]) + p2[0] * (p3[1] - p1[1]) + p3[0] * (p1[1] - p2[1]))
++
 +    def get_min_area(points):
-+        m_area = float('inf')
++        min_a = float('inf')
 +        for i in range(n):
-+            x1, y1 = points[i]
 +            for j in range(i + 1, n):
-+                x2, y2 = points[j]
 +                for k in range(j + 1, n):
-+                    x3, y3 = points[k]
-+                    area = 0.5 * abs(x1*(y2 - y3) + x2*(y3 - y1) + x3*(y1 - y2))
-+                    if area < m_area:
-+                        m_area = area
-+        return m_area
++                    area = triangle_area(points[i], points[j], points[k])
++                    if area < min_a:
++                        min_a = area
++        return min_a
 +
-+    # Initial guess: slightly perturbed grid-like or random
-+    while time.time() - start_time < 55:
-+        # Try a few different initial configurations
-+        curr_points = []
-+        if random.random() > 0.5:
-+            # Random points
-+            for _ in range(n):
-+                curr_points.append((random.random(), random.random()))
-+        else:
-+            # Quasi-grid
-+            for i in range(n):
-+                curr_points.append(( (i % 4) / 3.5, (i // 4) / 3.5 ))
++    # Initial placement using the provided radius
++    points = [(0.5 + 0.5 * math.cos(2 * math.pi * k / n),
++               0.5 + 0.5 * math.sin(2 * math.pi * k / n)) for k in range(n)]
 +
-+        curr_min_area = get_min_area(curr_points)
++    current_min_area = get_min_area(points)
++    
++    # Simulated Annealing loop
++    T = 0.1 # Initial Temperature
++    T_min = 1e-6 # Minimum Temperature
++    cooling_rate = 0.9999 # Geometric cooling factor
++    
++    for iteration in range(100000):
++        # Decay temperature
++        T = T * cooling_rate
 +        
-+        # Local search / Hill climbing
-+        START_TEMP = 0.8
-+        COOLING_RATE = 0.995
-+        temp = START_TEMP
++        if T < T_min:
++            break
++            
++        step_size = 0.5 / (1 + iteration / 50000.0) # Initial step size 0.5
 +        
-+        # Use a inner time budget to ensure we maximize the search time
-+        inner_start = time.time()
-+        while time.time() - inner_start < 0.05:
-+            idx = random.randint(0, n - 1)
-+            old_x, old_y = curr_points[idx]
-+            curr_points[idx] = (
-+                max(0, min(1, old_x + random.uniform(-temp, temp))),
-+                max(0, min(1, old_y + random.uniform(-temp, temp)))
-+            )
-+            new_min_area = get_min_area(curr_points)
-+            if new_min_area > curr_min_area:
-+                curr_min_area = new_min_area
-+            else:
-+                curr_points[idx] = (old_x, old_y)
-+            temp *= COOLING_RATE
-+            
-+        if curr_min_area > best_min_area:
-+            best_min_area = curr_min_area
-+            best_points = curr_points
-+            
-+    return best_points
++        i = random.randint(0, n - 1)
++        
++        # Propose a perturbation
++        new_points = [p[:] for p in points]
++        
++        d_x = random.uniform(-step_size, step_size)
++        d_y = random.uniform(-step_size, step_size)
++        
++        # Apply perturbation and clamp
++        new_x = max(0.0, min(1.0, points[i][0] + d_x))
++        new_y = max(0.0, min(1.0, points[i][1] + d_y))
++        
++        new_points[i] = (new_x, new_y)
++        
++        new_min_area = get_min_area(new_points)
++        
++        delta_E = new_min_area - current_min_area
++        
++        # Acceptance criteria: Metropolis criterion
++        if delta_E > 0:
++            points = new_points
++            current_min_area = new_min_area
++        elif T > 1e-10: # Avoid division by zero in near-zero temperature cases
++            acceptance_prob = math.exp(delta_E / T)
++            if random.random() < acceptance_prob:
++                points = new_points
++                current_min_area = new_min_area
++             
++    return points
  # OMEGA-BLOCK-END
 ```
 
@@ -157,16 +152,27 @@ The latest run per model and reasoning mode; the [model benchmarks](../benchmark
 
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|
+| gemma4:latest (think) | local | 0.02049 | ×4.28 | 5.9 | 2 |
+| gemma4:e4b-it-qat (think) | local | 0.01814 | ×3.79 | 14.1 | 3 |
 | gemma4:12b-it-qat (no-think) | local | 0.01662 | ×3.47 | 17.4 | 4 |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | 0.01543 | ×3.22 | 21.0 | 1 |
 | gemma4:26b-a4b-it-qat (no-think) | local | 0.0141 | ×2.94 | 12.7 | 6 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | 0.01394 | ×2.91 | 11.3 | 3 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 0.01332 | ×2.78 | 12.3 | 9 |
 | gemma4:e4b-it-qat (no-think) | local | 0.01331 | ×2.78 | 4.5 | 4 |
 | gemma4:e2b (no-think) | local | 0.01331 | ×2.78 | 2.8 | 2 |
 | gemma4:latest (no-think) | local | 0.01331 | ×2.78 | 4.7 | 1 |
 | gpt-oss:20b (no-think) | local | 0.01331 | ×2.78 | 11.7 | 1 |
+| gpt-oss:20b (think) | local | 0.01331 | ×2.78 | 7.3 | 2 |
+| qwen3.5:27b (think) | local | 0.01287 | ×2.69 | 7.3 | 2 |
+| gemma4:26b-a4b-it-qat (think) | local | 0.01072 | ×2.24 | 18.1 | 3 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 0.00896 | ×1.87 | 11.6 | 1 |
 | qwen3.8:27b-mtp-q4_K_M (no-think) | local | 0.00834 | ×1.74 | 9.8 | 2 |
 | qwen2.5-coder:7b (no-think) | local | 0.00479 | ×1.00 | - | 0 |
 | qwen3.5:latest (no-think) | local | 0.00479 | ×1.00 | - | 0 |
 | qwen3.5:27b (no-think) | local | 0.00479 | ×1.00 | - | 0 |
 | qwen3-coder:30b (no-think) | local | 0.00479 | ×1.00 | - | 0 |
+| qwen3.5:latest (think) | local | 0.00479 | ×1.00 | - | 0 |
+| gemma4:12b-it-qat (think) | local | | | | failed: all 2 model requests failed: gemma4:12b-it-qat: answer … |
+| gemma4:e2b (think) | local | 0.00479 | ×1.00 | - | 0 |
+| qwen3.8:27b-mtp-q4_K_M (think) | local | | | | failed: all 1 model requests failed: qwen3.8:27b-mtp-q4_K_M … |

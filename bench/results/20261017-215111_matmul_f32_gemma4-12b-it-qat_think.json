@@ -1,0 +1,89 @@
+{
+ "schema": 2,
+ "example": "matmul_f32",
+ "model": "gemma4:12b-it-qat",
+ "variant": "think",
+ "model_size_gb": 7.2,
+ "model_params": "11.9B",
+ "started": "2026-10-17T21:51:11",
+ "minutes_budget": 15.0,
+ "wall_minutes": 18.8,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.19814,
+ "best_score": 66.2698,
+ "improvement": 55.310564708631716,
+ "llm_calls": 2,
+ "mean_llm_seconds": 540.0,
+ "attempts": 2,
+ "ok": 1,
+ "statuses": {
+  "llm_error": 1,
+  "ok": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 18.31,
+ "best_idea": "Implement multithreading and the i-k-j loop order to significantly improve cache locality and utilize all 10 cores.",
+ "progress": [
+  [
+   0.0,
+   1.19814
+  ],
+  [
+   18.31,
+   66.2698
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.19814,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 18.31,
+   "score": 66.2698,
+   "model": "gemma4:12b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Implement multithreading and the i-k-j loop order to significantly improve cache locality and utilize all 10 cores."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -22,11 +22,28 @@\n // Computes C = A * B. C is NOT zeroed by the caller. Any number of threads may be\n // used (std::thread is available); n is any size from 1 to 2048.\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+    int num_threads = std::thread::hardware_concurrency();\n+    if (num_threads == 0) num_threads = 1;\n+    std::vector<std::thread> threads;\n+    auto worker = [&](int start_i, int end_i) {\n+        for (int i = start_i; i < end_i; ++i) {\n+            float* Ci = &C[i * n];\n+            std::memset(Ci, 0, n * sizeof(float));\n+            for (int k = 0; k < n; ++k) {\n+                float a = A[i * n + k];\n+                const float* Bk = &B[k * n];\n+                for (int j = 0; j < n; ++j) {\n+                    Ci[j] += a * Bk[j];\n+                }\n+            }\n         }\n+    };\n+    int chunk = n / num_threads;\n+    for (int t = 0; t < num_threads; ++t) {\n+        int start_i = t * chunk;\n+        int end_i = (t == num_threads - 1) ? n : (t + 1) * chunk;\n+        threads.emplace_back(worker, start_i, end_i);\n+    }\n+    for (auto& t : threads) t.join();\n }\n // OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 8.0,
+ "model_gpu_memory_gb": 8.0,
+ "context_length": 32768,
+ "load_seconds": 0.4,
+ "median_call_seconds": 730.3,
+ "p90_call_seconds": 730.3,
+ "prompt_tokens_per_s": 416.5,
+ "gen_tokens_per_s": 24.8,
+ "mean_prompt_tokens": 2478,
+ "mean_gen_tokens": 8481,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

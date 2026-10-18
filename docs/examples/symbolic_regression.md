@@ -227,15 +227,26 @@ The latest run per model and reasoning mode; the [model benchmarks](../benchmark
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 0.99869 | ×3.19 | 6.3 | 2 |
+| qwen3.5:27b (think) | local | 0.99866 | ×3.19 | 19.6 | 2 |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | 0.99865 | ×3.19 | 11.3 | 1 |
 | gemma4:latest (no-think) | local | 0.99864 | ×3.19 | 12.3 | 7 |
+| qwen3.5:latest (think) | local | 0.99862 | ×3.19 | 10.4 | 4 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | 0.99801 | ×3.19 | 7.2 | 4 |
 | gemma4:12b-it-qat (no-think) | local | 0.9978 | ×3.19 | 9.8 | 4 |
 | gemma4:26b-a4b-it-qat (no-think) | local | 0.99772 | ×3.19 | 4.7 | 3 |
 | gemma4:e4b-it-qat (no-think) | local | 0.99768 | ×3.19 | 13.4 | 6 |
+| gemma4:e4b-it-qat (think) | local | 0.99759 | ×3.19 | 13.1 | 2 |
 | qwen3.5:27b (no-think) | local | 0.99752 | ×3.19 | 5.2 | 2 |
+| gemma4:26b-a4b-it-qat (think) | local | 0.99595 | ×3.18 | 14.2 | 1 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 0.99477 | ×3.18 | 10.2 | 2 |
 | qwen3.8:27b-mtp-q4_K_M (no-think) | local | 0.98968 | ×3.16 | 7.6 | 1 |
+| gpt-oss:20b (think) | local | 0.70451 | ×2.25 | 15.0 | 4 |
+| gemma4:e2b (think) | local | 0.49742 | ×1.59 | 15.4 | 4 |
 | gpt-oss:20b (no-think) | local | 0.49719 | ×1.59 | 11.7 | 4 |
 | qwen2.5-coder:7b (no-think) | local | 0.44035 | ×1.41 | 10.5 | 5 |
 | qwen3.5:latest (no-think) | local | 0.39952 | ×1.28 | 9.8 | 6 |
 | gemma4:e2b (no-think) | local | 0.38046 | ×1.22 | 12.9 | 6 |
+| gemma4:latest (think) | local | 0.3795 | ×1.21 | 9.8 | 2 |
 | qwen3-coder:30b (no-think) | local | 0.37689 | ×1.20 | 2.8 | 2 |
+| gemma4:12b-it-qat (think) | local | 0.37429 | ×1.20 | 19.1 | 1 |
+| qwen3.8:27b-mtp-q4_K_M (think) | local | 0.31284 | ×1.00 | - | 0 |

@@ -1,0 +1,107 @@
+{
+ "schema": 2,
+ "example": "tammes_30",
+ "model": "gemma4:e4b-it-qat",
+ "variant": "think",
+ "model_size_gb": 6.1,
+ "model_params": "7.5B",
+ "started": "2026-10-17T15:04:59",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.7,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 3.2013569883368893,
+ "best_score": 36.6117310366655,
+ "improvement": 11.436316277768624,
+ "llm_calls": 20,
+ "mean_llm_seconds": 45.8,
+ "attempts": 20,
+ "ok": 14,
+ "statuses": {
+  "ok": 14,
+  "duplicate": 2,
+  "invalid": 3,
+  "edit_error": 1
+ },
+ "sweeps": 1,
+ "sweep_variants": 3,
+ "improvements": 3,
+ "minutes_to_best": 6.01,
+ "best_idea": "Implement the Fibonacci spiral initial configuration followed by a gradient descent optimization routine to maximize the minimum angular separation between all points.",
+ "progress": [
+  [
+   0.0,
+   3.2013569883368893
+  ],
+  [
+   2.81,
+   9.720116537611057
+  ],
+  [
+   4.88,
+   33.99635759567586
+  ],
+  [
+   6.01,
+   36.6117310366655
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.2013569883368893,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.9,
+   "score": 9.720116537611057,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Replace the random uniform point generation with a deterministic Fibonacci spiral code construction, which provides a much better quasi-uniform initial distribution for optimization."
+  },
+  {
+   "minutes": 6.01,
+   "score": 36.6117310366655,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/rewrite/bold",
+   "status": "ok",
+   "idea": "Implement the Fibonacci spiral initial configuration followed by a gradient descent optimization routine to maximize the minimum angular separation between all points."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -14,14 +14,72 @@\n     start draws uniformly random points with a fixed seed, so some pairs end up\n     close together.\n     \"\"\"\n-    rng = random.Random(1)\n+    # Golden spiral initialization parameters\n+    PHI = (1.0 + math.sqrt(5.0)) / 2.0\n+    golden_angle = 2.0 * math.pi / PHI\n+    \n     points = []\n-    for _ in range(n):\n-        z = rng.uniform(-1.0, 1.0)\n-        phi = rng.uniform(0.0, 2 * math.pi)\n-        s = math.sqrt(1.0 - z * z)\n-        points.append((s * math.cos(phi), s * math.sin(phi), z))\n-    return points\n+    for k in range(n):\n+        # Theta distribution for quasi-uniform spread (related to Fibonacci lattice)\n+        theta = math.acos(1.0 - 2.0 * k / (n - 1.0))\n+        # Azimuthal angle based on golden ratio\n+        phi_coord = k * golden_angle\n+        \n+        r = math.sin(theta)\n+        x = r * math.cos(phi_coord)\n+        y = r * math.sin(phi_coord)\n+        z = math.cos(theta)\n+        points.append([x, y, z])\n+    \n+    # Optimization parameters\n+    step_size = 0.1\n+    iterations = 1000\n+    \n+    for iteration in range(iterations):\n+        new_points = []\n+        for i in range(n):\n+            xi, yi, zi = points[i]\n+            force_x, force_y, force_z = 0.0, 0.0, 0.0\n+            \n+            # Calculate repulsive force (minimizing potential energy)\n+            for j in range(n):\n+                if i == j:\n+                    continue\n+                xj, yj, zj = points[j]\n+                \n+                dx, dy, dz = xi - xj, yi - yj, zi - zj\n+                dist_sq = dx*dx + dy*dy + dz*dz\n+                \n+                if dist_sq < 1e-12:\n+                    continue\n+                \n+                # Repulsive force magnitude proportional to 1/distance^2\n+                force_magnitude = 1.0 / dist_sq\n+                \n+                force_x += force_magnitude * dx\n+                force_y += force_magnitude * dy\n+                force_z += force_magnitude * dz\n+\n+            # Update position\n+            next_x = xi + step_size * force_x\n+            next_y = yi + step_size * force_y\n+            next_z = zi + step_size * force_z\n+            \n+            # Renormalize to stay on unit sphere\n+            mag = math.sqrt(next_x*next_x + next_y*next_y + next_z*next_z)\n+            \n+            if mag == 0:\n+                new_points.append([0.0, 0.0, 1.0])\n+            else:\n+                new_x = next_x / mag\n+                new_y = next_y / mag\n+                new_z = next_z / mag\n+                new_points.append([new_x, new_y, new_z])\n+        \n+        points = new_points\n+        \n+    # Convert back to tuples\n+    return [tuple(p) for p in points]\n # OMEGA-BLOCK-END\n \n \n",
+ "error": "",
+ "model_memory_gb": 5.7,
+ "model_gpu_memory_gb": 5.7,
+ "context_length": 32768,
+ "load_seconds": 97.6,
+ "median_call_seconds": 40.5,
+ "p90_call_seconds": 77.8,
+ "prompt_tokens_per_s": 693.5,
+ "gen_tokens_per_s": 57.5,
+ "mean_prompt_tokens": 2771,
+ "mean_gen_tokens": 2107,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

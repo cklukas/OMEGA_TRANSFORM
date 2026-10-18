@@ -68,7 +68,7 @@ extern "C" void sort_u32(uint32_t* a, size_t n) {
 
 ## Benchmark results
 
-The best result so far comes from **gemma4:26b-a4b-it-qat (no-think)**, run locally with Ollama on 2026-10-15: a score of **526.8705** (×21.98 the starting program's 23.9752), reached after 14.2 of 15 minutes with 24 model requests.
+The best result so far comes from **qwen3.8:27b-mtp-q4_K_M (think)**, run locally with Ollama on 2026-10-17: a score of **564.4614** (×24.85 the starting program's 22.7147), reached after 25.38 of 15 minutes with 1 model requests.
 
 ### How it got there
 
@@ -76,11 +76,8 @@ The best program's ancestry, from the starting program on. "Edit" and "rewrite" 
 
 | Step | Minute | Score | Kind | Idea |
 |--:|--:|--:|---|---|
-| 0 | 0.0 | 23.9752 | start | initial program |
-| 1 | 3.7 | 233.8420 | edit | Implement a high-performance LSD Radix Sort with 11-bit digits (3 passes total) to maximize throughput on random data, utilizing a single scratch buffer and optimized histogramming. |
-| 2 | 4.9 | 253.2285 | edit | Implement a hybrid approach using a fast check for sorted/reverse-sorted runs, and use a highly optimized LSD Radix Sort with 8-bit digits (4 passes) and a single buffer, as 8-bit digits provide better cache locality for the prefix sum and reordering steps on … |
-| 3 | 9.2 | 309.9434 | edit | Switch to a 3-pass radix sort with 11-11-10 bit partitioning to reduce the number of passes and memory traversals, which is much faster for large $n$ on most distributions. |
-| 4 | 14.2 | 526.8705 | rewrite | Implement a check to skip radix passes when all elements in the current pass share the same key, which significantly boosts performance on many duplicates and nearly sorted data. |
+| 0 | 0.0 | 22.7147 | start | initial program |
+| 1 | 25.4 | 564.4614 | edit | Replace the O(n log n) merge sort with a hybrid approach: detect sorted/reverse in O(n) for early exit, then use LSD radix sort with 11-bit passes (1-3 passes depending on max value) using a ping-pong buffer, which is O(n) for random and duplicate-heavy data … |
 
 ### The best program
 
@@ -89,7 +86,7 @@ What changed compared with the starting program:
 ```diff
 --- initial
 +++ best
-@@ -19,22 +19,88 @@
+@@ -19,22 +19,79 @@
  #endif
  
  // OMEGA-BLOCK-START
@@ -105,93 +102,83 @@ What changed compared with the starting program:
 -    while (i < mid) tmp[k++] = a[i++];
 -    while (j < hi) tmp[k++] = a[j++];
 -    for (size_t t = lo; t < hi; ++t) a[t] = tmp[t];
--}
-+extern "C" void sort_u32(uint32_t* a, size_t n) {
-+    if (n < 2) return;
- 
--extern "C" void sort_u32(uint32_t* a, size_t n) {
-+    // Fast path for sorted or reverse sorted
-+    bool sorted = true;
-+    bool reverse = true;
++
++static void insertion_sort(uint32_t* a, size_t n) {
 +    for (size_t i = 1; i < n; ++i) {
-+        if (a[i] < a[i-1]) sorted = false;
-+        if (a[i] > a[i-1]) reverse = false;
-+        if (!sorted && !reverse) break;
-+    }
-+    if (sorted) return;
-+    if (reverse) {
-+        for (size_t i = 0; i < n / 2; ++i) std::swap(a[i], a[n - 1 - i]);
-+        return;
-+    }
-+
-+    // Hybrid: Small n uses std::sort
-+    if (n < 256) {
-+        std::sort(a, a + n);
-+        return;
-+    }
-+
-+    // LSD Radix Sort with 11-11-10 bits (3 passes)
-     std::vector<uint32_t> tmp(n);
--    merge_sort_rec(a, tmp.data(), 0, n);
-+    uint32_t* src = a;
-+    uint32_t* dst = tmp.data();
-+
-+    struct Pass { int shift; int bits; };
-+    Pass passes[3] = {{0, 11}, {11, 11}, {22, 10}};
-+
-+    for (int p = 0; p < 3; ++p) {
-+        int shift = passes[p].shift;
-+        int bits = passes[p].bits;
-+        size_t num_buckets = 1 << bits;
-+        size_t mask = num_buckets - 1;
-+        size_t count[4096] = {0};
-+
-+        // Check if all elements share the same key for this pass
-+        uint32_t first_key = (src[0] >> shift) & mask;
-+        bool all_same = true;
-+        for (size_t i = 1; i < n; ++i) {
-+            if (((src[i] >> shift) & mask) != first_key) {
-+                all_same = false;
-+                break;
-+            }
++        uint32_t key = a[i];
++        size_t j = i;
++        while (j > 0 && a[j - 1] > key) {
++            a[j] = a[j - 1];
++            --j;
 +        }
-+
-+        if (all_same) {
-+            // If all same, the elements are already "sorted" for this digit.
-+            // We just need to ensure src and dst are synced for the next pass.
-+            // However, if we skip, we must ensure the next src is what we want.
-+            // To keep logic simple, if all same, we skip movement but must update src/dst.
-+            // Actually, if all same, we don't need to move anything to dst, 
-+            // but we must treat the current src as the "sorted" version for the next pass.
-+            // A simpler way: if all same, just proceed as if we did a pass but didn't move.
-+            // But the easiest is to copy src to dst to keep the ping-pong.
-+            std::memcpy(dst, src, n * sizeof(uint32_t));
-+            std::swap(src, dst);
-+            continue;
-+        }
-+
-+        for (size_t i = 0; i < n; ++i) {
-+            count[(src[i] >> shift) & mask]++;
-+        }
-+
-+        size_t total = 0;
-+        for (size_t i = 0; i < num_buckets; ++i) {
-+            size_t c = count[i];
-+            count[i] = total;
-+            total += c;
-+        }
-+
-+        for (size_t i = 0; i < n; ++i) {
-+            size_t bucket = (src[i] >> shift) & mask;
-+            dst[count[bucket]++] = src[i];
-+        }
-+        std::swap(src, dst);
-+    }
-+
-+    if (src != a) {
-+        std::memcpy(a, src, n * sizeof(uint32_t));
++        a[j] = key;
 +    }
  }
+ 
++static void radix_pass(const uint32_t* src, uint32_t* dst, size_t n, int shift, uint32_t* cnt) {
++    memset(cnt, 0, 2048 * sizeof(uint32_t));
++    for (size_t i = 0; i < n; ++i)
++        cnt[(src[i] >> shift) & 0x7FF]++;
++    uint32_t sum = 0;
++    for (int i = 0; i < 2048; ++i) {
++        uint32_t c = cnt[i];
++        cnt[i] = sum;
++        sum += c;
++    }
++    for (size_t i = 0; i < n; ++i) {
++        uint32_t d = (src[i] >> shift) & 0x7FF;
++        dst[cnt[d]++] = src[i];
++    }
++}
++
++static std::vector<uint32_t> s_buf;
++
+ extern "C" void sort_u32(uint32_t* a, size_t n) {
+-    std::vector<uint32_t> tmp(n);
+-    merge_sort_rec(a, tmp.data(), 0, n);
++    if (n <= 1) return;
++
++    if (n < 64) {
++        insertion_sort(a, n);
++        return;
++    }
++
++    bool is_sorted = true, is_reverse = true;
++    for (size_t i = 1; i < n; ++i) {
++        if (a[i] < a[i - 1]) is_sorted = false;
++        if (a[i] > a[i - 1]) is_reverse = false;
++        if (!is_sorted && !is_reverse) break;
++    }
++    if (is_sorted) return;
++    if (is_reverse) {
++        for (size_t i = 0, j = n - 1; i < j; ++i, --j) {
++            uint32_t t = a[i]; a[i] = a[j]; a[j] = t;
++        }
++        return;
++    }
++
++    uint32_t mx = a[0];
++    for (size_t i = 1; i < n; ++i)
++        if (a[i] > mx) mx = a[i];
++
++    int passes;
++    if (mx < 2048) passes = 1;
++    else if (mx < (1u << 22)) passes = 2;
++    else passes = 3;
++
++    if (s_buf.size() < n) s_buf.resize(n);
++    uint32_t cnt[2048];
++
++    uint32_t* src = a;
++    uint32_t* dst = s_buf.data();
++    for (int p = 0; p < passes; ++p) {
++        radix_pass(src, dst, n, p * 11, cnt);
++        std::swap(src, dst);
++    }
++    if (src != a)
++        memcpy(a, src, n * sizeof(uint32_t));
+ }
++
  // OMEGA-BLOCK-END
 ```
 
@@ -201,16 +188,27 @@ The latest run per model and reasoning mode; the [model benchmarks](../benchmark
 
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|
+| qwen3.8:27b-mtp-q4_K_M (think) | local | 564.4614 | ×24.85 | 25.4 | 1 |
 | gemma4:26b-a4b-it-qat (no-think) | local | 526.8705 | ×21.98 | 14.2 | 7 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 393.2984 | ×16.97 | 17.4 | 3 |
+| gpt-oss:20b (think) | local | 368.1891 | ×16.44 | 10.2 | 4 |
+| qwen3.5:27b (think) | local | 361.2984 | ×15.79 | 9.6 | 2 |
 | gemma4:12b-it-qat (no-think) | local | 323.4781 | ×14.30 | 10.5 | 4 |
 | gpt-oss:20b (no-think) | local | 322.2479 | ×13.44 | 10.1 | 2 |
 | gemma4:latest (no-think) | local | 295.2118 | ×12.30 | 12.8 | 6 |
+| gemma4:26b-a4b-it-qat (think) | local | 287.6700 | ×12.59 | 7.0 | 1 |
+| gemma4:e4b-it-qat (think) | local | 274.2287 | ×12.04 | 15.3 | 4 |
+| gemma4:12b-it-qat (think) | local | 252.1177 | ×10.98 | 8.8 | 1 |
 | qwen3.5:27b (no-think) | local | 239.7158 | ×10.09 | 17.3 | 2 |
 | qwen3-coder:30b (no-think) | local | 226.8907 | ×9.89 | 10.9 | 4 |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | 226.0805 | ×9.83 | 15.2 | 1 |
 | qwen3.8:27b-mtp-q4_K_M (no-think) | local | 220.0800 | ×9.43 | 12.9 | 1 |
 | gemma4:e4b-it-qat (no-think) | local | 216.9010 | ×9.30 | 10.1 | 6 |
+| qwen3.5:latest (think) | local | 216.6847 | ×9.29 | 19.5 | 1 |
+| gemma4:latest (think) | local | 208.4549 | ×9.20 | 16.1 | 4 |
 | gemma4:e2b (no-think) | local | 199.8160 | ×8.33 | 9.6 | 4 |
 | qwen2.5-coder:7b (no-think) | local | 45.5448 | ×1.93 | 9.9 | 3 |
 | qwen3.5:latest (no-think) | local | 31.0841 | ×1.30 | 16.1 | 1 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 25.8331 | ×1.15 | 5.4 | 4 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | 23.3623 | ×1.01 | 5.1 | 1 |
+| gemma4:e2b (think) | local | 22.9626 | ×1.00 | - | 0 |

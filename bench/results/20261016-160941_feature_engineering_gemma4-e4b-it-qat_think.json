@@ -1,0 +1,133 @@
+{
+ "schema": 2,
+ "example": "feature_engineering",
+ "model": "gemma4:e4b-it-qat",
+ "variant": "think",
+ "model_size_gb": 6.1,
+ "model_params": "7.5B",
+ "started": "2026-10-16T16:09:41",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.623,
+ "best_score": 0.793,
+ "improvement": 1.2728731942215088,
+ "llm_calls": 27,
+ "mean_llm_seconds": 32.8,
+ "attempts": 27,
+ "ok": 26,
+ "statuses": {
+  "ok": 26,
+  "duplicate": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 6,
+ "minutes_to_best": 6.96,
+ "best_idea": "Replace the linear features $x_4$ and $x_5$ with their squared counterparts ($x_4^2, x_5^2$) to allow the linear model to capture non-linear relationships related to the magnitude of these uniform inp",
+ "progress": [
+  [
+   0.0,
+   0.623
+  ],
+  [
+   2.0,
+   0.678
+  ],
+  [
+   2.36,
+   0.701
+  ],
+  [
+   2.93,
+   0.726
+  ],
+  [
+   3.68,
+   0.732
+  ],
+  [
+   4.69,
+   0.766
+  ],
+  [
+   6.96,
+   0.793
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.623,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.0,
+   "score": 0.678,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Introduce a logarithmic transformation of the right-skewed input $x_3$ (row[2]) to potentially linearize its relationship with the hidden nonlinear rule, adding a new informative feature."
+  },
+  {
+   "minutes": 2.93,
+   "score": 0.726,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Introduce a pairwise product feature between $x_1$ and $x_2$ to allow the linear model to capture potential multiplicative non-linear relationships in the input space."
+  },
+  {
+   "minutes": 5.6,
+   "score": 0.732,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Remove the raw input $x_3$ from the feature vector since its transformation $\\log(x_3)$ carries the primary signal, reducing feature redundancy and potential noise contribution."
+  },
+  {
+   "minutes": 6.96,
+   "score": 0.793,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Replace the linear features $x_4$ and $x_5$ with their squared counterparts ($x_4^2, x_5^2$) to allow the linear model to capture non-linear relationships related to the magnitude of these uniform inputs, while retaining the primary features $x_1, x_2, x_6, \\log(x_3)$, and the interaction $x_1 x_2$."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,7 +19,10 @@\n     features (they are standardized and a bias is added), so nonlinear structure only\n     helps if a feature expresses it. Only the Python standard library may be used.\n \n-    Current method: the raw inputs.\n+    Current method: raw inputs plus log(x3).\n     \"\"\"\n-    return list(row)\n+    # Log transformation of the skewed input x3\n+    log_x3 = math.log(row[2])\n+    # Return x1, x2, x6, log(x3), x4^2, x5^2, and the interaction x1*x2\n+    return [row[0], row[1], row[5], log_x3, row[3]**2, row[4]**2, row[0] * row[1]]\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 5.7,
+ "model_gpu_memory_gb": 5.7,
+ "context_length": 32768,
+ "load_seconds": 93.3,
+ "median_call_seconds": 29.8,
+ "p90_call_seconds": 49.8,
+ "prompt_tokens_per_s": 734.2,
+ "gen_tokens_per_s": 59.3,
+ "mean_prompt_tokens": 3048,
+ "mean_gen_tokens": 1483,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

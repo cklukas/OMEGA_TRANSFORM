@@ -1,0 +1,123 @@
+{
+ "schema": 2,
+ "example": "log_compressor",
+ "model": "gemma4:latest",
+ "variant": "think",
+ "model_size_gb": 9.5,
+ "model_params": "",
+ "started": "2026-10-16T13:57:11",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 11.28605206956168,
+ "best_score": 26.854385964912282,
+ "improvement": 2.3794313369630973,
+ "llm_calls": 27,
+ "mean_llm_seconds": 34.4,
+ "attempts": 27,
+ "ok": 11,
+ "statuses": {
+  "invalid": 9,
+  "ok": 11,
+  "edit_error": 4,
+  "duplicate": 3
+ },
+ "sweeps": 3,
+ "sweep_variants": 34,
+ "improvements": 3,
+ "minutes_to_best": 10.68,
+ "best_idea": "Switch the compression algorithm from LZMA to BZ2, as BZ2 demonstrated a significantly higher compression ratio in the reference metrics, while still maintaining a high compression level.",
+ "progress": [
+  [
+   0.0,
+   11.28605206956168
+  ],
+  [
+   3.09,
+   17.631990784874482
+  ],
+  [
+   7.15,
+   19.662606307583275
+  ],
+  [
+   10.68,
+   26.854385964912282
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 11.28605206956168,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.09,
+   "score": 17.631990784874482,
+   "model": "gemma4:latest",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Change the zlib compression level from 1 to 9 to maximize the compression ratio, as the evaluator's feedback showed zlib -9 achieves a ratio of 17.632, which is better than level 1."
+  },
+  {
+   "minutes": 7.15,
+   "score": 19.662606307583275,
+   "model": "gemma4:latest",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Switch the compression algorithm from zlib to lzma to utilize the observed superior compression ratio for this log format."
+  },
+  {
+   "minutes": 9.42,
+   "score": 19.662606307583275,
+   "model": "gemma4:latest",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Introduce a compression preset constant and modify the compression function to use it, allowing the engine to search for the optimal balance between compression ratio and speed."
+  },
+  {
+   "minutes": 10.68,
+   "score": 26.854385964912282,
+   "model": "gemma4:latest",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Switch the compression algorithm from LZMA to BZ2, as BZ2 demonstrated a significantly higher compression ratio in the reference metrics, while still maintaining a high compression level."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -10,6 +10,9 @@\n import zlib\n \n # OMEGA-BLOCK-START\n+import bz2\n+\n+COMPRESSION_LEVEL = 9\n def compress(data: bytes) -> bytes:\n     \"\"\"Compress arbitrary bytes losslessly and return the compressed blob.\n \n@@ -19,14 +22,14 @@\n     Only the Python standard library may be used (zlib, lzma, bz2, struct, re, ...).\n     Compress plus decompress of the main input must stay within 20 CPU seconds.\n \n-    Current method: plain zlib at level 1.\n+    Current method: bz2 with specified compression level.\n     \"\"\"\n-    return zlib.compress(data, 1)\n+    return bz2.compress(data, compresslevel=COMPRESSION_LEVEL)\n \n \n def decompress(blob: bytes) -> bytes:\n     \"\"\"Invert compress() exactly.\"\"\"\n-    return zlib.decompress(blob)\n+    return bz2.decompress(blob)\n # OMEGA-BLOCK-END\n \n \n",
+ "error": "",
+ "model_memory_gb": 12.4,
+ "model_gpu_memory_gb": 12.4,
+ "context_length": 32768,
+ "load_seconds": 125.7,
+ "median_call_seconds": 26.1,
+ "p90_call_seconds": 69.1,
+ "prompt_tokens_per_s": 1002.5,
+ "gen_tokens_per_s": 46.2,
+ "mean_prompt_tokens": 2820,
+ "mean_gen_tokens": 1236,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

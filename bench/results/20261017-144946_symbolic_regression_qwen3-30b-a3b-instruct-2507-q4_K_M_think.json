@@ -1,0 +1,119 @@
+{
+ "schema": 2,
+ "example": "symbolic_regression",
+ "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+ "variant": "think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-10-17T14:49:46",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.3128434055615448,
+ "best_score": 0.9980119143303663,
+ "improvement": 3.1901324962850475,
+ "llm_calls": 43,
+ "mean_llm_seconds": 20.2,
+ "attempts": 43,
+ "ok": 21,
+ "statuses": {
+  "ok": 21,
+  "edit_error": 7,
+  "invalid": 9,
+  "duplicate": 6
+ },
+ "sweeps": 1,
+ "sweep_variants": 16,
+ "improvements": 4,
+ "minutes_to_best": 7.24,
+ "best_idea": "Expose the coefficient of the x3*sin(x3) term as a tunable parameter to better fit the periodic growth in x3, especially in extrapolation where the model underpredicts at large x3 values, improving bo",
+ "progress": [
+  [
+   0.0,
+   0.3128434055615448
+  ],
+  [
+   2.52,
+   0.9941030847812733
+  ],
+  [
+   2.66,
+   0.9945756435186923
+  ],
+  [
+   5.0,
+   0.9980091538477709
+  ],
+  [
+   7.24,
+   0.9980119143303663
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.3128434055615448,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.66,
+   "score": 0.9945756435186923,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Add nonlinear basis functions including powers, products, and trigonometric terms to capture complex dependencies that linear terms alone cannot extrapolate, especially since large extrapolation errors suggest missing periodic or higher-order behavior."
+  },
+  {
+   "minutes": 5.0,
+   "score": 0.9980091538477709,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Add x3*sin(x3) as a basis function to better capture the periodic growth in x3 observed in the extrapolation errors, especially at large x3 values where the model underpredicts."
+  },
+  {
+   "minutes": 7.24,
+   "score": 0.9980119143303663,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Expose the coefficient of the x3*sin(x3) term as a tunable parameter to better fit the periodic growth in x3, especially in extrapolation where the model underpredicts at large x3 values, improving both in-range and out-of-range performance."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -35,7 +35,19 @@\n # OMEGA-BLOCK-START\n def basis(x1, x2, x3):\n     \"\"\"Basis functions of the model; the prediction is a weighted sum of them.\"\"\"\n-    return [1.0, x1, x2, x3]\n+    return [\n+        1.0,\n+        x1, x2, x3,\n+        x1*x1, x2*x2, x3*x3,\n+        x1*x2, x1*x3, x2*x3,\n+        x1*x1*x1, x2*x2*x2, x3*x3*x3,\n+        math.sin(x1), math.sin(x2), math.sin(x3),\n+        math.cos(x1), math.cos(x2), math.cos(x3),\n+        math.sin(x1)*x2, math.sin(x2)*x3, math.sin(x3)*x1,\n+        math.cos(x1)*x2, math.cos(x2)*x3, math.cos(x3)*x1,\n+        x3 * math.sin(x3),\n+        1.0,  # placeholder for coefficient scaling\n+    ]\n \n \n def fit(rows):\n",
+ "error": "",
+ "model_memory_gb": 21.8,
+ "model_gpu_memory_gb": 21.8,
+ "context_length": 32768,
+ "load_seconds": 136.9,
+ "median_call_seconds": 13.8,
+ "p90_call_seconds": 39.3,
+ "prompt_tokens_per_s": 660.3,
+ "gen_tokens_per_s": 43.3,
+ "mean_prompt_tokens": 4988,
+ "mean_gen_tokens": 372,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

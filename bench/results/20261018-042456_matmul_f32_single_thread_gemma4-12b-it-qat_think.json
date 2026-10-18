@@ -1,0 +1,89 @@
+{
+ "schema": 2,
+ "example": "matmul_f32_single_thread",
+ "model": "gemma4:12b-it-qat",
+ "variant": "think",
+ "model_size_gb": 7.2,
+ "model_params": "11.9B",
+ "started": "2026-10-18T04:24:56",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.6991,
+ "best_score": 26.0321,
+ "improvement": 15.321111176505209,
+ "llm_calls": 2,
+ "mean_llm_seconds": 458.1,
+ "attempts": 2,
+ "ok": 1,
+ "statuses": {
+  "compile_error": 1,
+  "ok": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 15.35,
+ "best_idea": "Switch the loop order from i-j-k to i-k-j to improve cache locality and enable better vectorization by the compiler, as the inner loop will now access both B and C contiguously.",
+ "progress": [
+  [
+   0.0,
+   1.6991
+  ],
+  [
+   15.35,
+   26.0321
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.6991,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 15.35,
+   "score": 26.0321,
+   "model": "gemma4:12b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Switch the loop order from i-j-k to i-k-j to improve cache locality and enable better vectorization by the compiler, as the inner loop will now access both B and C contiguously."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -24,11 +24,17 @@\n // Computes C = A * B on the calling thread. C is NOT zeroed by the caller.\n // n is any size from 1 to 2048.\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+    std::fill(C, C + (size_t)n * n, 0.0f);\n+    for (int i = 0; i < n; ++i) {\n+        const float* row_A = &A[i * n];\n+        float* row_C = &C[i * n];\n+        for (int k = 0; k < n; ++k) {\n+            float a_val = row_A[k];\n+            const float* row_B = &B[k * n];\n+            for (int j = 0; j < n; ++j) {\n+                row_C[j] += a_val * row_B[j];\n+            }\n         }\n+    }\n }\n // OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 8.0,
+ "model_gpu_memory_gb": 8.0,
+ "context_length": 32768,
+ "load_seconds": 90.4,
+ "median_call_seconds": 591.9,
+ "p90_call_seconds": 591.9,
+ "prompt_tokens_per_s": 307.4,
+ "gen_tokens_per_s": 28.1,
+ "mean_prompt_tokens": 2542,
+ "mean_gen_tokens": 11374,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -1,0 +1,98 @@
+{
+ "schema": 2,
+ "example": "heilbronn_13",
+ "model": "gemma4:e4b-it-qat",
+ "variant": "think",
+ "model_size_gb": 6.1,
+ "model_params": "7.5B",
+ "started": "2026-10-16T22:46:56",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.004790811518724618,
+ "best_score": 0.018141434580120547,
+ "improvement": 3.7867143195293256,
+ "llm_calls": 20,
+ "mean_llm_seconds": 46.9,
+ "attempts": 20,
+ "ok": 13,
+ "statuses": {
+  "ok": 13,
+  "invalid": 6,
+  "edit_error": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 3,
+ "minutes_to_best": 14.11,
+ "best_idea": "Replace the fixed geometric initialization with a robust local search optimization routine initialized randomly, which is known to yield significantly higher scores by allowing points to utilize the s",
+ "progress": [
+  [
+   0.0,
+   0.004790811518724618
+  ],
+  [
+   2.48,
+   0.014370107666770986
+  ],
+  [
+   4.93,
+   0.015158919131235696
+  ],
+  [
+   14.11,
+   0.018141434580120547
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.004790811518724618,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 14.11,
+   "score": 0.018141434580120547,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the fixed geometric initialization with a robust local search optimization routine initialized randomly, which is known to yield significantly higher scores by allowing points to utilize the square boundaries better."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -6,16 +6,61 @@\n \n # OMEGA-BLOCK-START\n def construct(n=13):\n-    \"\"\"Return a list of n points (x, y) inside the closed unit square [0,1]^2.\n+    import random\n+    \n+    # Calculate area using determinant formula\n+    def triangle_area(p1, p2, p3):\n+        return 0.5 * abs(p1[0]*(p2[1] - p3[1]) + p2[0]*(p3[1] - p1[1]) + p3[0]*(p1[1] - p2[1]))\n \n-    The score is the smallest area among all triangles with corners at three of\n-    the points, so no three points may be (nearly) collinear. This start puts\n-    the points on a regular polygon on a small circle around the center, which\n-    avoids collinear triples but wastes most of the square.\n-    \"\"\"\n-    radius = 0.3\n-    return [(0.5 + radius * math.cos(2 * math.pi * k / n),\n-             0.5 + radius * math.sin(2 * math.pi * k / n)) for k in range(n)]\n+    # Calculate minimum area among all triples\n+    def get_min_area(pts):\n+        min_a = float('inf')\n+        N = len(pts)\n+        for i in range(N):\n+            for j in range(i + 1, N):\n+                for k in range(j + 1, N):\n+                    area = triangle_area(pts[i], pts[j], pts[k])\n+                    if area < min_a:\n+                        min_a = area\n+        return min_a\n+\n+    # Initialize points randomly within the unit square\n+    points = [(random.random(), random.random()) for _ in range(n)]\n+    \n+    current_min_area = get_min_area(points)\n+    step_size = 0.5\n+    \n+    # Optimization loop (Iterative local search)\n+    for _ in range(200000):\n+        # Select one point to perturb\n+        idx = random.randint(0, n - 1)\n+        p_old = points[idx]\n+        \n+        # Propose a random move based on current step size\n+        dx = random.uniform(-step_size, step_size)\n+        dy = random.uniform(-step_size, step_size)\n+        \n+        p_new = (p_old[0] + dx, p_old[1] + dy)\n+        \n+        # Clamp point coordinates to [0, 1]\n+        p_new_clamped = (max(0.0, min(1.0, p_new[0])), max(0.0, min(1.0, p_new[1])))\n+        \n+        # Test move\n+        temp_points = list(points)\n+        temp_points[idx] = p_new_clamped\n+        new_min_area = get_min_area(temp_points)\n+        \n+        # Accept move if it improves the minimum area\n+        if new_min_area > current_min_area:\n+            points[idx] = p_new_clamped\n+            current_min_area = new_min_area\n+        \n+        # Decrease step size for convergence\n+        step_size *= 0.9999\n+        if step_size < 1e-12:\n+            break\n+            \n+    return points\n # OMEGA-BLOCK-END\n \n \n",
+ "error": "",
+ "model_memory_gb": 5.7,
+ "model_gpu_memory_gb": 5.7,
+ "context_length": 32768,
+ "load_seconds": 64.3,
+ "median_call_seconds": 40.2,
+ "p90_call_seconds": 101.6,
+ "prompt_tokens_per_s": 648.4,
+ "gen_tokens_per_s": 51.7,
+ "mean_prompt_tokens": 2862,
+ "mean_gen_tokens": 2022,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

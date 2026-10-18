@@ -1,0 +1,129 @@
+{
+ "schema": 2,
+ "example": "circles_in_circle_21",
+ "model": "gemma4:e4b-it-qat",
+ "variant": "think",
+ "model_size_gb": 6.1,
+ "model_params": "7.5B",
+ "started": "2026-10-16T09:37:57",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 3.1890454825108625,
+ "best_score": 4.038032135063816,
+ "improvement": 1.2662196752002775,
+ "llm_calls": 19,
+ "mean_llm_seconds": 48.7,
+ "attempts": 19,
+ "ok": 14,
+ "statuses": {
+  "ok": 14,
+  "invalid": 5
+ },
+ "sweeps": 3,
+ "sweep_variants": 40,
+ "improvements": 5,
+ "minutes_to_best": 11.56,
+ "best_idea": "tuned MAX_ITER=10000, STEP_SIZE=0.003875 on top of: Replace hardcoded optimization parameters with named constants to allow the evolutionary search to find the optimal iteration count and perturbation",
+ "progress": [
+  [
+   0.0,
+   3.1890454825108625
+  ],
+  [
+   2.76,
+   3.5939499999964064
+  ],
+  [
+   5.23,
+   3.59395
+  ],
+  [
+   6.34,
+   4.008834061262029
+  ],
+  [
+   11.56,
+   4.009158958274615
+  ],
+  [
+   11.56,
+   4.038032135063816
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.1890454825108625,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 5.23,
+   "score": 3.59395,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Replace the uniform radius calculation with fixed, optimized, non-uniform radii based on the known optimal configuration for this specific center arrangement to maximize the sum of radii."
+  },
+  {
+   "minutes": 8.96,
+   "score": 3.997119875693152,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the fixed radii assignment with a local search optimization over circle centers, iteratively maximizing the total sum of radii by recalculating the maximal feasible radii at each step."
+  },
+  {
+   "minutes": 11.56,
+   "score": 4.009158958274615,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Replace hardcoded optimization parameters with named constants to allow the evolutionary search to find the optimal iteration count and perturbation magnitude."
+  },
+  {
+   "minutes": 11.56,
+   "score": 4.038032135063816,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "sweep/exploit/diff/tune",
+   "status": "ok",
+   "idea": "tuned MAX_ITER=10000, STEP_SIZE=0.003875 on top of: Replace hardcoded optimization parameters with named constants to allow the evolutionary search to find the optimal iteration count and perturbation magnitude."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -16,12 +16,74 @@\n     for count, ring in ((7, 0.35), (n - 8, 0.75)):\n         centers += [(ring * math.cos(2 * math.pi * k / count),\n                      ring * math.sin(2 * math.pi * k / count)) for k in range(count)]\n-    r = min(1.0 - math.hypot(x, y) for x, y in centers)\n-    for a in range(n):\n-        for b in range(a + 1, n):\n-            r = min(r, math.dist(centers[a], centers[b]) / 2)\n-    r *= 1 - 1e-12  # stay strictly feasible despite rounding\n-    return [(x, y, r) for x, y in centers]\n+    import random\n+    \n+    # Optimization parameters\n+    MAX_ITER = 10000  # Number of iterations\n+    STEP_SIZE = 0.003875280484574382 # Maximum step size for perturbation\n+\n+    # Function to calculate total sum of radii for given centers\n+    def calculate_total_radii(C):\n+        N_c = len(C)\n+        radii = []\n+        total_r = 0.0\n+        \n+        for i in range(N_c):\n+            x_i, y_i = C[i]\n+            r_max_container = 1.0 - math.hypot(x_i, y_i)\n+            \n+            r_max_overlap = float('inf')\n+            for j in range(N_c):\n+                if i != j:\n+                    x_j, y_j = C[j]\n+                    dist = math.hypot(x_i - x_j, y_i - y_j)\n+                    r_max_overlap = min(r_max_overlap, dist / 2.0)\n+            \n+            r_i = min(r_max_container, r_max_overlap)\n+            radii.append(r_i)\n+            total_r += r_i\n+            \n+        return radii, total_r\n+\n+    # Start optimization from the current configuration\n+    current_centers = centers\n+    current_radii, current_score = calculate_total_radii(current_centers)\n+    best_centers = list(current_centers)\n+    best_radii = list(current_radii)\n+    best_score = current_score\n+    \n+    # Local search optimization\n+    for _ in range(MAX_ITER):\n+        new_centers = list(current_centers)\n+        \n+        # Perturb one random center\n+        i = random.randrange(len(current_centers))\n+        x_i, y_i = current_centers[i]\n+        \n+        # Random perturbation in 2D space\n+        dx = (random.random() * 2 - 1) * STEP_SIZE\n+        dy = (random.random() * 2 - 1) * STEP_SIZE\n+        \n+        new_centers[i] = (x_i + dx, y_i + dy)\n+        \n+        # Calculate score for the perturbed configuration\n+        new_radii, new_score = calculate_total_radii(new_centers)\n+        \n+        # Update current best if score improves\n+        if new_score > best_score:\n+            best_score = new_score\n+            best_centers = list(new_centers)\n+            best_radii = list(new_radii)\n+        \n+        # Move to the improved state if it is better than the current state\n+        if new_score > current_score:\n+            current_centers = list(new_centers)\n+            current_score = new_score\n+            current_radii = new_radii\n+\n+    # Final adjustment for strict feasibility\n+    r_factor = 1.0 - 1e-10\n+    return [(x, y, r * r_factor) for i, (x, y) in enumerate(best_centers) for r in [best_radii[i]] if i < n]\n # OMEGA-BLOCK-END\n \n \n",
+ "error": "",
+ "model_memory_gb": 5.7,
+ "model_gpu_memory_gb": 5.7,
+ "context_length": 32768,
+ "load_seconds": 94.2,
+ "median_call_seconds": 42.1,
+ "p90_call_seconds": 86.8,
+ "prompt_tokens_per_s": 643.6,
+ "gen_tokens_per_s": 56.1,
+ "mean_prompt_tokens": 3019,
+ "mean_gen_tokens": 2179,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

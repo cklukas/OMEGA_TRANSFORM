@@ -1,0 +1,135 @@
+{
+ "schema": 2,
+ "example": "feature_engineering",
+ "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+ "variant": "think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-10-16T19:05:06",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.623,
+ "best_score": 0.764,
+ "improvement": 1.2263242375601926,
+ "llm_calls": 35,
+ "mean_llm_seconds": 24.4,
+ "attempts": 35,
+ "ok": 26,
+ "statuses": {
+  "ok": 26,
+  "edit_error": 2,
+  "invalid": 6,
+  "duplicate": 1
+ },
+ "sweeps": 17,
+ "sweep_variants": 272,
+ "improvements": 2,
+ "minutes_to_best": 10.46,
+ "best_idea": "tuned THRESHOLD_P12=0.01391, THRESHOLD_P13=0.001472, THRESHOLD_P23=0.6577 on top of: Replace the hard-coded threshold for `s12`, `s13`, `s23` (set to 0.0) with sweepable smooth threshold indicators ba",
+ "progress": [
+  [
+   0.0,
+   0.623
+  ],
+  [
+   3.79,
+   0.76
+  ],
+  [
+   10.46,
+   0.764
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.623,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.79,
+   "score": 0.76,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Transform the right-skewed x3 using log and combine it with x1 and x2 via pairwise products and signs to capture quadrant-based nonlinear interactions, which are otherwise invisible to linear models. This should expose hidden structure in the label function that depends on multiplicative interactions and thresholding."
+  },
+  {
+   "minutes": 4.54,
+   "score": 0.739,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the hard threshold signs with smooth tanh-based indicators to better capture gradual transitions in the hidden nonlinearity, which should improve generalization and raise test accuracy."
+  },
+  {
+   "minutes": 7.26,
+   "score": null,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/diff/refine",
+   "status": "invalid",
+   "idea": "Replace the hard tanh-based quadrant features with smooth threshold indicators on log_x3, x1, and x2 using tuned thresholds and scale to better capture the hidden nonlinear decision boundary, as feedback shows f6 (log_x3) has the largest weight and suggests it's critical."
+  },
+  {
+   "minutes": 8.4,
+   "score": 0.756,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Replace the undefined `s12`, `s13`, `s23` with proper smooth threshold indicators for the pairwise combinations of log_x3, x1, and x2, since the original code attempted to use them without defining them, causing a NameError. This fixes the bug while preserving the intent to model nonlinear interactions with smooth transitions."
+  },
+  {
+   "minutes": 10.46,
+   "score": 0.756,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the hard-coded threshold for `s12`, `s13`, `s23` (set to 0.0) with sweepable smooth threshold indicators based on the interaction terms, since the current fixed threshold may not optimally capture the nonlinear decision boundary in product space."
+  },
+  {
+   "minutes": 10.46,
+   "score": 0.764,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "sweep/exploit/diff/refine",
+   "status": "ok",
+   "idea": "tuned THRESHOLD_P12=0.01391, THRESHOLD_P13=0.001472, THRESHOLD_P23=0.6577 on top of: Replace the hard-coded threshold for `s12`, `s13`, `s23` (set to 0.0) with sweepable smooth threshold indicators based on the interaction terms, since the current fixed threshold may not optimally capture the nonlin"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,7 +19,42 @@\n     features (they are standardized and a bias is added), so nonlinear structure only\n     helps if a feature expresses it. Only the Python standard library may be used.\n \n-    Current method: the raw inputs.\n+    New method: use log(x3) to normalize the skewed input, and add pairwise products\n+    and signs of x1, x2, and log(x3) to capture quadrant-based nonlinearities.\n     \"\"\"\n-    return list(row)\n+    x1, x2, x3, x4, x5, x6 = row\n+    # Handle log of skewed positive x3 safely\n+    log_x3 = math.log(x3 + 1e-8)  # avoid log(0), small offset\n+    # Smooth threshold indicators for key inputs using tuned thresholds and scale\n+    THRESHOLD_LOG_X3 = 0.0672\n+    THRESHOLD_X1 = 0.0739\n+    THRESHOLD_X2 = 0.1854\n+    SCALE = 7.278\n+    s1 = (math.tanh((log_x3 - THRESHOLD_LOG_X3) * SCALE) + 1) / 2\n+    s2 = (math.tanh((x1 - THRESHOLD_X1) * SCALE) + 1) / 2\n+    s3 = (math.tanh((x2 - THRESHOLD_X2) * SCALE) + 1) / 2\n+    # Smooth threshold indicators for pairwise interactions\n+    THRESHOLD_P12 = 0.013908881300989282\n+    THRESHOLD_P13 = 0.00147214022894068\n+    THRESHOLD_P23 = 0.6577083883513493\n+    s12 = (math.tanh((x1 * x2 - THRESHOLD_P12) * SCALE) + 1) / 2\n+    s13 = (math.tanh((x1 * log_x3 - THRESHOLD_P13) * SCALE) + 1) / 2\n+    s23 = (math.tanh((x2 * log_x3 - THRESHOLD_P23) * SCALE) + 1) / 2\n+    # Pairwise products (capture XOR-like patterns)\n+    p12 = x1 * x2\n+    p13 = x1 * log_x3\n+    p23 = x2 * log_x3\n+    # Squared radius in (x1, x2) plane\n+    r12_sq = x1 * x1 + x2 * x2\n+    # Combine with x6 for additional nonlinearity\n+    p16 = x1 * x6\n+    p26 = x2 * x6\n+    # Return all features\n+    return [\n+        x1, x2, log_x3, x4, x5, x6,\n+        s12, s13, s23,\n+        p12, p13, p23,\n+        r12_sq,\n+        p16, p26\n+    ]\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 21.8,
+ "model_gpu_memory_gb": 21.8,
+ "context_length": 32768,
+ "load_seconds": 210.2,
+ "median_call_seconds": 17.5,
+ "p90_call_seconds": 31.6,
+ "prompt_tokens_per_s": 617.9,
+ "gen_tokens_per_s": 48.1,
+ "mean_prompt_tokens": 4883,
+ "mean_gen_tokens": 465,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

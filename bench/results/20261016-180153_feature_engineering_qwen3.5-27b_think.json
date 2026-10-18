@@ -1,0 +1,104 @@
+{
+ "schema": 2,
+ "example": "feature_engineering",
+ "model": "qwen3.5:27b",
+ "variant": "think",
+ "model_size_gb": 17.4,
+ "model_params": "27.8B",
+ "started": "2026-10-16T18:01:53",
+ "minutes_budget": 15.0,
+ "wall_minutes": 17.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.623,
+ "best_score": 0.756,
+ "improvement": 1.2134831460674158,
+ "llm_calls": 7,
+ "mean_llm_seconds": 149.6,
+ "attempts": 7,
+ "ok": 7,
+ "statuses": {
+  "ok": 7
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 3,
+ "minutes_to_best": 17.47,
+ "best_idea": "Add radius features (sqrt of sum of squares) and sign features to capture distance-based and quadrant-based nonlinear patterns that products alone cannot express.",
+ "progress": [
+  [
+   0.0,
+   0.623
+  ],
+  [
+   3.2,
+   0.731
+  ],
+  [
+   6.83,
+   0.733
+  ],
+  [
+   17.47,
+   0.756
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.623,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.2,
+   "score": 0.731,
+   "model": "qwen3.5:27b",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Add log transformation of x3 (to linearize lognormal-like input) and pairwise products of x1, x2, x6 to capture interaction effects that a linear model can't see in raw features."
+  },
+  {
+   "minutes": 17.47,
+   "score": 0.756,
+   "model": "qwen3.5:27b",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Add radius features (sqrt of sum of squares) and sign features to capture distance-based and quadrant-based nonlinear patterns that products alone cannot express."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,7 +19,25 @@\n     features (they are standardized and a bias is added), so nonlinear structure only\n     helps if a feature expresses it. Only the Python standard library may be used.\n \n-    Current method: the raw inputs.\n+    Current method: raw inputs plus log(x3), pairwise products, squares, radius and sign features.\n     \"\"\"\n-    return list(row)\n+    x1, x2, x3, x4, x5, x6 = row\n+    # Guard log for x3 (should be positive per problem statement)\n+    log_x3 = math.log(max(x3, 1e-10))\n+    # Pairwise products for interaction effects\n+    prod_12 = x1 * x2\n+    prod_16 = x1 * x6\n+    prod_26 = x2 * x6\n+    # Squares for quadratic effects\n+    sq_1 = x1 * x1\n+    sq_2 = x2 * x2\n+    sq_6 = x6 * x6\n+    # Radius features for distance-based patterns\n+    radius_12 = math.sqrt(sq_1 + sq_2)\n+    radius_16 = math.sqrt(sq_1 + sq_6)\n+    # Sign features for quadrant detection\n+    sign_12 = (1.0 if prod_12 >= 0 else -1.0)\n+    sign_1 = (1.0 if x1 >= 0 else -1.0)\n+    return [x1, x2, x3, x4, x5, x6, log_x3, prod_12, prod_16, prod_26, \n+            sq_1, sq_2, sq_6, radius_12, radius_16, sign_12, sign_1]\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 18.4,
+ "model_gpu_memory_gb": 18.4,
+ "context_length": 32768,
+ "load_seconds": 83.8,
+ "median_call_seconds": 133.4,
+ "p90_call_seconds": 201.3,
+ "prompt_tokens_per_s": 102.8,
+ "gen_tokens_per_s": 10.9,
+ "mean_prompt_tokens": 2512,
+ "mean_gen_tokens": 1221,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

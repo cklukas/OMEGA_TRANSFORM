@@ -1,0 +1,117 @@
+{
+ "schema": 2,
+ "example": "circle_packing_26",
+ "model": "gemma4:e4b-it-qat",
+ "variant": "think",
+ "model_size_gb": 6.1,
+ "model_params": "7.5B",
+ "started": "2026-10-18T00:35:11",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 1.6464424969079519,
+ "improvement": 1.1049193391013419,
+ "llm_calls": 14,
+ "mean_llm_seconds": 65.1,
+ "attempts": 14,
+ "ok": 13,
+ "statuses": {
+  "ok": 13,
+  "invalid": 1
+ },
+ "sweeps": 2,
+ "sweep_variants": 25,
+ "improvements": 2,
+ "minutes_to_best": 14.53,
+ "best_idea": "tuned C_PACK=5, R_PACK=6 on top of: Parameterize the grid dimensions by sweeping the number of columns ($C_{PACK}$) and rows ($R_{PACK}$) in the hexagonal lattice structure, as these are critical layo",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   7.32,
+   1.5036334771101105
+  ],
+  [
+   14.53,
+   1.6464424969079519
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 8.25,
+   "score": 1.2088190378891648,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the simple square grid construction with a hexagonal packing lattice structure, which is significantly denser and known to achieve better packing ratios for circles."
+  },
+  {
+   "minutes": 11.44,
+   "score": 1.4893858281736416,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Convert `max_radii` from a single pass check into an iterative process that continues until radii stabilize, ensuring convergence to a better feasible solution by repeatedly adjusting radii based on overlaps."
+  },
+  {
+   "minutes": 14.53,
+   "score": 1.4893858281736416,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Parameterize the grid dimensions by sweeping the number of columns ($C_{PACK}$) and rows ($R_{PACK}$) in the hexagonal lattice structure, as these are critical layout choices for achieving optimal density."
+  },
+  {
+   "minutes": 14.53,
+   "score": 1.6464424969079519,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "sweep/exploit/diff/tune",
+   "status": "ok",
+   "idea": "tuned C_PACK=5, R_PACK=6 on top of: Parameterize the grid dimensions by sweeping the number of columns ($C_{PACK}$) and rows ($R_{PACK}$) in the hexagonal lattice structure, as these are critical layout choices for achieving optimal density."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -9,12 +9,28 @@\n # OMEGA-BLOCK-START\n def construct_packing(n=26):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n-    cols = math.ceil(math.sqrt(n))\n-    rows = math.ceil(n / cols)\n+    C_PACK = 5\n+    R_PACK = 6\n+    W_SPAN = C_PACK\n+    H_SPAN = (R_PACK - 1) * (math.sqrt(3) / 2) + 1\n+    S = 1 / max(W_SPAN, H_SPAN)\n+    \n     centers = []\n-    for k in range(n):\n-        i, j = k % cols, k // cols\n-        centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n+    k = 0\n+    for j in range(R_PACK):\n+        for i in range(C_PACK):\n+            if k >= n:\n+                break\n+            \n+            # Calculate unscaled hexagonal coordinates\n+            x_u = i + 0.5 + (0.5 if j % 2 != 0 else 0)\n+            y_u = j * (math.sqrt(3) / 2) + 0.5\n+            \n+            # Scale and store center\n+            centers.append(((x_u * S, y_u * S)))\n+            k += 1\n+        if k >= n:\n+            break\n     radii = max_radii(centers)\n     return [(x, y, r) for (x, y), r in zip(centers, radii)]\n \n@@ -22,13 +38,29 @@\n def max_radii(centers):\n     \"\"\"Largest radii for fixed centers: limit by walls, then shrink overlapping pairs.\"\"\"\n     radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n-    for a in range(len(centers)):\n-        for b in range(a + 1, len(centers)):\n-            d = math.dist(centers[a], centers[b])\n-            if radii[a] + radii[b] > d:\n-                s = d / (radii[a] + radii[b])\n-                radii[a] *= s\n-                radii[b] *= s\n+    for _ in range(100): # Iterate for convergence\n+        changed = False\n+        new_radii = list(radii)\n+        for a in range(len(centers)):\n+            for b in range(a + 1, len(centers)):\n+                d = math.dist(centers[a], centers[b])\n+                if radii[a] + radii[b] > d:\n+                    s = d / (radii[a] + radii[b])\n+                    \n+                    # Calculate required reduction factor for both radii\n+                    r_a_new = radii[a] * s\n+                    r_b_new = radii[b] * s\n+                    \n+                    # Apply reduction to the temporary new_radii list\n+                    if abs(r_a_new - new_radii[a]) > 1e-12:\n+                        new_radii[a] = r_a_new\n+                        changed = True\n+                    if abs(r_b_new - new_radii[b]) > 1e-12:\n+                        new_radii[b] = r_b_new\n+                        changed = True\n+        radii = new_radii\n+        if not changed:\n+            break\n     return radii\n # OMEGA-BLOCK-END\n \n",
+ "error": "",
+ "model_memory_gb": 5.7,
+ "model_gpu_memory_gb": 5.7,
+ "context_length": 32768,
+ "load_seconds": 85.4,
+ "median_call_seconds": 56.2,
+ "p90_call_seconds": 108.9,
+ "prompt_tokens_per_s": 673.6,
+ "gen_tokens_per_s": 58.0,
+ "mean_prompt_tokens": 2646,
+ "mean_gen_tokens": 3185,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

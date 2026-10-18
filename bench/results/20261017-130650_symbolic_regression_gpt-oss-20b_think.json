@@ -1,0 +1,125 @@
+{
+ "schema": 2,
+ "example": "symbolic_regression",
+ "model": "gpt-oss:20b",
+ "variant": "think",
+ "model_size_gb": 13.8,
+ "model_params": "20.9B",
+ "started": "2026-10-17T13:06:50",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.8,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.3128434055615448,
+ "best_score": 0.7045060949341619,
+ "improvement": 2.2519448465585974,
+ "llm_calls": 19,
+ "mean_llm_seconds": 47.4,
+ "attempts": 19,
+ "ok": 18,
+ "statuses": {
+  "ok": 18,
+  "edit_error": 1
+ },
+ "sweeps": 7,
+ "sweep_variants": 36,
+ "improvements": 4,
+ "minutes_to_best": 15.01,
+ "best_idea": "tuned RIDGE=0.001 on top of: Replace the exploding exponential and trigonometric terms with bounded tanh functions and scale inputs to avoid large magnitudes; keep a modest ridge regularization to imp",
+ "progress": [
+  [
+   0.0,
+   0.3128434055615448
+  ],
+  [
+   4.7,
+   0.3794462082124446
+  ],
+  [
+   7.19,
+   0.37944620836483456
+  ],
+  [
+   15.01,
+   0.6884576310821783
+  ],
+  [
+   15.01,
+   0.7045060949341619
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.3128434055615448,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 4.7,
+   "score": 0.3794462082124446,
+   "model": "gpt-oss:20b",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Replace the linear basis with a degree\u20112 polynomial basis (interactions) to capture nonlinear relationships and improve extrapolation."
+  },
+  {
+   "minutes": 8.98,
+   "score": 0.3764921275229721,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Expand the basis to include cubic, sinusoidal and exponential terms with a small ridge regularization, capturing periodicity and growth that the quadratic model misses."
+  },
+  {
+   "minutes": 15.01,
+   "score": 0.6884576310821783,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Replace the exploding exponential and trigonometric terms with bounded tanh functions and scale inputs to avoid large magnitudes; keep a modest ridge regularization to improve extrapolation stability."
+  },
+  {
+   "minutes": 15.01,
+   "score": 0.7045060949341619,
+   "model": "gpt-oss:20b",
+   "mode": "sweep/exploit/diff/bold",
+   "status": "ok",
+   "idea": "tuned RIDGE=0.001 on top of: Replace the exploding exponential and trigonometric terms with bounded tanh functions and scale inputs to avoid large magnitudes; keep a modest ridge regularization to improve extrapolation stability."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -33,25 +33,26 @@\n \n \n # OMEGA-BLOCK-START\n+RIDGE = 0.001\n def basis(x1, x2, x3):\n-    \"\"\"Basis functions of the model; the prediction is a weighted sum of them.\"\"\"\n-    return [1.0, x1, x2, x3]\n+    \"\"\"Scaled polynomial and tanh basis for bounded extrapolation.\"\"\"\n+    sx1, sx2, sx3 = x1/3.0, x2/2.0, x3/3.0\n+    t1, t2, t3 = math.tanh(sx1), math.tanh(sx2), math.tanh(sx3)\n+    return [\n+        1.0,\n+        sx1, sx2, sx3,\n+        sx1*sx1, sx2*sx2, sx3*sx3,\n+        sx1*sx1*sx1, sx2*sx2*sx2, sx3*sx3*sx3,\n+        sx1*sx2, sx1*sx3, sx2*sx3,\n+        t1, t2, t3,\n+        t1*t2, t1*t3, t2*t3\n+    ]\n \n \n def fit(rows):\n-    \"\"\"Fit the model on the training rows and return its parameters.\n-\n-    The parameters must be plain data (numbers, strings, lists, dicts), not functions\n-    or class instances. predict() receives them as JSON would carry them: tuples become\n-    lists and dict keys become strings.\n-    rows: list of [x1, x2, x3, y] float lists, x1 in [-3, 3], x2 in [-2, 2],\n-    x3 in [0, 3]. Only the Python standard library may be used (math, statistics,\n-    random, ...; no numpy). fit plus all predictions must take at most 10 CPU seconds.\n-\n-    Current method: linear regression on the raw inputs.\n-    \"\"\"\n+    \"\"\"Fit the model on the training rows and return its parameters.\"\"\"\n     cols = list(zip(*[basis(x1, x2, x3) for x1, x2, x3, _ in rows]))\n-    return least_squares([list(c) for c in cols], [y for *_, y in rows])\n+    return least_squares([list(c) for c in cols], [y for *_, y in rows], ridge=RIDGE)\n \n \n def predict(params, x1, x2, x3):\n",
+ "error": "",
+ "model_memory_gb": 12.8,
+ "model_gpu_memory_gb": 12.8,
+ "context_length": 32768,
+ "load_seconds": 243.0,
+ "median_call_seconds": 33.9,
+ "p90_call_seconds": 58.0,
+ "prompt_tokens_per_s": 535.2,
+ "gen_tokens_per_s": 48.7,
+ "mean_prompt_tokens": 3777,
+ "mean_gen_tokens": 1326,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

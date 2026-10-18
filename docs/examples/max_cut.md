@@ -53,7 +53,7 @@ def cut(n, edges):
 
 ## Benchmark results
 
-The best result so far comes from **gemma4:26b-a4b-it-qat (no-think)**, run locally with Ollama on 2026-10-15: a score of **0.76503** (×1.49 the starting program's 0.51218), reached after 5.41 of 15 minutes with 24 model requests.
+The best result so far comes from **qwen3:30b-a3b-instruct-2507-q4_K_M (think)**, run locally with Ollama on 2026-10-17: a score of **0.7673** (×1.50 the starting program's 0.51218), reached after 8.03 of 15 minutes with 33 model requests.
 
 ### How it got there
 
@@ -62,9 +62,9 @@ The best program's ancestry, from the starting program on. "Edit" and "rewrite" 
 | Step | Minute | Score | Kind | Idea |
 |--:|--:|--:|---|---|
 | 0 | 0.0 | 0.51218 | start | initial program |
-| 1 | 3.7 | 0.72085 | edit | Implement a greedy construction followed by an iterative one-flip local search with incremental gain updates to efficiently maximize the cut. |
-| 2 | 5.4 | 0.76384 | edit | Implement a Tabu Search mechanism to escape local optima when no positive gain remains, using the best solution found across iterations as the fallback. |
-| 3 | 5.4 | 0.76503 | parameter sweep | tuned tabu_tenure=35 on top of: Implement a Tabu Search mechanism to escape local optima when no positive gain remains, using the best solution found across iterations as the fallback. |
+| 1 | 6.7 | 0.76149 | rewrite | Replace the naive alternating assignment with a one-flip local search starting from a random initial assignment, using a configurable time limit ratio and random restarts to escape local optima and improve the cut weight across all three graphs. |
+| 2 | 8.0 | 0.76517 | rewrite | Replace the naive gain computation in the local search with incremental updates to avoid O(degree) recomputation per node, drastically reducing per-iteration cost and allowing more iterations within time limit, especially beneficial for the weak g200 graph … |
+| 3 | 8.0 | 0.7673 | parameter sweep | tuned TIME_RATIO=0.9606, RESTART_RATIO=0.6253, MIN_RESTARTS=7, MAX_RESTARTS=29 on top of: Replace the naive gain computation in the local search with incremental updates to avoid O(degree) recomputation per node, drastically reducing per-iteration cost and … |
 
 ### The best program
 
@@ -73,142 +73,129 @@ What changed compared with the starting program:
 ```diff
 --- initial
 +++ best
-@@ -11,15 +11,127 @@
+@@ -11,15 +11,114 @@
  
  # OMEGA-BLOCK-START
  def cut(n, edges):
 -    """Return a list of n values, side[i] in {0, 1} for node i.
-+    """Return a list of n values, side[i] in {0, 1} for node i."""
++    """One-flip local search with random restarts: start from a random assignment and iteratively flip nodes with positive gain,
++    with periodic random restarts to escape poor local optima. Uses a configurable time ratio for the main loop and restarts.
++    Gain is updated incrementally after each flip to avoid recomputing from scratch.
++    """
++    import random
 +    import time
-+    start_time = time.process_time()
-+    
-+    # Build adjacency list
-+    adj = [[] for _ in range(n)]
-+    for u, v, w in edges:
-+        adj[u].append((v, w))
-+        adj[v].append((u, w))
-+    
-+    sides = [-1] * n
-+    
-+    # 1. Greedy Construction
-+    for i in range(n):
-+        w0 = 0 # weight to side 0
-+        w1 = 0 # weight to side 1
-+        for neighbor, weight in adj[i]:
-+            if sides[neighbor] == 0:
-+                w0 += weight
-+            elif sides[neighbor] == 1:
-+                w1 += weight
-+        # Place i on the side that maximizes cut weight with placed neighbors
-+        if w0 >= w1:
-+            sides[i] = 1
-+        else:
-+            sides[i] = 0
-+            
-+    # 2. Local Search with incremental gain updates
-+    # gain[i] = weight(i, neighbors on other side) - weight(i, neighbors on same side)
-+    # If gain[i] > 0, flipping i increases cut weight.
-+    gains = [0.0] * n
-+    for i in range(n):
-+        g = 0
-+        for neighbor, weight in adj[i]:
-+            if sides[neighbor] != -1:
-+                if sides[neighbor] != sides[i]:
-+                    g += weight
-+                else:
-+                    g -= weight
-+        gains[i] = g
  
 -    n: number of nodes (0..n-1); edges: list of (u, v, w) with 0 <= u < v < n, no
 -    duplicate pairs, integer weight 1 <= w <= 10. The cut weight is the sum of w over
 -    edges whose endpoints are on different sides; larger is better. The call has a CPU
 -    time limit of 2.0 s (time.process_time(); more than 1.5 x the limit makes the program
 -    invalid). Only the Python standard library may be used.
-+    best_sides = list(sides)
-+    best_cut_weight = 0
-+    
-+    # Calculate initial cut weight
-+    current_cut_weight = 0
-+    for u in range(n):
-+        for v, w in adj[u]:
-+            if u < v and sides[u] != sides[v]:
-+                current_cut_weight += w
-+    best_cut_weight = current_cut_weight
++    # Build adjacency list
++    adj = [[] for _ in range(n)]
++    for u, v, w in edges:
++        adj[u].append((v, w))
++        adj[v].append((u, w))
  
 -    Current method: alternate the sides by node index (ignores the edges entirely).
 -    """
 -    return [i % 2 for i in range(n)]
-+    tabu_list = [0] * n
-+    tabu_tenure = 35
-+    iter_count = 0
++    # Compute total edge weight for ratio
++    total_weight = sum(w for _, _, w in edges)
 +
-+    while time.process_time() - start_time < 1.7:
-+        iter_count += 1
-+        improved = False
-+        
-+        # Find best candidate move (even if gain is negative)
-+        best_move = -1
-+        max_gain = -float('inf')
-+        
-+        # Mix of greedy improvement and tabu search
-+        # If we can improve, do it. Otherwise, try to move out of local optima.
-+        for i in range(n):
-+            g = gains[i]
-+            # Aspiration criterion: if it beats best cut, allow even if tabu
-+            if g > max_gain:
-+                if g > 0 or tabu_list[i] < iter_count:
-+                    max_gain = g
-+                    best_move = i
-+                    
-+        if best_move != -1 and (max_gain > 0 or iter_count % 5 == 0):
-+            # Perform flip
-+            old_side = sides[best_move]
-+            sides[best_move] = 1 - old_side
-+            
-+            # Update weight and gains
-+            current_cut_weight += max_gain
-+            if current_cut_weight > best_cut_weight:
-+                best_cut_weight = current_cut_weight
-+                best_sides = list(sides)
-+            
-+            # Update neighbors' gains
-+            for neighbor, weight in adj[best_move]:
-+                if sides[neighbor] != sides[best_move]:
-+                    gains[neighbor] -= 2 * weight
-+                else:
-+                    gains[neighbor] += 2 * weight
-+            gains[best_move] = -max_gain
-+            
-+            # Update tabu list
-+            tabu_list[best_move] = iter_count + tabu_tenure + random.randint(0, 5)
-+            improved = True
-+        
-+        if not improved and iter_count > 1: # If stuck, try a random perturbation
-+            for _ in range(max(1, n // 20)):
-+                idx = random.randint(0, n-1)
-+                sides[idx] = 1 - sides[idx]
-+            # Full recalculation after perturbation
++    # Gain array: gain[i] = (sum of weights to side 1) - (sum of weights to side 0)
++    # Initially, all nodes are unplaced; we start with random assignment
++    side = [random.randint(0, 1) for _ in range(n)]
++    gain = [0] * n  # gain[i] = net weight to side 1 minus side 0
++
++    # Initialize gains based on initial assignment
++    for i in range(n):
++        for j, w in adj[i]:
++            if side[i] == side[j]:
++                gain[i] += w
++            else:
++                gain[i] -= w
++
++    # Helper: compute cut weight
++    def compute_cut(side):
++        return sum(w for u, v, w in edges if side[u] != side[v])
++
++    # Time control constants
++    MAX_TIME = 2.0
++    TIME_RATIO = 0.9605537307901484  # Fraction of time to use for local search
++    RESTART_RATIO = 0.62526945405078  # Fraction of time to use before restart
++    MIN_RESTARTS = 7  # Minimum number of restarts
++    MAX_RESTARTS = 29  # Maximum number of restarts
++
++    # Initial best solution
++    best_cut = compute_cut(side)
++    best_side = side[:]
++
++    # Main loop with restarts
++    start_time = time.process_time()
++    time_limit = MAX_TIME * TIME_RATIO
++    restart_time = start_time + MAX_TIME * RESTART_RATIO
++
++    restart_count = 0
++    while time.process_time() - start_time < time_limit:
++        improved = True
++        while improved and time.process_time() - start_time < restart_time:
++            improved = False
++            best_gain = -1
++            best_node = -1
++
++            # Find best node to flip (positive gain)
 +            for i in range(n):
-+                g = 0
-+                for neighbor, weight in adj[i]:
-+                    if sides[neighbor] != sides[i]: g += weight
-+                    else: g -= weight
-+                gains[i] = g
-+            current_cut_weight = 0
-+            for u in range(n):
-+                for v, w in adj[u]:
-+                    if u < v and sides[u] != sides[v]: current_cut_weight += w
-+            if current_cut_weight > best_cut_weight:
-+                best_cut_weight = current_cut_weight
-+                best_sides = list(sides)
-+        
-+        if not improved and iter_count > 100: # If no improvement for a long time
-+             # Check time to prevent timeout
-+             if time.process_time() - start_time > 1.8: break
-+             
-+    return best_sides
-+            
-+    return sides
++                if gain[i] > best_gain:
++                    best_gain = gain[i]
++                    best_node = i
++
++            if best_gain > 0:
++                # Flip node best_node
++                old_side = side[best_node]
++                side[best_node] = 1 - old_side
++
++                # Update gain of best_node: flip sign
++                gain[best_node] = -gain[best_node]
++
++                # Update gain of all neighbors: each edge flips from same to different or vice versa
++                for j, w in adj[best_node]:
++                    # If j was on same side, now different → gain[j] -= 2w
++                    # If j was on different side, now same → gain[j] += 2w
++                    if side[j] == old_side:
++                        gain[j] -= 2 * w
++                    else:
++                        gain[j] += 2 * w
++
++                # Update current cut
++                current_cut = compute_cut(side)
++                if current_cut > best_cut:
++                    best_cut = current_cut
++                    best_side = side[:]
++
++                improved = True
++            else:
++                break  # No improvement, break inner loop
++
++        # Random restart if we have not reached the minimum or are not at the end
++        if restart_count < MIN_RESTARTS or time.process_time() - start_time < time_limit:
++            # Perturb the current solution by flipping a random 5-10% of nodes
++            num_flip = max(1, int(n * 0.05) + random.randint(0, int(n * 0.05)))
++            for _ in range(num_flip):
++                i = random.randint(0, n - 1)
++                # Flip and update gain
++                old_side = side[i]
++                side[i] = 1 - old_side
++                gain[i] = -gain[i]
++                for j, w in adj[i]:
++                    if side[j] == old_side:
++                        gain[j] -= 2 * w
++                    else:
++                        gain[j] += 2 * w
++            restart_count += 1
++        else:
++            break
++
++    return best_side
  # OMEGA-BLOCK-END
 ```
 
@@ -218,16 +205,27 @@ The latest run per model and reasoning mode; the [model benchmarks](../benchmark
 
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|
+| qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | 0.7673 | ×1.50 | 8.0 | 5 |
+| gpt-oss:20b (think) | local | 0.76722 | ×1.50 | 16.4 | 8 |
+| qwen3.8:27b-mtp-q4_K_M (think) | local | 0.7654 | ×1.49 | 13.8 | 1 |
 | gemma4:26b-a4b-it-qat (no-think) | local | 0.76503 | ×1.49 | 5.4 | 3 |
 | gemma4:latest (no-think) | local | 0.7555 | ×1.48 | 14.1 | 8 |
+| gemma4:e4b-it-qat (think) | local | 0.75304 | ×1.47 | 15.2 | 4 |
 | gpt-oss:20b (no-think) | local | 0.75151 | ×1.47 | 14.9 | 4 |
 | gemma4:e4b-it-qat (no-think) | local | 0.75125 | ×1.47 | 10.5 | 7 |
+| gemma4:latest (think) | local | 0.75099 | ×1.47 | 15.7 | 5 |
 | gemma4:e2b (no-think) | local | 0.75025 | ×1.46 | 11.9 | 4 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 0.74224 | ×1.45 | 13.7 | 4 |
 | qwen3.5:latest (no-think) | local | 0.73771 | ×1.44 | 7.6 | 3 |
 | qwen3.8:27b-mtp-q4_K_M (no-think) | local | 0.73771 | ×1.44 | 17.6 | 1 |
+| gemma4:e2b (think) | local | 0.73531 | ×1.44 | 5.3 | 2 |
+| gemma4:26b-a4b-it-qat (think) | local | 0.73495 | ×1.43 | 12.9 | 2 |
+| qwen3.5:latest (think) | local | 0.72921 | ×1.42 | 11.5 | 2 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 0.71488 | ×1.40 | 9.2 | 2 |
 | gemma4:12b-it-qat (no-think) | local | 0.71177 | ×1.39 | 3.5 | 1 |
 | qwen3-coder:30b (no-think) | local | 0.69428 | ×1.36 | 12.3 | 2 |
 | qwen3.5:27b (no-think) | local | 0.69385 | ×1.35 | 9.2 | 1 |
 | qwen2.5-coder:7b (no-think) | local | 0.59204 | ×1.16 | 14.1 | 4 |
+| gemma4:12b-it-qat (think) | local | 0.51218 | ×1.00 | - | 0 |
+| qwen3.5:27b (think) | local | 0.51218 | ×1.00 | - | 0 |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | | | | failed: all 1 model requests failed: qwen3.6:27b-coding-mtp-q4_K_M … |

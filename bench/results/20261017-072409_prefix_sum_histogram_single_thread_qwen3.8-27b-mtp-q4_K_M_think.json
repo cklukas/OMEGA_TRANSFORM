@@ -1,0 +1,92 @@
+{
+ "schema": 2,
+ "example": "prefix_sum_histogram_single_thread",
+ "model": "qwen3.8:27b-mtp-q4_K_M",
+ "variant": "think",
+ "model_size_gb": 17.7,
+ "model_params": "27.3B",
+ "started": "2026-10-17T07:24:09",
+ "minutes_budget": 15.0,
+ "wall_minutes": 32.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 4.75964,
+ "best_score": 12.6223,
+ "improvement": 2.6519442646922875,
+ "llm_calls": 3,
+ "mean_llm_seconds": 634.0,
+ "attempts": 3,
+ "ok": 3,
+ "statuses": {
+  "ok": 3
+ },
+ "sweeps": 1,
+ "sweep_variants": 3,
+ "improvements": 2,
+ "minutes_to_best": 31.81,
+ "best_idea": "Replace the naive single-loop with K=4 sub-histograms (uint32_t) to break the read-modify-write dependency chain on hot histogram bins, unroll the main loop by 4, and add `__restrict` to let the compi",
+ "progress": [
+  [
+   0.0,
+   4.75964
+  ],
+  [
+   9.48,
+   12.0355
+  ],
+  [
+   31.81,
+   12.6223
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 4.75964,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 31.81,
+   "score": 12.6223,
+   "model": "qwen3.8:27b-mtp-q4_K_M",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the naive single-loop with K=4 sub-histograms (uint32_t) to break the read-modify-write dependency chain on hot histogram bins, unroll the main loop by 4, and add `__restrict` to let the compiler reorder loads/stores freely."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -23,17 +23,31 @@\n #endif\n \n // OMEGA-BLOCK-START\n-// Computes, on the calling thread, out[i] = in[0] + ... + in[i] for i < n, and\n-// hist[b] = number of i < n with (in[i] & 255) == b for b < 256. Neither out nor\n-// hist is zeroed by the caller. n is any size from 0 to 20'000'000; the sums\n-// never overflow int64.\n-extern \"C\" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, uint64_t* hist) {\n-    for (int b = 0; b < 256; ++b) hist[b] = 0;\n+extern \"C\" void scan_and_histogram(const int64_t* __restrict in, int64_t* __restrict out,\n+                                   size_t n, uint64_t* __restrict hist) {\n+    constexpr int K = 4;\n+    uint32_t sub[K][256] = {};\n     int64_t sum = 0;\n-    for (size_t i = 0; i < n; ++i) {\n-        sum += in[i];\n+    size_t i = 0;\n+    size_t nK = n & ~(size_t)(K - 1);\n+    for (; i < nK; i += K) {\n+        int64_t v0 = in[i + 0];\n+        int64_t v1 = in[i + 1];\n+        int64_t v2 = in[i + 2];\n+        int64_t v3 = in[i + 3];\n+        sum += v0; out[i + 0] = sum; sub[0][v0 & 255]++;\n+        sum += v1; out[i + 1] = sum; sub[1][v1 & 255]++;\n+        sum += v2; out[i + 2] = sum; sub[2][v2 & 255]++;\n+        sum += v3; out[i + 3] = sum; sub[3][v3 & 255]++;\n+    }\n+    for (; i < n; ++i) {\n+        int64_t v = in[i];\n+        sum += v;\n         out[i] = sum;\n-        hist[in[i] & 255]++;\n+        sub[i & (K - 1)][v & 255]++;\n     }\n+    for (int b = 0; b < 256; ++b)\n+        hist[b] = (uint64_t)sub[0][b] + (uint64_t)sub[1][b]\n+                + (uint64_t)sub[2][b] + (uint64_t)sub[3][b];\n }\n // OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 17.6,
+ "model_gpu_memory_gb": 17.6,
+ "context_length": 32768,
+ "load_seconds": 286.1,
+ "median_call_seconds": 561.7,
+ "p90_call_seconds": 1092.0,
+ "prompt_tokens_per_s": 121.2,
+ "gen_tokens_per_s": 10.8,
+ "mean_prompt_tokens": 3577,
+ "mean_gen_tokens": 5507,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

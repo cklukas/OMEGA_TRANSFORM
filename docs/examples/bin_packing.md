@@ -174,5 +174,7 @@ The latest run per model and reasoning mode; the [model benchmarks](../benchmark
 | gemma4:latest (think) | local | 0.95128 | ×1.20 | 2.2 | 1 |
 | gemma4:26b-a4b-it-qat (think) | local | 0.95128 | ×1.20 | 10.2 | 1 |
 | qwen3.5:27b (think) | local | 0.95128 | ×1.20 | 5.7 | 1 |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | 0.95128 | ×1.20 | 17.4 | 1 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | 0.95128 | ×1.20 | 3.2 | 1 |
 | qwen2.5-coder:7b (no-think) | local | 0.79426 | ×1.00 | - | 0 |
 | qwen3.8:27b-mtp-q4_K_M (think) | local | | | | failed: all 1 model requests failed: qwen3.8:27b-mtp-q4_K_M: answer … |

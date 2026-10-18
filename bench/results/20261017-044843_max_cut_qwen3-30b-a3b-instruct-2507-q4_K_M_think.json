@@ -1,0 +1,123 @@
+{
+ "schema": 2,
+ "example": "max_cut",
+ "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+ "variant": "think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-10-17T04:48:43",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.5121828962692699,
+ "best_score": 0.7673002178268961,
+ "improvement": 1.498098088428754,
+ "llm_calls": 33,
+ "mean_llm_seconds": 27.7,
+ "attempts": 33,
+ "ok": 22,
+ "statuses": {
+  "ok": 22,
+  "duplicate": 3,
+  "invalid": 6,
+  "edit_error": 2
+ },
+ "sweeps": 6,
+ "sweep_variants": 96,
+ "improvements": 5,
+ "minutes_to_best": 8.03,
+ "best_idea": "tuned TIME_RATIO=0.9606, RESTART_RATIO=0.6253, MIN_RESTARTS=7, MAX_RESTARTS=29 on top of: Replace the naive gain computation in the local search with incremental updates to avoid O(degree) recomputati",
+ "progress": [
+  [
+   0.0,
+   0.5121828962692699
+  ],
+  [
+   4.68,
+   0.5361566205523948
+  ],
+  [
+   5.2,
+   0.7346726800262745
+  ],
+  [
+   6.68,
+   0.7614911526277828
+  ],
+  [
+   6.68,
+   0.7665358671428022
+  ],
+  [
+   8.03,
+   0.7673002178268961
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.5121828962692699,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 6.68,
+   "score": 0.7614911526277828,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "Replace the naive alternating assignment with a one-flip local search starting from a random initial assignment, using a configurable time limit ratio and random restarts to escape local optima and improve the cut weight across all three graphs."
+  },
+  {
+   "minutes": 8.03,
+   "score": 0.765170526661855,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Replace the naive gain computation in the local search with incremental updates to avoid O(degree) recomputation per node, drastically reducing per-iteration cost and allowing more iterations within time limit, especially beneficial for the weak g200 graph with higher degree nodes."
+  },
+  {
+   "minutes": 8.03,
+   "score": 0.7673002178268961,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "sweep/exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "tuned TIME_RATIO=0.9606, RESTART_RATIO=0.6253, MIN_RESTARTS=7, MAX_RESTARTS=29 on top of: Replace the naive gain computation in the local search with incremental updates to avoid O(degree) recomputation per node, drastically reducing per-iteration cost and allowing more iterations within time limit,"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -11,15 +11,114 @@\n \n # OMEGA-BLOCK-START\n def cut(n, edges):\n-    \"\"\"Return a list of n values, side[i] in {0, 1} for node i.\n+    \"\"\"One-flip local search with random restarts: start from a random assignment and iteratively flip nodes with positive gain,\n+    with periodic random restarts to escape poor local optima. Uses a configurable time ratio for the main loop and restarts.\n+    Gain is updated incrementally after each flip to avoid recomputing from scratch.\n+    \"\"\"\n+    import random\n+    import time\n \n-    n: number of nodes (0..n-1); edges: list of (u, v, w) with 0 <= u < v < n, no\n-    duplicate pairs, integer weight 1 <= w <= 10. The cut weight is the sum of w over\n-    edges whose endpoints are on different sides; larger is better. The call has a CPU\n-    time limit of 2.0 s (time.process_time(); more than 1.5 x the limit makes the program\n-    invalid). Only the Python standard library may be used.\n+    # Build adjacency list\n+    adj = [[] for _ in range(n)]\n+    for u, v, w in edges:\n+        adj[u].append((v, w))\n+        adj[v].append((u, w))\n \n-    Current method: alternate the sides by node index (ignores the edges entirely).\n-    \"\"\"\n-    return [i % 2 for i in range(n)]\n+    # Compute total edge weight for ratio\n+    total_weight = sum(w for _, _, w in edges)\n+\n+    # Gain array: gain[i] = (sum of weights to side 1) - (sum of weights to side 0)\n+    # Initially, all nodes are unplaced; we start with random assignment\n+    side = [random.randint(0, 1) for _ in range(n)]\n+    gain = [0] * n  # gain[i] = net weight to side 1 minus side 0\n+\n+    # Initialize gains based on initial assignment\n+    for i in range(n):\n+        for j, w in adj[i]:\n+            if side[i] == side[j]:\n+                gain[i] += w\n+            else:\n+                gain[i] -= w\n+\n+    # Helper: compute cut weight\n+    def compute_cut(side):\n+        return sum(w for u, v, w in edges if side[u] != side[v])\n+\n+    # Time control constants\n+    MAX_TIME = 2.0\n+    TIME_RATIO = 0.9605537307901484  # Fraction of time to use for local search\n+    RESTART_RATIO = 0.62526945405078  # Fraction of time to use before restart\n+    MIN_RESTARTS = 7  # Minimum number of restarts\n+    MAX_RESTARTS = 29  # Maximum number of restarts\n+\n+    # Initial best solution\n+    best_cut = compute_cut(side)\n+    best_side = side[:]\n+\n+    # Main loop with restarts\n+    start_time = time.process_time()\n+    time_limit = MAX_TIME * TIME_RATIO\n+    restart_time = start_time + MAX_TIME * RESTART_RATIO\n+\n+    restart_count = 0\n+    while time.process_time() - start_time < time_limit:\n+        improved = True\n+        while improved and time.process_time() - start_time < restart_time:\n+            improved = False\n+            best_gain = -1\n+            best_node = -1\n+\n+            # Find best node to flip (positive gain)\n+            for i in range(n):\n+                if gain[i] > best_gain:\n+                    best_gain = gain[i]\n+                    best_node = i\n+\n+            if best_gain > 0:\n+                # Flip node best_node\n+                old_side = side[best_node]\n+                side[best_node] = 1 - old_side\n+\n+                # Update gain of best_node: flip sign\n+                gain[best_node] = -gain[best_node]\n+\n+                # Update gain of all neighbors: each edge flips from same to different or vice versa\n+                for j, w in adj[best_node]:\n+                    # If j was on same side, now different \u2192 gain[j] -= 2w\n+                    # If j was on different side, now same \u2192 gain[j] += 2w\n+                    if side[j] == old_side:\n+                        gain[j] -= 2 * w\n+                    else:\n+                        gain[j] += 2 * w\n+\n+                # Update current cut\n+                current_cut = compute_cut(side)\n+                if current_cut > best_cut:\n+                    best_cut = current_cut\n+                    best_side = side[:]\n+\n+                improved = True\n+            else:\n+                break  # No improvement, break inner loop\n+\n+        # Random restart if we have not reached the minimum or are not at the end\n+        if restart_count < MIN_RESTARTS or time.process_time() - start_time < time_limit:\n+            # Perturb the current solution by flipping a random 5-10% of nodes\n+            num_flip = max(1, int(n * 0.05) + random.randint(0, int(n * 0.05)))\n+            for _ in range(num_flip):\n+                i = random.randint(0, n - 1)\n+                # Flip and update gain\n+                old_side = side[i]\n+                side[i] = 1 - old_side\n+                gain[i] = -gain[i]\n+                for j, w in adj[i]:\n+                    if side[j] == old_side:\n+                        gain[j] -= 2 * w\n+                    else:\n+                        gain[j] += 2 * w\n+            restart_count += 1\n+        else:\n+            break\n+\n+    return best_side\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 21.8,
+ "model_gpu_memory_gb": 21.8,
+ "context_length": 32768,
+ "load_seconds": 155.1,
+ "median_call_seconds": 22.7,
+ "p90_call_seconds": 46.7,
+ "prompt_tokens_per_s": 575.0,
+ "gen_tokens_per_s": 45.6,
+ "mean_prompt_tokens": 4345,
+ "mean_gen_tokens": 678,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

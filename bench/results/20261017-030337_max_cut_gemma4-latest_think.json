@@ -1,0 +1,130 @@
+{
+ "schema": 2,
+ "example": "max_cut",
+ "model": "gemma4:latest",
+ "variant": "think",
+ "model_size_gb": 9.5,
+ "model_params": "",
+ "started": "2026-10-17T03:03:37",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.8,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.5121828962692699,
+ "best_score": 0.750987946466534,
+ "improvement": 1.4662495603361911,
+ "llm_calls": 16,
+ "mean_llm_seconds": 58.7,
+ "attempts": 16,
+ "ok": 12,
+ "statuses": {
+  "ok": 12,
+  "edit_error": 1,
+  "invalid": 3
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 5,
+ "minutes_to_best": 15.68,
+ "best_idea": "Replace the undefined `intrange` function call with a fixed number of restarts to resolve the NameError while keeping the existing randomized search framework.",
+ "progress": [
+  [
+   0.0,
+   0.5121828962692699
+  ],
+  [
+   2.5,
+   0.7295218455599165
+  ],
+  [
+   3.37,
+   0.7300502331775428
+  ],
+  [
+   5.04,
+   0.7464810647909778
+  ],
+  [
+   7.43,
+   0.7490447635080234
+  ],
+  [
+   15.68,
+   0.750987946466534
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.5121828962692699,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.37,
+   "score": 0.7300502331775428,
+   "model": "gemma4:latest",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the simplistic alternating assignment with a randomized initial assignment followed by a greedy local search to iteratively flip nodes with positive gain, significantly increasing the cut weight."
+  },
+  {
+   "minutes": 8.15,
+   "score": 0.7469903668365587,
+   "model": "gemma4:latest",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Implement multiple restarts of the greedy local search to escape local optima and find a significantly better cut assignment, as suggested by leaderboard programs."
+  },
+  {
+   "minutes": 10.34,
+   "score": null,
+   "model": "gemma4:latest",
+   "mode": "exploit/diff/tune",
+   "status": "invalid",
+   "idea": "Expose the number of restarts as a swept parameter to allow the engine to find the optimal balance between search breadth and runtime constraints."
+  },
+  {
+   "minutes": 15.68,
+   "score": 0.750987946466534,
+   "model": "gemma4:latest",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Replace the undefined `intrange` function call with a fixed number of restarts to resolve the NameError while keeping the existing randomized search framework."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -11,15 +11,68 @@\n \n # OMEGA-BLOCK-START\n def cut(n, edges):\n-    \"\"\"Return a list of n values, side[i] in {0, 1} for node i.\n+    # Build adjacency structure: adj[u] = [(v, w), ...]\n+    adj = [[] for _ in range(n)]\n+    for u, v, w in edges:\n+        adj[u].append((v, w))\n+        adj[v].append((u, w))\n \n-    n: number of nodes (0..n-1); edges: list of (u, v, w) with 0 <= u < v < n, no\n-    duplicate pairs, integer weight 1 <= w <= 10. The cut weight is the sum of w over\n-    edges whose endpoints are on different sides; larger is better. The call has a CPU\n-    time limit of 2.0 s (time.process_time(); more than 1.5 x the limit makes the program\n-    invalid). Only the Python standard library may be used.\n+    NUM_RESTARTS = 30\n+    best_assignment = None\n+    best_cut_weight = -1\n \n-    Current method: alternate the sides by node index (ignores the edges entirely).\n-    \"\"\"\n-    return [i % 2 for i in range(n)]\n+    # Function to calculate cut weight\n+    def calculate_cut(current_sides):\n+        cut_weight = 0\n+        for u, v, w in edges:\n+            if current_sides[u] != current_sides[v]:\n+                cut_weight += w\n+        return cut_weight\n+\n+    for _ in range(NUM_RESTARTS):\n+        # Initialize sides randomly for this run\n+        sides = [random.choice([0, 1]) for _ in range(n)]\n+        \n+        # Local Search loop (Steepest Ascent)\n+        while True:\n+            best_node = -1\n+            max_gain = 0\n+            \n+            # Find node with max positive gain\n+            for i in range(n):\n+                gain = 0\n+                current_side = sides[i]\n+                \n+                # Calculate gain if node i is flipped\n+                for j, w in adj[i]:\n+                    neighbor_side = sides[j]\n+                    \n+                    # If neighbor j is on the same side as i (not cut): \n+                    # Flipping i adds w to gain (it becomes cut)\n+                    if neighbor_side == current_side:\n+                        gain += w\n+                    # If neighbor j is on the opposite side of i (cut):\n+                    # Flipping i removes w from gain (it becomes not cut)\n+                    else:\n+                        gain -= w\n+                \n+                if gain > max_gain:\n+                    max_gain = gain\n+                    best_node = i\n+\n+            # Stop if no positive gain is found\n+            if max_gain <= 0:\n+                break\n+            \n+            # Flip the best node\n+            sides[best_node] = 1 - sides[best_node]\n+\n+        # Evaluate and update best result\n+        current_cut_weight = calculate_cut(sides)\n+        if current_cut_weight > best_cut_weight:\n+            best_cut_weight = current_cut_weight\n+            best_assignment = list(sides)\n+\n+    # Return the best assignment found across all restarts\n+    return best_assignment\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 11.4,
+ "model_gpu_memory_gb": 11.4,
+ "context_length": 32768,
+ "load_seconds": 115.0,
+ "median_call_seconds": 45.2,
+ "p90_call_seconds": 109.3,
+ "prompt_tokens_per_s": 819.8,
+ "gen_tokens_per_s": 40.8,
+ "mean_prompt_tokens": 2972,
+ "mean_gen_tokens": 1951,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

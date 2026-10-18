@@ -1,0 +1,109 @@
+{
+ "schema": 2,
+ "example": "circles_in_circle_21",
+ "model": "qwen3.5:27b",
+ "variant": "think",
+ "model_size_gb": 17.4,
+ "model_params": "27.8B",
+ "started": "2026-10-16T11:35:33",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 3.1890454825108625,
+ "best_score": 3.4147845817184757,
+ "improvement": 1.070785788551965,
+ "llm_calls": 4,
+ "mean_llm_seconds": 228.7,
+ "attempts": 4,
+ "ok": 2,
+ "statuses": {
+  "ok": 2,
+  "invalid": 2
+ },
+ "sweeps": 1,
+ "sweep_variants": 16,
+ "improvements": 2,
+ "minutes_to_best": 10.31,
+ "best_idea": "tuned INITIAL_R=0.4, NUM_SAMPLES=200 on top of: Make the initial circle radius and number of random samples per iteration tunable constants to explore the search space more effectively, as these param",
+ "progress": [
+  [
+   0.0,
+   3.1890454825108625
+  ],
+  [
+   5.12,
+   3.317924872148544
+  ],
+  [
+   10.31,
+   3.4147845817184757
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.1890454825108625,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 5.12,
+   "score": 3.317924872148544,
+   "model": "qwen3.5:27b",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Replace the equal-radius concentric ring pattern with a greedy gap-filling algorithm that places a large central circle first, then iteratively fills gaps with the largest possible circles, which should increase the sum of radii by allowing size variation."
+  },
+  {
+   "minutes": 10.31,
+   "score": 3.317924872148544,
+   "model": "qwen3.5:27b",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Make the initial circle radius and number of random samples per iteration tunable constants to explore the search space more effectively, as these parameters significantly impact the packing quality."
+  },
+  {
+   "minutes": 10.31,
+   "score": 3.4147845817184757,
+   "model": "qwen3.5:27b",
+   "mode": "sweep/best/diff/refine",
+   "status": "ok",
+   "idea": "tuned INITIAL_R=0.4, NUM_SAMPLES=200 on top of: Make the initial circle radius and number of random samples per iteration tunable constants to explore the search space more effectively, as these parameters significantly impact the packing quality."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -6,22 +6,61 @@\n # OMEGA-BLOCK-START\n def construct(n=21):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit circle (center (0,0),\n-    radius 1) without overlaps.\n-\n-    This start places one circle at the center and two concentric rings of 7 and\n-    13 circles, all with the same radius: the largest one that keeps every pair\n-    apart and every circle inside the container.\n-    \"\"\"\n-    centers = [(0.0, 0.0)]\n-    for count, ring in ((7, 0.35), (n - 8, 0.75)):\n-        centers += [(ring * math.cos(2 * math.pi * k / count),\n-                     ring * math.sin(2 * math.pi * k / count)) for k in range(count)]\n-    r = min(1.0 - math.hypot(x, y) for x, y in centers)\n-    for a in range(n):\n-        for b in range(a + 1, n):\n-            r = min(r, math.dist(centers[a], centers[b]) / 2)\n-    r *= 1 - 1e-12  # stay strictly feasible despite rounding\n-    return [(x, y, r) for x, y in centers]\n+    radius 1) without overlaps using greedy gap-filling with size variation.\"\"\"\n+    import random\n+    random.seed(42)\n+    \n+    INITIAL_R = 0.4\n+    NUM_SAMPLES = 200\n+    \n+    circles = []\n+    \n+    # Place a large central circle first\n+    circles.append((0.0, 0.0, INITIAL_R))\n+    \n+    # Greedily place remaining circles in largest gaps\n+    for i in range(n - 1):\n+        best_pos = None\n+        best_r = 0\n+        \n+        # Sample candidate positions around existing circles\n+        for cx, cy, cr in circles:\n+            for k in range(12):\n+                theta = 2 * math.pi * k / 12 + i * 0.1\n+                dist = cr * 0.9 + 0.05  # just outside existing circle\n+                x = cx + dist * math.cos(theta)\n+                y = cy + dist * math.sin(theta)\n+                \n+                # Compute max radius at this position\n+                r = 1.0 - math.hypot(x, y)  # distance to container wall\n+                for ox, oy, or_ in circles:\n+                    d = math.hypot(x - ox, y - oy)\n+                    r = min(r, d - or_)\n+                \n+                if r > best_r and r > 0.001:\n+                    best_r = r\n+                    best_pos = (x, y)\n+        \n+        # Also try random positions\n+        for _ in range(NUM_SAMPLES):\n+            angle = random.uniform(0, 2 * math.pi)\n+            dist = random.uniform(0.1, 0.95)\n+            x = dist * math.cos(angle)\n+            y = dist * math.sin(angle)\n+            \n+            r = 1.0 - math.hypot(x, y)\n+            for ox, oy, or_ in circles:\n+                d = math.hypot(x - ox, y - oy)\n+                r = min(r, d - or_)\n+            \n+            if r > best_r and r > 0.001:\n+                best_r = r\n+                best_pos = (x, y)\n+        \n+        if best_pos and best_r > 0.001:\n+            circles.append((best_pos[0], best_pos[1], best_r * (1 - 1e-12)))\n+    \n+    return circles\n # OMEGA-BLOCK-END\n \n \n",
+ "error": "",
+ "model_memory_gb": 18.4,
+ "model_gpu_memory_gb": 18.4,
+ "context_length": 32768,
+ "load_seconds": 180.8,
+ "median_call_seconds": 299.2,
+ "p90_call_seconds": 306.8,
+ "prompt_tokens_per_s": 108.9,
+ "gen_tokens_per_s": 10.9,
+ "mean_prompt_tokens": 1935,
+ "mean_gen_tokens": 1799,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

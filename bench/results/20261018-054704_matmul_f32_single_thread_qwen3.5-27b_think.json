@@ -1,0 +1,88 @@
+{
+ "schema": 2,
+ "example": "matmul_f32_single_thread",
+ "model": "qwen3.5:27b",
+ "variant": "think",
+ "model_size_gb": 17.4,
+ "model_params": "27.8B",
+ "started": "2026-10-18T05:47:04",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.9,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.7191,
+ "best_score": 25.6155,
+ "improvement": 14.900529346751206,
+ "llm_calls": 4,
+ "mean_llm_seconds": 233.0,
+ "attempts": 4,
+ "ok": 4,
+ "statuses": {
+  "ok": 4
+ },
+ "sweeps": 2,
+ "sweep_variants": 18,
+ "improvements": 1,
+ "minutes_to_best": 6.16,
+ "best_idea": "Change loop order from i-j-k to i-k-j so the inner loop streams rows of B and C sequentially, enabling auto-vectorization and much better cache behavior.",
+ "progress": [
+  [
+   0.0,
+   1.7191
+  ],
+  [
+   6.16,
+   25.6155
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.7191,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 6.16,
+   "score": 25.6155,
+   "model": "qwen3.5:27b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Change loop order from i-j-k to i-k-j so the inner loop streams rows of B and C sequentially, enabling auto-vectorization and much better cache behavior."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -24,11 +24,20 @@\n // Computes C = A * B on the calling thread. C is NOT zeroed by the caller.\n // n is any size from 1 to 2048.\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+    // Zero C\n+    for (size_t idx = 0; idx < (size_t)n * n; ++idx)\n+        C[idx] = 0.0f;\n+    \n+    // i-k-j loop order: inner loop streams rows of B and C\n+    for (int i = 0; i < n; ++i) {\n+        for (int k = 0; k < n; ++k) {\n+            float a = A[(size_t)i * n + k];\n+            float* C_row = C + (size_t)i * n;\n+            const float* B_row = B + (size_t)k * n;\n+            for (int j = 0; j < n; ++j) {\n+                C_row[j] += a * B_row[j];\n+            }\n         }\n+    }\n }\n // OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 18.4,
+ "model_gpu_memory_gb": 18.4,
+ "context_length": 32768,
+ "load_seconds": 161.6,
+ "median_call_seconds": 245.6,
+ "p90_call_seconds": 362.9,
+ "prompt_tokens_per_s": 110.4,
+ "gen_tokens_per_s": 10.6,
+ "mean_prompt_tokens": 2894,
+ "mean_gen_tokens": 1758,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

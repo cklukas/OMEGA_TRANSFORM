@@ -1,0 +1,130 @@
+{
+ "schema": 2,
+ "example": "tammes_30",
+ "model": "gpt-oss:20b",
+ "variant": "think",
+ "model_size_gb": 13.8,
+ "model_params": "20.9B",
+ "started": "2026-10-17T16:22:18",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 3.2013569883368893,
+ "best_score": 36.49158017723494,
+ "improvement": 11.398785049646206,
+ "llm_calls": 21,
+ "mean_llm_seconds": 42.4,
+ "attempts": 21,
+ "ok": 16,
+ "statuses": {
+  "ok": 16,
+  "edit_error": 2,
+  "invalid": 3
+ },
+ "sweeps": 4,
+ "sweep_variants": 57,
+ "improvements": 5,
+ "minutes_to_best": 8.26,
+ "best_idea": "tuned STEP_SIZE=0.009105, ITERATIONS=23, FORCE_EXP=4, REPEL_STRENGTH=1.683 on top of: Expose the step size, iteration count, force exponent, and repulsion strength as tunable constants and adjust the ",
+ "progress": [
+  [
+   0.0,
+   3.2013569883368893
+  ],
+  [
+   2.4,
+   32.740231081838175
+  ],
+  [
+   3.12,
+   34.69626497474992
+  ],
+  [
+   3.77,
+   34.82900765707867
+  ],
+  [
+   4.94,
+   34.829145023592005
+  ],
+  [
+   8.26,
+   36.49158017723494
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.2013569883368893,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.4,
+   "score": 32.740231081838175,
+   "model": "gpt-oss:20b",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Replace random initialization with a deterministic Fibonacci (golden-spiral) lattice to produce a more uniformly spread configuration, which should increase the minimum angle among 30 points."
+  },
+  {
+   "minutes": 3.12,
+   "score": 34.69626497474992,
+   "model": "gpt-oss:20b",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Add a short repulsive gradient descent loop after the Fibonacci initialization to slightly push points apart and improve the minimum angle."
+  },
+  {
+   "minutes": 8.26,
+   "score": 34.69626497474992,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Expose the step size, iteration count, force exponent, and repulsion strength as tunable constants and adjust the force calculation to use them, allowing a sweep to find a better configuration."
+  },
+  {
+   "minutes": 8.26,
+   "score": 36.49158017723494,
+   "model": "gpt-oss:20b",
+   "mode": "sweep/exploit/diff/tune",
+   "status": "ok",
+   "idea": "tuned STEP_SIZE=0.009105, ITERATIONS=23, FORCE_EXP=4, REPEL_STRENGTH=1.683 on top of: Expose the step size, iteration count, force exponent, and repulsion strength as tunable constants and adjust the force calculation to use them, allowing a sweep to find a better configuration."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -6,22 +6,54 @@\n import random\n \n # OMEGA-BLOCK-START\n+GOLDEN_ANGLE = math.pi * (3 - math.sqrt(5))\n+STEP_SIZE = 0.009105382263670976\n+ITERATIONS = 23\n+FORCE_EXP = 4\n+REPEL_STRENGTH = 1.6834227449333983\n def construct(n=30):\n-    \"\"\"Return a list of n points (x, y, z) on the unit sphere.\n-\n-    Vectors need not be normalized (the evaluator normalizes them), but none may be\n-    zero. The score is the minimum angle in degrees between any two points. This\n-    start draws uniformly random points with a fixed seed, so some pairs end up\n-    close together.\n-    \"\"\"\n-    rng = random.Random(1)\n+    \"\"\"Return a list of n points (x, y, z) on the unit sphere using Fibonacci lattice and repulsive refinement.\"\"\"\n     points = []\n-    for _ in range(n):\n-        z = rng.uniform(-1.0, 1.0)\n-        phi = rng.uniform(0.0, 2 * math.pi)\n-        s = math.sqrt(1.0 - z * z)\n-        points.append((s * math.cos(phi), s * math.sin(phi), z))\n-    return points\n+    for i in range(n):\n+        z = 1 - (2 * i + 1) / n\n+        r = math.sqrt(1 - z * z)\n+        theta = GOLDEN_ANGLE * i\n+        points.append([r * math.cos(theta), r * math.sin(theta), z])  # use list for mutability\n+    # repulsive gradient descent\n+    for _ in range(ITERATIONS):\n+        forces = [[0.0, 0.0, 0.0] for _ in range(n)]\n+        for i in range(n):\n+            xi, yi, zi = points[i]\n+            for j in range(i + 1, n):\n+                xj, yj, zj = points[j]\n+                dx = xi - xj\n+                dy = yi - yj\n+                dz = zi - zj\n+                dist2 = dx * dx + dy * dy + dz * dz\n+                if dist2 < 1e-12:\n+                    continue\n+                dist = math.sqrt(dist2)\n+                inv_dist = 1.0 / dist\n+                force_mag = (inv_dist ** (FORCE_EXP + 1)) * REPEL_STRENGTH\n+                fx = dx * force_mag\n+                fy = dy * force_mag\n+                fz = dz * force_mag\n+                forces[i][0] += fx\n+                forces[i][1] += fy\n+                forces[i][2] += fz\n+                forces[j][0] -= fx\n+                forces[j][1] -= fy\n+                forces[j][2] -= fz\n+        for i in range(n):\n+            points[i][0] += STEP_SIZE * forces[i][0]\n+            points[i][1] += STEP_SIZE * forces[i][1]\n+            points[i][2] += STEP_SIZE * forces[i][2]\n+            # normalize\n+            norm = math.sqrt(points[i][0]**2 + points[i][1]**2 + points[i][2]**2)\n+            points[i][0] /= norm\n+            points[i][1] /= norm\n+            points[i][2] /= norm\n+    return [(x, y, z) for x, y, z in points]\n # OMEGA-BLOCK-END\n \n \n",
+ "error": "",
+ "model_memory_gb": 12.8,
+ "model_gpu_memory_gb": 12.8,
+ "context_length": 32768,
+ "load_seconds": 108.3,
+ "median_call_seconds": 39.0,
+ "p90_call_seconds": 54.1,
+ "prompt_tokens_per_s": 518.8,
+ "gen_tokens_per_s": 49.0,
+ "mean_prompt_tokens": 2703,
+ "mean_gen_tokens": 1560,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

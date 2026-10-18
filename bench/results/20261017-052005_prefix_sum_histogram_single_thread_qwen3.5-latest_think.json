@@ -1,0 +1,91 @@
+{
+ "schema": 2,
+ "example": "prefix_sum_histogram_single_thread",
+ "model": "qwen3.5:latest",
+ "variant": "think",
+ "model_size_gb": 6.6,
+ "model_params": "9.7B",
+ "started": "2026-10-17T05:20:05",
+ "minutes_budget": 15.0,
+ "wall_minutes": 21.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 4.78555,
+ "best_score": 10.843,
+ "improvement": 2.2657792730198203,
+ "llm_calls": 4,
+ "mean_llm_seconds": 312.4,
+ "attempts": 4,
+ "ok": 1,
+ "statuses": {
+  "ok": 1,
+  "compile_error": 1,
+  "edit_error": 1,
+  "llm_error": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 8.1,
+ "best_idea": "Use 4 private sub-histogram arrays to break store-to-load dependency chains for hot bins, add prefetching for memory bandwidth optimization, and use pointer arithmetic in the loop body.",
+ "progress": [
+  [
+   0.0,
+   4.78555
+  ],
+  [
+   8.1,
+   10.843
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 4.78555,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 8.1,
+   "score": 10.843,
+   "model": "qwen3.5:latest",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Use 4 private sub-histogram arrays to break store-to-load dependency chains for hot bins, add prefetching for memory bandwidth optimization, and use pointer arithmetic in the loop body."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -28,12 +28,25 @@\n // hist is zeroed by the caller. n is any size from 0 to 20'000'000; the sums\n // never overflow int64.\n extern \"C\" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, uint64_t* hist) {\n-    for (int b = 0; b < 256; ++b) hist[b] = 0;\n+    // Use 4 sub-histograms to break store-to-load dependencies on hot bins\n+    // by distributing updates for the same bin across different arrays.\n+    uint32_t sub[4][256];\n+    memset(sub, 0, sizeof(sub));\n+\n     int64_t sum = 0;\n+    const int64_t *p_in = in;\n+    int64_t *p_out = out;\n+\n     for (size_t i = 0; i < n; ++i) {\n-        sum += in[i];\n-        out[i] = sum;\n-        hist[in[i] & 255]++;\n+        __builtin_prefetch(p_in + i + 8, 0, 3);\n+        sum += p_in[i];\n+        p_out[i] = sum;\n+        sub[i & 3][p_in[i] & 255]++;\n+    }\n+\n+    // Merge sub-histograms into final histogram buffer\n+    for (int b = 0; b < 256; ++b) {\n+        hist[b] = (uint64_t)(sub[0][b] + sub[1][b] + sub[2][b] + sub[3][b]);\n     }\n }\n // OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 6.8,
+ "model_gpu_memory_gb": 6.8,
+ "context_length": 32768,
+ "load_seconds": 52.8,
+ "median_call_seconds": 479.2,
+ "p90_call_seconds": 509.9,
+ "prompt_tokens_per_s": 410.8,
+ "gen_tokens_per_s": 30.7,
+ "mean_prompt_tokens": 3581,
+ "mean_gen_tokens": 6758,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

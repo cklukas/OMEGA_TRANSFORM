@@ -1,0 +1,121 @@
+{
+ "schema": 2,
+ "example": "feature_engineering",
+ "model": "gpt-oss:20b",
+ "variant": "think",
+ "model_size_gb": 13.8,
+ "model_params": "20.9B",
+ "started": "2026-10-16T17:28:52",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.623,
+ "best_score": 0.94,
+ "improvement": 1.508828250401284,
+ "llm_calls": 16,
+ "mean_llm_seconds": 58.1,
+ "attempts": 16,
+ "ok": 13,
+ "statuses": {
+  "ok": 13,
+  "duplicate": 3
+ },
+ "sweeps": 6,
+ "sweep_variants": 39,
+ "improvements": 3,
+ "minutes_to_best": 11.81,
+ "best_idea": "Add sign(x1*x2), x6>0 indicator, cross terms x4*x6 and x5*x6, and sqrt(radius) to give the linear model more expressive power for interactions involving the normal\u2011like features.",
+ "progress": [
+  [
+   0.0,
+   0.623
+  ],
+  [
+   2.5,
+   0.833
+  ],
+  [
+   3.82,
+   0.864
+  ],
+  [
+   11.81,
+   0.94
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.623,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.5,
+   "score": 0.833,
+   "model": "gpt-oss:20b",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Add nonlinear transformations and indicator features (products, log, radius, quadrant sign, and thresholds) to capture hidden interactions and step-like behaviors, increasing the linear separability of the underlying rule."
+  },
+  {
+   "minutes": 3.82,
+   "score": 0.827,
+   "model": "gpt-oss:20b",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Add a radius threshold indicator, the x4*x5 interaction, and squares of x1 and x2 to capture higher\u2011order nonlinearities that may help separate the hidden rule."
+  },
+  {
+   "minutes": 3.82,
+   "score": 0.864,
+   "model": "gpt-oss:20b",
+   "mode": "sweep/best/diff/refine",
+   "status": "ok",
+   "idea": "tuned THRESH_RADIUS=3 on top of: Add a radius threshold indicator, the x4*x5 interaction, and squares of x1 and x2 to capture higher\u2011order nonlinearities that may help separate the hidden rule."
+  },
+  {
+   "minutes": 11.81,
+   "score": 0.94,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Add sign(x1*x2), x6>0 indicator, cross terms x4*x6 and x5*x6, and sqrt(radius) to give the linear model more expressive power for interactions involving the normal\u2011like features."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -9,17 +9,43 @@\n import math\n \n # OMEGA-BLOCK-START\n+THRESH_X3 = 1.0\n+THRESH_RADIUS = 3.0\n+\n def features(row):\n     \"\"\"Return the feature vector (a list of at most 30 finite floats) for one row.\n \n-    row: list of 6 floats [x1, x2, x3, x4, x5, x6]. Roughly: x1, x2, x6 are\n-    standard-normal-like, x3 is positive and right-skewed (lognormal-like), x4 and x5\n-    lie in [-2, 2]. The label is a hidden NONLINEAR function of the inputs plus noise.\n-    Every row must give the same number of features. The classifier is linear in the\n-    features (they are standardized and a bias is added), so nonlinear structure only\n-    helps if a feature expresses it. Only the Python standard library may be used.\n-\n-    Current method: the raw inputs.\n+    row: list of 6 floats [x1, x2, x3, x4, x5, x6].\n+    Includes raw inputs, interactions, log, radius, quadrant, thresholds,\n+    and higher\u2011order terms to improve linear separability.\n     \"\"\"\n-    return list(row)\n+    x1, x2, x3, x4, x5, x6 = row\n+    features = [\n+        x1,\n+        x2,\n+        x3,\n+        x4,\n+        x5,\n+        x6,\n+        x1 * x2,\n+        x1 * x3,\n+        x2 * x3,\n+        math.log(x3),\n+        x4 * x4 + x5 * x5,\n+        x4 * x5,\n+        (1 if x4 >= 0 else -1) * (1 if x5 >= 0 else -1),\n+        abs(x4) - abs(x5),\n+        1.0 if x3 > THRESH_X3 else 0.0,\n+        1.0 if x4 > 0 else 0.0,\n+        1.0 if x5 > 0 else 0.0,\n+        1.0 if (x4 * x4 + x5 * x5) > THRESH_RADIUS else 0.0,\n+        x1 * x1,\n+        x2 * x2,\n+        1.0 if x1 * x2 > 0 else -1.0,\n+        1.0 if x6 > 0 else 0.0,\n+        x4 * x6,\n+        x5 * x6,\n+        math.sqrt(x4 * x4 + x5 * x5),\n+    ]\n+    return features\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 12.8,
+ "model_gpu_memory_gb": 12.8,
+ "context_length": 32768,
+ "load_seconds": 108.1,
+ "median_call_seconds": 55.3,
+ "p90_call_seconds": 97.8,
+ "prompt_tokens_per_s": 517.7,
+ "gen_tokens_per_s": 50.6,
+ "mean_prompt_tokens": 3402,
+ "mean_gen_tokens": 2252,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

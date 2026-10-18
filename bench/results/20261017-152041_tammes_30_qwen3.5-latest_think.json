@@ -1,0 +1,93 @@
+{
+ "schema": 2,
+ "example": "tammes_30",
+ "model": "qwen3.5:latest",
+ "variant": "think",
+ "model_size_gb": 6.6,
+ "model_params": "9.7B",
+ "started": "2026-10-17T15:20:41",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 3.2013569883368893,
+ "best_score": 32.740231081838175,
+ "improvement": 10.226985369365753,
+ "llm_calls": 13,
+ "mean_llm_seconds": 70.5,
+ "attempts": 13,
+ "ok": 10,
+ "statuses": {
+  "invalid": 3,
+  "ok": 10
+ },
+ "sweeps": 4,
+ "sweep_variants": 45,
+ "improvements": 2,
+ "minutes_to_best": 9.65,
+ "best_idea": "Replace random initialization with Fibonacci golden-spiral lattice and add local optimization loop to push closest pairs apart, achieving uniform spherical coverage",
+ "progress": [
+  [
+   0.0,
+   3.2013569883368893
+  ],
+  [
+   3.26,
+   32.74023108150664
+  ],
+  [
+   9.65,
+   32.740231081838175
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.2013569883368893,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 9.65,
+   "score": 32.740231081838175,
+   "model": "qwen3.5:latest",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Replace random initialization with Fibonacci golden-spiral lattice and add local optimization loop to push closest pairs apart, achieving uniform spherical coverage"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -7,20 +7,54 @@\n \n # OMEGA-BLOCK-START\n def construct(n=30):\n-    \"\"\"Return a list of n points (x, y, z) on the unit sphere.\n-\n-    Vectors need not be normalized (the evaluator normalizes them), but none may be\n-    zero. The score is the minimum angle in degrees between any two points. This\n-    start draws uniformly random points with a fixed seed, so some pairs end up\n-    close together.\n-    \"\"\"\n-    rng = random.Random(1)\n+    \"\"\"Return n points on unit sphere using Fibonacci lattice + local optimization.\"\"\"\n+    \n+    # Fibonacci spiral parameters (proven uniform coverage)\n+    golden_angle = math.pi * (3 - math.sqrt(5))\n+    \n+    # Initialize with Fibonacci spiral for uniformity\n     points = []\n-    for _ in range(n):\n-        z = rng.uniform(-1.0, 1.0)\n-        phi = rng.uniform(0.0, 2 * math.pi)\n-        s = math.sqrt(1.0 - z * z)\n-        points.append((s * math.cos(phi), s * math.sin(phi), z))\n+    for i in range(n):\n+        z = 1.0 - ((i + 0.5) / n) * 2.0\n+        theta = golden_angle * i\n+        s = math.sqrt(max(0.0, 1.0 - z * z))\n+        points.append((s * math.cos(theta), s * math.sin(theta), z))\n+    \n+    # Local optimization: push apart closest pairs\n+    for _ in range(30):\n+        # Find closest pair by squared chord distance\n+        min_d2 = float('inf')\n+        closest_pair = None\n+        \n+        for i in range(n):\n+            xi, yi, zi = points[i]\n+            for j in range(i + 1, n):\n+                xj, yj, zj = points[j]\n+                d2 = (xi - xj) ** 2 + (yi - yj) ** 2 + (zi - zj) ** 2\n+                if d2 < min_d2:\n+                    min_d2 = d2\n+                    closest_pair = (i, j)\n+        \n+        # Stop if well-separated\n+        if min_d2 > 0.01:\n+            break\n+        \n+        # Push apart the closest pair\n+        if closest_pair:\n+            i, j = closest_pair\n+            xi, yi, zi = points[i]\n+            xj, yj, zj = points[j]\n+            \n+            # Displacement vector (from j to i)\n+            v = (-xj + xi, -yj + yi, -zj + zi)\n+            norm_sq = v[0]**2 + v[1]**2 + v[2]**2\n+            if norm_sq > 1e-15:\n+                norm = math.sqrt(norm_sq)\n+                step = 0.03 / (norm + 1e-8)\n+                # Move both points apart\n+                points[i] = (xi + step * v[0], yi + step * v[1], zi + step * v[2])\n+                points[j] = (xj - step * v[0], yj - step * v[1], zj - step * v[2])\n+    \n     return points\n # OMEGA-BLOCK-END\n \n",
+ "error": "",
+ "model_memory_gb": 6.7,
+ "model_gpu_memory_gb": 6.7,
+ "context_length": 32768,
+ "load_seconds": 57.4,
+ "median_call_seconds": 48.1,
+ "p90_call_seconds": 106.9,
+ "prompt_tokens_per_s": 339.3,
+ "gen_tokens_per_s": 33.7,
+ "mean_prompt_tokens": 2500,
+ "mean_gen_tokens": 1965,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

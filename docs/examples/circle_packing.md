@@ -212,14 +212,19 @@ The latest run per model and reasoning mode; the [model benchmarks](../benchmark
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|
 | nvidia/nemotron-3-super-120b-a12b:free (think) | cloud | 2.5045 | ×1.68 | 10.7 | 4 |
+| gpt-oss:20b (think) | local | 2.46941 | ×1.66 | 10.1 | 6 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | cloud | 2.40507 | ×1.61 | 13.0 | 2 |
 | gemma4:26b-a4b-it-qat (no-think) | local | 2.26342 | ×1.52 | 10.2 | 2 |
+| gemma4:26b-a4b-it-qat (think) | local | 2.01811 | ×1.35 | 15.2 | 1 |
 | nvidia/nemotron-3-super-120b-a12b:free (no-think) | cloud | 2.01309 | ×1.35 | 15.0 | 13 |
 | gemma4:latest (no-think) | local | 1.95098 | ×1.31 | 14.3 | 3 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 1.92574 | ×1.29 | 9.2 | 2 |
 | qwen3.5:latest (no-think) | local | 1.88064 | ×1.26 | 6.2 | 1 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | 1.81593 | ×1.22 | 14.3 | 15 |
 | gemma4:12b-it-qat (no-think) | local | 1.77142 | ×1.19 | 11.8 | 2 |
 | cohere/north-mini-code:free (no-think) | cloud | 1.75953 | ×1.18 | 14.6 | 7 |
+| gemma4:latest (think) | local | 1.67672 | ×1.13 | 14.3 | 3 |
+| gemma4:e4b-it-qat (think) | local | 1.64644 | ×1.10 | 14.5 | 2 |
 | poolside/laguna-s-2.1:free (no-think) | cloud | 1.63899 | ×1.10 | 12.3 | 1 |
 | qwen3-coder:30b (no-think) | local | 1.62233 | ×1.09 | 15.4 | 2 |
 | gemma4:e2b (no-think) | local | 1.60406 | ×1.08 | 6.6 | 1 |
@@ -234,3 +239,7 @@ The latest run per model and reasoning mode; the [model benchmarks](../benchmark
 | gemma4:e4b-it-qat (no-think) | local | 1.4901 | ×1.00 | - | 0 |
 | gpt-oss:20b (no-think) | local | 1.4901 | ×1.00 | - | 0 |
 | qwen3.5:27b (no-think) | local | 1.4901 | ×1.00 | - | 0 |
+| gemma4:12b-it-qat (think) | local | 1.4901 | ×1.00 | - | 0 |
+| qwen3.5:27b (think) | local | 1.4901 | ×1.00 | - | 0 |
+| qwen3.8:27b-mtp-q4_K_M (think) | local | 1.4901 | ×1.00 | - | 0 |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | 1.4901 | ×1.00 | - | 0 |

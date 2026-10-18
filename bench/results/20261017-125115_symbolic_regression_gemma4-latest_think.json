@@ -1,0 +1,102 @@
+{
+ "schema": 2,
+ "example": "symbolic_regression",
+ "model": "gemma4:latest",
+ "variant": "think",
+ "model_size_gb": 9.5,
+ "model_params": "",
+ "started": "2026-10-17T12:51:15",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.3128434055615448,
+ "best_score": 0.37949756508871324,
+ "improvement": 1.2130591802231734,
+ "llm_calls": 26,
+ "mean_llm_seconds": 34.9,
+ "attempts": 26,
+ "ok": 16,
+ "statuses": {
+  "ok": 16,
+  "duplicate": 8,
+  "invalid": 2
+ },
+ "sweeps": 1,
+ "sweep_variants": 16,
+ "improvements": 2,
+ "minutes_to_best": 9.78,
+ "best_idea": "Introduce $\\sin(x_3)$ and $\\cos(x_3)$ terms to the basis functions to introduce bounded behavior and improve extrapolation, as suggested by previous successful attempts.",
+ "progress": [
+  [
+   0.0,
+   0.3128434055615448
+  ],
+  [
+   2.16,
+   0.3794462082124446
+  ],
+  [
+   9.78,
+   0.37949756508871324
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.3128434055615448,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.16,
+   "score": 0.3794462082124446,
+   "model": "gemma4:latest",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Expand the basis functions from linear terms to include quadratic terms and pairwise interactions to capture non-linear structure and improve extrapolation."
+  },
+  {
+   "minutes": 9.78,
+   "score": 0.37949756508871324,
+   "model": "gemma4:latest",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Introduce $\\sin(x_3)$ and $\\cos(x_3)$ terms to the basis functions to introduce bounded behavior and improve extrapolation, as suggested by previous successful attempts."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -35,7 +35,7 @@\n # OMEGA-BLOCK-START\n def basis(x1, x2, x3):\n     \"\"\"Basis functions of the model; the prediction is a weighted sum of them.\"\"\"\n-    return [1.0, x1, x2, x3]\n+    return [1.0, x1, x2, x3, x1*x1, x2*x2, x3*x3, x1*x2, x1*x3, x2*x3, math.sin(x3), math.cos(x3)]\n \n \n def fit(rows):\n",
+ "error": "",
+ "model_memory_gb": 12.7,
+ "model_gpu_memory_gb": 12.7,
+ "context_length": 32768,
+ "load_seconds": 109.8,
+ "median_call_seconds": 30.6,
+ "p90_call_seconds": 43.2,
+ "prompt_tokens_per_s": 1075.4,
+ "gen_tokens_per_s": 47.7,
+ "mean_prompt_tokens": 4269,
+ "mean_gen_tokens": 1265,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

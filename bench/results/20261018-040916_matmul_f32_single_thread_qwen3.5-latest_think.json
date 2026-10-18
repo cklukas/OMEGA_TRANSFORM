@@ -1,0 +1,99 @@
+{
+ "schema": 2,
+ "example": "matmul_f32_single_thread",
+ "model": "qwen3.5:latest",
+ "variant": "think",
+ "model_size_gb": 6.6,
+ "model_params": "9.7B",
+ "started": "2026-10-18T04:09:16",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.7,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.71602,
+ "best_score": 25.4115,
+ "improvement": 14.808393841563618,
+ "llm_calls": 13,
+ "mean_llm_seconds": 71.0,
+ "attempts": 13,
+ "ok": 1,
+ "statuses": {
+  "llm_error": 1,
+  "invalid": 5,
+  "compile_error": 6,
+  "ok": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 12.13,
+ "best_idea": "Zero-initialize C before accumulating in i-k-j order to fix the n=1 bug where garbage initial values corrupt results",
+ "progress": [
+  [
+   0.0,
+   1.71602
+  ],
+  [
+   12.13,
+   25.4115
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.71602,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 8.78,
+   "score": null,
+   "model": "qwen3.5:latest",
+   "mode": "best/diff/refine",
+   "status": "invalid",
+   "idea": "Switch from i-j-k to i-k-j loop order so that for each k we stream a row of B and accumulate into C's corresponding rows, improving memory access patterns and enabling better compiler auto-vectorization."
+  },
+  {
+   "minutes": 12.13,
+   "score": 25.4115,
+   "model": "qwen3.5:latest",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Zero-initialize C before accumulating in i-k-j order to fix the n=1 bug where garbage initial values corrupt results"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -21,14 +21,20 @@\n #endif\n \n // OMEGA-BLOCK-START\n-// Computes C = A * B on the calling thread. C is NOT zeroed by the caller.\n-// n is any size from 1 to 2048.\n+// Computes C = A * B on the calling thread. Zero-initializes C then accumulates.\n+// n is any size from 1 to 2048. Uses i-k-j order for row-streaming of B.\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+    // Zero-initialize C (required since caller passes garbage data)\n+    for (size_t idx = 0; idx < (size_t)n * n; ++idx) C[idx] = 0.0f;\n+    for (int i = 0; i < n; ++i) {\n+        float* Ci = C + i * n;\n+        for (int k = 0; k < n; ++k) {\n+            float a = A[i * n + k];\n+            if (a != 0.0f) {\n+                const float* Bk = B + k * n;\n+                for (int j = 0; j < n; ++j) Ci[j] += a * Bk[j];\n+            }\n         }\n+    }\n }\n // OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 6.8,
+ "model_gpu_memory_gb": 6.8,
+ "context_length": 32768,
+ "load_seconds": 0.3,
+ "median_call_seconds": 33.8,
+ "p90_call_seconds": 57.7,
+ "prompt_tokens_per_s": 739.5,
+ "gen_tokens_per_s": 34.3,
+ "mean_prompt_tokens": 2647,
+ "mean_gen_tokens": 1184,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

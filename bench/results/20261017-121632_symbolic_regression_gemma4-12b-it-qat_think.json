@@ -1,0 +1,89 @@
+{
+ "schema": 2,
+ "example": "symbolic_regression",
+ "model": "gemma4:12b-it-qat",
+ "variant": "think",
+ "model_size_gb": 7.2,
+ "model_params": "11.9B",
+ "started": "2026-10-17T12:16:32",
+ "minutes_budget": 15.0,
+ "wall_minutes": 19.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.3128434055615448,
+ "best_score": 0.3742918140655904,
+ "improvement": 1.196419062737626,
+ "llm_calls": 2,
+ "mean_llm_seconds": 573.5,
+ "attempts": 2,
+ "ok": 1,
+ "statuses": {
+  "edit_error": 1,
+  "ok": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 19.12,
+ "best_idea": "Expand the basis functions to include quadratic, cubic, and trigonometric terms, as well as pairwise products and exponentials, to better capture the non-linear and periodic dependencies suggested by ",
+ "progress": [
+  [
+   0.0,
+   0.3128434055615448
+  ],
+  [
+   19.12,
+   0.3742918140655904
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.3128434055615448,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 19.12,
+   "score": 0.3742918140655904,
+   "model": "gemma4:12b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Expand the basis functions to include quadratic, cubic, and trigonometric terms, as well as pairwise products and exponentials, to better capture the non-linear and periodic dependencies suggested by the feedback."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -35,7 +35,15 @@\n # OMEGA-BLOCK-START\n def basis(x1, x2, x3):\n     \"\"\"Basis functions of the model; the prediction is a weighted sum of them.\"\"\"\n-    return [1.0, x1, x2, x3]\n+    return [\n+        1.0, x1, x2, x3,\n+        x1**2, x2**2, x3**2,\n+        x1*x2, x1*x3, x2*x3,\n+        x1**3, x2**3, x3**3,\n+        math.sin(x1), math.cos(x1), math.sin(x2), math.cos(x2), math.sin(x3), math.cos(x3),\n+        math.exp(x1), math.exp(x2), math.exp(x3),\n+        x1*x2*x3\n+    ]\n \n \n def fit(rows):\n",
+ "error": "",
+ "model_memory_gb": 8.0,
+ "model_gpu_memory_gb": 8.0,
+ "context_length": 32768,
+ "load_seconds": 62.4,
+ "median_call_seconds": 655.1,
+ "p90_call_seconds": 655.1,
+ "prompt_tokens_per_s": 213.1,
+ "gen_tokens_per_s": 28.4,
+ "mean_prompt_tokens": 2932,
+ "mean_gen_tokens": 14980,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

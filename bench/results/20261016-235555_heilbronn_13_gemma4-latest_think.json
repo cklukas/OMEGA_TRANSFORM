@@ -1,0 +1,111 @@
+{
+ "schema": 2,
+ "example": "heilbronn_13",
+ "model": "gemma4:latest",
+ "variant": "think",
+ "model_size_gb": 9.5,
+ "model_params": "",
+ "started": "2026-10-16T23:55:55",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.004790811518724618,
+ "best_score": 0.020485368962298675,
+ "improvement": 4.275970549505603,
+ "llm_calls": 21,
+ "mean_llm_seconds": 42.9,
+ "attempts": 21,
+ "ok": 15,
+ "statuses": {
+  "ok": 15,
+  "duplicate": 3,
+  "invalid": 1,
+  "edit_error": 2
+ },
+ "sweeps": 2,
+ "sweep_variants": 20,
+ "improvements": 2,
+ "minutes_to_best": 5.91,
+ "best_idea": "Replace the heuristic acceptance criteria with a proper Simulated Annealing cooling schedule to allow for broader exploration while gradually converging towards local maxima.",
+ "progress": [
+  [
+   0.0,
+   0.004790811518724618
+  ],
+  [
+   2.62,
+   0.013307809774235053
+  ],
+  [
+   5.91,
+   0.020485368962298675
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.004790811518724618,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.62,
+   "score": 0.013307809774235053,
+   "model": "gemma4:latest",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Increase the radius from 0.3 to 0.5 to ensure the generated points span the entire unit square, significantly increasing the minimum possible triangle area compared to a small circumscribed circle."
+  },
+  {
+   "minutes": 4.22,
+   "score": 0.013226095540438913,
+   "model": "gemma4:latest",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Implement a randomized local search optimization starting from the regular polygon configuration to iteratively perturb points and maximize the minimum triangle area, as suggested by successful prior attempts."
+  },
+  {
+   "minutes": 5.91,
+   "score": 0.020485368962298675,
+   "model": "gemma4:latest",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Replace the heuristic acceptance criteria with a proper Simulated Annealing cooling schedule to allow for broader exploration while gradually converging towards local maxima."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -13,9 +13,71 @@\n     the points on a regular polygon on a small circle around the center, which\n     avoids collinear triples but wastes most of the square.\n     \"\"\"\n-    radius = 0.3\n-    return [(0.5 + radius * math.cos(2 * math.pi * k / n),\n-             0.5 + radius * math.sin(2 * math.pi * k / n)) for k in range(n)]\n+    import random\n+    random.seed(42) # Fixed seed for reproducibility\n+\n+    def triangle_area(p1, p2, p3):\n+        return 0.5 * abs(p1[0] * (p2[1] - p3[1]) + p2[0] * (p3[1] - p1[1]) + p3[0] * (p1[1] - p2[1]))\n+\n+    def get_min_area(points):\n+        min_a = float('inf')\n+        for i in range(n):\n+            for j in range(i + 1, n):\n+                for k in range(j + 1, n):\n+                    area = triangle_area(points[i], points[j], points[k])\n+                    if area < min_a:\n+                        min_a = area\n+        return min_a\n+\n+    # Initial placement using the provided radius\n+    points = [(0.5 + 0.5 * math.cos(2 * math.pi * k / n),\n+               0.5 + 0.5 * math.sin(2 * math.pi * k / n)) for k in range(n)]\n+\n+    current_min_area = get_min_area(points)\n+    \n+    # Simulated Annealing loop\n+    T = 0.1 # Initial Temperature\n+    T_min = 1e-6 # Minimum Temperature\n+    cooling_rate = 0.9999 # Geometric cooling factor\n+    \n+    for iteration in range(100000):\n+        # Decay temperature\n+        T = T * cooling_rate\n+        \n+        if T < T_min:\n+            break\n+            \n+        step_size = 0.5 / (1 + iteration / 50000.0) # Initial step size 0.5\n+        \n+        i = random.randint(0, n - 1)\n+        \n+        # Propose a perturbation\n+        new_points = [p[:] for p in points]\n+        \n+        d_x = random.uniform(-step_size, step_size)\n+        d_y = random.uniform(-step_size, step_size)\n+        \n+        # Apply perturbation and clamp\n+        new_x = max(0.0, min(1.0, points[i][0] + d_x))\n+        new_y = max(0.0, min(1.0, points[i][1] + d_y))\n+        \n+        new_points[i] = (new_x, new_y)\n+        \n+        new_min_area = get_min_area(new_points)\n+        \n+        delta_E = new_min_area - current_min_area\n+        \n+        # Acceptance criteria: Metropolis criterion\n+        if delta_E > 0:\n+            points = new_points\n+            current_min_area = new_min_area\n+        elif T > 1e-10: # Avoid division by zero in near-zero temperature cases\n+            acceptance_prob = math.exp(delta_E / T)\n+            if random.random() < acceptance_prob:\n+                points = new_points\n+                current_min_area = new_min_area\n+             \n+    return points\n # OMEGA-BLOCK-END\n \n \n",
+ "error": "",
+ "model_memory_gb": 12.1,
+ "model_gpu_memory_gb": 12.1,
+ "context_length": 32768,
+ "load_seconds": 109.0,
+ "median_call_seconds": 40.9,
+ "p90_call_seconds": 50.3,
+ "prompt_tokens_per_s": 871.8,
+ "gen_tokens_per_s": 44.5,
+ "mean_prompt_tokens": 3207,
+ "mean_gen_tokens": 1508,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

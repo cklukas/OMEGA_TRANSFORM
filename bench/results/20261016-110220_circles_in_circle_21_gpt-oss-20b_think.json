@@ -1,0 +1,90 @@
+{
+ "schema": 2,
+ "example": "circles_in_circle_21",
+ "model": "gpt-oss:20b",
+ "variant": "think",
+ "model_size_gb": 13.8,
+ "model_params": "20.9B",
+ "started": "2026-10-16T11:02:20",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 3.1890454825108625,
+ "best_score": 3.990000000000001,
+ "improvement": 1.2511580728094587,
+ "llm_calls": 11,
+ "mean_llm_seconds": 84.7,
+ "attempts": 11,
+ "ok": 6,
+ "statuses": {
+  "invalid": 4,
+  "ok": 6,
+  "edit_error": 1
+ },
+ "sweeps": 2,
+ "sweep_variants": 11,
+ "improvements": 1,
+ "minutes_to_best": 7.61,
+ "best_idea": "Use a center circle with two rings of different sizes; optimize ring radii and circle radii by a simple grid search to increase the sum of radii.",
+ "progress": [
+  [
+   0.0,
+   3.1890454825108625
+  ],
+  [
+   7.61,
+   3.990000000000001
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.1890454825108625,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 7.61,
+   "score": 3.990000000000001,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Use a center circle with two rings of different sizes; optimize ring radii and circle radii by a simple grid search to increase the sum of radii."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -5,23 +5,62 @@\n \n # OMEGA-BLOCK-START\n def construct(n=21):\n-    \"\"\"Return a list of n circles (x, y, r) inside the unit circle (center (0,0),\n-    radius 1) without overlaps.\n+    \"\"\"Pack a center circle and two rings of circles inside the unit circle,\n+    optimizing ring radii and circle radii on a grid to maximize the sum of radii.\"\"\"\n+    import math\n \n-    This start places one circle at the center and two concentric rings of 7 and\n-    13 circles, all with the same radius: the largest one that keeps every pair\n-    apart and every circle inside the container.\n-    \"\"\"\n-    centers = [(0.0, 0.0)]\n-    for count, ring in ((7, 0.35), (n - 8, 0.75)):\n-        centers += [(ring * math.cos(2 * math.pi * k / count),\n-                     ring * math.sin(2 * math.pi * k / count)) for k in range(count)]\n-    r = min(1.0 - math.hypot(x, y) for x, y in centers)\n-    for a in range(n):\n-        for b in range(a + 1, n):\n-            r = min(r, math.dist(centers[a], centers[b]) / 2)\n-    r *= 1 - 1e-12  # stay strictly feasible despite rounding\n-    return [(x, y, r) for x, y in centers]\n+    # Parameters for rings (can be swept)\n+    INNER_COUNT = 6   # number of circles on inner ring\n+    OUTER_COUNT = 14  # number of circles on outer ring\n+\n+    best = None\n+    best_sum = -1.0\n+\n+    # grid search over ring radii\n+    for ring1 in [i * 0.01 for i in range(5, 51)]:          # 0.05 to 0.50\n+        for ring2 in [j * 0.01 for j in range(int(ring1 * 100 + 5), 95)]:  # ring1+0.05 to 0.94\n+            # radius of inner ring circles (max by adjacency)\n+            r1 = ring1 / 2.0\n+            # radius of outer ring circles bounded by several constraints\n+            r2_a = ring2 * math.sin(math.pi / OUTER_COUNT)          # adjacency on outer ring\n+            r2_b = ring2 - ring1 - r1                              # distance to inner ring\n+            r2_c = 1.0 - ring2                                      # distance to boundary\n+            r2 = min(r2_a, r2_b, r2_c)\n+            if r2 <= 0:\n+                continue\n+            # center circle radius limited by gaps to rings\n+            r0 = min(ring1 - r1, ring2 - r2)\n+            if r0 <= 0:\n+                continue\n+            total = r0 + INNER_COUNT * r1 + OUTER_COUNT * r2\n+            if total > best_sum:\n+                best_sum = total\n+                best = (ring1, ring2, r0, r1, r2)\n+\n+    if best is None:\n+        # fallback to equal radii packing\n+        centers = [(0.0, 0.0)]\n+        for count, ring in ((INNER_COUNT, 0.35), (OUTER_COUNT, 0.75)):\n+            centers += [(ring * math.cos(2 * math.pi * k / count),\n+                         ring * math.sin(2 * math.pi * k / count)) for k in range(count)]\n+        r = min(1.0 - math.hypot(x, y) for x, y in centers)\n+        for a in range(len(centers)):\n+            for b in range(a + 1, len(centers)):\n+                r = min(r, math.dist(centers[a], centers[b]) / 2)\n+        r *= 1 - 1e-12\n+        return [(x, y, r) for x, y in centers]\n+\n+    ring1, ring2, r0, r1, r2 = best\n+\n+    # build circle list\n+    circles = [(0.0, 0.0, r0)]\n+    for k in range(INNER_COUNT):\n+        angle = 2 * math.pi * k / INNER_COUNT\n+        circles.append((ring1 * math.cos(angle), ring1 * math.sin(angle), r1))\n+    for k in range(OUTER_COUNT):\n+        angle = 2 * math.pi * k / OUTER_COUNT\n+        circles.append((ring2 * math.cos(angle), ring2 * math.sin(angle), r2))\n+    return circles\n # OMEGA-BLOCK-END\n \n \n",
+ "error": "",
+ "model_memory_gb": 12.8,
+ "model_gpu_memory_gb": 12.8,
+ "context_length": 32768,
+ "load_seconds": 209.1,
+ "median_call_seconds": 56.6,
+ "p90_call_seconds": 199.1,
+ "prompt_tokens_per_s": 558.2,
+ "gen_tokens_per_s": 48.2,
+ "mean_prompt_tokens": 2272,
+ "mean_gen_tokens": 2955,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

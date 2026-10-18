@@ -1,0 +1,112 @@
+{
+ "schema": 2,
+ "example": "matmul_f32",
+ "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+ "variant": "think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-10-18T00:19:23",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.8,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.61641,
+ "best_score": 25.2873,
+ "improvement": 15.644112570449328,
+ "llm_calls": 54,
+ "mean_llm_seconds": 15.4,
+ "attempts": 54,
+ "ok": 12,
+ "statuses": {
+  "invalid": 14,
+  "compile_error": 20,
+  "ok": 12,
+  "duplicate": 5,
+  "edit_error": 3
+ },
+ "sweeps": 1,
+ "sweep_variants": 16,
+ "improvements": 2,
+ "minutes_to_best": 15.32,
+ "best_idea": "Reorder loops to i-k-j to enable streaming of rows of B and C, which improves cache locality and enables efficient NEON vectorization, while maintaining correctness by zeroing C and using per-element ",
+ "progress": [
+  [
+   0.0,
+   1.61641
+  ],
+  [
+   6.15,
+   25.1689
+  ],
+  [
+   15.32,
+   25.2873
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.61641,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.65,
+   "score": null,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/diff/refine",
+   "status": "invalid",
+   "idea": "Reorder loops to i-k-j to enable better data streaming and vectorization with NEON intrinsics, fixing the wrong result for n=1 by ensuring proper indexing and accumulation order."
+  },
+  {
+   "minutes": 6.15,
+   "score": 25.1689,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Fix the incorrect loop order and missing initialization of C to ensure correct accumulation and avoid uninitialized memory errors, which was causing the massive error for n=1."
+  },
+  {
+   "minutes": 15.32,
+   "score": 25.2873,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Reorder loops to i-k-j to enable streaming of rows of B and C, which improves cache locality and enables efficient NEON vectorization, while maintaining correctness by zeroing C and using per-element accumulation."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -22,11 +22,16 @@\n // Computes C = A * B. C is NOT zeroed by the caller. Any number of threads may be\n // used (std::thread is available); n is any size from 1 to 2048.\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+    // Initialize C to zero before accumulation\n+    std::fill(C, C + (size_t)n * n, 0.0f);\n+    // Loop order i-k-j: inner loop j streams row of B and C, enabling better cache and NEON vectorization\n+    for (int i = 0; i < n; ++i) {\n+        for (int k = 0; k < n; ++k) {\n+            float a = A[i * n + k];\n+            for (int j = 0; j < n; ++j) {\n+                C[i * n + j] += a * B[k * n + j];\n+            }\n         }\n+    }\n }\n // OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 21.8,
+ "model_gpu_memory_gb": 21.8,
+ "context_length": 32768,
+ "load_seconds": 136.8,
+ "median_call_seconds": 12.6,
+ "p90_call_seconds": 25.6,
+ "prompt_tokens_per_s": 888.9,
+ "gen_tokens_per_s": 48.7,
+ "mean_prompt_tokens": 3497,
+ "mean_gen_tokens": 423,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

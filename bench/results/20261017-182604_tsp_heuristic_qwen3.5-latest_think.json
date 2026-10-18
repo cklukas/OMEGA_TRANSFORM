@@ -1,0 +1,79 @@
+{
+ "schema": 2,
+ "example": "tsp_heuristic",
+ "model": "qwen3.5:latest",
+ "variant": "think",
+ "model_size_gb": 6.6,
+ "model_params": "9.7B",
+ "started": "2026-10-17T18:26:04",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.0,
+ "best_score": 1.0,
+ "improvement": 1.0,
+ "llm_calls": 16,
+ "mean_llm_seconds": 60.9,
+ "attempts": 16,
+ "ok": 1,
+ "statuses": {
+  "edit_error": 2,
+  "timeout": 2,
+  "invalid": 11,
+  "ok": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 0,
+ "minutes_to_best": null,
+ "best_idea": "initial program",
+ "progress": [
+  [
+   0.0,
+   1.0
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.0,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  }
+ ],
+ "best_diff": "",
+ "error": "",
+ "model_memory_gb": 6.8,
+ "model_gpu_memory_gb": 6.8,
+ "context_length": 32768,
+ "load_seconds": 61.5,
+ "median_call_seconds": 58.0,
+ "p90_call_seconds": 98.6,
+ "prompt_tokens_per_s": 439.8,
+ "gen_tokens_per_s": 33.0,
+ "mean_prompt_tokens": 2168,
+ "mean_gen_tokens": 1708,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -1,0 +1,114 @@
+{
+ "schema": 2,
+ "example": "matmul_f32_single_thread",
+ "model": "gemma4:e4b-it-qat",
+ "variant": "think",
+ "model_size_gb": 6.1,
+ "model_params": "7.5B",
+ "started": "2026-10-18T03:52:55",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.73148,
+ "best_score": 28.5732,
+ "improvement": 16.502183103472174,
+ "llm_calls": 11,
+ "mean_llm_seconds": 87.1,
+ "attempts": 11,
+ "ok": 9,
+ "statuses": {
+  "ok": 9,
+  "invalid": 1,
+  "edit_error": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 3,
+ "minutes_to_best": 12.8,
+ "best_idea": "Replace the overlapping vectorized and scalar J loops in the main K iteration with a single combined vectorized/scalar remainder loop structure to ensure every accumulation is counted exactly once, fi",
+ "progress": [
+  [
+   0.0,
+   1.73148
+  ],
+  [
+   3.8,
+   21.5502
+  ],
+  [
+   4.89,
+   25.9717
+  ],
+  [
+   12.8,
+   28.5732
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.73148,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.8,
+   "score": 21.5502,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Change the loop order from $i-j-k$ to $i-k-j$ to improve data locality (especially for $B$ and $C$), initialize $C$ to zero, and vectorize the innermost $j$ loop using ARM NEON intrinsics for massive throughput improvement."
+  },
+  {
+   "minutes": 6.29,
+   "score": null,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "best/diff/refine",
+   "status": "invalid",
+   "idea": "Unroll the innermost loop over K by a factor of 2 to maximize register usage for elements of A and improve data locality/throughput during the accumulation step."
+  },
+  {
+   "minutes": 12.8,
+   "score": 28.5732,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Replace the overlapping vectorized and scalar J loops in the main K iteration with a single combined vectorized/scalar remainder loop structure to ensure every accumulation is counted exactly once, fixing the correctness bug while preserving performance."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -24,11 +24,57 @@\n // Computes C = A * B on the calling thread. C is NOT zeroed by the caller.\n // n is any size from 1 to 2048.\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+    // Initialize C to zero (O(N^2))\n+    for (int j = 0; j < n * n; ++j) C[j] = 0.0f;\n+\n+    // i-k-j loop structure for cache efficiency\n+    for (int i = 0; i < n; ++i) {\n+        int k = 0;\n+        // Unrolled K loop (factor 2)\n+        for (; k <= n - 2; k += 2) {\n+            float aik0 = A[i * n + k];\n+            float aik1 = A[i * n + k + 1];\n+\n+            // Vectorized/Scalar J loop for k and k+1\n+            int j = 0;\n+            for (; j <= n - 4; j += 4) {\n+                float32x4_t v_c = vld1q_f32(&C[i * n + j]);\n+                float32x4_t v_b0 = vld1q_f32(&B[k * n + j]);\n+                float32x4_t v_b1 = vld1q_f32(&B[(k + 1) * n + j]);\n+                float32x4_t v_t0 = vmulq_f32(vdupq_n_f32(aik0), v_b0);\n+                float32x4_t v_t1 = vmulq_f32(vdupq_n_f32(aik1), v_b1);\n+                v_c = vaddq_f32(v_c, v_t0);\n+                v_c = vaddq_f32(v_c, v_t1);\n+                vst1q_f32(&C[i * n + j], v_c);\n+            }\n+            \n+            // Scalar remainder loop for k and k+1\n+            for (; j < n; ++j) {\n+                C[i * n + j] += aik0 * B[k * n + j];\n+                C[i * n + j] += aik1 * B[(k + 1) * n + j];\n+            }\n         }\n+\n+        // Handle odd K remainder\n+        if (n % 2 != 0) {\n+            int k_rem = n - 1;\n+            float aik_rem = A[i * n + k_rem];\n+            \n+            int j = 0;\n+            // Vectorized J loop\n+            for (; j <= n - 4; j += 4) {\n+                float32x4_t v_c = vld1q_f32(&C[i * n + j]);\n+                float32x4_t v_b = vld1q_f32(&B[k_rem * n + j]);\n+                float32x4_t v_a = vdupq_n_f32(aik_rem);\n+                v_c = vaddq_f32(v_c, vmulq_f32(v_a, v_b));\n+                vst1q_f32(&C[i * n + j], v_c);\n+            }\n+            \n+            // Scalar J remainder loop\n+            for (; j < n; ++j) {\n+                C[i * n + j] += aik_rem * B[k_rem * n + j];\n+            }\n+        }\n+    }\n }\n // OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 5.7,
+ "model_gpu_memory_gb": 5.7,
+ "context_length": 32768,
+ "load_seconds": 127.1,
+ "median_call_seconds": 71.7,
+ "p90_call_seconds": 123.8,
+ "prompt_tokens_per_s": 601.4,
+ "gen_tokens_per_s": 58.2,
+ "mean_prompt_tokens": 3484,
+ "mean_gen_tokens": 4059,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

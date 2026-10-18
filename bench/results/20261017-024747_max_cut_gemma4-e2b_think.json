@@ -1,0 +1,103 @@
+{
+ "schema": 2,
+ "example": "max_cut",
+ "model": "gemma4:e2b",
+ "variant": "think",
+ "model_size_gb": 7.2,
+ "model_params": "5.1B",
+ "started": "2026-10-17T02:47:47",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.8,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.5121828962692699,
+ "best_score": 0.7353051713688407,
+ "improvement": 1.4356300780927846,
+ "llm_calls": 22,
+ "mean_llm_seconds": 42.4,
+ "attempts": 22,
+ "ok": 14,
+ "statuses": {
+  "ok": 14,
+  "llm_error": 1,
+  "timeout": 1,
+  "edit_error": 6
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 2,
+ "minutes_to_best": 5.31,
+ "best_idea": "Implement a greedy construction followed by a one-flip local search to refine the initial assignment, aiming to improve the approximation quality found by the purely greedy method.",
+ "progress": [
+  [
+   0.0,
+   0.5121828962692699
+  ],
+  [
+   1.04,
+   0.6938525769566565
+  ],
+  [
+   5.31,
+   0.7353051713688407
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.5121828962692699,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.04,
+   "score": 0.6938525769566565,
+   "model": "gemma4:e2b",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Implement a greedy construction heuristic by assigning nodes sequentially to maximize the cut weight with already placed nodes, which is generally a strong approximation for max-cut."
+  },
+  {
+   "minutes": 5.31,
+   "score": 0.7353051713688407,
+   "model": "gemma4:e2b",
+   "mode": "explore/rewrite/bold",
+   "status": "ok",
+   "idea": "Implement a greedy construction followed by a one-flip local search to refine the initial assignment, aiming to improve the approximation quality found by the purely greedy method."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -21,5 +21,74 @@\n \n     Current method: alternate the sides by node index (ignores the edges entirely).\n     \"\"\"\n-    return [i % 2 for i in range(n)]\n+    # 1. Build adjacency list and total weight for efficiency\n+    adj = [[] for _ in range(n)]\n+    total_weight = 0\n+    for u, v, w in edges:\n+        adj[u].append((v, w))\n+        adj[v].append((u, w))\n+        total_weight += w\n+\n+    # 2. Initial assignment using greedy construction\n+    assignment = [0] * n\n+    \n+    # Process nodes greedily\n+    for i in range(n):\n+        gain0 = 0\n+        gain1 = 0\n+        \n+        # Calculate potential cut weight increase if node i is placed on side 0 vs side 1,\n+        # considering only edges to already placed nodes j < i.\n+        \n+        for j, w in adj[i]:\n+            if j < i:\n+                # Edge (i, j) exists and j is placed.\n+                if assignment[j] == 0:\n+                    # If i is 1, this edge (i, j) contributes w to the cut.\n+                    gain1 += w\n+                else: # assignment[j] == 1\n+                    # If i is 0, this edge (i, j) contributes w to the cut.\n+                    gain0 += w\n+        \n+        # Assign node i greedily\n+        if gain1 > gain0:\n+            assignment[i] = 1\n+        else:\n+            assignment[i] = 0\n+\n+    # 3. One-flip local search refinement\n+    improved = True\n+    while improved:\n+        improved = False\n+        for i in range(n):\n+            # Calculate current cut contribution for node i based on current assignment\n+            current_cut_i = 0\n+            \n+            for j, w in adj[i]:\n+                if assignment[j] != assignment[i]:\n+                    current_cut_i += w\n+            \n+            # Calculate cut contribution if node i is flipped\n+            flipped_assignment = 1 - assignment[i]\n+            flipped_cut_i = 0\n+            \n+            for j, w in adj[i]:\n+                if flipped_assignment != assignment[j]:\n+                    flipped_cut_i += w\n+            \n+            gain = flipped_cut_i - current_cut_i\n+            \n+            if gain > 0:\n+                assignment[i] = flipped_assignment\n+                improved = True\n+                # Since we found an improvement, restart the scan or continue iterating.\n+                # Since we are doing a full pass over all nodes, continuing the loop is fine.\n+                # We break the inner loop and restart the outer loop to ensure we check \n+                # the updated assignment globally, although for this simple local search,\n+                # iterating through all nodes once might suffice if we are careful about \n+                # which nodes we check next. A full pass is safer for convergence guarantees.\n+                # Let's break and rely on the outer 'while improved' loop to re-evaluate everything.\n+                break \n+            \n+    return assignment\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 6.6,
+ "model_gpu_memory_gb": 6.6,
+ "context_length": 32768,
+ "load_seconds": 38.9,
+ "median_call_seconds": 43.9,
+ "p90_call_seconds": 52.7,
+ "prompt_tokens_per_s": 972.5,
+ "gen_tokens_per_s": 67.4,
+ "mean_prompt_tokens": 3405,
+ "mean_gen_tokens": 2444,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

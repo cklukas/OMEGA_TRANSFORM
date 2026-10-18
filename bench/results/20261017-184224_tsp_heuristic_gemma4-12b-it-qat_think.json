@@ -1,0 +1,88 @@
+{
+ "schema": 2,
+ "example": "tsp_heuristic",
+ "model": "gemma4:12b-it-qat",
+ "variant": "think",
+ "model_size_gb": 7.2,
+ "model_params": "11.9B",
+ "started": "2026-10-17T18:42:24",
+ "minutes_budget": 15.0,
+ "wall_minutes": 18.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.0,
+ "best_score": 1.079285831742759,
+ "improvement": 1.079285831742759,
+ "llm_calls": 2,
+ "mean_llm_seconds": 534.5,
+ "attempts": 2,
+ "ok": 2,
+ "statuses": {
+  "ok": 2
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 9.68,
+ "best_idea": "Implement a first-improvement 2-opt local search starting from the nearest-neighbour tour, using a precomputed distance matrix to speed up the evaluation of edge swaps.",
+ "progress": [
+  [
+   0.0,
+   1.0
+  ],
+  [
+   9.68,
+   1.079285831742759
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.0,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 9.68,
+   "score": 1.079285831742759,
+   "model": "gemma4:12b-it-qat",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Implement a first-improvement 2-opt local search starting from the nearest-neighbour tour, using a precomputed distance matrix to speed up the evaluation of edge swaps."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -29,5 +29,39 @@\n         unvisited.remove(nxt)\n         tour.append(nxt)\n         x, y = points[nxt]\n+\n+    dist = [[0.0] * n for _ in range(n)]\n+    for i in range(n):\n+        xi, yi = points[i]\n+        for j in range(i + 1, n):\n+            xj, yj = points[j]\n+            d = (xi - xj)**2 + (yi - yj)**2\n+            dist[i][j] = dist[j][i] = d\n+\n+    improved = True\n+    start_time = time.process_time()\n+    while improved and time.process_time() - start_time < time_limit * 0.9:\n+        improved = False\n+        for i in range(n - 2):\n+            idx_i = tour[i]\n+            idx_i1 = tour[i+1]\n+            dist_i = dist[idx_i]\n+            dist_i1 = dist[idx_i1]\n+            d_i_i1 = dist_i[idx_i1]\n+            for j in range(i + 2, n):\n+                if i == 0 and j == n - 1: continue\n+                idx_j = tour[j]\n+                idx_j1 = tour[j+1] if j+1 < n else tour[0]\n+                \n+                d_j_j1 = dist[idx_j][idx_j1]\n+                d_i_j = dist_i[idx_j]\n+                d_i1_j1 = dist_i1[idx_j1]\n+                \n+                if d_i_j + d_i1_j1 < d_i_i1 + d_j_j1:\n+                    tour[i+1:j+1] = tour[i+1:j+1][::-1]\n+                    improved = True\n+                    break\n+            if improved:\n+                break\n     return tour\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 8.0,
+ "model_gpu_memory_gb": 8.0,
+ "context_length": 32768,
+ "load_seconds": 118.4,
+ "median_call_seconds": 576.3,
+ "p90_call_seconds": 576.3,
+ "prompt_tokens_per_s": 267.8,
+ "gen_tokens_per_s": 27.0,
+ "mean_prompt_tokens": 1677,
+ "mean_gen_tokens": 12660,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

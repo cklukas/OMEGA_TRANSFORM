@@ -1,0 +1,94 @@
+{
+ "schema": 2,
+ "example": "feature_engineering",
+ "model": "gemma4:26b-a4b-it-qat",
+ "variant": "think",
+ "model_size_gb": 15.6,
+ "model_params": "25.2B",
+ "started": "2026-10-16T17:44:28",
+ "minutes_budget": 15.0,
+ "wall_minutes": 17.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.623,
+ "best_score": 0.793,
+ "improvement": 1.2728731942215088,
+ "llm_calls": 6,
+ "mean_llm_seconds": 173.3,
+ "attempts": 6,
+ "ok": 4,
+ "statuses": {
+  "ok": 4,
+  "llm_error": 1,
+  "edit_error": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 2,
+ "minutes_to_best": 17.34,
+ "best_idea": "I will refine the highly-performing 0.788 feature set by adding absolute value transformations for the uniform variables $x_4$ and $x_5$ to capture potential non-linearities in their range.",
+ "progress": [
+  [
+   0.0,
+   0.623
+  ],
+  [
+   5.55,
+   0.788
+  ],
+  [
+   17.34,
+   0.793
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.623,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 17.34,
+   "score": 0.793,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "exploit/rewrite/bold",
+   "status": "ok",
+   "idea": "I will refine the highly-performing 0.788 feature set by adding absolute value transformations for the uniform variables $x_4$ and $x_5$ to capture potential non-linearities in their range."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -18,8 +18,20 @@\n     Every row must give the same number of features. The classifier is linear in the\n     features (they are standardized and a bias is added), so nonlinear structure only\n     helps if a feature expresses it. Only the Python standard library may be used.\n-\n-    Current method: the raw inputs.\n     \"\"\"\n-    return list(row)\n+    # Identity features (6)\n+    res = list(row)\n+    # Squared features (6)\n+    res.extend([x * x for x in row])\n+    # Log of the skewed feature x3 (1)\n+    res.append(math.log(row[2] + 1e-9))\n+    # Pairwise product interactions (15)\n+    for i in range(6):\n+        for j in range(i + 1, 6):\n+            res.append(row[i] * row[j])\n+    # Absolute values of x4 and x5 (2)\n+    res.append(abs(row[3]))\n+    res.append(abs(row[4]))\n+    # Total features: 6 + 6 + 1 + 15 + 2 = 30\n+    return res\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 15.2,
+ "model_gpu_memory_gb": 15.2,
+ "context_length": 32768,
+ "load_seconds": 241.3,
+ "median_call_seconds": 160.0,
+ "p90_call_seconds": 332.7,
+ "prompt_tokens_per_s": 589.5,
+ "gen_tokens_per_s": 61.4,
+ "mean_prompt_tokens": 2311,
+ "mean_gen_tokens": 6875,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

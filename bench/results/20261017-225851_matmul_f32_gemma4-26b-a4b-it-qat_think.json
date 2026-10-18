@@ -1,0 +1,88 @@
+{
+ "schema": 2,
+ "example": "matmul_f32",
+ "model": "gemma4:26b-a4b-it-qat",
+ "variant": "think",
+ "model_size_gb": 15.6,
+ "model_params": "25.2B",
+ "started": "2026-10-17T22:58:51",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.5217,
+ "best_score": 41.8195,
+ "improvement": 27.482092396661628,
+ "llm_calls": 3,
+ "mean_llm_seconds": 309.8,
+ "attempts": 3,
+ "ok": 3,
+ "statuses": {
+  "ok": 3
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 15.65,
+ "best_idea": "Use i-k-j loop order with ARM NEON SIMD vectorization and multithreading to maximize cache locality and throughput.",
+ "progress": [
+  [
+   0.0,
+   1.5217
+  ],
+  [
+   15.65,
+   41.8195
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.5217,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 15.65,
+   "score": 41.8195,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Use i-k-j loop order with ARM NEON SIMD vectorization and multithreading to maximize cache locality and throughput."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -22,11 +22,42 @@\n // Computes C = A * B. C is NOT zeroed by the caller. Any number of threads may be\n // used (std::thread is available); n is any size from 1 to 2048.\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+    auto worker = [&](int start_i, int end_i) {\n+        for (int i = start_i; i < end_i; ++i) {\n+            float* C_row = &C[i * n];\n+            for (int j = 0; j < n; ++j) C_row[j] = 0.0f;\n+            for (int k = 0; k < n; ++k) {\n+                float a_val = A[i * n + k];\n+                const float* B_row = &B[k * n];\n+                int j = 0;\n+                float32x4_t a_vec = vdupq_n_f32(a_val);\n+                for (; j <= n - 4; j += 4) {\n+                    float32x4_t b_vec = vld1q_f32(&B_row[j]);\n+                    float32x4_t c_vec = vld1q_f32(&C_row[j]);\n+                    c_vec = vfmaq_f32(c_vec, a_vec, b_vec);\n+                    vst1q_f32(&C_row[j], c_vec);\n+                }\n+                for (; j < n; ++j) {\n+                    C_row[j] += a_val * B_row[j];\n+                }\n+            }\n         }\n+    };\n+\n+    int num_threads = 10;\n+    if (n < num_threads) num_threads = n;\n+    if (num_threads < 1) num_threads = 1;\n+\n+    std::vector<std::thread> threads;\n+    threads.reserve(num_threads);\n+    int rows_per_thread = (n + num_threads - 1) / num_threads;\n+    for (int t = 0; t < num_threads; ++t) {\n+        int start_i = t * rows_per_thread;\n+        int end_i = std::min(n, (t + 1) * rows_per_thread);\n+        if (start_i < end_i) {\n+            threads.emplace_back(worker, start_i, end_i);\n+        }\n+    }\n+    for (auto& th : threads) th.join();\n }\n // OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 15.2,
+ "model_gpu_memory_gb": 15.2,
+ "context_length": 32768,
+ "load_seconds": 277.5,
+ "median_call_seconds": 286.0,
+ "p90_call_seconds": 553.2,
+ "prompt_tokens_per_s": 1000.9,
+ "gen_tokens_per_s": 41.3,
+ "mean_prompt_tokens": 2409,
+ "mean_gen_tokens": 8845,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

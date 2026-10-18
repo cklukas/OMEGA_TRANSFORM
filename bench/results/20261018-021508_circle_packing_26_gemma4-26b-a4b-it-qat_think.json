@@ -1,0 +1,89 @@
+{
+ "schema": 2,
+ "example": "circle_packing_26",
+ "model": "gemma4:26b-a4b-it-qat",
+ "variant": "think",
+ "model_size_gb": 15.6,
+ "model_params": "25.2B",
+ "started": "2026-10-18T02:15:08",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 2.0181143676724553,
+ "improvement": 1.3543464758394395,
+ "llm_calls": 3,
+ "mean_llm_seconds": 304.4,
+ "attempts": 3,
+ "ok": 1,
+ "statuses": {
+  "llm_error": 2,
+  "ok": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 15.23,
+ "best_idea": "Use a hill-climbing optimization with multiple initializations (grid, random, and jittered grid) to find better circle centers and maximize the sum of radii.",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   15.23,
+   2.0181143676724553
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 15.23,
+   "score": 2.0181143676724553,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Use a hill-climbing optimization with multiple initializations (grid, random, and jittered grid) to find better circle centers and maximize the sum of radii."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -9,15 +9,59 @@\n # OMEGA-BLOCK-START\n def construct_packing(n=26):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n-    cols = math.ceil(math.sqrt(n))\n-    rows = math.ceil(n / cols)\n-    centers = []\n-    for k in range(n):\n-        i, j = k % cols, k // cols\n-        centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n-    radii = max_radii(centers)\n-    return [(x, y, r) for (x, y), r in zip(centers, radii)]\n+    import random\n+    def get_radii_sum(cents):\n+        r = [min(c[0], c[1], 1-c[0], 1-c[1]) for c in cents]\n+        for a in range(n):\n+            for b in range(a + 1, n):\n+                d = math.dist(cents[a], cents[b])\n+                if r[a] + r[b] > d:\n+                    s = d / (r[a] + r[b])\n+                    r[a] *= s\n+                    r[b] *= s\n+        return sum(r), r\n \n+    best_sum = -1\n+    best_centers = []\n+    \n+    for init_type in range(3):\n+        if init_type == 0: # Grid\n+            cols = math.ceil(math.sqrt(n))\n+            rows = math.ceil(n / cols)\n+            centers = [[((i % cols + 0.5) / cols), ((i // cols + 0.5) / rows)] for i in range(n)]\n+        elif init_type == 1: # Random\n+            centers = [[random.random(), random.random()] for _ in range(n)]\n+        else: # Jittered grid\n+            cols = math.ceil(math.sqrt(n))\n+            rows = math.ceil(n / cols)\n+            centers = [[((i % cols + 0.5) / cols) + (random.random()-0.5)*0.1, \n+                         ((i // cols + 0.5) / rows) + (random.random()-0.5)*0.1] for i in range(n)]\n+            for c in centers:\n+                c[0] = max(0.0, min(1.0, c[0]))\n+                c[1] = max(0.0, min(1.0, c[1]))\n+\n+        current_sum, _ = get_radii_sum(centers)\n+        step = 0.1\n+        for _ in range(1000):\n+            idx = random.randint(0, n - 1)\n+            old_x, old_y = centers[idx]\n+            centers[idx][0] += (random.random() - 0.5) * step\n+            centers[idx][1] += (random.random() - 0.5) * step\n+            if 0 <= centers[idx][0] <= 1 and 0 <= centers[idx][1] <= 1:\n+                new_sum, _ = get_radii_sum(centers)\n+                if new_sum > current_sum:\n+                    current_sum = new_sum\n+                else:\n+                    centers[idx][0], centers[idx][1] = old_x, old_y\n+            else:\n+                centers[idx][0], centers[idx][1] = old_x, old_y\n+            step *= 0.997\n+\n+        if current_sum > best_sum:\n+            best_sum = current_sum\n+            best_centers = [c[:] for c in centers]\n+            \n+    return [(c[0], c[1], r) for c, r in zip(best_centers, max_radii(best_centers))]\n \n def max_radii(centers):\n     \"\"\"Largest radii for fixed centers: limit by walls, then shrink overlapping pairs.\"\"\"\n",
+ "error": "",
+ "model_memory_gb": 15.2,
+ "model_gpu_memory_gb": 15.2,
+ "context_length": 32768,
+ "load_seconds": 0.5,
+ "median_call_seconds": 243.1,
+ "p90_call_seconds": 434.3,
+ "prompt_tokens_per_s": 556.1,
+ "gen_tokens_per_s": 56.7,
+ "mean_prompt_tokens": 1482,
+ "mean_gen_tokens": 13573,
+ "stopped_calls": 2,
+ "provider": "ollama",
+ "cost_usd": 0
+}

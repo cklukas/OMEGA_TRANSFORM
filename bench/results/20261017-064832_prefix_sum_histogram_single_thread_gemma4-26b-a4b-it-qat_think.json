@@ -1,0 +1,104 @@
+{
+ "schema": 2,
+ "example": "prefix_sum_histogram_single_thread",
+ "model": "gemma4:26b-a4b-it-qat",
+ "variant": "think",
+ "model_size_gb": 15.6,
+ "model_params": "25.2B",
+ "started": "2026-10-17T06:48:32",
+ "minutes_budget": 15.0,
+ "wall_minutes": 17.7,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 4.84702,
+ "best_score": 13.9689,
+ "improvement": 2.881956336058032,
+ "llm_calls": 4,
+ "mean_llm_seconds": 261.1,
+ "attempts": 4,
+ "ok": 4,
+ "statuses": {
+  "ok": 4
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 3,
+ "minutes_to_best": 14.41,
+ "best_idea": "Use 16 sub-histograms and a 16-way unroll to further reduce cache contention and dependency chains, and add prefetching to improve memory throughput.",
+ "progress": [
+  [
+   0.0,
+   4.84702
+  ],
+  [
+   8.31,
+   11.4613
+  ],
+  [
+   11.21,
+   13.9082
+  ],
+  [
+   14.41,
+   13.9689
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 4.84702,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 8.31,
+   "score": 11.4613,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Use 8 private sub-histograms of `uint32_t` to break the dependency chain and cache contention on hot bins, and unroll the loop to improve throughput."
+  },
+  {
+   "minutes": 14.41,
+   "score": 13.9689,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Use 16 sub-histograms and a 16-way unroll to further reduce cache contention and dependency chains, and add prefetching to improve memory throughput."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -28,12 +28,43 @@\n // hist is zeroed by the caller. n is any size from 0 to 20'000'000; the sums\n // never overflow int64.\n extern \"C\" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, uint64_t* hist) {\n-    for (int b = 0; b < 256; ++b) hist[b] = 0;\n+    uint32_t sub_hist[16][256] = {0};\n     int64_t sum = 0;\n-    for (size_t i = 0; i < n; ++i) {\n-        sum += in[i];\n+    size_t i = 0;\n+    if (n >= 16) {\n+        for (; i <= n - 16; i += 16) {\n+            __builtin_prefetch(&in[i + 128], 0, 3);\n+            __builtin_prefetch(&out[i + 128], 1, 3);\n+            int64_t v0 = in[i]; sum += v0; out[i] = sum; sub_hist[0][v0 & 0xFF]++;\n+            int64_t v1 = in[i+1]; sum += v1; out[i+1] = sum; sub_hist[1][v1 & 0xFF]++;\n+            int64_t v2 = in[i+2]; sum += v2; out[i+2] = sum; sub_hist[2][v2 & 0xFF]++;\n+            int64_t v3 = in[i+3]; sum += v3; out[i+3] = sum; sub_hist[3][v3 & 0xFF]++;\n+            int64_t v4 = in[i+4]; sum += v4; out[i+4] = sum; sub_hist[4][v4 & 0xFF]++;\n+            int64_t v5 = in[i+5]; sum += v5; out[i+5] = sum; sub_hist[5][v5 & 0xFF]++;\n+            int64_t v6 = in[i+6]; sum += v6; out[i+6] = sum; sub_hist[6][v6 & 0xFF]++;\n+            int64_t v7 = in[i+7]; sum += v7; out[i+7] = sum; sub_hist[7][v7 & 0xFF]++;\n+            int64_t v8 = in[i+8]; sum += v8; out[i+8] = sum; sub_hist[8][v8 & 0xFF]++;\n+            int64_t v9 = in[i+9]; sum += v9; out[i+9] = sum; sub_hist[9][v9 & 0xFF]++;\n+            int64_t v10 = in[i+10]; sum += v10; out[i+10] = sum; sub_hist[10][v10 & 0xFF]++;\n+            int64_t v11 = in[i+11]; sum += v11; out[i+11] = sum; sub_hist[11][v11 & 0xFF]++;\n+            int64_t v12 = in[i+12]; sum += v12; out[i+12] = sum; sub_hist[12][v12 & 0xFF]++;\n+            int64_t v13 = in[i+13]; sum += v13; out[i+13] = sum; sub_hist[13][v13 & 0xFF]++;\n+            int64_t v14 = in[i+14]; sum += v14; out[i+14] = sum; sub_hist[14][v14 & 0xFF]++;\n+            int64_t v15 = in[i+15]; sum += v15; out[i+15] = sum; sub_hist[15][v15 & 0xFF]++;\n+        }\n+    }\n+    for (; i < n; ++i) {\n+        int64_t v = in[i];\n+        sum += v;\n         out[i] = sum;\n-        hist[in[i] & 255]++;\n+        sub_hist[i & 15][v & 0xFF]++;\n+    }\n+    for (int b = 0; b < 256; ++b) {\n+        hist[b] = (uint64_t)sub_hist[0][b] + sub_hist[1][b] + sub_hist[2][b] +\n+                  sub_hist[3][b] + sub_hist[4][b] + sub_hist[5][b] +\n+                  sub_hist[6][b] + sub_hist[7][b] + sub_hist[8][b] + sub_hist[9][b] +\n+                  sub_hist[10][b] + sub_hist[11][b] + sub_hist[12][b] + sub_hist[13][b] +\n+                  sub_hist[14][b] + sub_hist[15][b];\n     }\n }\n // OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 15.2,
+ "model_gpu_memory_gb": 15.2,
+ "context_length": 32768,
+ "load_seconds": 275.5,
+ "median_call_seconds": 192.3,
+ "p90_call_seconds": 491.7,
+ "prompt_tokens_per_s": 577.8,
+ "gen_tokens_per_s": 53.8,
+ "mean_prompt_tokens": 4305,
+ "mean_gen_tokens": 9895,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

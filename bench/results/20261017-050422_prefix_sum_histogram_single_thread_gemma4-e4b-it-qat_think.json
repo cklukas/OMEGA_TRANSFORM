@@ -1,0 +1,125 @@
+{
+ "schema": 2,
+ "example": "prefix_sum_histogram_single_thread",
+ "model": "gemma4:e4b-it-qat",
+ "variant": "think",
+ "model_size_gb": 6.1,
+ "model_params": "7.5B",
+ "started": "2026-10-17T05:04:22",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.7,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 4.89476,
+ "best_score": 17.2154,
+ "improvement": 3.5171080911015045,
+ "llm_calls": 13,
+ "mean_llm_seconds": 69.9,
+ "attempts": 13,
+ "ok": 11,
+ "statuses": {
+  "ok": 11,
+  "invalid": 2
+ },
+ "sweeps": 2,
+ "sweep_variants": 29,
+ "improvements": 4,
+ "minutes_to_best": 15.51,
+ "best_idea": "Generalize the unrolling factor $U$ and the number of local histogram buffers $K$ as sweep parameters to find the optimal trade-off between instruction-level parallelism and contention distribution.",
+ "progress": [
+  [
+   0.0,
+   4.89476
+  ],
+  [
+   4.78,
+   10.6995
+  ],
+  [
+   7.74,
+   12.3686
+  ],
+  [
+   11.05,
+   16.8599
+  ],
+  [
+   15.51,
+   17.2154
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 4.89476,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 4.78,
+   "score": 10.6995,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Implement local histogram accumulation using a buffer array to eliminate hot bin contention during the element processing phase, significantly speeding up the histogram calculation compared to direct global updates."
+  },
+  {
+   "minutes": 7.74,
+   "score": 12.3686,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Transpose the local histogram storage from `[chunk][bin]` to `[bin][chunk]` to ensure that the final reduction loop accesses memory contiguously for each bin, improving cache utilization during the summation phase."
+  },
+  {
+   "minutes": 11.05,
+   "score": 16.8599,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Unroll the main processing loop by 8 iterations to exploit Instruction Level Parallelism (ILP) for the serial prefix sum calculation and histogram updates."
+  },
+  {
+   "minutes": 15.51,
+   "score": 17.2154,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Generalize the unrolling factor $U$ and the number of local histogram buffers $K$ as sweep parameters to find the optimal trade-off between instruction-level parallelism and contention distribution."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -23,17 +23,60 @@\n #endif\n \n // OMEGA-BLOCK-START\n-// Computes, on the calling thread, out[i] = in[0] + ... + in[i] for i < n, and\n-// hist[b] = number of i < n with (in[i] & 255) == b for b < 256. Neither out nor\n-// hist is zeroed by the caller. n is any size from 0 to 20'000'000; the sums\n-// never overflow int64.\n extern \"C\" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, uint64_t* hist) {\n-    for (int b = 0; b < 256; ++b) hist[b] = 0;\n+    constexpr int K = 8; // Number of local histogram buffers\n+    uint32_t local_hist[256][K]; \n+    \n+    // Initialize all bins and chunks to zero\n+    for (int b = 0; b < 256; ++b) {\n+        for (int k = 0; k < K; ++k) {\n+            local_hist[b][k] = 0;\n+        }\n+    }\n+    \n     int64_t sum = 0;\n-    for (size_t i = 0; i < n; ++i) {\n-        sum += in[i];\n+    size_t i = 0;\n+    const size_t U = 8;\n+    while (i + U <= n) {\n+        // Process U elements at once\n+        int64_t v[U];\n+        for (size_t j = 0; j < U; ++j) {\n+            v[j] = in[i + j];\n+        }\n+\n+        // Calculate prefix sum for the block\n+        int64_t current_sum = sum;\n+        for (size_t j = 0; j < U; ++j) {\n+            current_sum += v[j];\n+            out[i + j] = current_sum;\n+        }\n+        sum = current_sum;\n+\n+        // Update local histograms for the block\n+        for (size_t j = 0; j < U; ++j) {\n+            uint8_t b = v[j] & 255;\n+            local_hist[b][(i + j) % K]++;\n+        }\n+        i += U;\n+    }\n+    // Handle remaining elements\n+    while (i < n) {\n+        int64_t val = in[i];\n+        sum += val;\n         out[i] = sum;\n-        hist[in[i] & 255]++;\n+        uint8_t b = val & 255;\n+        local_hist[b][i % K]++;\n+        i++;\n+    }\n+    \n+    // Reduce local histograms into the final global histogram\n+    for (int b = 0; b < 256; ++b) {\n+        uint64_t total_count = 0;\n+        // Sum over all K chunks for bin b (contiguous memory access)\n+        for (int k = 0; k < K; ++k) {\n+            total_count += local_hist[b][k];\n+        }\n+        hist[b] = total_count;\n     }\n }\n // OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 5.7,
+ "model_gpu_memory_gb": 5.7,
+ "context_length": 32768,
+ "load_seconds": 86.9,
+ "median_call_seconds": 63.9,
+ "p90_call_seconds": 94.2,
+ "prompt_tokens_per_s": 629.9,
+ "gen_tokens_per_s": 51.8,
+ "mean_prompt_tokens": 4226,
+ "mean_gen_tokens": 2915,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -1,0 +1,121 @@
+{
+ "schema": 2,
+ "example": "tsp_heuristic",
+ "model": "gpt-oss:20b",
+ "variant": "think",
+ "model_size_gb": 13.8,
+ "model_params": "20.9B",
+ "started": "2026-10-17T19:32:34",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.0,
+ "best_score": 1.1295717982901192,
+ "improvement": 1.1295717982901192,
+ "llm_calls": 13,
+ "mean_llm_seconds": 75.7,
+ "attempts": 13,
+ "ok": 9,
+ "statuses": {
+  "edit_error": 4,
+  "ok": 9
+ },
+ "sweeps": 3,
+ "sweep_variants": 10,
+ "improvements": 3,
+ "minutes_to_best": 13.85,
+ "best_idea": "tuned MAX_TIME_FACTOR=0.95 on top of: Allow more time for the 2\u2011opt loop by introducing a tunable time\u2011limit factor so the search can perform additional passes and potentially find shorter tours.",
+ "progress": [
+  [
+   0.0,
+   1.0
+  ],
+  [
+   5.03,
+   1.0801473039558707
+  ],
+  [
+   8.82,
+   1.129541578675006
+  ],
+  [
+   13.85,
+   1.1295717982901192
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.0,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 5.03,
+   "score": 1.0801473039558707,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Add a 2\u2011opt local search on the nearest\u2011neighbour tour, precomputing squared distances for speed and checking CPU time to respect the limit."
+  },
+  {
+   "minutes": 8.82,
+   "score": 1.129541578675006,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace squared distance precomputation with actual Euclidean distances so 2\u2011opt decisions are correct and the tour improves on the 1000\u2011city instance."
+  },
+  {
+   "minutes": 13.85,
+   "score": 1.1281961244520426,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Allow more time for the 2\u2011opt loop by introducing a tunable time\u2011limit factor so the search can perform additional passes and potentially find shorter tours."
+  },
+  {
+   "minutes": 13.85,
+   "score": 1.1295717982901192,
+   "model": "gpt-oss:20b",
+   "mode": "sweep/exploit/diff/tune",
+   "status": "ok",
+   "idea": "tuned MAX_TIME_FACTOR=0.95 on top of: Allow more time for the 2\u2011opt loop by introducing a tunable time\u2011limit factor so the search can perform additional passes and potentially find shorter tours."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -18,9 +18,12 @@\n     makes the program invalid). The tour returns from the last city to the first.\n     Only the Python standard library may be used.\n \n-    Current method: plain nearest-neighbour construction starting at city 0.\n+    New method: construct a nearest\u2011neighbour tour and improve it with 2\u2011opt\n+    while respecting the CPU time limit.\n     \"\"\"\n+    MAX_TIME_FACTOR = 0.95\n     n = len(points)\n+    # initial nearest\u2011neighbour tour\n     unvisited = set(range(1, n))\n     tour = [0]\n     x, y = points[0]\n@@ -29,5 +32,44 @@\n         unvisited.remove(nxt)\n         tour.append(nxt)\n         x, y = points[nxt]\n+\n+    # precompute actual distances\n+    dist = [[0.0] * n for _ in range(n)]\n+    for i in range(n):\n+        xi, yi = points[i]\n+        for j in range(i + 1, n):\n+            dist[i][j] = dist[j][i] = math.hypot(xi - points[j][0], yi - points[j][1])\n+\n+    # position array for quick index lookup\n+    pos = [0] * n\n+    for idx, city in enumerate(tour):\n+        pos[city] = idx\n+\n+    time_start = time.process_time()\n+    max_time = time_limit * MAX_TIME_FACTOR\n+\n+    # 2\u2011opt local search\n+    improved = True\n+    while improved:\n+        improved = False\n+        for i in range(n - 1):\n+            if time.process_time() - time_start > max_time:\n+                return tour\n+            a, b = tour[i], tour[(i + 1) % n]\n+            for j in range(i + 2, n):\n+                if i == 0 and j == n - 1:\n+                    continue  # would break the cycle\n+                c, d = tour[j], tour[(j + 1) % n]\n+                # check if swapping edges improves length\n+                if dist[a][b] + dist[c][d] > dist[a][c] + dist[b][d] + 1e-12:\n+                    # reverse segment [i+1, j]\n+                    tour[i + 1:j + 1] = reversed(tour[i + 1:j + 1])\n+                    # update positions for affected cities\n+                    for k in range(i + 1, j + 1):\n+                        pos[tour[k]] = k\n+                    improved = True\n+                    break\n+            if improved:\n+                break\n     return tour\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 12.8,
+ "model_gpu_memory_gb": 12.8,
+ "context_length": 32768,
+ "load_seconds": 124.6,
+ "median_call_seconds": 51.5,
+ "p90_call_seconds": 133.6,
+ "prompt_tokens_per_s": 529.7,
+ "gen_tokens_per_s": 44.7,
+ "mean_prompt_tokens": 3033,
+ "mean_gen_tokens": 2685,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

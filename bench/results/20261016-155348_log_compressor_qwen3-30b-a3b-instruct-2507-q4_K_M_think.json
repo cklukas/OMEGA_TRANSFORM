@@ -1,0 +1,100 @@
+{
+ "schema": 2,
+ "example": "log_compressor",
+ "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+ "variant": "think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-10-16T15:53:48",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.9,
+ "omega_version": "0.1.0",
+ "omega_commit": "1a9f6ce",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 11.28605206956168,
+ "best_score": 19.661735394427957,
+ "improvement": 1.7421269433494262,
+ "llm_calls": 23,
+ "mean_llm_seconds": 40.6,
+ "attempts": 23,
+ "ok": 5,
+ "statuses": {
+  "invalid": 7,
+  "llm_error": 5,
+  "edit_error": 5,
+  "ok": 5,
+  "duplicate": 1
+ },
+ "sweeps": 2,
+ "sweep_variants": 20,
+ "improvements": 1,
+ "minutes_to_best": 8.75,
+ "best_idea": "Fix the lzma decompression of empty data by ensuring the fallback path correctly handles empty payloads, as the current code raises LZMAError when decompressing an empty payload after the flag byte, w",
+ "progress": [
+  [
+   0.0,
+   11.28605206956168
+  ],
+  [
+   8.75,
+   19.661735394427957
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 11.28605206956168,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 7.83,
+   "score": null,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/rewrite/tune",
+   "status": "invalid",
+   "idea": "Replace plain zlib with lzma compression at preset 9 to improve compression ratio on structured log data while keeping the code simple and safe, with a fallback mechanism to handle non-log inputs that may not parse correctly."
+  },
+  {
+   "minutes": 8.75,
+   "score": 19.661735394427957,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Fix the lzma decompression of empty data by ensuring the fallback path correctly handles empty payloads, as the current code raises LZMAError when decompressing an empty payload after the flag byte, which is invalid for LZMA. Use a safe check for empty input before compression and decompression to avoid this issue."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -10,6 +10,12 @@\n import zlib\n \n # OMEGA-BLOCK-START\n+import lzma\n+\n+# Compression settings\n+COMPRESS_PRESET = 9\n+USE_LZMA = True  # Enable LZMA for better compression; fallback to raw data if needed\n+\n def compress(data: bytes) -> bytes:\n     \"\"\"Compress arbitrary bytes losslessly and return the compressed blob.\n \n@@ -19,14 +25,39 @@\n     Only the Python standard library may be used (zlib, lzma, bz2, struct, re, ...).\n     Compress plus decompress of the main input must stay within 20 CPU seconds.\n \n-    Current method: plain zlib at level 1.\n+    Current method: lzma at preset 9, with a safe fallback for non-log data.\n     \"\"\"\n-    return zlib.compress(data, 1)\n+    if not data:\n+        return b\"\\x00\"  # Flag for empty input\n+\n+    try:\n+        # Attempt structured compression (not yet implemented, so fallback to raw lzma)\n+        # For now, just use LZMA with high preset on raw data\n+        compressed = lzma.compress(data, preset=COMPRESS_PRESET)\n+        return b\"\\x01\" + compressed  # Flag for LZMA-compressed data\n+    except Exception:\n+        # Fallback: use raw LZMA on the original data (safe for any input)\n+        # Ensure empty payload is handled: lzma.compress(b\"\") returns b\"\", so we must handle it\n+        return b\"\\x00\" + lzma.compress(data, preset=COMPRESS_PRESET)\n \n \n def decompress(blob: bytes) -> bytes:\n     \"\"\"Invert compress() exactly.\"\"\"\n-    return zlib.decompress(blob)\n+    if not blob:\n+        return b\"\"\n+\n+    flag = blob[0]\n+    payload = blob[1:]\n+\n+    if not payload:\n+        return b\"\"  # Handle empty payload after flag\n+\n+    if flag == 0:\n+        return lzma.decompress(payload)\n+    elif flag == 1:\n+        return lzma.decompress(payload)\n+    else:\n+        raise ValueError(\"Invalid compression flag\")\n # OMEGA-BLOCK-END\n \n \n",
+ "error": "",
+ "model_memory_gb": 21.8,
+ "model_gpu_memory_gb": 21.8,
+ "context_length": 32768,
+ "load_seconds": 31.2,
+ "median_call_seconds": 16.2,
+ "p90_call_seconds": 71.9,
+ "prompt_tokens_per_s": 729.9,
+ "gen_tokens_per_s": 49.2,
+ "mean_prompt_tokens": 2549,
+ "mean_gen_tokens": 398,
+ "stopped_calls": 5,
+ "provider": "ollama",
+ "cost_usd": 0
+}
