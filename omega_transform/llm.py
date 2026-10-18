@@ -79,6 +79,24 @@ def ssl_context() -> ssl.SSLContext:
     return _ssl_ctx
 
 
+_BYTE_TOKENS = re.compile(r"(?:<0x[0-9A-Fa-f]{2}>)+")
+
+
+def decode_byte_tokens(text: str) -> str:
+    """Turn runs of byte-fallback tokens ("<0x0A>", "<0xE3><0x81><0x82>") back into
+    the characters they encode. Some GGUF conversions on Ollama hand these tokens
+    out literally instead of decoding them, so every line break of an answer
+    arrives as "<0x0A>" and no edit block can be parsed."""
+    if "<0x" not in text:
+        return text
+
+    def decode(m: re.Match) -> str:
+        raw = bytes(int(h, 16) for h in re.findall(r"<0x([0-9A-Fa-f]{2})>", m.group(0)))
+        return raw.decode("utf-8", errors="replace")
+
+    return _BYTE_TOKENS.sub(decode, text)
+
+
 def urlopen(url_or_request, timeout: float):
     """urllib's urlopen with certificate verification that works on every Python build."""
     url = url_or_request if isinstance(url_or_request, str) else url_or_request.full_url
@@ -274,7 +292,7 @@ class Ensemble:
                 st.gen_tokens = r.get("eval_count") or 0
                 st.gen_seconds = (r.get("eval_duration") or 0) / 1e9
                 break
-        return "".join(parts)
+        return decode_byte_tokens("".join(parts))
 
     def _openai(self, messages: Messages, model: str, temp: float, max_chars: int = 0,
                 base: str | None = None, provider: str = "openai") -> str:

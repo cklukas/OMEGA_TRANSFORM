@@ -115,6 +115,13 @@ Each run writes `bench/results/<time>_<example>_<model>.json` with:
 The full run directories go to `bench/runs/`, which is not committed. They
 can be inspected with the usual commands (`status`, `lineage`, `stats`).
 
+## Models that need fixes
+
+Some uploads, mostly community conversions, fail the model check because of
+how they are packaged, not because of the model. [Model notes](model-notes.md)
+records what was wrong and, where possible, how a model was made usable step
+by step (for example LLM-jp-4 8B, whose upload needed a custom Modelfile).
+
 ## The overall ranking
 
 Scores of different examples are not comparable: a matrix multiply can gain

@@ -106,3 +106,14 @@ class OpenRouterTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ByteTokenTest(unittest.TestCase):
+    def test_byte_fallback_tokens_become_characters(self):
+        from omega_transform.llm import decode_byte_tokens
+        # LLM-jp-4 on Ollama: every line break arrived as "<0x0A>"
+        self.assertEqual(decode_byte_tokens("<<<<<<< SEARCH<0x0A>x = 1<0x0A>"),
+                         "<<<<<<< SEARCH\nx = 1\n")
+        self.assertEqual(decode_byte_tokens("<0xE3><0x81><0x82>"), "あ")  # multi-byte UTF-8
+        for text in ("plain text", 'x = "<0x0"', "<0xZZ>"):
+            self.assertEqual(decode_byte_tokens(text), text)

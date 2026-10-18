@@ -1,0 +1,27 @@
+# Copyright (c) 2026 by C. Klukas
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# A usable variant of the community upload ki-krugle-jp/llm-jp-4-8b-thinking
+# (LLM-jp-4 8B, National Institute of Informatics), whose packaging breaks on
+# Ollama: see docs/model-notes.md. Build it with:
+#   ollama create llm-jp-4-8b-omega:q4_k_m -f bench/modelfiles/llm-jp-4-8b-omega.Modelfile
+FROM ki-krugle-jp/llm-jp-4-8b-thinking:q4_k_m
+
+# The model's own chat format: <|start|>ROLE<|message|>TEXT<|end|>. The prompt ends
+# with the opened "final" channel, so the model answers directly instead of first
+# writing a thought channel that Ollama cannot separate from the answer.
+TEMPLATE """{{- range .Messages }}<|start|>{{ .Role }}<|message|>{{ .Content }}<|end|>{{ end }}<|start|>assistant<|channel|>final<|message|>"""
+
+# Ollama would otherwise render chat requests with the template embedded in the
+# GGUF file and parse the answer with its strict format parser, which rejects the
+# model's channel output (HTTP 500). "passthrough" makes Ollama use the TEMPLATE
+# above and hand the model's output back unchanged.
+PARSER passthrough
+
+# Replaces the upload's system prompt, which demanded Japanese-only thinking and answers.
+SYSTEM """You are a helpful assistant."""
+
+PARAMETER stop <|end|>
+PARAMETER stop <|return|>
+PARAMETER stop <|start|>
+PARAMETER num_ctx 32768

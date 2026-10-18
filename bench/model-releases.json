@@ -164,6 +164,13 @@
    "released": "2025-03-28",
    "source": "huggingface",
    "params_b": 8.0
+  },
+  "llm-jp-4-8b-omega:q4_k_m": {
+   "repo": "llm-jp/llm-jp-4-8b-thinking",
+   "released": "2026-03-16",
+   "source": "huggingface",
+   "params_b": 8.6,
+   "note": "local variant of ki-krugle-jp/llm-jp-4-8b-thinking, see docs/model-notes.md"
   }
  }
 }

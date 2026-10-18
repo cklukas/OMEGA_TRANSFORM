@@ -50,6 +50,7 @@ nav:
   - title: Models
     pages:
       - docs/benchmarking.md
+      - docs/model-notes.md
       - docs/benchmarks.md
       - docs/cloud-models.md
       - docs/openrouter-models.md
