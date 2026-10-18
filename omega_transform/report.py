@@ -186,7 +186,7 @@ def cloud_inference_section(example: str, rows: list[dict], level: str) -> str:
 
 # Who develops a model, from its name: the first matching prefix wins.
 DEVELOPERS = [("gemma", "Google"), ("gpt-oss", "OpenAI"), ("qwen", "Alibaba (Qwen)"),
-              ("nvidia/", "NVIDIA"), ("cohere/", "Cohere"), ("poolside/", "Poolside"),
+              ("nvidia/", "NVIDIA"), ("nemotron", "NVIDIA"), ("cohere/", "Cohere"), ("poolside/", "Poolside"),
               ("llama", "Meta"), ("muse", "Meta"), ("meta/", "Meta"),
               ("phi", "Microsoft"), ("frognano", "Microsoft"), ("microsoft/", "Microsoft"),
               ("mistral", "Mistral AI"), ("devstral", "Mistral AI"),

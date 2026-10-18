@@ -135,6 +135,7 @@ class BenchTest(unittest.TestCase):
                                                  "MichelRosselli/apertus:8b-instruct-2509-q4_k_m",
                                                  "frob/sarvam:30b")],
                          ["LG", "Sber", "Yandex", "Swiss AI Initiative", "Sarvam AI"])
+        self.assertEqual(developer("nemotron-3.5-lightning:30b-mlx"), "NVIDIA")
         devs = developer_ranking([{"label": "g1", "model": "gemma4:a", "share": 0.9,
                                    "by_example": {"x": 1.0, "y": 0.8}},
                                   {"label": "g2", "model": "gemma4:b", "share": 0.5,
