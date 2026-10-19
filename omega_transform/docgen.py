@@ -353,14 +353,14 @@ def start_page(text: str, results: list[dict], examples, figures: dict[str, str]
              f"modes in {len(ok):,} runs on the {len(names)} examples; on "
              f"{len(improved & names)} of them a model improved on the starting program. "
              "Each picture shows what the starting program and the best program found so "
-             "far produce; each example's page has the problem, the path to the best "
-             "result and all models.", ""]
+             "far produce; click one for the problem, the path to the best result and "
+             "all models.", ""]
     cells = []
     for name, cfg in shown:
         summary = _paragraph(cfg.summary) or _paragraph(cfg.description).split(". ")[0]
         tip = summary.replace('"', "'")
         link = f"examples/{name}.md"
-        pic = (f'![{name}](assets/examples/{name}.svg "{tip}")<br>'
+        pic = (f'[![{name}](assets/examples/{name}.svg "{tip}")]({link})<br>'
                if f"docs/assets/examples/{name}.svg" in figures else "")
         cells.append(f"{pic}**[{name}]({link})**<br><small>{summary.replace('|', '/')}</small>")
     while len(cells) % GALLERY_COLUMNS:

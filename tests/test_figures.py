@@ -124,7 +124,8 @@ class StartPageTest(unittest.TestCase):
                           {"docs/assets/examples/tsp.svg": "<svg/>"})
         self.assertNotIn("old", page)
         self.assertTrue(page.endswith(f"{GALLERY_END}\n\nmore\n"))
-        self.assertIn(f'![tsp](assets/examples/tsp.svg "{cfg.summary}")', page)
+        self.assertIn(f'[![tsp](assets/examples/tsp.svg "{cfg.summary}")](examples/tsp.md)',
+                      page)
         self.assertIn("**[tsp](examples/tsp.md)**", page)
         self.assertNotIn("[toy]", page)  # the test suite's problem stays off the start page
         self.assertIn("1 models and reasoning modes in 1 runs on the 1 examples; on 1 of", page)

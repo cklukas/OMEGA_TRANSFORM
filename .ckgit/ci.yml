@@ -12,7 +12,8 @@
 # committed numbers. The engine is standard-library Python, so the sandbox
 # needs no network and no packages.
 #
-# ckdocs is compiled from the ck-git-hosting sister project at a pinned commit.
+# ckdocs is compiled from the ck-git-hosting sister project at a pinned commit
+# (0.7.2 or later: the start page's gallery uses images as links).
 # `--strict` fails the run on a broken link or heading fragment before
 # `pages:` ever sees "public". The checkout comes from `git archive` and has no
 # .git, so ckdocs walks the tree rather than listing tracked files.
@@ -20,8 +21,9 @@ version: 1
 on:
   branches: [main]
 sisters:
+  # v0.7.2
   - name: ck-git-hosting
-    ref: 2397fbd02bc71dbaf1c71bfecd9f8a45cc9605c2
+    ref: 6479395f2846c00e94dcf7ad5690f717abe7d993
 jobs:
   - name: docs
     steps:
