@@ -55,6 +55,10 @@ def cut(n, edges):
 
 The best result so far comes from **qwen3:30b-a3b-instruct-2507-q4_K_M (think)**, run locally with Ollama on 2026-10-17: a score of **0.7673** (×1.50 the starting program's 0.51218), reached after 8.03 of 15 minutes with 33 model requests.
 
+What the starting program produces (left) and what the best program by qwen3:30b-a3b-instruct-2507-q4_K_M (think) produces (right), drawn for the instance `g100`:
+
+![max_cut: the starting program's solution and the best one](../assets/examples/max_cut.svg)
+
 ### How it got there
 
 The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.

@@ -73,6 +73,7 @@ def main(path):
                     "mean_nearest_neighbor_deg": mean_nn, "nearest_neighbor_spread_deg": nn_spread,
                     "seconds": secs},
         "features": {"nearest_neighbor_spread_deg": nn_spread, "contact_pairs": contacts},
+        "solution": {"kind": "sphere_points", "points": [list(p) for p in unit]},
         "valid": True,
         "feedback": feedback,
     }))

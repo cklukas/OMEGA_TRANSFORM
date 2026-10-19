@@ -70,6 +70,7 @@ def validate(name, sizes, bins):
 def main(path):
     cand = Candidate(path)
     metrics, ratios, used, fills = {}, [], [], []
+    solution = None
     for name, n, seed, lo, hi in INSTANCES:
         sizes = make_sizes(n, seed, lo, hi)
         try:
@@ -90,6 +91,10 @@ def main(path):
         except TypeError:
             fail(f"{name}: pack() must return a list of bins")
         bins = validate(name, sizes, bins)
+        if solution is None:  # the first instance is drawn on the example page
+            solution = {"kind": "bins", "instance": name, "capacity": CAPACITY,
+                        "lower_bound": math.ceil(sum(sizes) / CAPACITY),
+                        "bins": [[sizes[i] for i in b] for b in bins]}
         lower = math.ceil(sum(sizes) / CAPACITY)
         ratios.append(lower / len(bins))
         used.append(secs / TIME_LIMIT)
@@ -105,6 +110,7 @@ def main(path):
         "score": score,
         "metrics": metrics,
         "features": {"time_used": sum(used) / len(used), "mean_fill": sum(fills) / len(fills)},
+        "solution": solution,
         "valid": True,
         "feedback": f"bins above the lower bound per instance: {gaps}",
     }))

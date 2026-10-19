@@ -90,6 +90,10 @@ def predict(params, x1, x2, x3):
 
 The best result so far comes from **qwen3.6:27b-coding-mtp-q4_K_M (no-think)**, run locally with Ollama on 2026-10-15: a score of **0.99869** (×3.19 the starting program's 0.31284), reached after 6.28 of 15 minutes with 6 model requests.
 
+What the starting program produces (left) and what the best program by qwen3.6:27b-coding-mtp-q4_K_M (no-think) produces (right):
+
+![symbolic_regression: the starting program's solution and the best one](../assets/examples/symbolic_regression.svg)
+
 ### How it got there
 
 The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.

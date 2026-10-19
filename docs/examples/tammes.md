@@ -59,6 +59,10 @@ def run():
 
 The best result so far comes from **qwen3.5:27b (no-think)**, run locally with Ollama on 2026-10-15: a score of **38.5505** (×12.04 the starting program's 3.20136), reached after 15 of 15 minutes with 9 model requests.
 
+What the starting program produces (left) and what the best program by qwen3.5:27b (no-think) produces (right):
+
+![tammes: the starting program's solution and the best one](../assets/examples/tammes.svg)
+
 ### How it got there
 
 The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.

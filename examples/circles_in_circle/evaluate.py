@@ -59,6 +59,8 @@ def main(path):
         "metrics": {"sum_radii": total, "min_radius": radii[0], "max_radius": radii[-1],
                     "area_fraction": density, "seconds": secs},
         "features": {"radius_spread": radii[-1] - radii[0], "area_fraction": density},
+        "solution": {"kind": "circles", "container": "circle",
+                     "circles": [[round(v, 6) for v in c] for c in circles]},
         "valid": True,
         "feedback": f"sum of radii {total:.6f}; radii range {radii[0]:.4f} to {radii[-1]:.4f}; "
                     f"circles cover {100 * density:.1f}% of the container",

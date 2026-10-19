@@ -59,6 +59,7 @@ def validate(name, n, side):
 def main(path):
     cand = Candidate(path)
     metrics, ratios, used, balance = {}, [], [], []
+    solution = None
     for name, n, m, seed in INSTANCES:
         edges = make_graph(n, m, seed)
         try:
@@ -79,6 +80,9 @@ def main(path):
         except TypeError:
             fail(f"{name}: cut() must return a list of n sides")
         side = validate(name, n, side)
+        if solution is None:  # the first graph is drawn on the example page
+            solution = {"kind": "cut", "instance": name, "n": n,
+                        "edges": [list(e) for e in edges], "side": side}
         total = sum(w for _, _, w in edges)
         weight = sum(w for u, v, w in edges if side[u] != side[v])
         ratios.append(weight / total)
@@ -94,6 +98,7 @@ def main(path):
         "score": score,
         "metrics": metrics,
         "features": {"time_used": sum(used) / len(used), "imbalance": sum(balance) / len(balance)},
+        "solution": solution,
         "valid": True,
         "feedback": f"weakest graph: {INSTANCES[worst][0]} cuts {ratios[worst]:.4f} of its edge weight",
     }))

@@ -26,7 +26,7 @@ from .database import Database
 from .memory import wait_until_fits
 from .modelcheck import unload
 
-RESULT_SCHEMA = 2  # 2: best_lineage and best_diff
+RESULT_SCHEMA = 3  # 2: best_lineage and best_diff; 3: initial_solution and best_solution
 # The best program's diff is cut after this many lines (a rewrite can be long).
 MAX_DIFF_LINES = 400
 
@@ -164,6 +164,10 @@ class BenchResult:
     # [{minutes, score, model, mode, status, idea}, ...], and its diff to the initial program.
     best_lineage: list = field(default_factory=list)
     best_diff: str = ""
+    # What the initial and the best program produced, in the evaluator's drawable form
+    # (its "solution"); None when the evaluator gives none. Drawn on the example pages.
+    initial_solution: dict | None = None
+    best_solution: dict | None = None
     error: str = ""
     # inference: how fast the model is and what it costs in memory
     model_memory_gb: float | None = None
@@ -218,6 +222,8 @@ def summarize(db: Database) -> dict:
         "best_idea": (best_prog.idea if best_prog else "")[:200],
         "progress": progress,
         **best_details(db, best_prog, root, t0),
+        "initial_solution": db.solution(root.id) if root else None,
+        "best_solution": db.solution(best_prog.id) if best_prog else None,
     }
 
 
@@ -261,11 +267,61 @@ def add_details(results_dir: Path, runs_dir: Path, log=print) -> list[Path]:
         with Database(db_path, islands=1, features=[]) as db:
             s = summarize(db)
         r["best_lineage"], r["best_diff"] = s["best_lineage"], s["best_diff"]
-        r["schema"] = max(r.get("schema", 1), RESULT_SCHEMA)
+        r["schema"] = max(r.get("schema", 1), 2)
         path.write_text(json.dumps(r, indent=1) + "\n")
         changed.append(path)
         log(f"  {path.name}: {len(r['best_lineage'])} steps, "
             f"{r['best_diff'].count(chr(10))} diff lines")
+    return changed
+
+
+def add_solutions(results_dir: Path, runs_dir: Path, examples_dir: Path,
+                  log=print) -> list[Path]:
+    """Give the best result of every example the drawable solutions of its initial and
+    best program, for results from before schema 3: both programs are taken from the
+    run database and evaluated again. Returns the files changed."""
+    import shutil
+    import tempfile
+
+    from .evaluator import Evaluator
+    from .report import best_run, load_results
+    results = load_results(results_dir)
+    changed = []
+    for toml in sorted(examples_dir.glob("*/omega.toml")):
+        cfg = load_config(toml)
+        r = best_run(results, cfg.name)
+        if r is None or (r.get("best_solution") and r.get("initial_solution")):
+            continue
+        path = results_dir / r["_file"]
+        db_path = run_dir_of(path, runs_dir, r) / "omega.sqlite"
+        if not db_path.exists():
+            log(f"  {path.name}: no run database at {db_path}")
+            continue
+        with Database(db_path, islands=1, features=[]) as db:
+            root = next((p for p in db.all_programs() if p.mode == "initial"), None)
+            best = db.best()
+        jobs = Path(tempfile.mkdtemp(prefix="solutions-", dir=runs_dir))
+        try:
+            ev = Evaluator(cfg, jobs)
+            found = {}
+            for key, prog in (("initial_solution", root), ("best_solution", best)):
+                res = ev.evaluate(prog.code, key) if prog is not None else None
+                found[key] = res.solution if res is not None and res.status == "ok" else None
+                log(f"  {path.name}: {key} " + (
+                    "none" if res is None else
+                    f"{res.status}, score {res.score}" + ("" if found[key] else ", no solution")))
+                if key == "initial_solution" and res is not None and res.status == "ok" \
+                        and not found[key]:
+                    break  # this evaluator reports no solution at all
+        finally:
+            shutil.rmtree(jobs, ignore_errors=True)
+        if not any(found.values()):
+            continue
+        d = json.loads(path.read_text())
+        d.update(found)
+        d["schema"] = max(d.get("schema", 1), RESULT_SCHEMA)
+        path.write_text(json.dumps(d, indent=1) + "\n")
+        changed.append(path)
     return changed
 
 

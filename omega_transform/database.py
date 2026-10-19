@@ -51,7 +51,11 @@ CREATE TABLE IF NOT EXISTS llm_calls(
   program_id TEXT, created REAL, model TEXT, total_seconds REAL, load_seconds REAL,
   prompt_tokens INTEGER, prompt_seconds REAL, gen_tokens INTEGER, gen_seconds REAL,
   stopped INTEGER, cost_usd REAL, provider TEXT);
+CREATE TABLE IF NOT EXISTS solutions(program_id TEXT PRIMARY KEY, data TEXT);
 """
+
+# A drawable solution larger than this (as JSON) is not stored.
+MAX_SOLUTION_CHARS = 200_000
 
 
 def code_hash(code: str) -> str:
@@ -86,13 +90,16 @@ class Program:
     eval_seconds: float = 0.0
     llm_seconds: float = 0.0
     cell: str = ""
+    # The evaluator's drawable "solution"; kept in a table of its own (``solution()``),
+    # so it is not loaded with every program.
+    solution: dict | None = field(default=None, repr=False)
 
     @property
     def ok(self) -> bool:
         return self.status == OK and self.score is not None
 
 
-_COLS = [f for f in Program.__dataclass_fields__]
+_COLS = [f for f in Program.__dataclass_fields__ if f != "solution"]
 
 
 def _row_to_program(row: sqlite3.Row) -> Program:
@@ -193,6 +200,10 @@ class Database:
         with self.lock:
             self.conn.execute(
                 f"INSERT INTO programs({','.join(_COLS)}) VALUES({','.join('?' * len(_COLS))})", vals)
+            if p.ok and p.solution is not None:
+                data = json.dumps(p.solution, separators=(",", ":"))
+                if len(data) <= MAX_SOLUTION_CHARS:
+                    self.conn.execute("INSERT OR REPLACE INTO solutions VALUES(?,?)", (p.id, data))
             return self._place(p, p.island) if p.ok else False
 
     def _place(self, p: Program, island: int) -> bool:
@@ -203,6 +214,11 @@ class Database:
             return False
         self.conn.execute("INSERT OR REPLACE INTO elites VALUES(?,?,?)", (island, p.cell, p.id))
         return True
+
+    def solution(self, pid: str) -> dict | None:
+        """The drawable solution the evaluator reported for a program, if any."""
+        rows = self._q("SELECT data FROM solutions WHERE program_id=?", (pid,))
+        return json.loads(rows[0][0]) if rows else None
 
     def seed_all_islands(self, p: Program) -> None:
         with self.lock:

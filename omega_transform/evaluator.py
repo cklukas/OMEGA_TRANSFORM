@@ -13,7 +13,10 @@ line, for example::
      "valid": true, "feedback": "free text for the LLM"}
 
 ``score`` is maximized. ``valid: false`` (or a missing score) marks the
-candidate invalid, and its ``feedback`` is shown to the LLM.
+candidate invalid, and its ``feedback`` is shown to the LLM. An optional
+``solution`` holds what the candidate produced in a drawable form (circles,
+points, a tour, ...); it is stored with the program and drawn on the example
+pages (``figures.py``), but never shown to the LLM.
 
 Stages marked ``exclusive`` (timing benchmarks) take a write lock, so they run
 with no other evaluation in parallel.
@@ -139,6 +142,7 @@ class EvalResult:
     stage: str = ""
     seconds: float = 0.0
     usage: dict = field(default_factory=dict)  # per build/stage: cpu_seconds, peak_mb, ...
+    solution: dict | None = None  # the evaluator's drawable "solution", if it gives one
 
     def usage_metrics(self) -> dict:
         """Flat metrics such as ``bench_cpu_s`` and ``bench_peak_mb``, one pair per step."""
@@ -548,8 +552,10 @@ class Evaluator:
                         fb = _tail(r.err) or "evaluator reported the candidate invalid"
                     return EvalResult("invalid", metrics=data.get("metrics") or {},
                                       feedback=fb, stage=st.name)
+                sol = data.get("solution")
                 result = EvalResult("ok", float(score), data.get("metrics") or {},
-                                    data.get("features") or {}, fb, st.name, usage=usage)
+                                    data.get("features") or {}, fb, st.name, usage=usage,
+                                    solution=sol if isinstance(sol, dict) else None)
                 last = k == len(self.ev.stages) - 1
                 if not last and st.min_score is not None and score < st.min_score:
                     result.status = "filtered"

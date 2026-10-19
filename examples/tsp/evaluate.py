@@ -87,6 +87,7 @@ def validate(name, n, tour):
 def main(path):
     cand = Candidate(path)
     metrics, ratios, used = {}, [], []
+    solution = None
     for name, n, seed in INSTANCES:
         points = make_points(n, seed)
         try:
@@ -103,6 +104,9 @@ def main(path):
         if tour is None:
             fail(f"{name}: solve() returned None")
         tour = validate(name, n, list(tour))
+        if solution is None:  # the first instance is drawn on the example page
+            solution = {"kind": "tour", "instance": name,
+                        "points": [[round(x, 6), round(y, 6)] for x, y in points], "tour": tour}
         length = tour_length(points, tour)
         ref = nearest_neighbour_length(points)
         ratios.append(ref / length)
@@ -117,6 +121,7 @@ def main(path):
         "score": score,
         "metrics": metrics,
         "features": {"time_used": sum(used) / len(used)},
+        "solution": solution,
         "valid": True,
         "feedback": f"weakest instance: {INSTANCES[worst][0]} at {ratios[worst]:.4f} x nearest neighbour",
     }))

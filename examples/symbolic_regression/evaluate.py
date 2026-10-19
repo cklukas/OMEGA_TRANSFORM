@@ -97,6 +97,9 @@ def main(path):
         "metrics": {"r2_test": r2_test, "rmse_test": rmse_test, "r2_extrapolation": r2_extra,
                     "rmse_extrapolation": rmse_extra, "noise_sigma": NOISE, "cpu_s": secs},
         "features": {"rmse_test": rmse_test},
+        "solution": {"kind": "regression", "noise_sigma": NOISE, "sets": {
+            name: [[round(r[3], 4), round(p, 4)] for r, p in zip(rows, preds[name])]
+            for name, rows in (("test", test), ("extrapolation", extra))}},
         "valid": True,
         "feedback": feedback,
     }))

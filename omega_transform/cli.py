@@ -321,6 +321,14 @@ def cmd_bench_details(a) -> int:
     return 0
 
 
+def cmd_bench_solutions(a) -> int:
+    """Add the initial and best program's drawable solutions to older result files."""
+    from .bench import add_solutions
+    changed = add_solutions(Path(a.results), Path(a.runs), Path(a.examples))
+    print(f"updated {len(changed)} result file(s); regenerate the pages with: omega docs")
+    return 0
+
+
 def cmd_model_releases(a) -> int:
     """Fill in the release dates of the benchmarked models."""
     from .releases import load, refresh, save
@@ -528,6 +536,14 @@ def build_parser() -> argparse.ArgumentParser:
     bd.add_argument("--results", default="bench/results", help="result JSON directory")
     bd.add_argument("--runs", default="bench/runs", help="the run directories behind them")
     bd.set_defaults(fn=cmd_bench_details)
+
+    bs = sub.add_parser("bench-solutions", help="add the drawable solutions of the initial "
+                        "and best program to each example's best benchmark result, by "
+                        "evaluating both again (for results written before they were recorded)")
+    bs.add_argument("--results", default="bench/results", help="result JSON directory")
+    bs.add_argument("--runs", default="bench/runs", help="the run directories behind them")
+    bs.add_argument("--examples", default="examples", help="the example problems")
+    bs.set_defaults(fn=cmd_bench_solutions)
 
     mc = sub.add_parser("models", help="quick check whether installed models load and work")
     mc.add_argument("--models", nargs="+", help="only these models (default: all installed)")

@@ -64,6 +64,7 @@ def main(path):
                     "near_min_triangles": near, "min_point_distance": min_dist,
                     "bounding_box_area": hull_box, "seconds": secs},
         "features": {"near_min_triangles": near, "min_point_distance": min_dist},
+        "solution": {"kind": "heilbronn", "points": [[x, y] for x, y in points]},
         "valid": True,
         "feedback": feedback,
     }))

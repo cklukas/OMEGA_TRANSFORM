@@ -126,6 +126,20 @@ omega bench-details [-h] [--results RESULTS] [--runs RUNS]
 | `--results` | result JSON directory Default: `bench/results`. |
 | `--runs` | the run directories behind them Default: `bench/runs`. |
 
+## `bench-solutions`
+
+Add the drawable solutions of the initial and best program to each example's best benchmark result, by evaluating both again (for results written before they were recorded).
+
+```text
+omega bench-solutions [-h] [--results RESULTS] [--runs RUNS] [--examples EXAMPLES]
+```
+
+| Argument | Meaning |
+|---|---|
+| `--results` | result JSON directory Default: `bench/results`. |
+| `--runs` | the run directories behind them Default: `bench/runs`. |
+| `--examples` | the example problems Default: `examples`. |
+
 ## `models`
 
 Quick check whether installed models load and work.

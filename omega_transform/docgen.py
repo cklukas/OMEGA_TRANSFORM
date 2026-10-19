@@ -206,7 +206,7 @@ def example_page(name: str, category: str, cfg, results: list[dict]) -> str:
     """One example: the problem, its starting program, and the best benchmark result
     with the path that led there."""
     from .prompt import fmt_score
-    from .report import label, latest_per_model, shorten
+    from .report import best_run, label, latest_per_model, shorten
     lang = "cpp" if cfg.language in ("cpp", "c++", "c") else cfg.language
     code = cfg.initial_path.read_text()
     stages = ", ".join(s.name + (" (timed alone)" if s.exclusive else "")
@@ -230,9 +230,8 @@ def example_page(name: str, category: str, cfg, results: list[dict]) -> str:
         out.append("This example has not been benchmarked yet. See "
                    "[Benchmarking models](../benchmarking.md) for how to run it.\n")
         return "".join(out)
-    ok = [r for r in mine if not r.get("error") and r.get("best_score") is not None]
-    if ok:
-        best = max(ok, key=lambda r: (r["best_score"], -len(r.get("best_lineage") or [])))
+    best = best_run(mine, cfg.name)
+    if best is not None:
         where = "locally with Ollama" if best.get("provider", "ollama") == "ollama" \
             else f"through {PROVIDER_NAMES.get(best['provider'], best['provider'])}"
         gain = f" (×{best['improvement']:.2f} the starting program's " \
@@ -245,6 +244,8 @@ def example_page(name: str, category: str, cfg, results: list[dict]) -> str:
             + (f"{mtb:g} of {best.get('minutes_budget', 0):g} minutes" if mtb is not None
                else "no improvement")
             + f" with {best.get('llm_calls', 0)} model requests.\n")
+        if _figure_panels(best):
+            out.append(_figure_text(name, best))
         steps = best.get("best_lineage") or []
         if len(steps) > 1:
             out.append("\n### How it got there\n\n"
@@ -287,6 +288,50 @@ def example_page(name: str, category: str, cfg, results: list[dict]) -> str:
     return "".join(out)
 
 
+def _figure_panels(best: dict) -> list[tuple[str, dict]]:
+    """The panels of an example's figure: the starting program's solution and, when
+    the best program improved on it, the best one's."""
+    from .figures import drawable
+    from .prompt import fmt_score
+    panels = []
+    if drawable(best.get("initial_solution")):
+        panels.append((f"Starting program · score {fmt_score(best.get('initial_score'))}",
+                       best["initial_solution"]))
+    if best.get("best_diff") and drawable(best.get("best_solution")):
+        panels.append((f"Best · score {fmt_score(best['best_score'])}", best["best_solution"]))
+    return panels
+
+
+def _figure_text(name: str, best: dict) -> str:
+    from .report import label
+    panels = _figure_panels(best)
+    instance = panels[0][1].get("instance")
+    what = "What the starting program produces (left) and what the best program " \
+        f"by {label(best)} produces (right)" if len(panels) == 2 else \
+        ("What the best program produces" if panels[0][0].startswith("Best") else
+         "What the starting program produces; no model improved on it")
+    if instance:
+        what += f", drawn for the instance `{instance}`"
+    alt = f"{name}: the starting program's solution" + \
+        (" and the best one" if len(panels) == 2 else "")
+    return f"\n{what}:\n\n![{alt}](../assets/examples/{name}.svg)\n"
+
+
+def figures(results: list[dict], examples) -> dict[str, str]:
+    """docs/assets/examples/<name>.svg for every example whose best result carries
+    drawable solutions."""
+    from .figures import figure
+    from .report import best_run
+    out = {}
+    for name, _, cfg in examples:
+        best = best_run(results, cfg.name)
+        panels = _figure_panels(best) if best else []
+        if panels:
+            out[f"docs/assets/examples/{name}.svg"] = figure(
+                panels, f"{name}: the starting program's solution and the best one")
+    return out
+
+
 def pages() -> dict[str, str]:
     from .cli import build_parser
     root = Path(__file__).resolve().parent.parent
@@ -294,8 +339,10 @@ def pages() -> dict[str, str]:
     out = {"docs/configuration.md": configuration_page(), "docs/cli.md": cli_page(build_parser()),
            "docs/examples.md": examples_page(root)}
     results = load_results(root / "bench" / "results")
-    for name, cat, cfg in _examples(root):
+    examples = _examples(root)
+    for name, cat, cfg in examples:
         out[f"docs/examples/{name}.md"] = example_page(name, cat, cfg, results)
+    out.update(figures(results, examples))
     return out
 
 

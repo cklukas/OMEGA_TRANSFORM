@@ -65,6 +65,10 @@ def pack(sizes, capacity):
 
 The best result so far comes from **gpt-oss:20b (no-think)**, run locally with Ollama on 2026-10-14: a score of **0.95416** (×1.20 the starting program's 0.79426), reached after 6.71 of 15 minutes with 18 model requests.
 
+What the starting program produces (left) and what the best program by gpt-oss:20b (no-think) produces (right), drawn for the instance `u300`:
+
+![bin_packing: the starting program's solution and the best one](../assets/examples/bin_packing.svg)
+
 ### How it got there
 
 The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.

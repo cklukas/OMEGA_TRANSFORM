@@ -68,6 +68,14 @@ def shorten(text: str, n: int = 180) -> str:
     return cut + " …"
 
 
+def best_run(results: list[dict], problem: str) -> dict | None:
+    """The result with the highest score for a problem (the shorter path on a tie)."""
+    ok = [r for r in results if r.get("example") == problem and not r.get("error")
+          and r.get("best_score") is not None]
+    return max(ok, key=lambda r: (r["best_score"], -len(r.get("best_lineage") or [])),
+               default=None)
+
+
 def latest_per_model(results: list[dict]) -> dict[str, dict[str, dict]]:
     """{example: {model and variant: newest result}}"""
     table: dict[str, dict[str, dict]] = defaultdict(dict)

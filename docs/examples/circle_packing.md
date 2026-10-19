@@ -67,6 +67,10 @@ def run():
 
 The best result so far comes from **nvidia/nemotron-3-super-120b-a12b:free (think)**, run through OpenRouter on 2026-10-10: a score of **2.5045** (×1.68 the starting program's 1.4901), reached after 10.66 of 15 minutes with 23 model requests.
 
+What the starting program produces (left) and what the best program by nvidia/nemotron-3-super-120b-a12b:free (think) produces (right):
+
+![circle_packing: the starting program's solution and the best one](../assets/examples/circle_packing.svg)
+
 ### How it got there
 
 The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.

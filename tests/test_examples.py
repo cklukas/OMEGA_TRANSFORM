@@ -35,6 +35,10 @@ class ExamplesTest(unittest.TestCase):
             with self.subTest(example=ex.name), tempfile.TemporaryDirectory() as tmp:
                 res = Evaluator(cfg, Path(tmp)).evaluate(cfg.initial_path.read_text(), "t")
                 self.assertEqual(res.status, "ok", f"{ex.name}: {res.feedback}")
+                if res.solution is not None:  # the example page draws it
+                    from omega_transform.figures import drawable, figure
+                    self.assertTrue(drawable(res.solution), f"{ex.name}: unknown solution kind")
+                    self.assertIn("<svg", figure([("start", res.solution)], ex.name))
 
 
     @unittest.skipUnless(os.environ.get("OMEGA_EXAMPLE_TESTS"),

@@ -53,6 +53,10 @@ def run():
 
 The best result so far comes from **gemma4:latest (think)**, run locally with Ollama on 2026-10-16: a score of **0.02049** (×4.28 the starting program's 0.00479), reached after 5.91 of 15 minutes with 21 model requests.
 
+What the starting program produces (left) and what the best program by gemma4:latest (think) produces (right):
+
+![heilbronn: the starting program's solution and the best one](../assets/examples/heilbronn.svg)
+
 ### How it got there
 
 The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.

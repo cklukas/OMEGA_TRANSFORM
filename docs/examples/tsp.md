@@ -63,6 +63,10 @@ def solve(points, time_limit):
 
 The best result so far comes from **gemma4:e4b-it-qat (no-think)**, run locally with Ollama on 2026-10-15: a score of **1.13768** (×1.14 the starting program's 1), reached after 7.43 of 15 minutes with 43 model requests.
 
+What the starting program produces (left) and what the best program by gemma4:e4b-it-qat (no-think) produces (right), drawn for the instance `n200`:
+
+![tsp: the starting program's solution and the best one](../assets/examples/tsp.svg)
+
 ### How it got there
 
 The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.

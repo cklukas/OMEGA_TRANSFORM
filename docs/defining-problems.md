@@ -55,10 +55,33 @@ and must print one JSON object as the last line of its standard output:
 | `metrics` | Any numbers or strings; shown to the model with the program. |
 | `features` | Numbers usable as [MAP-Elites](how-it-works.md) axes (`search.features`). |
 | `feedback` | Text for the model: what is wrong or what limits the score. |
+| `solution` | Optional: what the candidate produced, in a drawable form (below). Stored with the program, never shown to the model. |
 
 Good feedback is concrete: `circles 3 and 7 overlap by 0.002` helps a model
 far more than `invalid`. A crash with no JSON output is recorded as a runtime
 error, with the tail of the standard error stream as feedback.
+
+### Drawable solutions
+
+An evaluator may add a `solution` object: the candidate's output as plain
+data, chosen by its `kind`. The engine stores it with each successful program,
+the benchmark records the initial and the best program's solution in its
+result file, and `omega docs` draws both side by side on the
+[example's page](examples.md). Captions are computed from the data itself.
+
+| `kind` | Fields |
+|---|---|
+| `circles` | `container` (`"square"`: the unit square, `"circle"`: the unit circle), `circles`: `[[x, y, r], ...]` |
+| `heilbronn` | `points`: `[[x, y], ...]` in the unit square; the smallest triangles are highlighted |
+| `sphere_points` | `points`: `[[x, y, z], ...]` on the unit sphere, drawn with caps of half the smallest angle |
+| `tour` | `points`: `[[x, y], ...]` in the unit square, `tour`: city indices in visiting order |
+| `bins` | `capacity`, `lower_bound`, `bins`: `[[item size, ...], ...]` |
+| `cut` | `n`, `edges`: `[[u, v, weight], ...]`, `side`: 0 or 1 per node |
+| `regression` | `sets`: `{"name": [[true y, predicted y], ...], ...}` |
+
+`tour`, `bins` and `cut` may name the drawn `instance`; with several instances,
+report one of them. Keep the data small (a few thousand numbers): solutions
+over 200,000 characters of JSON are not stored.
 
 The command line may use these placeholders; the same values are also set as
 environment variables:

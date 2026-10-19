@@ -57,6 +57,8 @@ def main(path):
         "metrics": {"sum_radii": total, "ratio_to_best_known": total / BEST_KNOWN,
                     "min_radius": radii[0], "max_radius": radii[-1], "seconds": secs},
         "features": {"radius_spread": radii[-1] - radii[0], "seconds": secs},
+        "solution": {"kind": "circles", "container": "square",
+                     "circles": [[round(v, 6) for v in c] for c in circles]},
     }))
 
 

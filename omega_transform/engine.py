@@ -123,7 +123,8 @@ class Engine:
                     status=res.status, score=res.score,
                     metrics={**res.metrics, **res.usage_metrics()},
                     features=self._features(code, res.features), feedback=res.feedback,
-                    stage=res.stage, eval_seconds=res.seconds, iteration=-1)
+                    stage=res.stage, eval_seconds=res.seconds, iteration=-1,
+                    solution=res.solution)
         self._confirm(p, force=True)  # a noisy baseline would skew every comparison
         if not p.ok:
             raise RuntimeError(
@@ -268,6 +269,7 @@ class Engine:
         child.metrics = {**res.metrics, **res.usage_metrics()}
         child.feedback, child.stage, child.eval_seconds = res.feedback, res.stage, res.seconds
         child.features = self._features(new_code, res.features)
+        child.solution = res.solution
         self._confirm(child)
         if sweep_error:
             child.feedback = (child.feedback + "\n" if child.feedback else "") + f"sweep rejected: {sweep_error}"
@@ -326,6 +328,7 @@ class Engine:
         p.metrics = {**res.metrics, **res.usage_metrics()}
         p.feedback, p.stage, p.eval_seconds = res.feedback, res.stage, res.seconds
         p.features = self._features(p.code, res.features)
+        p.solution = res.solution
         p.diff = unified_diff(base.code, p.code, self.cfg.candidate_name)
         return p
 

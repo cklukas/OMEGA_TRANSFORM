@@ -176,7 +176,10 @@ python3 -m omega_transform report
 
 Each example's own page (`docs/examples/<name>.md`, linked from the
 [example gallery](examples.md)) shows the best result across all models, the
-path that led there, and the best program as a diff. These pages are
+path that led there, and the best program as a diff. Where the evaluator
+reports a drawable [solution](defining-problems.md#drawable-solutions), the page
+also shows what the starting program and the best program produce, side by
+side (`docs/assets/examples/<name>.svg`). These pages are
 generated with the reference pages and checked by the tests, so regenerate
 them after committing new results:
 
@@ -189,6 +192,14 @@ them from their run directories, as long as `bench/runs/` still holds them:
 
 ```bash
 python3 -m omega_transform bench-details
+```
+
+Likewise, result files written before the solutions were recorded (schema 3)
+get them by evaluating the initial and the best program of each example's best
+result again, taken from its run database:
+
+```bash
+python3 -m omega_transform bench-solutions
 ```
 
 ## Comparing settings without a full run
