@@ -13,6 +13,14 @@ Write a LOSSLESS compressor for web-server access logs. The program defines comp
 - **Score:** score = compression ratio = original bytes / compressed bytes of the main log (higher is better). The initial zlib level 1 reaches about 11. Reference ratios of general-purpose compressors on the same log: zlib9_ratio, bz2_ratio and lzma_ratio (strong field-aware schemes should beat all three). other_log_ratio = your ratio on the small log made with another seed (not scored). compress_cpu_s / decompress_cpu_s = CPU time on the main log.
 - **Files:** `examples/compressor/omega.toml`, the program `initial.py`, evaluator stages: main
 
+### Why this is a hard problem
+
+Lossless compression stores data in fewer bytes so that the original can be restored exactly. Claude Shannon founded its theory at Bell Labs [in 1948](https://doi.org/10.1002/j.1538-7305.1948.tb01338.x): data can be compressed only as far as they are predictable. Practical compressors build on Jacob Ziv and Abraham Lempel ([Technion, 1977](https://doi.org/10.1109/TIT.1977.1055714)), who replaced repeated text by references to earlier occurrences, and on David Huffman's codes ([MIT, 1952](https://doi.org/10.1109/JRPROC.1952.273898)), which give frequent symbols short codes. zlib combines both.
+
+The starting program calls zlib at its fastest level and shrinks the 440 KB log about 11 times. The general-purpose compressors at their best settings (zlib 9, bz2, lzma) are given as references. There is no fixed upper limit: the limit is how much real information the log contains, and that is unknown.
+
+It is hard because general-purpose compressors see only bytes and repeated strings. They do not know that the timestamp grows by a few seconds per line or that the same visitor sends several requests in a row. Using such knowledge needs a model of the format: split the lines into columns, store differences instead of values, replace repeated values by short indices. Every trick must be exactly reversible, for any input and not only for well-formed logs, so the program needs a safe fallback, and a single wrong byte makes it invalid.
+
 Run it with:
 
 ```bash

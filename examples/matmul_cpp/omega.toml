@@ -6,6 +6,28 @@ language = "cpp"
 initial = "matmul.cpp"
 category = "Performance (C++)"
 summary = "Multiply two 1024 × 1024 float matrices as fast as possible on all cores."
+background = """
+Matrix multiplication is the core of scientific computing, graphics and neural networks.
+The textbook method needs n³ multiply-adds, about two billion operations for n = 1024.
+Volker Strassen [showed in 1969](https://doi.org/10.1007/BF02165411) that fewer are
+possible in principle, but in practice speed is a question of memory: fast libraries
+([BLAS](https://doi.org/10.1145/355841.355847) since 1979, and Kazushige Goto's
+GotoBLAS, described with Robert van de Geijn at UT Austin [in
+2008](https://doi.org/10.1145/1356052.1356053)) do the same arithmetic in an order that
+reuses data from the caches and registers.
+
+The starting program is the textbook triple loop, about 1.6 GFLOPS. Its inner loop walks
+down a column of B, jumping 4 KB in memory per step, so nearly every access misses the
+cache and the processor mostly waits. The limit is the hardware: every core can do
+several 4-wide vector multiply-adds per cycle, and the machine has 10 cores, a peak of
+several hundred GFLOPS.
+
+It is hard because reaching that peak needs several layers of restructuring at once:
+blocks that fit the caches, a small tile of C kept in registers, vector instructions,
+copying panels of A and B into contiguous buffers, and splitting the work over the cores
+without them competing for memory bandwidth. All of it must stay exactly right for every
+size from 1 to 2048, including sizes that do not divide into blocks.
+"""
 context_files = ["harness.cpp"]
 description = """
 Make the C++ function matmul(n, A, B, C) (single precision, row-major, C = A*B) as FAST

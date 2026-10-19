@@ -139,6 +139,11 @@ def _paragraph(text: str) -> str:
     return " ".join(text.split())
 
 
+def _paragraphs(text: str) -> str:
+    """Blank-line separated paragraphs, each joined into one line."""
+    return "\n\n".join(_paragraph(p) for p in re.split(r"\n\s*\n", text.strip()) if p.strip())
+
+
 def examples_page(root: Path) -> str:
     """The example gallery, from every examples/*/omega.toml."""
     examples = _examples(root)
@@ -219,6 +224,8 @@ def example_page(name: str, category: str, cfg, results: list[dict]) -> str:
            f"- **Files:** `examples/{name}/omega.toml`, the program `{cfg.initial}`, "
            f"evaluator stages: {stages}"
            + ("; new bests are re-measured" if cfg.evaluator.confirm_runs else "") + "\n\n",
+           f"### Why this is a hard problem\n\n{_paragraphs(cfg.background)}\n\n"
+           if cfg.background.strip() else "",
            "Run it with:\n\n```bash\n"
            f"python3 -m omega_transform run examples/{name} --minutes 15\n```\n\n",
            "## The starting program\n\n"

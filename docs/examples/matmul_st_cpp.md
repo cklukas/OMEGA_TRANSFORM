@@ -13,6 +13,14 @@ Make the C++ function matmul(n, A, B, C) (single precision, row-major, C = A*B) 
 - **Score:** score = GFLOPS per CPU-second at n = 768 (best of 5 runs): 2*n^3 / CPU seconds / 1e9. Correctness is checked first on n = 1, 7, 64, 131, 257; any wrong result makes the program invalid.
 - **Files:** `examples/matmul_st_cpp/omega.toml`, the program `matmul.cpp`, evaluator stages: check, bench; new bests are re-measured
 
+### Why this is a hard problem
+
+Matrix multiplication is the core of scientific computing, graphics and neural networks. The textbook method needs n³ multiply-adds, almost a billion operations for n = 768. Volker Strassen [showed in 1969](https://doi.org/10.1007/BF02165411) that fewer are possible in principle, but in practice speed is a question of memory: fast libraries ([BLAS](https://doi.org/10.1145/355841.355847) since 1979, and Kazushige Goto's GotoBLAS, described with Robert van de Geijn at UT Austin [in 2008](https://doi.org/10.1145/1356052.1356053)) do the same arithmetic in an order that reuses data from the caches and registers.
+
+The starting program is the textbook triple loop, about 1.7 GFLOPS. Its inner loop walks down a column of B, jumping 3 KB in memory per step, so nearly every access misses the cache and the processor mostly waits. The limit is one core's arithmetic: several 4-wide vector multiply-adds per cycle, on the order of 100 GFLOPS. Extra threads do not help here, because the CPU time of all threads is added up.
+
+It is hard because reaching that peak needs several layers of restructuring at once: blocks that fit the caches, a small tile of C kept in registers, vector instructions, and copying panels of A and B into contiguous buffers. All of it must stay exactly right for every size from 1 to 2048, including sizes that do not divide into blocks.
+
 Run it with:
 
 ```bash

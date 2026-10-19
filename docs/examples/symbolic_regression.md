@@ -13,6 +13,14 @@ Find the formula behind hidden data: y = f(x1, x2, x3) + Gaussian noise (sigma 0
 - **Score:** score = mean of R^2 on the in-range test rows and R^2 on the extrapolation rows, each clipped to [0, 1] (higher is better, 1.0 = perfect; the noise limits it to about 0.998). The initial linear model scores about 0.31. Metrics: r2_test, rmse_test, r2_extrapolation, rmse_extrapolation (the noise alone gives RMSE 0.1), cpu_s. The feedback lists the five worst extrapolation rows with true and predicted y.
 - **Files:** `examples/symbolic_regression/omega.toml`, the program `initial.py`, evaluator stages: main
 
+### Why this is a hard problem
+
+Symbolic regression looks for the formula behind data, not just a curve that fits it. Johannes Kepler found his third law of planetary motion (1619) this way in Tycho Brahe's observations. John Koza (Stanford, [1992](https://mitpress.mit.edu/9780262111706/genetic-programming/)) automated the search with genetic programming, and Michael Schmidt and Hod Lipson (Cornell, [2009](https://doi.org/10.1126/science.1165893)) recovered physical laws from measured motion. Marco Virgolin and Solon Pissis [proved in 2022](https://openreview.net/forum?id=LTiaPxqe2e) that the search is NP-hard.
+
+The starting program fits a straight-line model, y = c0 + c1·x1 + c2·x2 + c3·x3, and scores about 0.31. The limit is the noise in the data, which caps the score at about 0.998.
+
+It is hard because inside the training range many different formulas fit equally well: a polynomial with enough terms can follow almost any smooth curve. Only the true form keeps working outside that range, where half of the test rows lie. Fitting better is therefore not enough; the program must find the right building blocks (products, powers, sines) and leave out the wrong ones, a combinatorial search guided only by noisy data.
+
 Run it with:
 
 ```bash

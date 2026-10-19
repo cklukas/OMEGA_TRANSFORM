@@ -13,6 +13,14 @@ Place 26 non-overlapping circles inside the unit square [0,1]x[0,1] so that the 
 - **Score:** score = sum of radii. Metrics: ratio_to_best_known (1.0 = the best known 2.635), min_radius/max_radius, seconds = CPU time of construct_packing.
 - **Files:** `examples/circle_packing/omega.toml`, the program `initial.py`, evaluator stages: main
 
+### Why this is a hard problem
+
+Packing circles is one of the oldest questions of geometry: Johannes Kepler asked in 1611 how densely spheres can be stacked, and the packing of equal circles in a square has been studied since Leo Moser's question of 1960, which J. Schaer and A. Meir [answered for 8 circles in 1965](https://doi.org/10.4153/cmb-1965-004-x). This example uses a newer variant: the circles may have different sizes, and the sum of their radii is to be as large as possible. No formula gives the answer; the best known value for 26 circles, about 2.635, comes from computer searches and is not proven optimal.
+
+The starting program places the circles on a 6 × 5 grid and gives each the largest radius the walls and its neighbours allow. Equal circles in a grid score only about 1.49; the best known packings mix large circles in the interior with small ones that fill the corners and gaps.
+
+It is hard because every circle's best size depends on all its neighbours: growing one circle pushes others, which push others in turn. The best layouts are rigid, with many circles touching each other and the walls at once, and there are countless locally optimal layouts. To get from a good one to a better one, circles often have to change places or sizes in ways that small improving steps cannot reach.
+
 Run it with:
 
 ```bash

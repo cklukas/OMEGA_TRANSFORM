@@ -21,6 +21,7 @@ What to optimize and how to describe it to the model.
 | `candidate_name` | str | `""` | filename inside the job dir; default = basename of initial |
 | `category` | str | `""` | groups the example in the documentation's example gallery |
 | `summary` | str | `""` | one sentence on the problem, for the documentation's start page |
+| `background` | str | `""` | plain-language background for the example's documentation page: where the problem comes from, what the starting program does and why it is hard; not sent to the model |
 | `context_files` | list of strings | `[]` | fixed files shown read-only in every prompt (e.g. a separately compiled harness) |
 
 ## `[evaluator]`

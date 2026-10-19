@@ -13,6 +13,14 @@ Place 21 non-overlapping circles inside the unit circle (center (0,0), radius 1)
 - **Score:** score = sum of radii (higher is better). Metrics: min_radius/max_radius; area_fraction = sum of r^2, the fraction of the container covered; seconds = CPU time of construct(21).
 - **Files:** `examples/circles_in_circle/omega.toml`, the program `initial.py`, evaluator stages: main
 
+### Why this is a hard problem
+
+This is the same family of problems as circle packing in a square, with a round container. Eckard Specht's [Packomania](https://packomania.com/) website collects the best known packings of circles in a circle, for equal circles and for several families of unequal ones, many found by computer searches over the years. Here the circles may have different sizes and the sum of their radii counts, a variant for which the best layouts are only known from computer searches.
+
+The starting program puts one circle in the centre and rings of 7 and 13 around it, all of the same radius (score about 3.19). A simple upper limit follows from area: the circles cover at most the container, so the sum of the squared radii is at most 1, and therefore the sum of 21 radii is at most the square root of 21, about 4.58. That limit cannot be reached, because round circles always leave gaps.
+
+It is hard because two kinds of decisions are mixed: how many circles of which size go where (a combinatorial choice), and their exact positions (a continuous optimization with 210 pairwise no-overlap conditions and 21 wall conditions). The gaps between circles and the curved wall have awkward shapes, the best layouts are rigid with many contacts, and only the Python standard library is available, so the optimizer has to be written by hand and be fast.
+
 Run it with:
 
 ```bash

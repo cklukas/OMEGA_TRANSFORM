@@ -13,6 +13,14 @@ Make the C++ function parse_doubles(buf, len, out), which parses a text of decim
 - **Score:** score = MB of text parsed per CPU-second on the 2'000'000-number text (best of 7 runs). ns_per_number is the same time per number. Correctness is checked first on texts of 0, 1, 7, 30, 1001 and 20011 numbers (the hard cases come first in every text), and on every benchmark run; one value that is not bit-identical to std::strtod, a wrong count, or a write past the end of out makes the program invalid.
 - **Files:** `examples/float_parse_cpp/omega.toml`, the program `parse.cpp`, evaluator stages: check, bench; new bests are re-measured
 
+### Why this is a hard problem
+
+Converting text such as "0.1" into a binary floating-point number looks trivial but is a well-known hard corner of computing: most decimal fractions have no exact binary form, and the result must be exactly the nearest representable double. William Clinger ([1990](https://doi.org/10.1145/93542.93557)) and David Gay (Bell Labs, [1990](https://ampl.com/_archive/first-website/REFS/rounding.pdf)) published the first correct and efficient methods; Gay's code became the strtod of many C libraries. Around 2020 Daniel Lemire (TÉLUQ, Université du Québec), building on an idea of Michael Eisel, published a [much faster method](https://doi.org/10.1002/spe.2984) (the Eisel-Lemire algorithm of the fast_float library).
+
+The starting program calls the C library's std::strtod for every number: always correct, about 316 MB per second. The limit is the speed of one core reading the text once; fast parsers spend only a few nanoseconds per number.
+
+It is hard because correctness is exact, bit for bit. A number can lie extremely close to the midpoint between two doubles, and deciding which way to round may need all of its digits, sometimes hundreds. Quick formulas such as "mantissa times a power of ten" are right for most inputs and wrong for some, and the tests put such cases first. A fast parser therefore needs a provably correct fast path, a fallback for the rare hard cases, and careful low-level work on every byte.
+
 Run it with:
 
 ```bash

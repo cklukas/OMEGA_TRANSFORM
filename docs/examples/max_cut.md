@@ -13,6 +13,14 @@ Write a heuristic for weighted max-cut. cut(n, edges) gets the number of nodes n
 - **Score:** score = mean over the three graphs of (cut weight / total edge weight). Higher is better; a random or alternating split gets about 0.5 (the initial program scores about 0.51), simple one-flip local search about 0.7. Metrics per graph: <name>_cut, <name>_total, <name>_ratio, <name>_cpu_s.
 - **Files:** `examples/max_cut/omega.toml`, the program `initial.py`, evaluator stages: main
 
+### Why this is a hard problem
+
+Max-cut splits the nodes of a network into two groups so that as much connection weight as possible runs between the groups. It appears in circuit layout, in physics (the lowest-energy states of magnetic spin glasses) and in clustering. It is one of the 21 problems Richard Karp (UC Berkeley) [proved NP-complete in 1972](https://doi.org/10.1007/978-1-4684-2001-2_9). Michel Goemans and David Williamson (MIT and IBM, [1995](https://doi.org/10.1145/227683.227684)) found a method guaranteed to reach at least 87.8 % of the optimum; under a widely believed conjecture, no fast method can guarantee more.
+
+The starting program alternates the sides by node number and ignores the edges, so it cuts about half the weight, like a random split (score about 0.51). Moving single nodes to the side where they cut more reaches about 0.70. A score of 1.0 is impossible: in a triangle at most two of the three edges can be cut, and the sparse random graphs contain many such odd cycles. The true optimum is unknown.
+
+It is hard because every node's best side depends on its neighbours' sides, which depend on theirs. Simple improvement gets stuck where no single move helps, and escaping needs deliberate worse moves (tabu search) or perturbations, with careful bookkeeping so that thousands of moves fit into two seconds of Python.
+
 Run it with:
 
 ```bash

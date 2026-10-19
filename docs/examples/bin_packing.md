@@ -13,6 +13,14 @@ Write a heuristic for one-dimensional bin packing. pack(sizes, capacity) gets a 
 - **Score:** score = mean over the three instances of (lower bound / bins used), where the lower bound is ceil(sum(sizes) / capacity). Higher is better; 1.0 would meet the bound on every instance (it may not be reachable everywhere). The initial next-fit program scores about 0.8, first-fit decreasing about 0.95. Metrics per instance: <name>_bins, <name>_lower_bound, <name>_ratio, <name>_cpu_s.
 - **Files:** `examples/bin_packing/omega.toml`, the program `initial.py`, evaluator stages: main
 
+### Why this is a hard problem
+
+Bin packing asks how to fit items of different sizes into as few equal containers as possible: parcels into trucks, files onto disks, jobs onto machines, pieces cut from stock lengths of steel. It was studied systematically in the early 1970s, notably in David S. Johnson's [1973 doctoral thesis at MIT](https://dspace.mit.edu/handle/1721.1/57819), which analysed simple rules such as first fit decreasing. The problem is NP-hard: no known method finds the optimum quickly for every input.
+
+The starting program uses next fit: it takes the items in the given order and opens a new bin whenever the next item does not fit, so every closed bin keeps its leftover space for good (score about 0.79). Sorting the items from large to small and putting each into the first bin with room (first fit decreasing) reaches about 0.95 at once. The limit of 1.0 is the lower bound: the total size divided by the capacity, the number of bins needed if they could be filled without any gap.
+
+The rest is hard because whether a bin ends up full depends on which combination of items shares it, and a greedy rule never revisits a decision. In the third instance no item is smaller than 250, so a gap of 240 can never be filled; meeting the bound would need almost every bin filled to 99.9 % by well-matched triples, and first fit decreasing ends 43 bins above it. Moving single items between bins rarely helps: a bin is saved only when all of its items find fitting gaps elsewhere at the same time. The bound itself may be out of reach, so nobody knows how much is left to gain.
+
 Run it with:
 
 ```bash

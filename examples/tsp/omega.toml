@@ -6,6 +6,26 @@ language = "python"
 initial = "initial.py"
 category = "Algorithms and heuristics"
 summary = "Find short round trips through 200 to 1000 random cities within two seconds."
+background = """
+The traveling salesman problem asks for the shortest round trip through a set of cities.
+It was formulated in the 1930s (Karl Menger in Vienna; Hassler Whitney and Merrill Flood
+in the US), and in 1954 George Dantzig, Ray Fulkerson and Selmer Johnson at RAND [solved
+a 49-city instance](https://doi.org/10.1287/opre.2.4.393) to proven optimality. It is
+NP-hard ([Karp, 1972](https://doi.org/10.1007/978-1-4684-2001-2_9)) and appears in
+delivery routes, drilling circuit boards and genome sequencing.
+
+The starting program builds a nearest-neighbour tour: from each city go to the closest
+unvisited one. It is the reference, so it scores 1.0. On random cities such tours are
+about 25 % longer than optimal, which puts the limit at about 1.25.
+
+It is hard because the number of possible tours grows faster than exponentially (for
+1000 cities, a number with more than 2500 digits), so improvement must come from local
+changes. Methods such as 2-opt (G. A. Croes,
+[1958](https://doi.org/10.1287/opre.6.6.791)) and Lin-Kernighan (Shen Lin and Brian
+Kernighan, Bell Labs, [1973](https://doi.org/10.1287/opre.21.2.498)) repeatedly replace
+a few edges of the tour. They need careful data structures to run fast enough: in two
+seconds of pure Python, efficiency matters as much as the idea.
+"""
 description = """
 Write a fast heuristic for the Euclidean traveling salesman problem. solve(points,
 time_limit) gets a list of (x, y) city coordinates in the unit square and must return a

@@ -13,6 +13,14 @@ Design features for a FIXED linear classifier. The program defines features(row)
 - **Score:** score = test accuracy of the fixed classifier on 1000 held-out rows (0..1, higher is better). The raw inputs reach about 0.62; the classes are balanced (majority_baseline about 0.51) and the label noise limits the best possible accuracy to roughly 0.97. Metrics: train_accuracy (a large gap to test means overfitting), num_features, feature_cpu_s. The feedback lists the largest standardized weights (f0 = first feature); features with near-zero weight carry no usable signal for the linear model.
 - **Files:** `examples/feature_engineering/omega.toml`, the program `initial.py`, evaluator stages: main
 
+### Why this is a hard problem
+
+A linear classifier separates two classes with a straight line (in more dimensions, a flat plane) through the data. In their 1969 book [Perceptrons](https://doi.org/10.7551/mitpress/11301.001.0001), Marvin Minsky and Seymour Papert (MIT) showed that such a model cannot learn even a rule as simple as "exactly one of two inputs is positive" (XOR). The classical remedy is feature engineering: compute new inputs such as products, squares, logarithms or thresholds, in which the hidden rule becomes a straight line. Choosing them was much of the craft of applied machine learning before deep networks learned features themselves.
+
+Here the classifier is fixed (ridge regression, the regularized least squares of Arthur Hoerl and Robert Kennard, [1970](https://doi.org/10.1080/00401706.1970.10488634)) and only the features can change. The starting program passes the six raw inputs and reaches about 62 % accuracy, against 51 % for always guessing the more common class. Noise in the labels limits the best possible accuracy to about 97 %.
+
+It is hard because the rule is hidden and the only feedback is the accuracy. Not every input matters, and the right transformations must be guessed: is the boundary a circle, a quadrant, a step? Adding many speculative features does not help: with 1000 training rows, each useless feature lets the model fit noise, so the training accuracy rises while the test accuracy falls.
+
 Run it with:
 
 ```bash

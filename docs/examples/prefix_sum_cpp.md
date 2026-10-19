@@ -13,6 +13,14 @@ Make the C++ function scan_and_histogram(in, out, n, hist) use as little CPU tim
 - **Score:** score = GB of input (8 bytes per element) processed per CPU-second at n = 10'000'000 (best of 30 runs). ns_per_element is the same time per element. Correctness is checked first on n = 0, 1, 7, 1001, 65537, and on every benchmark run; any wrong out element, wrong bin, or write past the end of out or hist[255] makes the program invalid.
 - **Files:** `examples/prefix_sum_cpp/omega.toml`, the program `scan.cpp`, evaluator stages: check, bench; new bests are re-measured
 
+### Why this is a hard problem
+
+A prefix sum (the running total of a sequence) and a histogram (how often each value occurs) are basic building blocks of data processing, inside radix sort, database aggregation and parallel algorithms. Guy Blelloch (Carnegie Mellon, [1990](https://www.cs.cmu.edu/~scandal/papers/CMU-CS-90-190.html)) showed how widely the prefix sum applies as a building block of parallel algorithms.
+
+The starting program does both in one simple loop, about 4.9 GB of input per CPU second. The limit is memory speed: every call reads 80 MB and writes 80 MB.
+
+It is hard because the bottleneck is hidden in the processor, not in the algorithm. When consecutive values fall into the same histogram bin, each increment must wait until the previous one has been stored and read back, a few cycles per element, and the running sum is a chain in which every step waits for the one before. The fix is to break these chains (several private sub-histograms, independent partial sums, vector instructions) while the result stays exactly the same.
+
 Run it with:
 
 ```bash

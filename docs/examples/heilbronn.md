@@ -13,6 +13,14 @@ Heilbronn triangle problem: place 13 points in the closed unit square [0,1]x[0,1
 - **Score:** score = min_area, the smallest triangle area (higher is better). Metrics: normalized_min_area_n2 = min_area * 13^2; near_min_triangles = how many triangles are within a relative 1e-6 of the minimum (good configurations balance many of them); min_point_distance = closest pair of points; bounding_box_area = area of the box spanned by the points; seconds = CPU time of construct(13). The feedback names the smallest triangle and the next smallest areas.
 - **Files:** `examples/heilbronn/omega.toml`, the program `initial.py`, evaluator stages: main
 
+### Why this is a hard problem
+
+In the late 1940s the number theorist Hans Heilbronn asked how to place n points in a square so that the smallest triangle formed by any three of them is as large as possible; Klaus Roth [first published it in 1951](https://doi.org/10.1112/jlms/s1-26.3.198). Heilbronn conjectured that this smallest area shrinks like 1/n² as n grows; in 1982 János Komlós, János Pintz and Endre Szemerédi [disproved this](https://doi.org/10.1112/jlms/s2-25.1.13). Optimal layouts are proven only for a few small n; for 13 points the best known layouts come from computer searches.
+
+The starting program puts the 13 points on a regular polygon around the centre. No three points are on a line, but three neighbours form a thin triangle, and the corners of the square stay unused (smallest area about 0.0048).
+
+It is hard because 13 points form 286 triangles and only the smallest one counts. Moving one point changes 66 triangles at once, enlarging some and shrinking others. Good layouts balance many triangles at nearly the same smallest area, and there are many locally optimal layouts that small moves cannot leave.
+
 Run it with:
 
 ```bash

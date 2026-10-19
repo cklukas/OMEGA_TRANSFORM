@@ -136,6 +136,9 @@ class ProblemConfig:
     candidate_name: str = ""  # filename inside the job dir; default = basename of initial
     category: str = ""  # groups the example in the documentation's example gallery
     summary: str = ""  # one sentence on the problem, for the documentation's start page
+    #: plain-language background for the example's documentation page: where the problem
+    #: comes from, what the starting program does and why it is hard; not sent to the model
+    background: str = ""
     #: fixed files shown read-only in every prompt (e.g. a separately compiled harness)
     context_files: list[str] = field(default_factory=list)
     evaluator: EvaluatorConfig = field(default_factory=EvaluatorConfig)

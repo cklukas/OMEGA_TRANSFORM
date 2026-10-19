@@ -6,6 +6,26 @@ language = "python"
 initial = "initial.py"
 category = "Data and modelling"
 summary = "Find a formula that fits noisy data and still holds outside the training range."
+background = """
+Symbolic regression looks for the formula behind data, not just a curve that fits it.
+Johannes Kepler found his third law of planetary motion (1619) this way in Tycho Brahe's
+observations. John Koza (Stanford,
+[1992](https://mitpress.mit.edu/9780262111706/genetic-programming/)) automated the
+search with genetic programming, and Michael Schmidt and Hod Lipson (Cornell,
+[2009](https://doi.org/10.1126/science.1165893)) recovered physical laws from measured
+motion. Marco Virgolin and Solon Pissis [proved in
+2022](https://openreview.net/forum?id=LTiaPxqe2e) that the search is NP-hard.
+
+The starting program fits a straight-line model, y = c0 + c1·x1 + c2·x2 + c3·x3, and
+scores about 0.31. The limit is the noise in the data, which caps the score at about
+0.998.
+
+It is hard because inside the training range many different formulas fit equally well: a
+polynomial with enough terms can follow almost any smooth curve. Only the true form
+keeps working outside that range, where half of the test rows lie. Fitting better is
+therefore not enough; the program must find the right building blocks (products, powers,
+sines) and leave out the wrong ones, a combinatorial search guided only by noisy data.
+"""
 description = """
 Find the formula behind hidden data: y = f(x1, x2, x3) + Gaussian noise (sigma 0.1),
 where f is a fixed, fairly compact closed-form expression (elementary functions,

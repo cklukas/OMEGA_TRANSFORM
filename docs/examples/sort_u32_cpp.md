@@ -13,6 +13,14 @@ Make the C++ function sort_u32(a, n), which sorts an array of n uint32_t values 
 - **Score:** score = total throughput over the five distributions: all elements sorted divided by the total CPU time, in million elements per CPU-second, at n = 1'000'000 per distribution (best of 5 runs per distribution, each run on freshly generated data). The metrics show the rate per distribution. Correctness is checked first on n = 0, 1, 2, 7, 100, 1001, 65537 for every distribution, and again on every benchmark run; any element differing from std::sort makes the program invalid.
 - **Files:** `examples/sort_u32_cpp/omega.toml`, the program `sort.cpp`, evaluator stages: check, bench; new bests are re-measured
 
+### Why this is a hard problem
+
+Sorting is perhaps the most studied problem in computing. John von Neumann described merge sort in a 1945 manuscript, Tony Hoare published quicksort [in 1961](https://doi.org/10.1145/366622.366644), and punched-card machines, descended from Herman Hollerith's equipment for the 1890 US census, sorted digit by digit, the idea behind radix sort. Sorting by comparisons needs at least about n log₂ n comparisons, some 20 million for a million elements; radix sort looks at the digits of the numbers instead and avoids this bound.
+
+The starting program is a textbook recursive merge sort, about 23 million elements per CPU second. The limit is memory speed: a radix sort needs only a few passes over the data, and an input that is already sorted can be recognized in a single pass.
+
+It is hard because the five input distributions favour different methods. Radix sort wins on random values but wastes work on sorted input; duplicates and nearly sorted data trip up naive quicksort. The program must choose cheaply per input and stay exactly correct for every size from 0 to 2 million. At this speed, mispredicted branches and cache misses matter more than the number of operations.
+
 Run it with:
 
 ```bash

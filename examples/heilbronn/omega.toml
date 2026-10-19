@@ -6,6 +6,25 @@ language = "python"
 initial = "initial.py"
 category = "Mathematical constructions"
 summary = "Place 13 points in the unit square so that the smallest triangle they form is as large as possible."
+background = """
+In the late 1940s the number theorist Hans Heilbronn asked how to place n points in a
+square so that the smallest triangle formed by any three of them is as large as
+possible; Klaus Roth [first published it in
+1951](https://doi.org/10.1112/jlms/s1-26.3.198). Heilbronn conjectured that this
+smallest area shrinks like 1/n² as n grows; in 1982 János Komlós, János Pintz and Endre
+Szemerédi [disproved this](https://doi.org/10.1112/jlms/s2-25.1.13). Optimal layouts are
+proven only for a few small n; for 13 points the best known layouts come from computer
+searches.
+
+The starting program puts the 13 points on a regular polygon around the centre. No three
+points are on a line, but three neighbours form a thin triangle, and the corners of the
+square stay unused (smallest area about 0.0048).
+
+It is hard because 13 points form 286 triangles and only the smallest one counts. Moving
+one point changes 66 triangles at once, enlarging some and shrinking others. Good
+layouts balance many triangles at nearly the same smallest area, and there are many
+locally optimal layouts that small moves cannot leave.
+"""
 description = """
 Heilbronn triangle problem: place 13 points in the closed unit square [0,1]x[0,1] so that
 the SMALLEST AREA among all 286 triangles formed by 3 of the points is as large as

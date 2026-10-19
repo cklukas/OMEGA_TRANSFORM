@@ -13,6 +13,14 @@ Tammes problem (spherical code): place 30 points on the unit sphere so that the 
 - **Score:** score = min_angle_deg, the smallest angle in degrees between any two points (higher is better). Metrics: contact_pairs = pairs within 1e-6 degrees of the minimum (optimal configurations have many equal shortest distances); mean_nearest_neighbor_deg and nearest_neighbor_spread_deg = mean and range of each point's nearest-neighbor angle (a small spread means a uniform layout); seconds = CPU time of construct(30).
 - **Files:** `examples/tammes/omega.toml`, the program `initial.py`, evaluator stages: main
 
+### Why this is a hard problem
+
+In [his 1930 dissertation](https://natuurtijdschriften.nl/pub/552640) the Dutch botanist Pieter Tammes asked why the pores on pollen grains are spread as they are. The mathematical question: how to place n points on a sphere so that the closest two are as far apart as possible. It is related to J. J. Thomson's [1904](https://doi.org/10.1080/14786440409463107) question about electrons repelling each other on a sphere. Proven answers are known only for n up to 14 and for n = 24; the cases 13 and 14 were settled by Oleg Musin and Alexey Tarasov in [2012](https://doi.org/10.1007/s00454-011-9392-2) and [2015](https://doi.org/10.1080/10586458.2015.1022842). For 30 points, the best known layouts come from computer searches.
+
+The starting program draws 30 random points, so some pairs end up close together: the smallest angle is about 3 degrees. Good layouts reach more than 38 degrees.
+
+It is hard because only the closest pair counts. Pushing those two apart brings other pairs closer, so the best layouts have many pairs at exactly the same smallest distance, a rigid network of contacts that small moves balance only slowly. There are many locally optimal layouts, and the sphere has no corners or walls to anchor the points.
+
 Run it with:
 
 ```bash

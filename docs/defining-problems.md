@@ -230,6 +230,12 @@ The `[problem]` texts go into every prompt:
   effective lever you have; a small model rarely discovers a technique it has
   not been told about.
 
+`summary` and `background` are for the documentation only and are not sent to
+the model: `summary` is the one sentence on the start page, `background` the
+plain-language "Why this is a hard problem" section of the example's page
+(where the problem comes from, what the starting program does, where the limit
+is, and why it is hard). Separate its paragraphs with blank lines.
+
 ## Choosing the search budget
 
 `search.iterations` caps the number of model answers; `search.max_minutes` caps
