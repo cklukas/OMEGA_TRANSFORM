@@ -155,6 +155,18 @@ modelling (a lossless compressor, symbolic regression, feature engineering).
 The [example gallery](docs/examples.md) describes each; `examples/toy` is used
 by the tests.
 
+## Related work
+
+OMEGA TRANSFORM belongs to a long line of work on improving programs by
+search. Genetic programming (Koza, 1992) and genetic improvement of software
+evolved code with random edits. Since 2022, language models have taken over
+the editing step: Evolution through Large Models (Lehman et al., 2022) was
+among the first, followed by OpenELM, Language Model Crossover, EvoPrompting,
+Eureka, STOP and FunSearch (2023), Evolution of Heuristics and ReEvo (2024),
+and AlphaEvolve, OpenEvolve and ShinkaEvolve (2025), among others. OMEGA
+TRANSFORM's own focus is small local models on ordinary hardware. The
+[documentation](docs/index.md#related-work) gives an overview with links.
+
 ## Tests
 
 ```bash

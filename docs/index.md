@@ -57,6 +57,57 @@ flowchart LR
 | Look up a setting or command | [Configuration](configuration.md), [Command line](cli.md) |
 | Know the project's status and license | [Status and license](license.md) |
 
+## Related work
+
+Improving programs by search is an old idea, and many projects have taken
+it up. OMEGA TRANSFORM builds on the same basic loop as the work below:
+change a program, measure it automatically, and keep what is better.
+
+**Evolving code without language models.** Genetic programming
+([Koza, 1992](https://mitpress.mit.edu/9780262527910/genetic-programming/))
+evolves programs with random mutation and crossover, guided by a fitness
+function. Genetic improvement applies the same idea to existing software, to
+make it faster or to repair bugs; GenProg
+([Le Goues et al., 2012](https://doi.org/10.1109/TSE.2011.104)) and the
+survey by [Petke et al. (2018)](https://doi.org/10.1109/TEVC.2017.2693219)
+are good entry points. MAP-Elites
+([Mouret and Clune, 2015](https://arxiv.org/abs/1504.04909)) keeps the best
+solution for each region of a feature space, rather than only the single best
+one. OMEGA TRANSFORM's program database uses it to keep diverse candidates.
+
+**Language models as the editing step.** From 2022 on, language models
+replaced random edits, so the changes became meaningful code rather than
+syntax noise:
+
+| Work | Year | What it evolves |
+|---|---|---|
+| [Evolution through Large Models](https://arxiv.org/abs/2206.08896) (Lehman et al.) | 2022 | Programs, with a code-diff model as the mutation operator |
+| [OpenELM](https://github.com/CarperAI/OpenELM) (CarperAI) | 2023 | Open-source library for the same approach |
+| [Language Model Crossover](https://arxiv.org/abs/2302.12170) (Meyerson et al.) | 2023 | Text and code, by combining several parents in one prompt |
+| [EvoPrompting](https://arxiv.org/abs/2302.14838) (Chen et al.) | 2023 | Neural network architectures as code |
+| [Large Language Models as Optimizers](https://arxiv.org/abs/2309.03409) (Yang et al.) | 2023 | Solutions and prompts, from a history of scored attempts |
+| [Eureka](https://arxiv.org/abs/2310.12931) (Ma et al.) | 2023 | Reward functions for robot learning |
+| [STOP](https://arxiv.org/abs/2310.02304) (Zelikman et al.) | 2023 | A code-improving program that improves itself |
+| [FunSearch](https://www.nature.com/articles/s41586-023-06924-6) (Romera-Paredes et al.) | 2023 | Single functions for mathematical and packing problems |
+| [Evolution of Heuristics](https://arxiv.org/abs/2401.02051) (Liu et al.) | 2024 | Heuristics, evolving the idea and the code together |
+| [ReEvo](https://arxiv.org/abs/2402.01145) (Ye et al.) | 2024 | Heuristics for combinatorial problems, with reflection |
+| [AlphaEvolve](https://arxiv.org/abs/2506.13131) (Novikov et al.) | 2025 | Whole files, with an ensemble of large cloud models |
+| [OpenEvolve](https://github.com/codelion/openevolve) | 2025 | Open-source framework for whole-file evolution |
+| [ShinkaEvolve](https://arxiv.org/abs/2509.19349) (Lange et al.) | 2025 | Programs, with a focus on needing few samples |
+
+Many ideas recur across these works and in OMEGA TRANSFORM: an island model
+for diversity, a database of earlier attempts shown to the model, staged
+evaluation that rejects broken candidates cheaply, and feedback from the
+evaluator in the next prompt.
+
+**OMEGA TRANSFORM's own focus.** Most of this work assumes large cloud
+models and a large compute budget. OMEGA TRANSFORM asks how far the approach
+goes with small local models on one ordinary machine. It adds sandboxed
+building and benchmarking of C/C++ kernels, a lessons notebook the model
+keeps, parameter sweeps that spare the model numeric tweaking, and a
+benchmark that compares many local models on the same problems
+([Model benchmarks](benchmarks.md)).
+
 ## Status
 
 OMEGA TRANSFORM is a short research prototype, tested on the examples that
