@@ -21,6 +21,16 @@ class DocsTest(unittest.TestCase):
             if rel.startswith("docs/examples/"):
                 self.assertIn(f"- {rel}\n", nav, f"add {rel} to the nav in ckdocs.yml")
 
+    def test_every_benchmark_page_is_in_the_navigation(self):
+        import json
+        from omega_transform.report import load_results, render
+        nav = (ROOT / "ckdocs.yml").read_text()
+        check = json.loads((ROOT / "bench" / "model-check.json").read_text())
+        for rel in render(load_results(ROOT / "bench" / "results"), check):
+            with self.subTest(page=rel):
+                self.assertRegex(nav, rf"- (page: )?docs/{rel}\n",
+                                 f"add docs/{rel} to the nav in ckdocs.yml")
+
     def test_example_page(self):
         from omega_transform.config import load_config
         from omega_transform.docgen import example_page

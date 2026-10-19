@@ -173,7 +173,7 @@ What changed compared with the starting program:
 
 ### All models
 
-The latest run per model and reasoning mode; the [model benchmarks](../benchmarks.md#prefix_sum_histogram_single_thread) page has speed, memory and progress over time.
+The latest run per model and reasoning mode; the [model benchmarks](../benchmarks/prefix_sum_histogram_single_thread.md) page has speed, memory and progress over time.
 
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|

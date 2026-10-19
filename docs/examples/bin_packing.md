@@ -162,7 +162,7 @@ What changed compared with the starting program:
 
 ### All models
 
-The latest run per model and reasoning mode; the [model benchmarks](../benchmarks.md#bin_packing_1d) page has speed, memory and progress over time.
+The latest run per model and reasoning mode; the [model benchmarks](../benchmarks/bin_packing_1d.md) page has speed, memory and progress over time.
 
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|

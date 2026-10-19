@@ -278,7 +278,7 @@ def example_page(name: str, category: str, cfg, results: list[dict]) -> str:
                   key=lambda r: -(r.get("best_score") if r.get("best_score") is not None
                                   else float("-inf")))
     out.append("\n### All models\n\nThe latest run per model and reasoning mode; the "
-               f"[model benchmarks](../benchmarks.md#{cfg.name}) page has speed, memory and "
+               f"[model benchmarks](../benchmarks/{cfg.name}.md) page has speed, memory and "
                "progress over time.\n\n"
                "| Model | Where | Best | Gain | Minutes to best | New bests |\n"
                "|---|---|--:|--:|--:|--:|\n")

@@ -53,7 +53,7 @@ flowchart LR
 | Optimize your own code | [Defining a problem](defining-problems.md) |
 | Understand the search | [How it works](how-it-works.md), [Parameter sweeps](sweeps.md) |
 | Know what protects your machine | [Robustness and safety](robustness.md) |
-| Compare models | [Benchmarking models](benchmarking.md), [Model benchmarks](benchmarks.md) |
+| Compare models | [Benchmarking models](benchmarking.md), [Model benchmarks](benchmarks.md), [by developer](benchmarks/developers.md), [by country](benchmarks/countries.md) |
 | Look up a setting or command | [Configuration](configuration.md), [Command line](cli.md) |
 | Know the project's status and license | [Status and license](license.md) |
 

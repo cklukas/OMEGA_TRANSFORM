@@ -252,7 +252,7 @@ What changed compared with the starting program:
 
 ### All models
 
-The latest run per model and reasoning mode; the [model benchmarks](../benchmarks.md#tammes_30) page has speed, memory and progress over time.
+The latest run per model and reasoning mode; the [model benchmarks](../benchmarks/tammes_30.md) page has speed, memory and progress over time.
 
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|

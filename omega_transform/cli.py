@@ -512,7 +512,8 @@ def build_parser() -> argparse.ArgumentParser:
                     help="enable/disable model reasoning")
     bn.add_argument("--out", default="bench/results", help="result JSON directory (commit it)")
     bn.add_argument("--runs", default="bench/runs", help="full run directories (local)")
-    bn.add_argument("--report", default="docs/benchmarks.md", help="page regenerated after each run")
+    bn.add_argument("--report", default="docs/benchmarks.md",
+                    help="overview page regenerated after each run, with its sub-pages")
     bn.add_argument("--base-url", help="Ollama server (default http://localhost:11434)")
     bn.add_argument("--wait-ram-minutes", type=float, default=0.0,
                     help="wait up to this long for memory before each model instead of "
@@ -572,7 +573,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     rpt = sub.add_parser("report", help="render bench results into the docs page")
     rpt.add_argument("--results", default="bench/results", help="result JSON directory")
-    rpt.add_argument("-o", "--output", default="docs/benchmarks.md", help="page to write")
+    rpt.add_argument("-o", "--output", default="docs/benchmarks.md",
+                     help="overview page to write; its sub-pages go to the directory "
+                          "of the same name")
     rpt.add_argument("--openrouter-snapshots", default="bench/openrouter",
                      help="OpenRouter snapshots; the newest becomes docs/openrouter-models.md")
     rpt.set_defaults(fn=cmd_report)

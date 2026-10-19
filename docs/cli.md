@@ -103,7 +103,7 @@ omega bench [-h] [--examples EXAMPLES [EXAMPLES ...]] [--models MODELS [MODELS .
 | `--think / --no-think` | enable/disable model reasoning |
 | `--out` | result JSON directory (commit it) Default: `bench/results`. |
 | `--runs` | full run directories (local) Default: `bench/runs`. |
-| `--report` | page regenerated after each run Default: `docs/benchmarks.md`. |
+| `--report` | overview page regenerated after each run, with its sub-pages Default: `docs/benchmarks.md`. |
 | `--base-url` | Ollama server (default http://localhost:11434) |
 | `--wait-ram-minutes` | wait up to this long for memory before each model instead of skipping it (other applications free memory over time) |
 | `--reserve-gb` | RAM to keep free; checked before every run, models that would not fit are skipped Default: `6.0`. |
@@ -179,7 +179,7 @@ omega report [-h] [--results RESULTS] [-o OUTPUT] [--openrouter-snapshots OPENRO
 | Argument | Meaning |
 |---|---|
 | `--results` | result JSON directory Default: `bench/results`. |
-| `-o, --output` | page to write Default: `docs/benchmarks.md`. |
+| `-o, --output` | overview page to write; its sub-pages go to the directory of the same name Default: `docs/benchmarks.md`. |
 | `--openrouter-snapshots` | OpenRouter snapshots; the newest becomes docs/openrouter-models.md Default: `bench/openrouter`. |
 
 ## `model-releases`

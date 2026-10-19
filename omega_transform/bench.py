@@ -3,7 +3,7 @@
 """Model benchmark: the same time-boxed search per (model, example).
 
 Each run's summary is written as one JSON file (``bench/results/``) meant to
-be committed: the documentation's benchmark page is rendered from these files
+be committed: the documentation's benchmark pages are rendered from these files
 (``omega_transform.report``), so published charts always come from committed
 numbers. Run directories with the full history go to ``bench/runs/`` and stay
 local.

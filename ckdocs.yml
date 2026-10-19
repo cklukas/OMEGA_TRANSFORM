@@ -4,8 +4,9 @@
 # The documentation site, built by ckdocs (the documentation-site generator
 # of ck-git-hosting) from docs/ and published on the self-hosted ck-git Pages
 # (.ckgit/ci.yml). configuration.md and cli.md are generated from the code
-# (`omega docs`, gated by tests/test_docs.py); benchmarks.md is generated from
-# the committed bench/results/ (`omega report`), regenerated in CI.
+# (`omega docs`, gated by tests/test_docs.py); benchmarks.md and its sub-pages
+# in benchmarks/ (listed in the nav below) are generated from the committed
+# bench/results/ (`omega report`), regenerated in CI.
 version: 1
 site:
   title: OMEGA TRANSFORM
@@ -51,7 +52,30 @@ nav:
     pages:
       - docs/benchmarking.md
       - docs/model-notes.md
-      - docs/benchmarks.md
+      - title: Model benchmarks
+        pages:
+          - page: docs/benchmarks.md
+            title: Overview
+          - docs/benchmarks/developers.md
+          - docs/benchmarks/countries.md
+          - docs/benchmarks/model-check.md
+          - title: Results per example
+            pages:
+              - docs/benchmarks/circle_packing_26.md
+              - docs/benchmarks/circles_in_circle_21.md
+              - docs/benchmarks/heilbronn_13.md
+              - docs/benchmarks/tammes_30.md
+              - docs/benchmarks/bin_packing_1d.md
+              - docs/benchmarks/max_cut.md
+              - docs/benchmarks/tsp_heuristic.md
+              - docs/benchmarks/float_parse_single_thread.md
+              - docs/benchmarks/matmul_f32.md
+              - docs/benchmarks/matmul_f32_single_thread.md
+              - docs/benchmarks/prefix_sum_histogram_single_thread.md
+              - docs/benchmarks/sort_u32_single_thread.md
+              - docs/benchmarks/log_compressor.md
+              - docs/benchmarks/feature_engineering.md
+              - docs/benchmarks/symbolic_regression.md
       - docs/cloud-models.md
       - docs/openrouter-models.md
   - title: Reference

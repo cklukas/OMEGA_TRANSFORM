@@ -219,7 +219,7 @@ What changed compared with the starting program:
 
 ### All models
 
-The latest run per model and reasoning mode; the [model benchmarks](../benchmarks.md#circle_packing_26) page has speed, memory and progress over time.
+The latest run per model and reasoning mode; the [model benchmarks](../benchmarks/circle_packing_26.md) page has speed, memory and progress over time.
 
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|

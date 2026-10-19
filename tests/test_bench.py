@@ -81,21 +81,44 @@ class BenchTest(unittest.TestCase):
                  progress=[[0, 1.0], [2, 3.0]]),
             dict(base, model="c:big", error="model failed to load", started="3"),
         ]
-        page = render(results)
-        self.assertIn("## toy", page)
-        section = page[page.index("## toy"):]
-        self.assertLess(section.index("| b:7b"), section.index("| a:1b"))  # best first
+        pages = render(results)
+        self.assertEqual(set(pages), {"benchmarks.md", "benchmarks/toy.md",
+                                      "benchmarks/developers.md", "benchmarks/countries.md",
+                                      "benchmarks/model-check.md"})
+        self.assertIn("| [toy](benchmarks/toy.md) | 3 models", pages["benchmarks.md"])
+        page = pages["benchmarks/toy.md"]
+        self.assertTrue(page.split("-->\n")[-1].lstrip().startswith("# toy\n"))
+        self.assertLess(page.index("| b:7b"), page.index("| a:1b"))  # best first
         self.assertIn("xychart-beta", page)
         self.assertIn('x-axis ["b:7b", "a:1b"]', page)
         self.assertIn("failed: model failed to load", page)
-        self.assertIn("### Inference speed and memory", page)
+        self.assertIn("\n## Local models\n", page)
+        self.assertIn("\n### Inference speed and memory\n", page)
         self.assertIn("| a:1b |  | 7.1 | 12 |", page)
         self.assertIn("generation speed (tokens/s)", page)
         self.assertEqual(score_at([[0, 1.0], [6, 2.0]], 5), 1.0)
-        self.assertIn("No benchmark results", render([]))
+        self.assertIn("No benchmark results", render([])["benchmarks.md"])
+
+    def test_write_report_removes_stale_sub_pages(self):
+        import json
+        from omega_transform.report import write_report
+        with tempfile.TemporaryDirectory() as tmp:
+            results = Path(tmp) / "bench" / "results"
+            results.mkdir(parents=True)
+            (results / "1.json").write_text(json.dumps(
+                {"example": "toy", "model": "m:1", "minutes_budget": 5, "best_score": 2.0,
+                 "initial_score": 1.0, "attempts": 1, "ok": 1, "started": "1"}))
+            out = Path(tmp) / "docs" / "benchmarks.md"
+            (out.parent / "benchmarks").mkdir(parents=True)
+            (out.parent / "benchmarks" / "gone.md").write_text("old")
+            write_report(results, out)
+            self.assertTrue(out.exists())
+            self.assertEqual(sorted(p.name for p in (out.parent / "benchmarks").iterdir()),
+                             ["countries.md", "developers.md", "model-check.md", "toy.md"])
 
     def test_overall_ranking_weights_every_example_equally(self):
-        from omega_transform.report import ranking, ranking_section
+        from omega_transform.report import (countries_page, developers_page, ranking,
+                                            ranking_section)
         def run(example, model, init, best, **kw):
             return dict(example=example, model=model, initial_score=init, best_score=best,
                         improvement=best / init, started="1", **kw)
@@ -147,8 +170,13 @@ class BenchTest(unittest.TestCase):
         self.assertEqual((g["models"], g["best_label"]), (2, "g1"))
         self.assertAlmostEqual(g["mean_share"], 0.7)
         self.assertAlmostEqual(g["pick_share"], 1.0)  # best of the family per example
-        page = ranking_section([r for rows in by_example.values() for r in rows])
+        all_runs = [r for rows in by_example.values() for r in rows]
+        page = ranking_section(all_runs)
         self.assertIn("## Overall ranking", page)
+        self.assertIn("[by developer](benchmarks/developers.md)", page)
+        dev_page = developers_page(all_runs)
+        self.assertIn("# Models by developer", dev_page)
+        self.assertIn("No group has ranked models", countries_page(all_runs))
         from omega_transform.report import country, country_ranking
         self.assertEqual([country(w) for w in ("Google", "Mistral AI", "Swiss AI Initiative",
                                                "Alibaba (Qwen)", "nobody")],
@@ -161,14 +189,18 @@ class BenchTest(unittest.TestCase):
                          [("USA", "g", 2), ("China", "q", 1), ("France", "m", 1)])
         self.assertAlmostEqual(cr[1]["lag"], 0.25)
         self.assertAlmostEqual(cr[2]["lag"], 0.75)
-        self.assertIn("### Models by developer", page)
-        self.assertIn("| other | a, b | – |", page)
+        self.assertIn("## Who develops which model", dev_page)
+        self.assertIn("| other | a, b | – |", dev_page)
         from omega_transform.report import DEVELOPERS, DEVELOPER_INFO
         self.assertFalse({who for _, who in DEVELOPERS} - set(DEVELOPER_INFO),
                          "every developer needs a profile")
-        g = ranking_section([dict(run("x", "gemma4:e2b", 1, 2)), dict(run("x", "gpt-oss:20b", 1, 3))])
+        two = [dict(run("x", "gemma4:e2b", 1, 2)), dict(run("x", "gpt-oss:20b", 1, 3))]
+        g = developers_page(two)
         self.assertIn("- **Google** (founded 1998, Mountain View, USA):", g)
         self.assertNotIn("**Mistral AI**", g)  # only developers with results
+        self.assertIn("### Ranking by developer", g)
+        self.assertIn("| 2 | China | qwen3:8b | Alibaba (Qwen) | **0%** | −100% | 1 |",
+                      countries_page(two + [dict(run("x", "qwen3:8b", 1, 1))]))
         self.assertIn("| 1 | b | **83%** |", page)
 
     def test_timeline_by_developer_and_size(self):
@@ -200,8 +232,8 @@ class BenchTest(unittest.TestCase):
         check = {"checked": "2026-10-09T21:30:00", "models": [
             {"model": "good:1", "size_gb": 6.6, "verdict": "ok", "hello_ok": True, "edit_ok": True},
             {"model": "bad:2", "size_gb": 7.0, "verdict": "broken", "reason": "said nothing"}]}
-        page = render([], check)
-        self.assertIn("## Model check", page)
+        page = render([], check)["benchmarks/model-check.md"]
+        self.assertIn("\n# Model check\n", page)
         self.assertIn("| bad:2 |  | 7.0 | broken |", page)
 
     def test_feasible_names(self):
@@ -236,13 +268,12 @@ class BenchTest(unittest.TestCase):
                 "ok": 1, "best_score": 2.0}
         page = render([dict(base, model="m:1", provider="ollama", started="1"),
                        dict(base, model="v/x:free", provider="openrouter", started="2",
-                            gen_tokens_per_s=150.0, cost_usd=0.0)])
-        page = page[page.index("## toy"):]  # the example's own section, after the ranking
-        local, cloud = page.index("### Local models"), page.index("### Cloud models (OpenRouter)")
+                            gen_tokens_per_s=150.0, cost_usd=0.0)])["benchmarks/toy.md"]
+        local, cloud = page.index("## Local models"), page.index("## Cloud models (OpenRouter)")
         self.assertLess(page.index("| m:1 |"), cloud)
         self.assertGreater(page.index("| v/x:free |"), cloud)
         self.assertIn("toy, cloud: best score", page)
-        self.assertIn("#### Inference speed and cost", page)
+        self.assertIn("### Inference speed and cost", page)
         self.assertLess(local, cloud)
 
     def test_variants_are_separate_rows(self):
@@ -250,6 +281,7 @@ class BenchTest(unittest.TestCase):
                 "initial_score": 1.0, "attempts": 1, "ok": 1}
         page = render([dict(base, variant="think", started="1"),
                        dict(base, variant="no-think", started="2", best_score=1.5)])
+        page = page["benchmarks/toy.md"]
         self.assertIn("| m:1 (think) |", page)
         self.assertIn("| m:1 (no-think) |", page)
 

@@ -5,8 +5,10 @@
 
 The examples double as a model benchmark: `omega bench` runs the same
 time-boxed search for every installed Ollama model on every example, and
-records one result file per run. The [Model benchmarks](benchmarks.md) page is
-generated from those files.
+records one result file per run. The [Model benchmarks](benchmarks.md) page
+and its sub-pages, such as the comparisons
+[by developer](benchmarks/developers.md) and [by country](benchmarks/countries.md),
+are generated from those files.
 
 ## Checking which models work
 
@@ -164,11 +166,13 @@ python3 -m omega_transform model-releases
 
 ## Publishing results
 
-After each run, the benchmark regenerates `docs/benchmarks.md`. To publish,
-commit the new files in `bench/results/`. The CI build regenerates the page
-from the committed results before it builds the site, so the published
-tables and charts always match the committed numbers. To regenerate the page
-by hand:
+After each run, the benchmark regenerates `docs/benchmarks.md`, the overview
+with the overall ranking, and its sub-pages in `docs/benchmarks/`: the
+comparisons by developer and by country, the model check, and one page per
+example. To publish, commit the new files in `bench/results/`. The CI build
+regenerates the pages from the committed results before it builds the site,
+so the published tables and charts always match the committed numbers. To
+regenerate the pages by hand:
 
 ```bash
 python3 -m omega_transform report

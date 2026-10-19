@@ -6,8 +6,8 @@
 # Ollama model (does it load, answer, follow the edit format, and how fast is
 # it?) and writes bench/model-check.json. Then every model marked ok runs on
 # every example, once without and once with its reasoning mode ("thinking";
-# models without one are skipped in that pass). Finally docs/benchmarks.md and
-# the example pages (docs/examples/, with each example's best result) are
+# models without one are skipped in that pass). Finally docs/benchmarks.md (with
+# its sub-pages in docs/benchmarks/) and the example pages (docs/examples/, with each example's best result) are
 # regenerated.
 #
 # Rerun it after changing the engine, the prompts or the examples, or after
