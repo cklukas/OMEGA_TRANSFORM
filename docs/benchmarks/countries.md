@@ -4,19 +4,19 @@
 
 # Models by country
 
-Each country is represented by its best model in the [overall ranking](../benchmarks.md#overall-ranking); the country of a model is that of its developer's headquarters (see [Models by developer](developers.md)). The lag is how far its share falls short of the leading country's, relative to that share.
+Each country is represented by its best model in the [overall ranking](../benchmarks.md#overall-ranking); the country of a model is that of its developer's headquarters (see [Models by developer](developers.md)). The lag is how far its share falls short of the leading country's, relative to that share. Released is the model's original publication on Hugging Face, or OpenRouter's listing date.
 
 ## Local models
 
-| # | Country | Best model | Developer | Share | Lag behind #1 | Models |
-|--:|---|---|---|--:|--:|--:|
-| 1 | USA | gemma4:26b-a4b-it-qat (no-think) | Google | **79%** | – | 12 |
-| 2 | China | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | Alibaba (Qwen) | **60%** | −25% | 12 |
+| # | Country | Best model | Released | Developer | Share | Lag behind #1 | Models |
+|--:|---|---|---|---|--:|--:|--:|
+| 1 | USA | gemma4:26b-a4b-it-qat (no-think) | 2026-03-11 | Google | **79%** | – | 12 |
+| 2 | China | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | 2025-07-28 | Alibaba (Qwen) | **60%** | −25% | 12 |
 
 ## Cloud models (OpenRouter)
 
-| # | Country | Best model | Developer | Share | Lag behind #1 | Models |
-|--:|---|---|---|--:|--:|--:|
-| 1 | USA | nvidia/nemotron-3-ultra-550b-a55b:free (think) | NVIDIA | **85%** | – | 4 |
-| 2 | Canada | cohere/north-mini-code:free (no-think) | Cohere | **40%** | −53% | 2 |
-| 3 | France | poolside/laguna-s-2.1:free (no-think) | Poolside | **36%** | −58% | 2 |
+| # | Country | Best model | Released | Developer | Share | Lag behind #1 | Models |
+|--:|---|---|---|---|--:|--:|--:|
+| 1 | USA | nvidia/nemotron-3-ultra-550b-a55b:free (think) | 2026-06-04 | NVIDIA | **85%** | – | 4 |
+| 2 | Canada | cohere/north-mini-code:free (no-think) | 2026-06-17 | Cohere | **40%** | −53% | 2 |
+| 3 | France | poolside/laguna-s-2.1:free (no-think) | 2026-07-21 | Poolside | **36%** | −58% | 2 |

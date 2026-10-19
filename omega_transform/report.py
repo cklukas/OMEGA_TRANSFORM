@@ -370,7 +370,7 @@ def developer_ranking(ranked: list[dict]) -> list[dict]:
         examples = sorted({x for e in models for x in e["by_example"]})
         per_example = [max(e["by_example"].get(x, 0.0) for e in models) for x in examples]
         out.append({"developer": who, "models": len(models), "best_label": best["label"],
-                    "best_share": best["share"],
+                    "best_model": best["model"], "best_share": best["share"],
                     "mean_share": sum(e["share"] for e in models) / len(models),
                     "pick_share": sum(per_example) / len(per_example)})
     return sorted(out, key=lambda d: -d["best_share"])
@@ -388,7 +388,8 @@ def country_ranking(ranked: list[dict]) -> list[dict]:
             best[c] = e
     rows = sorted(best.items(), key=lambda kv: -kv[1]["share"])
     lead = rows[0][1]["share"] if rows else 0.0
-    return [{"country": c, "label": e["label"], "developer": developer(e["model"]),
+    return [{"country": c, "label": e["label"], "model": e["model"],
+             "developer": developer(e["model"]),
              "share": e["share"], "models": count[c],
              "lag": (1 - e["share"] / lead) if lead > 0 else 0.0} for c, e in rows]
 
@@ -462,6 +463,11 @@ SUBPAGES = (
 )
 
 
+def released(releases: dict[str, dict] | None, model: str) -> str:
+    """A model's release date for the tables, "–" when it is not known."""
+    return ((releases or {}).get(model) or {}).get("released") or "–"
+
+
 def _promote(text: str) -> str:
     """Raise every heading by one level (``### x`` becomes ``## x``)."""
     return "".join(line[1:] if line.startswith("##") else line
@@ -486,7 +492,7 @@ def _groups(results: list[dict]):
         yield title, "local" if local else "cloud", full, [e for e in ranked if e not in full]
 
 
-def ranking_section(results: list[dict]) -> str:
+def ranking_section(results: list[dict], releases: dict[str, dict] | None = None) -> str:
     """The overall ranking, one table per group (local and cloud models)."""
     parts = ["\n## Overall ranking\n\n"
              "Scores of different examples cannot be added up (a matrix multiply gains "
@@ -499,14 +505,17 @@ def ranking_section(results: list[dict]) -> str:
              "results on at least three quarters of the examples are ranked; the others "
              "follow without a rank. The same ranking is grouped "
              "[by developer](benchmarks/developers.md) and "
-             "[by country](benchmarks/countries.md) on pages of their own.\n"]
+             "[by country](benchmarks/countries.md) on pages of their own. Released is "
+             "the model's original publication on Hugging Face, or OpenRouter's listing "
+             "date.\n"]
     for title, tag, full, rest in _groups(results):
         parts.append(f"\n### {title}\n\n"
-                     "| # | Model | Share of best gain | Geometric-mean gain | Wins "
-                     "| No gain | Examples |\n|--:|---|--:|--:|--:|--:|--:|\n")
+                     "| # | Model | Released | Share of best gain | Geometric-mean gain "
+                     "| Wins | No gain | Examples |\n|--:|---|---|--:|--:|--:|--:|--:|\n")
         for i, e in enumerate(full + rest, 1):
             rank = str(i) if i <= len(full) else "–"
-            parts.append(f"| {rank} | {e['label']} | **{e['share']:.0%}** | "
+            parts.append(f"| {rank} | {e['label']} | {released(releases, e['model'])} | "
+                         f"**{e['share']:.0%}** | "
                          f"×{e['geo_gain']:.2f} | {e['wins']} | {e['no_gain']} | "
                          f"{e['examples']} |\n")
         if len(full) > 1:
@@ -523,8 +532,9 @@ def developers_page(results: list[dict], releases: dict[str, dict] | None = None
              "The models of the [overall ranking](../benchmarks.md#overall-ranking), grouped "
              "by the company that develops them. A model's **share** is its gain over the "
              "starting program as a fraction of the best gain on each example, averaged "
-             "over the examples (100% = the best model everywhere). See also "
-             "[Models by country](countries.md).\n"]
+             "over the examples (100% = the best model everywhere); released is the "
+             "model's original publication on Hugging Face, or OpenRouter's listing date. "
+             "See also [Models by country](countries.md).\n"]
     by_dev: dict[str, dict[bool, set]] = defaultdict(lambda: {True: set(), False: set()})
     for r in results:
         by_dev[developer(r["model"])][r.get("provider", "ollama") == "ollama"].add(r["model"])
@@ -553,25 +563,27 @@ def developers_page(results: list[dict], releases: dict[str, dict] | None = None
                          "the mean share over all its models, and the mean share when its "
                          "best model is picked for each example separately (which favours "
                          "developers with many models).\n\n"
-                         "| Developer | Models | Best model | Best model's share "
+                         "| Developer | Models | Best model | Released | Best model's share "
                          "| Mean over its models | Best per example |\n"
-                         "|---|--:|---|--:|--:|--:|\n")
+                         "|---|--:|---|---|--:|--:|--:|\n")
             for d in devs:
                 parts.append(f"| {d['developer']} | {d['models']} | {d['best_label']} | "
+                             f"{released(releases, d['best_model'])} | "
                              f"**{d['best_share']:.0%}** | {d['mean_share']:.0%} | "
                              f"{d['pick_share']:.0%} |\n")
         parts.append(_promote(timeline_text))
     return "".join(parts)
 
 
-def countries_page(results: list[dict]) -> str:
+def countries_page(results: list[dict], releases: dict[str, dict] | None = None) -> str:
     """The best ranked model of each country, per group."""
     parts = [PAGE_HEADER, "\n# Models by country\n\n"
              "Each country is represented by its best model in the "
              "[overall ranking](../benchmarks.md#overall-ranking); the country of a model is "
              "that of its developer's headquarters (see [Models by developer](developers.md)). "
              "The lag is how far its share falls short of the leading country's, relative "
-             "to that share.\n"]
+             "to that share. Released is the model's original publication on Hugging Face, "
+             "or OpenRouter's listing date.\n"]
     found = False
     for title, _, full, _ in _groups(results):
         countries = country_ranking(full)
@@ -579,11 +591,12 @@ def countries_page(results: list[dict]) -> str:
             continue
         found = True
         parts.append(f"\n## {title}\n\n"
-                     "| # | Country | Best model | Developer | Share | Lag behind #1 "
-                     "| Models |\n|--:|---|---|---|--:|--:|--:|\n")
+                     "| # | Country | Best model | Released | Developer | Share "
+                     "| Lag behind #1 | Models |\n|--:|---|---|---|---|--:|--:|--:|\n")
         for i, c in enumerate(countries, 1):
             lag = "–" if i == 1 else f"−{c['lag']:.0%}"
-            parts.append(f"| {i} | {c['country']} | {c['label']} | {c['developer']} | "
+            parts.append(f"| {i} | {c['country']} | {c['label']} | "
+                         f"{released(releases, c['model'])} | {c['developer']} | "
                          f"**{c['share']:.0%}** | {lag} | {c['models']} |\n")
     if not found:
         parts.append("\nNo group has ranked models from more than one country yet.\n")
@@ -620,10 +633,10 @@ def render(results: list[dict], check: dict | None = None,
         parts.append(f"| [{example}](benchmarks/{example}.md) | {len(by_model)} models on "
                      f"this example: scores, speed, memory and progress over time |\n")
     parts.append(_machine(results))
-    parts.append(ranking_section(results))
+    parts.append(ranking_section(results, releases))
     pages["benchmarks.md"] = "".join(parts)
     pages["benchmarks/developers.md"] = developers_page(results, releases)
-    pages["benchmarks/countries.md"] = countries_page(results)
+    pages["benchmarks/countries.md"] = countries_page(results, releases)
     for example, by_model in latest:
         rows = list(by_model.values())
         budget = max(r.get("minutes_budget", 0) for r in rows)

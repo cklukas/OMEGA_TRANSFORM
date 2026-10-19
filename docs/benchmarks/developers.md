@@ -4,7 +4,7 @@
 
 # Models by developer
 
-The models of the [overall ranking](../benchmarks.md#overall-ranking), grouped by the company that develops them. A model's **share** is its gain over the starting program as a fraction of the best gain on each example, averaged over the examples (100% = the best model everywhere). See also [Models by country](countries.md).
+The models of the [overall ranking](../benchmarks.md#overall-ranking), grouped by the company that develops them. A model's **share** is its gain over the starting program as a fraction of the best gain on each example, averaged over the examples (100% = the best model everywhere); released is the model's original publication on Hugging Face, or OpenRouter's listing date. See also [Models by country](countries.md).
 
 ## Who develops which model
 
@@ -34,11 +34,11 @@ Every benchmarked model and the company that develops it, which the comparisons 
 
 The developer's best single model, the mean share over all its models, and the mean share when its best model is picked for each example separately (which favours developers with many models).
 
-| Developer | Models | Best model | Best model's share | Mean over its models | Best per example |
-|---|--:|---|--:|--:|--:|
-| Google | 10 | gemma4:26b-a4b-it-qat (no-think) | **79%** | 54% | 93% |
-| OpenAI | 2 | gpt-oss:20b (think) | **79%** | 72% | 80% |
-| Alibaba (Qwen) | 12 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | **60%** | 43% | 88% |
+| Developer | Models | Best model | Released | Best model's share | Mean over its models | Best per example |
+|---|--:|---|---|--:|--:|--:|
+| Google | 10 | gemma4:26b-a4b-it-qat (no-think) | 2026-03-11 | **79%** | 54% | 93% |
+| OpenAI | 2 | gpt-oss:20b (think) | 2025-08-04 | **79%** | 72% | 80% |
+| Alibaba (Qwen) | 12 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | 2025-07-28 | **60%** | 43% | 88% |
 
 ### Progress over time
 
@@ -74,11 +74,11 @@ xychart-beta
 
 The developer's best single model, the mean share over all its models, and the mean share when its best model is picked for each example separately (which favours developers with many models).
 
-| Developer | Models | Best model | Best model's share | Mean over its models | Best per example |
-|---|--:|---|--:|--:|--:|
-| NVIDIA | 4 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | **85%** | 67% | 100% |
-| Cohere | 2 | cohere/north-mini-code:free (no-think) | **40%** | 20% | 40% |
-| Poolside | 2 | poolside/laguna-s-2.1:free (no-think) | **36%** | 18% | 36% |
+| Developer | Models | Best model | Released | Best model's share | Mean over its models | Best per example |
+|---|--:|---|---|--:|--:|--:|
+| NVIDIA | 4 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | 2026-06-04 | **85%** | 67% | 100% |
+| Cohere | 2 | cohere/north-mini-code:free (no-think) | 2026-06-17 | **40%** | 20% | 40% |
+| Poolside | 2 | poolside/laguna-s-2.1:free (no-think) | 2026-07-21 | **36%** | 18% | 36% |
 
 ### Progress over time
 

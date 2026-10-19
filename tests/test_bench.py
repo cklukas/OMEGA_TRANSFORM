@@ -199,9 +199,14 @@ class BenchTest(unittest.TestCase):
         self.assertIn("- **Google** (founded 1998, Mountain View, USA):", g)
         self.assertNotIn("**Mistral AI**", g)  # only developers with results
         self.assertIn("### Ranking by developer", g)
-        self.assertIn("| 2 | China | qwen3:8b | Alibaba (Qwen) | **0%** | −100% | 1 |",
-                      countries_page(two + [dict(run("x", "qwen3:8b", 1, 1))]))
-        self.assertIn("| 1 | b | **83%** |", page)
+        self.assertIn("| 2 | China | qwen3:8b | 2025-04-29 | Alibaba (Qwen) | **0%** | −100% | 1 |",
+                      countries_page(two + [dict(run("x", "qwen3:8b", 1, 1))],
+                                     {"qwen3:8b": {"released": "2025-04-29"}}))
+        self.assertIn("| Google | 1 | gemma4:e2b | 2026-04-02 | **50%** |",
+                      developers_page(two, {"gemma4:e2b": {"released": "2026-04-02"}}))
+        self.assertIn("| 1 | b | – | **83%** |", page)  # release date unknown
+        dated = ranking_section(all_runs, {"b": {"released": "2026-01-02"}})
+        self.assertIn("| 1 | b | 2026-01-02 | **83%** |", dated)
 
     def test_timeline_by_developer_and_size(self):
         from omega_transform.releases import params_b
