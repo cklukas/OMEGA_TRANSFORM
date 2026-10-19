@@ -5,6 +5,7 @@ name = "tammes_30"
 language = "python"
 initial = "initial.py"
 category = "Mathematical constructions"
+summary = "Place 30 points on a sphere so that the closest pair is as far apart as possible."
 description = """
 Tammes problem (spherical code): place 30 points on the unit sphere so that the MINIMUM
 ANGLE between any two points is as large as possible. run() returns construct(30): a

@@ -62,6 +62,10 @@ extern "C" void matmul(int n, const float* A, const float* B, float* C) {
 
 The best result so far comes from **gemma4:latest (think)**, run locally with Ollama on 2026-10-17: a score of **174.1030** (×108.89 the starting program's 1.59883), reached after 15.8 of 15 minutes with 17 model requests.
 
+What the starting program produces (left) and what the best program by gemma4:latest (think) produces (right):
+
+![matmul_cpp: the starting program's solution and the best one](../assets/examples/matmul_cpp.svg)
+
 ### How it got there
 
 The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.

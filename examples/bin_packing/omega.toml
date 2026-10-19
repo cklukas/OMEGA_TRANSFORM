@@ -5,6 +5,7 @@ name = "bin_packing_1d"
 language = "python"
 initial = "initial.py"
 category = "Algorithms and heuristics"
+summary = "Pack items of given sizes into as few bins of capacity 1000 as possible."
 description = """
 Write a heuristic for one-dimensional bin packing. pack(sizes, capacity) gets a list of
 integer item sizes (each between 1 and capacity) and the integer bin capacity (1000) and

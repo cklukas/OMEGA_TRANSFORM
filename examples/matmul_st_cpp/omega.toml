@@ -5,6 +5,7 @@ name = "matmul_f32_single_thread"
 language = "cpp"
 initial = "matmul.cpp"
 category = "Performance (C++)"
+summary = "Multiply two 768 × 768 float matrices as fast as possible on one core."
 context_files = ["harness.cpp"]
 description = """
 Make the C++ function matmul(n, A, B, C) (single precision, row-major, C = A*B) use as

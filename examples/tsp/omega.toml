@@ -5,6 +5,7 @@ name = "tsp_heuristic"
 language = "python"
 initial = "initial.py"
 category = "Algorithms and heuristics"
+summary = "Find short round trips through 200 to 1000 random cities within two seconds."
 description = """
 Write a fast heuristic for the Euclidean traveling salesman problem. solve(points,
 time_limit) gets a list of (x, y) city coordinates in the unit square and must return a

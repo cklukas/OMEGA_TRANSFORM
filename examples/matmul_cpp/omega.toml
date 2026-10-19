@@ -5,6 +5,7 @@ name = "matmul_f32"
 language = "cpp"
 initial = "matmul.cpp"
 category = "Performance (C++)"
+summary = "Multiply two 1024 × 1024 float matrices as fast as possible on all cores."
 context_files = ["harness.cpp"]
 description = """
 Make the C++ function matmul(n, A, B, C) (single precision, row-major, C = A*B) as FAST

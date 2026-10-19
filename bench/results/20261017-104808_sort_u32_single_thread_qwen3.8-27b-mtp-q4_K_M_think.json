@@ -1,5 +1,5 @@
 {
- "schema": 2,
+ "schema": 3,
  "example": "sort_u32_single_thread",
  "model": "qwen3.8:27b-mtp-q4_K_M",
  "variant": "think",
@@ -84,5 +84,27 @@
  "mean_gen_tokens": 10121,
  "stopped_calls": 0,
  "provider": "ollama",
- "cost_usd": 0
+ "cost_usd": 0,
+ "initial_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "best_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ }
 }

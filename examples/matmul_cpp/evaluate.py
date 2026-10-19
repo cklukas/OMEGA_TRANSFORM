@@ -47,7 +47,8 @@ def main(binary, stage):
         return
     print(json.dumps({"score": r["gflops"],
                       "metrics": {"gflops": r["gflops"], "seconds_n1024": r["seconds"],
-                                  "max_err": r["max_err"]}}))
+                                  "max_err": r["max_err"]},
+                      "solution": {"kind": "matmul", "n": 1024, "cores": "all 10 cores"}}))
 
 
 if __name__ == "__main__":

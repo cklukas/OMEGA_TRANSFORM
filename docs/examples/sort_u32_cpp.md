@@ -70,6 +70,10 @@ extern "C" void sort_u32(uint32_t* a, size_t n) {
 
 The best result so far comes from **qwen3.8:27b-mtp-q4_K_M (think)**, run locally with Ollama on 2026-10-17: a score of **564.4614** (×24.85 the starting program's 22.7147), reached after 25.38 of 15 minutes with 1 model requests.
 
+What the starting program produces (left) and what the best program by qwen3.8:27b-mtp-q4_K_M (think) produces (right):
+
+![sort_u32_cpp: the starting program's solution and the best one](../assets/examples/sort_u32_cpp.svg)
+
 ### How it got there
 
 The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.

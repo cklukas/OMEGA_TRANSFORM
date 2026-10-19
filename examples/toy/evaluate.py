@@ -12,4 +12,5 @@ except CandidateError as e:
     sys.exit(0)
 ok = isinstance(v, (int, float)) and v <= 100
 print(json.dumps({"score": v if ok else None, "valid": ok, "metrics": {"value": v},
+                  "solution": {"kind": "value", "value": v, "limit": 100} if ok else None,
                   "feedback": "" if ok else "value must be a number <= 100"}))

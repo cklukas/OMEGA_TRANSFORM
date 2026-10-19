@@ -1,5 +1,5 @@
 {
- "schema": 2,
+ "schema": 3,
  "example": "prefix_sum_histogram_single_thread",
  "model": "gemma4:e4b-it-qat",
  "variant": "think",
@@ -121,5 +121,29 @@
  "mean_gen_tokens": 2915,
  "stopped_calls": 0,
  "provider": "ollama",
- "cost_usd": 0
+ "cost_usd": 0,
+ "initial_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "best_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ }
 }

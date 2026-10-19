@@ -62,7 +62,8 @@ def solve(a, b):
 
 
 def train_and_score(feats, labels):
-    """Fixed model. Returns (train accuracy, test accuracy, weights)."""
+    """Fixed model. Returns (train accuracy, test accuracy, weights, per test row:
+    classified correctly)."""
     tr, te = feats[:N_TRAIN], feats[N_TRAIN:]
     d = len(tr[0])
     mean = [sum(r[j] for r in tr) / N_TRAIN for j in range(d)]
@@ -91,12 +92,12 @@ def train_and_score(feats, labels):
             xtx[i][i] += RIDGE
     w = solve(xtx, xty)
 
-    def acc(rows, ys):
-        hits = sum((sum(a * b for a, b in zip(w, design(r))) > 0) == bool(y)
-                   for r, y in zip(rows, ys))
-        return hits / len(rows)
+    def hits(rows, ys):
+        return [(sum(a * b for a, b in zip(w, design(r))) > 0) == bool(y)
+                for r, y in zip(rows, ys)]
 
-    return acc(tr, labels[:N_TRAIN]), acc(te, labels[N_TRAIN:]), w
+    train_hits, test_hits = hits(tr, labels[:N_TRAIN]), hits(te, labels[N_TRAIN:])
+    return sum(train_hits) / N_TRAIN, sum(test_hits) / N_TEST, w, test_hits
 
 
 def fail(msg):
@@ -134,7 +135,7 @@ def main(path):
         fail(f"too slow: computing the features took {secs:.2f} CPU seconds "
              f"(limit {CPU_LIMIT:.0f})")
     t1 = time.process_time()
-    train_acc, test_acc, w = train_and_score(feats, labels)
+    train_acc, test_acc, w, test_hits = train_and_score(feats, labels)
     train_s = time.process_time() - t1
     majority = max(sum(labels[N_TRAIN:]), N_TEST - sum(labels[N_TRAIN:])) / N_TEST
     top = sorted(range(1, len(w)), key=lambda j: -abs(w[j]))[:8]
@@ -147,6 +148,11 @@ def main(path):
                     "num_features": len(w) - 1, "majority_baseline": majority,
                     "feature_cpu_s": secs, "train_cpu_s": train_s},
         "features": {"num_features": len(w) - 1},
+        "solution": {"kind": "classification", "columns": ["x1", "x2", "x3", "x4", "x5", "x6"],
+                     "head": [[round(v, 2) for v in r] for r in rows[:4]],
+                     "head_labels": labels[:4], "train_rows": N_TRAIN,
+                     "num_features": len(w) - 1,
+                     "test_correct": "".join("1" if h else "0" for h in test_hits)},
         "valid": True,
         "feedback": feedback,
     }))

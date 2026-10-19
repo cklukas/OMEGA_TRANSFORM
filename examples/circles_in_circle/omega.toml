@@ -5,6 +5,7 @@ name = "circles_in_circle_21"
 language = "python"
 initial = "initial.py"
 category = "Mathematical constructions"
+summary = "Place 21 circles in the unit circle so that their radii add up to as much as possible."
 description = """
 Place 21 non-overlapping circles inside the unit circle (center (0,0), radius 1) so that
 the SUM OF THEIR RADII is as large as possible. run() returns construct(21): a list of

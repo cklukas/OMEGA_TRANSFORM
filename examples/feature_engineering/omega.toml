@@ -5,6 +5,7 @@ name = "feature_engineering"
 language = "python"
 initial = "initial.py"
 category = "Data and modelling"
+summary = "Compute features from six raw columns so that a fixed linear classifier predicts the label well."
 description = """
 Design features for a FIXED linear classifier. The program defines
 features(row) -> list of floats. row is [x1, x2, x3, x4, x5, x6]: x1, x2, x6 are

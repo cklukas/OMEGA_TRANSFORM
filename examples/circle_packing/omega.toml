@@ -5,6 +5,7 @@ name = "circle_packing_26"
 language = "python"
 initial = "initial.py"
 category = "Mathematical constructions"
+summary = "Place 26 circles in a unit square so that their radii add up to as much as possible."
 description = """
 Place 26 non-overlapping circles inside the unit square [0,1]x[0,1] so that the SUM OF
 THEIR RADII is as large as possible. run() returns construct_packing(26): a list of 26

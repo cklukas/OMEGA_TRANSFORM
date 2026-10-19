@@ -157,6 +157,12 @@ def main(path):
                     "zlib9_ratio": zlib9, "bz2_ratio": bz, "lzma_ratio": xz,
                     "compress_cpu_s": c_s, "decompress_cpu_s": d_s},
         "features": {"cpu_s": c_s + d_s},
+        "solution": {"kind": "compression", "input": "web server access log",
+                     "head": data.decode().splitlines()[:4], "lines": data.count(b"\n"),
+                     "original_bytes": len(data), "compressed_bytes": len(blob),
+                     "references": {"zlib -9": round(len(data) / zlib9),
+                                    "bz2 -9": round(len(data) / bz),
+                                    "lzma -9e": round(len(data) / xz)}},
         "valid": True,
         "feedback": feedback,
     }))

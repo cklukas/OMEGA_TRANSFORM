@@ -60,7 +60,8 @@ def main(binary, stage):
     metrics = {"melem_per_cpu_s_total": total, "melem_per_cpu_s_geomean": r["geomean_melem_per_s"]}
     for name, v in rates.items():
         metrics[f"melem_per_cpu_s_{name}"] = v
-    print(json.dumps({"score": total, "metrics": metrics}))
+    print(json.dumps({"score": total, "metrics": metrics,
+                      "solution": {"kind": "sort", "n": BENCH_N, "distributions": list(rates)}}))
 
 
 if __name__ == "__main__":

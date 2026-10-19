@@ -78,6 +78,19 @@ result file, and `omega docs` draws both side by side on the
 | `bins` | `capacity`, `lower_bound`, `bins`: `[[item size, ...], ...]` |
 | `cut` | `n`, `edges`: `[[u, v, weight], ...]`, `side`: 0 or 1 per node |
 | `regression` | `sets`: `{"name": [[true y, predicted y], ...], ...}` |
+| `compression` | `input` (what the data is), `head`: its first lines, `lines`, `original_bytes`, `compressed_bytes`, `references`: `{"tool": bytes, ...}` |
+| `classification` | `columns`, `head`: the first rows, `head_labels`, `train_rows`, `num_features`, `test_correct`: one `"1"`/`"0"` per held-out row |
+| `value` | `value`, `limit` |
+| `matmul` | `n`, `cores` (text) |
+| `sort` | `n`, `distributions`: the input names |
+| `scan` | `n`, `head`: the first input values |
+| `parse` | `count`, `text_mb`, `head`: the first lines of the text |
+
+The last four are speed problems: their pictures are drawn from the program's
+recorded score, not from the solution, and show how much of the job each
+program finishes in the faster one's time. Kinds with a problem band
+(`compression`, `classification` and the speed kinds) draw the problem across
+the full width above the two programs.
 
 `tour`, `bins` and `cut` may name the drawn `instance`; with several instances,
 report one of them. Keep the data small (a few thousand numbers): solutions

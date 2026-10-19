@@ -5,6 +5,7 @@ name = "prefix_sum_histogram_single_thread"
 language = "cpp"
 initial = "scan.cpp"
 category = "Performance (C++)"
+summary = "Compute a prefix sum and a byte histogram of ten million integers in one fast pass."
 context_files = ["harness.cpp"]
 description = """
 Make the C++ function scan_and_histogram(in, out, n, hist) use as little CPU time as

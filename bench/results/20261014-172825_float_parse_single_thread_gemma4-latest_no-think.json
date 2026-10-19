@@ -1,5 +1,5 @@
 {
- "schema": 2,
+ "schema": 3,
  "example": "float_parse_single_thread",
  "model": "gemma4:latest",
  "variant": "no-think",
@@ -132,5 +132,35 @@
  "mean_gen_tokens": 301,
  "stopped_calls": 0,
  "provider": "ollama",
- "cost_usd": 0
+ "cost_usd": 0,
+ "initial_solution": {
+  "kind": "parse",
+  "count": 2000000,
+  "text_mb": 28.39,
+  "head": [
+   "0",
+   "-0",
+   "1",
+   "-1.5",
+   "0.1",
+   "1e23",
+   "9007199254740993",
+   "4.9e-324"
+  ]
+ },
+ "best_solution": {
+  "kind": "parse",
+  "count": 2000000,
+  "text_mb": 28.39,
+  "head": [
+   "0",
+   "-0",
+   "1",
+   "-1.5",
+   "0.1",
+   "1e23",
+   "9007199254740993",
+   "4.9e-324"
+  ]
+ }
 }

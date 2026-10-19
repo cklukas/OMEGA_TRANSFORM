@@ -69,6 +69,10 @@ extern "C" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, ui
 
 The best result so far comes from **gemma4:e4b-it-qat (think)**, run locally with Ollama on 2026-10-17: a score of **17.2154** (×3.52 the starting program's 4.89476), reached after 15.51 of 15 minutes with 13 model requests.
 
+What the starting program produces (left) and what the best program by gemma4:e4b-it-qat (think) produces (right):
+
+![prefix_sum_cpp: the starting program's solution and the best one](../assets/examples/prefix_sum_cpp.svg)
+
 ### How it got there
 
 The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.

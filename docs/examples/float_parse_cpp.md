@@ -75,6 +75,10 @@ extern "C" size_t parse_doubles(const char* buf, size_t len, double* out) {
 
 The best result so far comes from **gemma4:latest (no-think)**, run locally with Ollama on 2026-10-14: a score of **347.6860** (×1.10 the starting program's 316.3600), reached after 15.14 of 15 minutes with 65 model requests.
 
+What the starting program produces (left) and what the best program by gemma4:latest (no-think) produces (right):
+
+![float_parse_cpp: the starting program's solution and the best one](../assets/examples/float_parse_cpp.svg)
+
 ### How it got there
 
 The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.

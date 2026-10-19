@@ -5,6 +5,7 @@ name = "symbolic_regression"
 language = "python"
 initial = "initial.py"
 category = "Data and modelling"
+summary = "Find a formula that fits noisy data and still holds outside the training range."
 description = """
 Find the formula behind hidden data: y = f(x1, x2, x3) + Gaussian noise (sigma 0.1),
 where f is a fixed, fairly compact closed-form expression (elementary functions,

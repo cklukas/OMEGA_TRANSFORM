@@ -5,6 +5,7 @@ name = "max_cut"
 language = "python"
 initial = "initial.py"
 category = "Algorithms and heuristics"
+summary = "Split the nodes of a weighted graph into two sides so that as much edge weight as possible crosses."
 description = """
 Write a heuristic for weighted max-cut. cut(n, edges) gets the number of nodes n and a
 list of edges (u, v, w) with 0 <= u < v < n, no duplicate pairs and integer weight

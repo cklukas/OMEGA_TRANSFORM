@@ -5,6 +5,7 @@ name = "heilbronn_13"
 language = "python"
 initial = "initial.py"
 category = "Mathematical constructions"
+summary = "Place 13 points in the unit square so that the smallest triangle they form is as large as possible."
 description = """
 Heilbronn triangle problem: place 13 points in the closed unit square [0,1]x[0,1] so that
 the SMALLEST AREA among all 286 triangles formed by 3 of the points is as large as

@@ -1,5 +1,5 @@
 {
- "schema": 2,
+ "schema": 3,
  "example": "matmul_f32_single_thread",
  "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
  "variant": "think",
@@ -92,5 +92,15 @@
  "mean_gen_tokens": 412,
  "stopped_calls": 0,
  "provider": "ollama",
- "cost_usd": 0
+ "cost_usd": 0,
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 768,
+  "cores": "one core, CPU time"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 768,
+  "cores": "one core, CPU time"
+ }
 }

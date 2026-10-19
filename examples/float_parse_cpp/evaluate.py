@@ -14,6 +14,8 @@ import sys
 from omega_transform.harness import Candidate
 
 BENCH_COUNT = 2_000_000
+# The first lines of every text: the hard cases at the start of EDGE in harness.cpp.
+TEXT_HEAD = ["0", "-0", "1", "-1.5", "0.1", "1e23", "9007199254740993", "4.9e-324"]
 
 
 def run(binary, count, reps):
@@ -48,6 +50,8 @@ def main(binary, stage):
         print(json.dumps({"valid": False, "feedback": mismatch(r)}))
         return
     print(json.dumps({"score": r["mb_per_s"],
+                      "solution": {"kind": "parse", "count": BENCH_COUNT,
+                                   "text_mb": round(r["bytes"] / 1e6, 2), "head": TEXT_HEAD},
                       "metrics": {"mb_per_cpu_s": r["mb_per_s"],
                                   "ns_per_number": r["ns_per_number"],
                                   "cpu_seconds": r["cpu_seconds"],

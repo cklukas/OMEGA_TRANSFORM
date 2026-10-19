@@ -23,6 +23,18 @@ SOLUTIONS = {
             "side": [0, 1, 0]},
     "regression": {"kind": "regression",
                    "sets": {"test": [[0, 0.1], [1, 0.9], [2, 2.2]], "extra": [[3, 2.5]]}},
+    "compression": {"kind": "compression", "input": "log", "head": ["GET / <x> & y"],
+                    "lines": 3, "original_bytes": 10000, "compressed_bytes": 2500,
+                    "references": {"zlib -9": 3000}},
+    "classification": {"kind": "classification", "columns": ["x1", "x2"],
+                       "head": [[0.5, -1.25]], "head_labels": [1], "train_rows": 4,
+                       "num_features": 3, "test_correct": "1101"},
+    "value": {"kind": "value", "value": 40, "limit": 100},
+    "matmul": {"kind": "matmul", "n": 64, "cores": "one core"},
+    "sort": {"kind": "sort", "n": 1000, "distributions": ["uniform", "dups1000", "sorted",
+                                                            "reverse", "nearly_sorted"]},
+    "scan": {"kind": "scan", "n": 1000, "head": [5, -3, 256]},
+    "parse": {"kind": "parse", "count": 10, "text_mb": 0.5, "head": ["1e23", "4.9e-324"]},
 }
 
 
@@ -43,12 +55,25 @@ class FiguresTest(unittest.TestCase):
         def caption(sol):
             texts = ET.fromstring(figure([("t", sol)], "x")).iter(
                 "{http://www.w3.org/2000/svg}text")
-            return [t.text for t in texts][1]
+            texts = [t.text for t in texts]
+            return texts[texts.index("t") + 1]  # after the panel's title (and any band)
         self.assertEqual(caption(SOLUTIONS["circles"]), "sum of radii 0.75 · 2 circles")
         self.assertEqual(caption(SOLUTIONS["tour"]), "tour length 4 · 4 cities")
         self.assertEqual(caption(SOLUTIONS["bins"]), "3 bins, filled 66.7% on average")
         self.assertTrue(caption(SOLUTIONS["cut"]).startswith("cut 7 of 8 edge weight"))
         self.assertTrue(caption(SOLUTIONS["sphere_points"]).startswith("smallest angle 90°"))
+        self.assertEqual(caption(SOLUTIONS["compression"]), "−75.0%: 2.5 KB (ratio 4.00)")
+        self.assertEqual(caption(SOLUTIONS["classification"]), "accuracy 75.0% · 3 features")
+
+    def test_speed_kinds_draw_the_recorded_scores(self):
+        sol = SOLUTIONS["matmul"]
+        svg = figure([("Start", sol, 0.5), ("Best", sol, 2.0)], "matmul")
+        self.assertIn("0.5 GFLOP/s · 1.05 ms for one 64×64 product", svg)
+        self.assertIn("2 GFLOP/s · 262 µs for one 64×64 product", svg)
+        self.assertIn("within 262 µs, the faster program's time: 25% done", svg)
+        self.assertIn("C = A · B for 64 × 64 float32 matrices", svg)  # the problem band
+        sort = figure([("Start", SOLUTIONS["sort"], 1.0), ("Best", SOLUTIONS["sort"], 4.0)], "s")
+        self.assertIn("5 × 1,000 values", sort)
 
     def test_unknown_or_missing_solutions_are_not_drawable(self):
         for sol in (None, {}, {"kind": "hologram"}, [1, 2]):
@@ -82,6 +107,28 @@ class FiguresTest(unittest.TestCase):
             self.assertEqual(s["initial_solution"], SOLUTIONS["bins"])
             self.assertEqual(s["best_solution"], SOLUTIONS["tour"])
             db.close()
+
+
+class StartPageTest(unittest.TestCase):
+    def test_gallery_block_is_renewed_and_links_every_example(self):
+        from omega_transform.config import load_config
+        from omega_transform.docgen import GALLERY_END, GALLERY_START, start_page
+        root = Path(__file__).resolve().parent.parent
+        cfg = load_config(root / "examples" / "tsp")
+        examples = [("tsp", cfg.category, cfg), ("toy", "Testing", load_config(
+            root / "examples" / "toy"))]
+        text = f"# Home\n\n{GALLERY_START}\nold\n{GALLERY_END}\n\nmore\n"
+        result = {"example": cfg.name, "model": "m", "variant": "think", "best_score": 2,
+                  "improvement": 2.0}
+        page = start_page(text, [result], examples,
+                          {"docs/assets/examples/tsp.svg": "<svg/>"})
+        self.assertNotIn("old", page)
+        self.assertTrue(page.endswith(f"{GALLERY_END}\n\nmore\n"))
+        self.assertIn(f'![tsp](assets/examples/tsp.svg "{cfg.summary}")', page)
+        self.assertIn("**[tsp](examples/tsp.md)**", page)
+        self.assertNotIn("[toy]", page)  # the test suite's problem stays off the start page
+        self.assertIn("1 models and reasoning modes in 1 runs on the 1 examples; on 1 of", page)
+        self.assertEqual(start_page("no markers", [result], examples, {}), "no markers")
 
 
 class ExamplePageFigureTest(unittest.TestCase):

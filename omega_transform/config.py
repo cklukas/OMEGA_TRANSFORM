@@ -135,6 +135,7 @@ class ProblemConfig:
     hints: str = ""  # human expert hints, literature pointers
     candidate_name: str = ""  # filename inside the job dir; default = basename of initial
     category: str = ""  # groups the example in the documentation's example gallery
+    summary: str = ""  # one sentence on the problem, for the documentation's start page
     #: fixed files shown read-only in every prompt (e.g. a separately compiled harness)
     context_files: list[str] = field(default_factory=list)
     evaluator: EvaluatorConfig = field(default_factory=EvaluatorConfig)

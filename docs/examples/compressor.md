@@ -65,6 +65,10 @@ def roundtrip(data: bytes) -> tuple[bytes, bytes]:
 
 The best result so far comes from **qwen3.5:latest (no-think)**, run locally with Ollama on 2026-10-14: a score of **26.8544** (×2.38 the starting program's 11.2861), reached after 7.63 of 15 minutes with 25 model requests.
 
+What the starting program produces (left) and what the best program by qwen3.5:latest (no-think) produces (right):
+
+![compressor: the starting program's solution and the best one](../assets/examples/compressor.svg)
+
 ### How it got there
 
 The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.

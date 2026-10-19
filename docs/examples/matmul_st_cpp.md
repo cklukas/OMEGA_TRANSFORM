@@ -64,6 +64,10 @@ extern "C" void matmul(int n, const float* A, const float* B, float* C) {
 
 The best result so far comes from **qwen3:30b-a3b-instruct-2507-q4_K_M (think)**, run locally with Ollama on 2026-10-18: a score of **62.9670** (×37.29 the starting program's 1.68841), reached after 4.45 of 15 minutes with 48 model requests.
 
+What the starting program produces (left) and what the best program by qwen3:30b-a3b-instruct-2507-q4_K_M (think) produces (right):
+
+![matmul_st_cpp: the starting program's solution and the best one](../assets/examples/matmul_st_cpp.svg)
+
 ### How it got there
 
 The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.

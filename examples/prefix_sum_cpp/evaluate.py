@@ -25,6 +25,30 @@ def run(binary, n, reps):
     return json.loads(out.stdout.strip().splitlines()[-1])
 
 
+def input_head(k):
+    """The first k input values, generated exactly as harness.cpp does."""
+    s, out = 0x853C49E6748FEA9B, []
+    run_byte = 0
+    mask = (1 << 64) - 1
+
+    def rnd():
+        nonlocal s
+        s = (s * 6364136223846793005 + 1442695040888963407) & mask
+        return s >> 16
+    for _ in range(k):
+        r = rnd()
+        v = (r & 0xFFFFFFFF) - 2147483648
+        kind = (r >> 32) & 7
+        if kind < 4:
+            v &= ~255
+        elif kind < 6:
+            if ((r >> 36) & 63) == 0:
+                run_byte = rnd() & 255
+            v = (v & ~255) | run_byte
+        out.append(v)
+    return out
+
+
 def mismatch(r):
     return f"wrong result for n={r['n']}: {r['what']}"
 
@@ -47,6 +71,7 @@ def main(binary, stage):
         print(json.dumps({"valid": False, "feedback": mismatch(r)}))
         return
     print(json.dumps({"score": r["gb_per_s"],
+                      "solution": {"kind": "scan", "n": BENCH_N, "head": input_head(6)},
                       "metrics": {"gb_per_cpu_s": r["gb_per_s"],
                                   "ns_per_element": r["ns_per_element"],
                                   "cpu_seconds_n10m": r["cpu_seconds"]}}))

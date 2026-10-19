@@ -5,6 +5,7 @@ name = "toy"
 language = "python"
 initial = "initial.py"
 category = "Testing"
+summary = "Make a function return a value as large as possible, but at most 100: the test suite's problem."
 description = "Make value() return a larger number (at most 100)."
 
 [search]

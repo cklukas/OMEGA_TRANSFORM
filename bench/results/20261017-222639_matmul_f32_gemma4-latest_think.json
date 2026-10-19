@@ -1,5 +1,5 @@
 {
- "schema": 2,
+ "schema": 3,
  "example": "matmul_f32",
  "model": "gemma4:latest",
  "variant": "think",
@@ -122,5 +122,15 @@
  "mean_gen_tokens": 2149,
  "stopped_calls": 0,
  "provider": "ollama",
- "cost_usd": 0
+ "cost_usd": 0,
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ }
 }

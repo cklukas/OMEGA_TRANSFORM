@@ -5,6 +5,7 @@ name = "sort_u32_single_thread"
 language = "cpp"
 initial = "sort.cpp"
 category = "Performance (C++)"
+summary = "Sort a million 32-bit integers per input as fast as possible on one core, exactly like std::sort."
 context_files = ["harness.cpp"]
 description = """
 Make the C++ function sort_u32(a, n), which sorts an array of n uint32_t values ascending

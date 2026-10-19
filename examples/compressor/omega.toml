@@ -5,6 +5,7 @@ name = "log_compressor"
 language = "python"
 initial = "initial.py"
 category = "Data and modelling"
+summary = "Compress a web server access log losslessly into as few bytes as possible."
 description = """
 Write a LOSSLESS compressor for web-server access logs. The program defines
 compress(data: bytes) -> bytes and decompress(blob: bytes) -> bytes. The evaluator

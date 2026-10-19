@@ -5,6 +5,7 @@ name = "float_parse_single_thread"
 language = "cpp"
 initial = "parse.cpp"
 category = "Performance (C++)"
+summary = "Parse a long text of decimal numbers into doubles as fast as possible, bit-exact."
 context_files = ["harness.cpp"]
 description = """
 Make the C++ function parse_doubles(buf, len, out), which parses a text of decimal
