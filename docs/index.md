@@ -92,7 +92,7 @@ syntax noise:
 | [Evolution of Heuristics](https://arxiv.org/abs/2401.02051) (Liu et al.) | 2024 | Heuristics, evolving the idea and the code together |
 | [ReEvo](https://arxiv.org/abs/2402.01145) (Ye et al.) | 2024 | Heuristics for combinatorial problems, with reflection |
 | [AlphaEvolve](https://arxiv.org/abs/2506.13131) (Novikov et al.) | 2025 | Whole files, with an ensemble of large cloud models |
-| [OpenEvolve](https://github.com/codelion/openevolve) | 2025 | Open-source framework for whole-file evolution |
+| [OpenEvolve](https://github.com/algorithmicsuperintelligence/openevolve) | 2025 | Open-source framework for whole-file evolution |
 | [ShinkaEvolve](https://arxiv.org/abs/2509.19349) (Lange et al.) | 2025 | Programs, with a focus on needing few samples |
 
 Many ideas recur across these works and in OMEGA TRANSFORM: an island model
