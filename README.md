@@ -4,13 +4,17 @@
 
 ![OMEGA TRANSFORM: evolutionary program optimization with local LLMs](docs/assets/omega-banner.svg)
 
+**Documentation: <https://cklukas.github.io/OMEGA_TRANSFORM/>**: how it
+works, the example gallery, and the model benchmarks.
+
 LLM-driven evolutionary optimization of Python and C/C++ programs, running
 entirely on your own machine: a local model served by Ollama proposes code
 changes, and a pool of local compute jobs builds, tests, and scores them. It
 is designed for private compute: by default there is no cloud and no API key,
 and no code or data leaves the machine; cloud models through OpenRouter are an
 explicit option (docs/cloud-models.md). The documentation in [docs/](docs/index.md) explains how
-the engine works; it is published as the project's Pages site.
+the engine works; it is published as the project's
+[Pages site](https://cklukas.github.io/OMEGA_TRANSFORM/).
 
 The engine is standard-library Python only (3.11+). The source is on GitHub:
 <https://github.com/cklukas/OMEGA_TRANSFORM>.
