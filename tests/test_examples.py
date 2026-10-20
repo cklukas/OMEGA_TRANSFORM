@@ -47,7 +47,7 @@ class ExamplesTest(unittest.TestCase):
     def test_no_python_candidate_can_read_its_evaluator(self):
         from omega_transform.evaluator import sandbox_available
         if not sandbox_available():
-            self.skipTest("read protection needs a sandbox (sandbox-exec or bwrap)")
+            self.skipTest("read protection needs a sandbox (sandbox-exec, bwrap or an AppContainer)")
         probe = ('import os as _os\n'
                  '_os.read(_os.open(_os.environ["OMEGA_PROBLEM_DIR"] + "/evaluate.py", 0), 9)\n')
         for ex in EXAMPLES:
@@ -60,8 +60,9 @@ class ExamplesTest(unittest.TestCase):
             with self.subTest(example=ex.name), tempfile.TemporaryDirectory() as tmp:
                 res = Evaluator(cfg, Path(tmp)).evaluate(cheat, "cheat")
                 self.assertNotEqual(res.status, "ok", f"{ex.name} read its evaluator")
-                self.assertTrue(any(m in res.feedback for m in (  # macOS refuses, Linux hides
-                    "Operation not permitted", "No such file or directory")), res.feedback)
+                self.assertTrue(any(m in res.feedback for m in (  # macOS, Windows refuse; Linux hides
+                    "Operation not permitted", "Permission denied", "No such file or directory")),
+                    res.feedback)
 
 
 if __name__ == "__main__":

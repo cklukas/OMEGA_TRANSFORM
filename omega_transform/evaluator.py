@@ -304,6 +304,7 @@ CANDIDATE_PROFILE = SANDBOX_PROFILE + """(deny file-read* (subpath "{problem_dir
 (allow file-read* (subpath "{workdir}"))
 """
 CANDIDATE_RUNNER = str(Path(__file__).with_name("candidate_runner.py"))
+WINSANDBOX = str(Path(__file__).with_name("winsandbox.py"))
 PACKAGE_PARENT = str(Path(__file__).resolve().parent.parent)
 
 
@@ -333,7 +334,7 @@ def _bwrap_probe(net: bool) -> subprocess.CompletedProcess:
 
 def sandbox_backend() -> str | None:
     """The sandbox this machine offers: "sandbox-exec" (macOS), "bwrap" (Linux
-    bubblewrap, if it can create its namespaces here) or None."""
+    bubblewrap, if it can create its namespaces here), "appcontainer" (Windows) or None."""
     if not _backend:
         found = None
         if sys.platform == "darwin" and shutil.which("sandbox-exec"):
@@ -357,6 +358,13 @@ def sandbox_backend() -> str | None:
             found = "bwrap" if ok else None
         elif sys.platform.startswith("linux"):
             _problem.append("bubblewrap (bwrap) is not installed")
+        elif WINDOWS:
+            try:
+                from .winsandbox import create_profiles
+                create_profiles()
+                found = "appcontainer"
+            except OSError as e:
+                _problem.append(f"no AppContainer: {e}")
         elif sys.platform != "darwin":
             _problem.append(f"no sandbox implementation for {sys.platform}")
         _backend.append(found)
@@ -379,10 +387,13 @@ def sandbox_status() -> str:
         "); jobs run unconfined"
 
 
-def sandbox_prefix(workdir: Path, hide: Path | None = None) -> list[str]:
+def sandbox_prefix(workdir: Path, hide: Path | None = None,
+                   problem_dir: Path | None = None) -> list[str]:
     """Command prefix that confines a process: no network, writable only in
     ``workdir`` (and /dev), and with ``hide`` unreadable (the problem directory,
-    for candidate code). Empty when no sandbox is available."""
+    for candidate code). Empty when no sandbox is available. ``problem_dir`` matters
+    on Windows only, where a container reads nothing it is not granted: the
+    evaluator (no ``hide``) is granted it."""
     backend = sandbox_backend()
     if backend == "sandbox-exec":
         profile = SANDBOX_PROFILE.format(workdir=workdir) if hide is None else \
@@ -397,6 +408,15 @@ def sandbox_prefix(workdir: Path, hide: Path | None = None) -> list[str]:
         if hide is not None:
             args += ["--tmpfs", str(hide)]
         return args + ["--bind", str(workdir), str(workdir)]  # cwd is kept
+    if backend == "appcontainer":
+        # Candidate code runs in a container that has no access to the problem
+        # directory at all; the evaluator's container is granted read access.
+        args = [sys.executable, "-I", WINSANDBOX]
+        if hide is not None:
+            args.append("--candidate")
+        elif problem_dir is not None:
+            args += ["--grant", str(problem_dir)]
+        return args + [str(workdir), "--"]
     return []
 
 
@@ -451,7 +471,8 @@ class Evaluator:
             cfg.lang_tag in ("python", "c", "cpp")
         if self.sandboxed and not sandbox_available():
             raise RuntimeError("evaluator.sandbox = true, but no sandbox is available "
-                               "(macOS sandbox-exec, or Linux bwrap with user namespaces)")
+                               "(macOS sandbox-exec, Linux bwrap with user namespaces, or "
+                               "Windows AppContainers)")
 
     def _candidate_prefix(self, wd: Path) -> list[str]:
         """Command prefix for code that must not read the problem directory."""
@@ -481,14 +502,18 @@ class Evaluator:
     def _evaluator_prefix(self, wd: Path) -> list[str]:
         prefix = list(self.ev.launcher)
         if self.sandboxed:
-            prefix += sandbox_prefix(wd)
+            prefix += sandbox_prefix(wd, problem_dir=self.cfg.problem_dir.resolve())
         return prefix
 
     def _start_runner(self, cand: Path, wd: Path, env: dict) -> _Runner:
         """Start the candidate's own process before the evaluator, which joins its group."""
         if WINDOWS:  # named pipes, which the runner creates as their server
             from .winjob import pipe_name
-            req, resp = pipe_name("req"), pipe_name("resp")
+            where = {}
+            if self.sandboxed and sandbox_backend() == "appcontainer":
+                from .winsandbox import pipe_dir  # where a container may create pipes
+                where = {"where": pipe_dir()}
+            req, resp = pipe_name("req", **where), pipe_name("resp", **where)
         else:
             req, resp = wd / ".omega-req", wd / ".omega-resp"
             for fifo in (req, resp):
@@ -538,9 +563,12 @@ class Evaluator:
         if WINDOWS:  # where Windows programs put temporary files; the cycle-clock rate
             from .winjob import tsc_hz
             env.update(TMP=str(wd), TEMP=str(wd), OMEGA_TSC_HZ=repr(tsc_hz()))
+            if self.sandboxed and sandbox_backend() == "appcontainer":
+                from .winsandbox import msvc_env
+                env.update(msvc_env())
         prefix = list(self.ev.launcher)
         if self.sandboxed:
-            prefix += sandbox_prefix(wd)
+            prefix += sandbox_prefix(wd, problem_dir=self.cfg.problem_dir.resolve())
         mem = self.ev.max_memory_mb if not self.ev.launcher else 0.0
         usage: dict[str, dict] = {}
 

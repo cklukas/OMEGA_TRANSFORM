@@ -71,8 +71,8 @@ Useful `run` overrides: `-m MODEL` (repeatable), `-j` (evaluation jobs),
 ## Safety
 
 Every build, run and evaluator process is sandboxed (macOS `sandbox-exec`,
-Linux bubblewrap): it can write only inside its own job directory and has no
-network access. Windows has no sandbox yet; there jobs run unconfined. Each
+Linux bubblewrap, Windows AppContainers): it can write only inside its own job
+directory and has no network access. Each
 job's process tree is also killed if it exceeds `evaluator.max_memory_mb`.
 Evaluators must therefore write any scratch files to `$OMEGA_WORKDIR`, not to
 the problem directory.

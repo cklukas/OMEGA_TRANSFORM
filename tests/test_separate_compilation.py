@@ -90,7 +90,7 @@ class SeparateCompilationTest(unittest.TestCase):
                           at_end="static const double USED = cpu_seconds();")
         self.assertEqual(r.status, "compile_error")
 
-    @unittest.skipUnless(sandbox_available(), "read protection needs a sandbox (sandbox-exec or bwrap)")
+    @unittest.skipUnless(sandbox_available(), "read protection needs a sandbox (sandbox-exec, bwrap or an AppContainer)")
     def test_compiled_program_cannot_read_the_problem_directory(self):
         # If the harness source were readable, the program would corrupt its output.
         r = self.evaluate(

@@ -16,7 +16,7 @@ def program(body: str) -> str:
         "\n# OMEGA-BLOCK-END\n"
 
 
-@unittest.skipUnless(sandbox_available(), "no sandbox here (macOS sandbox-exec or Linux bwrap)")
+@unittest.skipUnless(sandbox_available(), "no sandbox here (macOS sandbox-exec, Linux bwrap or Windows AppContainers)")
 class SandboxTest(unittest.TestCase):
     def setUp(self):
         self.cfg = load_config(TOY)
@@ -33,6 +33,13 @@ class SandboxTest(unittest.TestCase):
             "import os\nopen(os.environ['OMEGA_WORKDIR'] + '/x', 'w').write('ok')\nreturn 3"), "w")
         self.assertEqual((r.status, r.score), ("ok", 3))
 
+    def test_temporary_files_go_to_the_job_dir(self):
+        # On Windows, a container's TEMP would otherwise be its profile folder.
+        r = self.ev.evaluate(program(
+            "import os, tempfile\nreturn 3 if os.path.realpath(tempfile.gettempdir()) == "
+            "os.path.realpath(os.environ['OMEGA_WORKDIR']) else 0"), "t")
+        self.assertEqual((r.status, r.score), ("ok", 3))
+
     def test_write_outside_job_dir_denied(self):
         r = self.ev.evaluate(program(f"open({str(self.outside)!r}, 'w').write('x')\nreturn 1"), "o")
         self.assertNotEqual(r.status, "ok")
@@ -42,9 +49,11 @@ class SandboxTest(unittest.TestCase):
         r = self.ev.evaluate(program(
             "import socket\nsocket.create_connection(('1.1.1.1', 53), timeout=2)\nreturn 1"), "n")
         self.assertNotEqual(r.status, "ok")
-        # macOS refuses the connection; Linux has no route in its empty network namespace.
+        # macOS refuses the connection; Linux has no route in its empty network namespace;
+        # Windows refuses the socket access (WSAEACCES) to a container without capabilities.
         self.assertTrue(any(m in r.feedback for m in ("Operation not permitted",
-                                                       "Network is unreachable")), r.feedback)
+                                                       "Network is unreachable",
+                                                       "WinError 10013")), r.feedback)
 
 
 class UsageTest(unittest.TestCase):
@@ -97,13 +106,14 @@ class IsolationTest(unittest.TestCase):
         r = self.evaluate("return 7")
         self.assertEqual((r.status, r.score), ("ok", 7))
 
-    @unittest.skipUnless(sandbox_available(), "no sandbox here (macOS sandbox-exec or Linux bwrap)")
+    @unittest.skipUnless(sandbox_available(), "no sandbox here (macOS sandbox-exec, Linux bwrap or Windows AppContainers)")
     def test_candidate_cannot_read_the_evaluator(self):
         evaluator = str(TOY / "evaluate.py")
         r = self.evaluate(f"open({evaluator!r}).read()\nreturn 1")
         self.assertEqual(r.status, "invalid")
-        # macOS refuses the read; Linux hides the problem directory altogether.
+        # macOS and Windows refuse the read; Linux hides the problem directory altogether.
         self.assertTrue(any(m in r.feedback for m in ("Operation not permitted",
+                                                       "Permission denied",
                                                        "No such file or directory")), r.feedback)
 
     def test_a_crash_in_the_candidate_is_feedback(self):

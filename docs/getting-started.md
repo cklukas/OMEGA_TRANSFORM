@@ -13,8 +13,8 @@
   below).
 
 Jobs run sandboxed automatically: `sandbox-exec` on macOS, bubblewrap (`bwrap`)
-on Linux (see [Robustness and safety](robustness.md)). Windows has no sandbox
-yet: there jobs run unconfined, as `omega sandbox` reports.
+on Linux, AppContainers on Windows (see [Robustness and safety](robustness.md)).
+`omega sandbox` reports which one this machine uses.
 
 ### Windows
 
@@ -35,6 +35,22 @@ connect an evaluator to its candidate's process. Notes:
   counter's rate, which is constant on CPUs with an invariant TSC: precise to
   microseconds, like the POSIX process clock. The C++ harnesses and the
   candidate runner (`cand.last_cpu`) both use it.
+- Jobs run in AppContainers, the isolation of Store apps and browser
+  sandboxes, started by `omega_transform/winsandbox.py`. A container has no
+  network access and opens only files whose access list admits it. The
+  Windows and Program Files trees admit every container, so the system, LLVM
+  and the Build Tools stay usable. On first use, the engine creates two
+  container profiles, `omega_transform.evaluator` and
+  `omega_transform.candidate`, and denies them the profile folder and registry
+  key Windows gives each profile. It grants read access to the Python
+  installation that runs the engine and to the `omega_transform` package, and
+  evaluators also to each problem directory. These grants stay in place. Each
+  job directory gets the low integrity label and is open to that job's
+  processes alone; TEMP and TMP point into it. A Python interpreter other than
+  the one running the engine (`evaluator.python`) must be readable by
+  containers too. Containers cannot ask Visual Studio's setup service where the
+  C++ tools are, so the engine finds them with `vswhere` and passes them on in
+  `VCToolsInstallDir`.
 - Ollama for Windows splits a model that does not fit one GPU across several
   (two 11 GB cards hold a 16 GB model at a 32k context, with a little of it on
   the CPU). The memory guard checks system RAM, as on a Mac.

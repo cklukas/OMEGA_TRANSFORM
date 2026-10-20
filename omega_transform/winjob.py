@@ -37,6 +37,7 @@ import time
 from ctypes import wintypes
 
 _k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+_adv = ctypes.WinDLL("advapi32", use_last_error=True)
 
 _JobObjectBasicAccountingInformation = 1
 _JobObjectExtendedLimitInformation = 9
@@ -86,6 +87,10 @@ _k32.QueryInformationJobObject.argtypes = [wintypes.HANDLE, ctypes.c_int, wintyp
 _k32.SetInformationJobObject.argtypes = [wintypes.HANDLE, ctypes.c_int, wintypes.LPVOID,
                                          wintypes.DWORD]
 _k32.CloseHandle.argtypes = [wintypes.HANDLE]
+_k32.LocalFree.argtypes = [wintypes.LPVOID]
+_k32.LocalFree.restype = wintypes.LPVOID
+_adv.ConvertStringSecurityDescriptorToSecurityDescriptorW.argtypes = [
+    wintypes.LPCWSTR, wintypes.DWORD, ctypes.POINTER(wintypes.LPVOID), wintypes.LPVOID]
 _k32.CreateNamedPipeW.restype = wintypes.HANDLE
 _k32.CreateNamedPipeW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD,
                                   wintypes.DWORD, wintypes.DWORD, wintypes.DWORD,
@@ -204,8 +209,30 @@ def process_cpu() -> float:
     return c.value / tsc_hz()
 
 
-def pipe_name(tag: str) -> str:
-    return rf"\\.\pipe\omega-{os.getpid()}-{time.monotonic_ns()}-{tag}"
+def pipe_name(tag: str, where: str = r"\\.\pipe") -> str:
+    """A fresh pipe name; ``where`` is the namespace (``winsandbox.pipe_dir`` when the
+    runner, which creates the pipe, runs in a container)."""
+    return rf"{where}\omega-{os.getpid()}-{time.monotonic_ns()}-{tag}"
+
+
+class _SecurityAttributes(ctypes.Structure):
+    _fields_ = [("nLength", wintypes.DWORD), ("lpSecurityDescriptor", wintypes.LPVOID),
+                ("bInheritHandle", wintypes.BOOL)]
+
+
+def _pipe_security():
+    """Security attributes that let the evaluator open the runner's pipes when both
+    run in AppContainers (``winsandbox.pipe_security``)."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "omega_winsandbox", os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                         "winsandbox.py"))
+    sandbox = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(sandbox)
+    sd = wintypes.LPVOID()
+    _check(_adv.ConvertStringSecurityDescriptorToSecurityDescriptorW(
+        sandbox.pipe_security(), 1, ctypes.byref(sd), None))
+    return _SecurityAttributes(ctypes.sizeof(_SecurityAttributes), sd, False)
 
 
 def serve_pipe(name: str, inbound: bool):
@@ -213,7 +240,11 @@ def serve_pipe(name: str, inbound: bool):
     it as a text file (read from it if ``inbound``, else write to it)."""
     import msvcrt
     access = _PIPE_ACCESS_INBOUND if inbound else _PIPE_ACCESS_OUTBOUND
-    h = _k32.CreateNamedPipeW(name, access, _PIPE_WAIT, 1, 65536, 65536, 0, None)
+    sa = _pipe_security()
+    try:
+        h = _k32.CreateNamedPipeW(name, access, _PIPE_WAIT, 1, 65536, 65536, 0, ctypes.byref(sa))
+    finally:
+        _k32.LocalFree(sa.lpSecurityDescriptor)
     if h == wintypes.HANDLE(-1).value:
         raise ctypes.WinError(ctypes.get_last_error())
     if not _k32.ConnectNamedPipe(h, None) and ctypes.get_last_error() != _ERROR_PIPE_CONNECTED:

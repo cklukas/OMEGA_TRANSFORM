@@ -39,7 +39,7 @@ How candidates are built, run and scored.
 | `exports` | list of strings | `[]` | global symbols the candidate's object may define (its interface, e.g. ["sort_u32"]); anything else global is rejected before linking, so it cannot replace functions the harness or the C library provide. Requires compile and link. |
 | `launcher` | list of strings | `[]` | prefix for every job, e.g. ["srun", "-n1"] |
 | `concurrency` | int | `4` | evaluation jobs in parallel |
-| `sandbox` | bool or none | none | confine jobs: no network, writes only in the job dir (macOS sandbox-exec, Linux bubblewrap); None = on where available |
+| `sandbox` | bool or none | none | confine jobs: no network, writes only in the job dir (macOS sandbox-exec, Linux bubblewrap, Windows AppContainers); None = on where available |
 | `isolate` | bool or none | none | run the candidate (Python module, or compiled program) in its own process that cannot read the problem directory; the evaluator reaches it through omega_transform.harness. None = on for Python, C and C++ |
 | `max_memory_mb` | float | `4096.0` | kill a job whose process tree uses more; 0 = no limit |
 | `confirm_runs` | int | `0` | extra evaluations of an apparent new best; its score = median |
