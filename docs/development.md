@@ -32,7 +32,10 @@ python3 -m unittest discover -s tests
 ```
 
 The tests use a scripted model instead of Ollama, so they run in seconds and
-need no server. The sandbox tests run on macOS only.
+need no server. The sandbox tests run where a sandbox is available (macOS,
+Linux with bubblewrap) and are skipped on Windows. The suite passes on macOS
+and Windows; Windows-only code (Job Objects, named pipes) lives in
+`omega_transform/winjob.py`.
 
 One test also evaluates every example's starting program with its own
 evaluator, building the C/C++ ones. It takes a minute or two, so it runs

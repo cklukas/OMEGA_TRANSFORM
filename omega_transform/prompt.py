@@ -209,7 +209,7 @@ def build_messages(cfg: ProblemConfig, ctx: Context, char_budget: int) -> list[d
 
     for name in cfg.context_files:
         try:
-            text = (cfg.problem_dir / name).read_text()
+            text = (cfg.problem_dir / name).read_text(encoding="utf-8")
         except OSError:
             continue
         if len(text) > 8000:

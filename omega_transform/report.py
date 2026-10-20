@@ -43,7 +43,7 @@ def load_results(results_dir: Path) -> list[dict]:
     out = []
     for p in sorted(results_dir.glob("*.json")):
         try:
-            d = json.loads(p.read_text())
+            d = json.loads(p.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
             continue
         d["_file"] = p.name
@@ -713,7 +713,7 @@ def write_report(results_dir: Path, out: Path) -> Path:
     """Write the overview page ``out`` and its sub-pages in the directory of the same
     name (``docs/benchmarks.md`` and ``docs/benchmarks/``); stale sub-pages are removed."""
     check_file = results_dir.parent / "model-check.json"
-    check = json.loads(check_file.read_text()) if check_file.exists() else None
+    check = json.loads(check_file.read_text(encoding="utf-8")) if check_file.exists() else None
     from .releases import load
     releases = load(results_dir.parent / "model-releases.json")
     pages = render(load_results(results_dir), check, releases)
@@ -722,7 +722,7 @@ def write_report(results_dir: Path, out: Path) -> Path:
     written = set()
     for rel, text in pages.items():
         p = out if rel == "benchmarks.md" else sub / Path(rel).name
-        p.write_text(text)
+        p.write_text(text, encoding="utf-8", newline="\n")
         written.add(p)
     for stale in sub.glob("*.md"):
         if stale not in written:

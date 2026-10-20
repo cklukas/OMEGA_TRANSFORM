@@ -96,19 +96,19 @@ MODE = ["a", "b"]
         cfg.search.iterations = 1
         cfg.search.sweep_budget = 24
         cfg.search.repair_ratio = 0.0
-        with tempfile.TemporaryDirectory() as tmp:
-            eng = Engine(cfg, Path(tmp), llm=ScriptedLLM(llm), log=lambda s: None)
-            self.addCleanup(eng.close)
-            best = eng.run()
-            self.assertTrue(best.idea.startswith("tuned K="), best.idea)
-            self.assertGreater(best.score, 90)
-            counts = eng.db.status_counts()
-            self.assertGreater(counts.get("swept", 0), 10)
-            base = eng.db.get(best.parent_id)
-            self.assertEqual(base.score, 5)
-            self.assertIn("sweep of 24 points", base.feedback)
-            # Swept variants stay out of what the LLM sees.
-            self.assertEqual([c.id for c in eng.db.children(base.id)], [best.id])
+        tmp = self.enterContext(tempfile.TemporaryDirectory())
+        eng = Engine(cfg, Path(tmp), llm=ScriptedLLM(llm), log=lambda s: None)
+        self.addCleanup(eng.close)
+        best = eng.run()
+        self.assertTrue(best.idea.startswith("tuned K="), best.idea)
+        self.assertGreater(best.score, 90)
+        counts = eng.db.status_counts()
+        self.assertGreater(counts.get("swept", 0), 10)
+        base = eng.db.get(best.parent_id)
+        self.assertEqual(base.score, 5)
+        self.assertIn("sweep of 24 points", base.feedback)
+        # Swept variants stay out of what the LLM sees.
+        self.assertEqual([c.id for c in eng.db.children(base.id)], [best.id])
 
 
 if __name__ == "__main__":

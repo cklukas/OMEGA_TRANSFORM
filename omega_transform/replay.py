@@ -25,7 +25,7 @@ _SECTION = re.compile(r"^---- (system|user|response) ----$", re.M)
 
 def read_log(path: Path) -> tuple[list[dict[str, str]], str]:
     """(messages, response) from an ``llm/<id>.md`` log written by the engine."""
-    text = path.read_text()
+    text = path.read_text(encoding="utf-8")
     parts = _SECTION.split(text)
     messages, response = [], ""
     for role, body in zip(parts[1::2], parts[2::2]):

@@ -126,7 +126,8 @@ class IsolationTest(unittest.TestCase):
         import os
         from omega_transform.harness import Candidate
         with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as f:
-            f.write("def echo(b):\n    x = 0\n    for i in range(300000):\n        x += i\n"
+            # Enough work to register on Windows, whose process clock ticks in 15.6 ms steps.
+            f.write("def echo(b):\n    x = 0\n    for i in range(3000000):\n        x += i\n"
                     "    return b[::-1], (1, 2)\n")
         os.environ.pop("OMEGA_RUNNER", None)
         cand = Candidate(f.name)

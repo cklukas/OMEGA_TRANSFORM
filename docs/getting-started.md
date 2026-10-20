@@ -5,14 +5,39 @@
 
 ## Requirements
 
-- macOS or Linux with Python 3.11 or newer. The engine uses only the standard
-  library.
+- macOS, Linux or Windows 10/11 with Python 3.11 or newer. The engine uses
+  only the standard library.
 - [Ollama](https://ollama.com) running locally, with at least one model
   pulled. `qwen3.5:latest` (9.7B, about 7 GB) is the default.
-- For C/C++ problems: `clang++` or `g++`.
+- For C/C++ problems: `clang++` or `g++` (on Windows: LLVM's `clang++`, see
+  below).
 
 Jobs run sandboxed automatically: `sandbox-exec` on macOS, bubblewrap (`bwrap`)
-on Linux (see [Robustness and safety](robustness.md)).
+on Linux (see [Robustness and safety](robustness.md)). Windows has no sandbox
+yet: there jobs run unconfined, as `omega sandbox` reports.
+
+### Windows
+
+The engine runs natively on Windows (no WSL): Job Objects take the place of
+process groups (a timeout or the memory limit kills a job's whole process tree,
+and CPU time and peak memory are accounted for the tree), and named pipes
+connect an evaluator to its candidate's process. Notes:
+
+- C/C++ examples need a current LLVM (`winget install LLVM.LLVM`) and the
+  Visual Studio Build Tools (C++ workload), whose headers and libraries
+  LLVM's `clang++` uses. The LLVM installer does not change `PATH`: put
+  `C:\Program Files\LLVM\bin` first, ahead of older clang builds that other
+  toolchains install. `llvm-nm` from the same directory checks the symbols of
+  separately compiled candidates.
+- Windows advances a process's CPU times only per scheduler tick (15.6 ms),
+  `time.process_time` included. CPU times are therefore taken from the CPU
+  cycles a process ran (QueryProcessCycleTime) divided by the timestamp
+  counter's rate, which is constant on CPUs with an invariant TSC: precise to
+  microseconds, like the POSIX process clock. The C++ harnesses and the
+  candidate runner (`cand.last_cpu`) both use it.
+- Ollama for Windows splits a model that does not fit one GPU across several
+  (two 11 GB cards hold a 16 GB model at a 32k context, with a little of it on
+  the CPU). The memory guard checks system RAM, as on a Mac.
 
 ## Install
 

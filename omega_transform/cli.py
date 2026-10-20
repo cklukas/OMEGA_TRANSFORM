@@ -39,7 +39,8 @@ def cmd_check(a) -> int:
         print(f"  LLM: {p}")
     import tempfile
     with tempfile.TemporaryDirectory() as tmp:
-        res = Evaluator(cfg, Path(tmp)).evaluate(cfg.initial_path.read_text(), "check")
+        code = cfg.initial_path.read_text(encoding="utf-8")
+        res = Evaluator(cfg, Path(tmp)).evaluate(code, "check")
     print(f"initial   {res.status}  score {fmt_score(res.score)}  ({res.seconds:.2f}s, stage "
           f"{res.stage})")
     if res.metrics:
@@ -356,7 +357,7 @@ def cmd_report(a) -> int:
         from .report import load_results
         benchmarked = {r["model"] for r in load_results(Path(a.results))}
         page = Path(a.output).parent / "openrouter-models.md"
-        page.write_text(render(snap, benchmarked))
+        page.write_text(render(snap, benchmarked), encoding="utf-8", newline="\n")
         print(f"wrote {page}")
     return 0
 
@@ -379,7 +380,7 @@ def cmd_best(a) -> int:
     if best is None:
         sys.exit("no successful program yet")
     if a.output:
-        Path(a.output).write_text(best.code)
+        Path(a.output).write_text(best.code, encoding="utf-8", newline="\n")
         print(f"wrote #{best.id} (score {fmt_score(best.score)}) to {a.output}")
     else:
         sys.stdout.write(best.code)
@@ -440,7 +441,7 @@ def cmd_docs(a) -> int:
     root = Path(__file__).resolve().parent.parent
     if a.check:
         stale = [rel for rel, text in pages().items()
-                 if not (root / rel).exists() or (root / rel).read_text() != text]
+                 if not (root / rel).exists() or (root / rel).read_text(encoding="utf-8") != text]
         for rel in stale:
             print(f"out of date: {rel} (run: omega docs)")
         return 1 if stale else 0
@@ -625,7 +626,17 @@ def build_parser() -> argparse.ArgumentParser:
     return ap
 
 
+def _utf8_output() -> None:
+    """Write the log's symbols (★, ✗, ...) whatever the console or file encoding is:
+    Windows writes redirected output in its ANSI code page, which lacks them."""
+    for stream in (sys.stdout, sys.stderr):
+        enc = (getattr(stream, "encoding", "") or "").lower().replace("-", "")
+        if enc != "utf8" and hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
+
+
 def main(argv: list[str] | None = None) -> int:
+    _utf8_output()
     a = build_parser().parse_args(argv)
     return a.fn(a) or 0
 

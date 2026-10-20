@@ -15,7 +15,22 @@ SORT = ROOT / "examples" / "sort_u32_cpp"
 
 
 class SymbolFilterTest(unittest.TestCase):
-    """Real ``nm -g`` output of candidate objects on macOS and Linux."""
+    """Real ``nm -g`` output of candidate objects on macOS, Linux and Windows."""
+
+    def test_windows_object(self):
+        from omega_transform.evaluator import filter_symbols_coff
+        out = ("00000000 T sort_u32\n"
+               "00000000 T ??1?$vector@IV?$allocator@I@std@@@std@@QEAA@XZ\n"
+               "         U ??2@YAPEAX_K@Z\n"
+               "00000000 R __real@3ff0000000000000\n"
+               "00000000 D _Avx2WmemEnabledWeakValue\n"
+               "00000000 T printf\n"
+               "00000000 T __local_stdio_printf_options\n"
+               "00000000 T QueryPerformanceCounter\n"
+               "00000000 T helper\n"
+               "00000000 T ??2@YAPEAX_K@Z\n")
+        self.assertEqual(filter_symbols_coff(out, ["sort_u32"]),
+                         ["??2@YAPEAX_K@Z", "QueryPerformanceCounter", "helper"])
 
     def test_linux_object(self):
         from omega_transform.evaluator import filter_symbols
@@ -43,7 +58,7 @@ class SeparateCompilationTest(unittest.TestCase):
     def evaluate(self, injected: str, at_end: str = ""):
         cfg = load_config(SORT)
         cfg.evaluator.stages = cfg.evaluator.stages[:1]  # the fast correctness stage suffices
-        code = cfg.initial_path.read_text()
+        code = cfg.initial_path.read_text(encoding="utf-8")
         marker = next(ln for ln in code.splitlines(keepends=True) if "OMEGA-BLOCK-START" in ln)
         code = code.replace(marker, marker + injected + "\n", 1)
         if at_end:

@@ -88,13 +88,13 @@ def take_snapshot() -> dict:
 def save_snapshot(snap: dict, directory: Path) -> Path:
     directory.mkdir(parents=True, exist_ok=True)
     path = directory / f"{snap['taken'][:10]}.json"
-    path.write_text(json.dumps(snap, indent=1) + "\n")
+    path.write_text(json.dumps(snap, indent=1) + "\n", encoding="utf-8", newline="\n")
     return path
 
 
 def latest_snapshot(directory: Path) -> dict | None:
     files = sorted(directory.glob("*.json"))
-    return json.loads(files[-1].read_text()) if files else None
+    return json.loads(files[-1].read_text(encoding="utf-8")) if files else None
 
 
 def _short(model_id: str) -> str:

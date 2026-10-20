@@ -33,7 +33,8 @@ class ExamplesTest(unittest.TestCase):
             if cfg.evaluator.build and not shutil.which(cfg.evaluator.build[0]):
                 continue  # no compiler for this example here
             with self.subTest(example=ex.name), tempfile.TemporaryDirectory() as tmp:
-                res = Evaluator(cfg, Path(tmp)).evaluate(cfg.initial_path.read_text(), "t")
+                code = cfg.initial_path.read_text(encoding="utf-8")
+                res = Evaluator(cfg, Path(tmp)).evaluate(code, "t")
                 self.assertEqual(res.status, "ok", f"{ex.name}: {res.feedback}")
                 if res.solution is not None:  # the example page draws it
                     from omega_transform.figures import drawable, figure
@@ -53,7 +54,7 @@ class ExamplesTest(unittest.TestCase):
             cfg = load_config(ex)
             if cfg.lang_tag != "python":
                 continue
-            code = cfg.initial_path.read_text()
+            code = cfg.initial_path.read_text(encoding="utf-8")
             marker = next(ln for ln in code.splitlines(keepends=True) if "OMEGA-BLOCK-START" in ln)
             cheat = code.replace(marker, marker + probe, 1)
             with self.subTest(example=ex.name), tempfile.TemporaryDirectory() as tmp:

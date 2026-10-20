@@ -40,38 +40,38 @@ class EngineTest(unittest.TestCase):
         cfg.search.insights_interval = 8
         cfg.evaluator.concurrency = 3
         logs = []
-        with tempfile.TemporaryDirectory() as tmp:
-            eng = Engine(cfg, Path(tmp), llm=ScriptedLLM(incrementer), log=logs.append)
-            self.addCleanup(eng.close)
-            best = eng.run()
-            self.assertIsNotNone(best)
-            self.assertGreaterEqual(best.score, 10)
-            counts = eng.db.status_counts()
-            self.assertGreater(counts.get("ok", 0), 5)
-            self.assertIn("edit_error", counts)
-            self.assertTrue(counts.get("runtime_error", 0) + counts.get("invalid", 0) > 0)
-            self.assertEqual(eng.db.max_iteration(), 23)
-            self.assertIn("incrementing works", eng.db.latest_note())
-            # A crashed candidate gets an immediate fix-up attempt as its child.
-            retries = [p for p in eng.db.all_programs() if p.mode.startswith("retry/")]
-            self.assertTrue(retries)
-            self.assertTrue(all(eng.db.get(r.parent_id).status in ("runtime_error", "invalid")
-                                for r in retries))
-            lineage = eng.db.lineage(best.id)
-            self.assertEqual(lineage[0].idea, "initial program")
-            # Resuming continues the iteration numbering.
-            eng2 = Engine(cfg, Path(tmp), llm=ScriptedLLM(incrementer), log=logs.append)
-            self.addCleanup(eng2.close)
-            eng2.run(iterations=4)
-            self.assertEqual(eng2.db.max_iteration(), 27)
-            # Failed attempts appear in later prompts so the LLM can learn from them.
-            prompts = "".join(p.read_text() for p in (Path(tmp) / "llm").glob("*.md"))
-            self.assertIn("FAILED", prompts)
-            # Logged prompts can be replayed against their original parents.
-            from omega_transform.replay import replay
-            res = replay(Path(tmp), eng2.db, ScriptedLLM(incrementer), n=5, evaluator=eng2.evaluator)
-            self.assertEqual(len(res), 5)
-            self.assertTrue(any(r.outcome == "ok" for r in res))
+        tmp = self.enterContext(tempfile.TemporaryDirectory())
+        eng = Engine(cfg, Path(tmp), llm=ScriptedLLM(incrementer), log=logs.append)
+        self.addCleanup(eng.close)
+        best = eng.run()
+        self.assertIsNotNone(best)
+        self.assertGreaterEqual(best.score, 10)
+        counts = eng.db.status_counts()
+        self.assertGreater(counts.get("ok", 0), 5)
+        self.assertIn("edit_error", counts)
+        self.assertTrue(counts.get("runtime_error", 0) + counts.get("invalid", 0) > 0)
+        self.assertEqual(eng.db.max_iteration(), 23)
+        self.assertIn("incrementing works", eng.db.latest_note())
+        # A crashed candidate gets an immediate fix-up attempt as its child.
+        retries = [p for p in eng.db.all_programs() if p.mode.startswith("retry/")]
+        self.assertTrue(retries)
+        self.assertTrue(all(eng.db.get(r.parent_id).status in ("runtime_error", "invalid")
+                            for r in retries))
+        lineage = eng.db.lineage(best.id)
+        self.assertEqual(lineage[0].idea, "initial program")
+        # Resuming continues the iteration numbering.
+        eng2 = Engine(cfg, Path(tmp), llm=ScriptedLLM(incrementer), log=logs.append)
+        self.addCleanup(eng2.close)
+        eng2.run(iterations=4)
+        self.assertEqual(eng2.db.max_iteration(), 27)
+        # Failed attempts appear in later prompts so the LLM can learn from them.
+        prompts = "".join(p.read_text(encoding="utf-8") for p in (Path(tmp) / "llm").glob("*.md"))
+        self.assertIn("FAILED", prompts)
+        # Logged prompts can be replayed against their original parents.
+        from omega_transform.replay import replay
+        res = replay(Path(tmp), eng2.db, ScriptedLLM(incrementer), n=5, evaluator=eng2.evaluator)
+        self.assertEqual(len(res), 5)
+        self.assertTrue(any(r.outcome == "ok" for r in res))
 
 
 class FailingModelTest(unittest.TestCase):
@@ -84,27 +84,27 @@ class FailingModelTest(unittest.TestCase):
         cfg = load_config(TOY)
         cfg.search.iterations = 1000
         cfg.llm.max_consecutive_errors = 5
-        with tempfile.TemporaryDirectory() as tmp:
-            eng = Engine(cfg, Path(tmp), llm=ScriptedLLM(broken), log=lambda s: None)
-            self.addCleanup(eng.close)
-            eng.run()
-            self.assertLess(eng.db.count("llm_error"), 20)
+        tmp = self.enterContext(tempfile.TemporaryDirectory())
+        eng = Engine(cfg, Path(tmp), llm=ScriptedLLM(broken), log=lambda s: None)
+        self.addCleanup(eng.close)
+        eng.run()
+        self.assertLess(eng.db.count("llm_error"), 20)
 
 
 class ConfirmTest(unittest.TestCase):
     def test_noisy_best_is_confirmed_by_median(self):
         cfg = load_config(TOY)
         cfg.evaluator.confirm_runs = 2
-        with tempfile.TemporaryDirectory() as tmp:
-            eng = Engine(cfg, Path(tmp), llm=ScriptedLLM(incrementer), log=lambda s: None)
-            self.addCleanup(eng.close)
-            eng.initialize()
-            from omega_transform.database import Program
-            p = Program(id="x1", code="# OMEGA-BLOCK-START\ndef value():\n    return 50\n"
-                        "# OMEGA-BLOCK-END\n", status="ok", score=99.0)  # lucky first run
-            eng._confirm(p)
-            self.assertEqual(p.score, 50)  # median of [99, 50, 50]
-            self.assertEqual(p.metrics["score_samples"], [50, 50, 99.0])
+        tmp = self.enterContext(tempfile.TemporaryDirectory())
+        eng = Engine(cfg, Path(tmp), llm=ScriptedLLM(incrementer), log=lambda s: None)
+        self.addCleanup(eng.close)
+        eng.initialize()
+        from omega_transform.database import Program
+        p = Program(id="x1", code="# OMEGA-BLOCK-START\ndef value():\n    return 50\n"
+                    "# OMEGA-BLOCK-END\n", status="ok", score=99.0)  # lucky first run
+        eng._confirm(p)
+        self.assertEqual(p.score, 50)  # median of [99, 50, 50]
+        self.assertEqual(p.metrics["score_samples"], [50, 50, 99.0])
 
 
 if __name__ == "__main__":

@@ -29,7 +29,7 @@ DEFAULT_FILE = Path("bench/model-releases.json")
 def load(path: Path = DEFAULT_FILE) -> dict[str, dict]:
     """{model: {"repo": ..., "released": "YYYY-MM-DD", "source": ...}}"""
     try:
-        return json.loads(Path(path).read_text()).get("models", {})
+        return json.loads(Path(path).read_text(encoding="utf-8")).get("models", {})
     except (OSError, ValueError):
         return {}
 
@@ -37,7 +37,7 @@ def load(path: Path = DEFAULT_FILE) -> dict[str, dict]:
 def save(models: dict[str, dict], path: Path = DEFAULT_FILE) -> None:
     Path(path).write_text(json.dumps(
         {"note": "release dates of the benchmarked models; refresh with `omega model-releases`",
-         "models": dict(sorted(models.items()))}, indent=1) + "\n")
+         "models": dict(sorted(models.items()))}, indent=1) + "\n", encoding="utf-8", newline="\n")
 
 
 def released(models: dict[str, dict], model: str) -> str | None:

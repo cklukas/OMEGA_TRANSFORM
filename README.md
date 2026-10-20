@@ -72,9 +72,10 @@ Useful `run` overrides: `-m MODEL` (repeatable), `-j` (evaluation jobs),
 
 Every build, run and evaluator process is sandboxed (macOS `sandbox-exec`,
 Linux bubblewrap): it can write only inside its own job directory and has no
-network access. Each job's process tree is also killed if it exceeds
-`evaluator.max_memory_mb`. Evaluators must therefore write any scratch files
-to `$OMEGA_WORKDIR`, not to the problem directory.
+network access. Windows has no sandbox yet; there jobs run unconfined. Each
+job's process tree is also killed if it exceeds `evaluator.max_memory_mb`.
+Evaluators must therefore write any scratch files to `$OMEGA_WORKDIR`, not to
+the problem directory.
 
 Python candidates run in a process of their own with a stricter sandbox that
 cannot read the problem directory, so a candidate cannot read the evaluator or

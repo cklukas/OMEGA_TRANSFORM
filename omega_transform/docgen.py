@@ -213,7 +213,7 @@ def example_page(name: str, category: str, cfg, results: list[dict]) -> str:
     from .prompt import fmt_score
     from .report import best_run, label, latest_per_model, shorten
     lang = "cpp" if cfg.language in ("cpp", "c++", "c") else cfg.language
-    code = cfg.initial_path.read_text()
+    code = cfg.initial_path.read_text(encoding="utf-8")
     stages = ", ".join(s.name + (" (timed alone)" if s.exclusive else "")
                        for s in cfg.evaluator.stages)
     out = [HDR.format(src=f"examples/{name}/ and bench/results/*.json"), f"# {name}\n\n",
@@ -393,8 +393,8 @@ def pages() -> dict[str, str]:
         out[f"docs/examples/{name}.md"] = example_page(name, cat, cfg, results)
     figs = figures(results, examples)
     out.update(figs)
-    out["docs/index.md"] = start_page((root / "docs" / "index.md").read_text(), results,
-                                      examples, figs)
+    index = (root / "docs" / "index.md").read_text(encoding="utf-8")
+    out["docs/index.md"] = start_page(index, results, examples, figs)
     return out
 
 
@@ -403,6 +403,6 @@ def write_pages(root: Path) -> list[Path]:
     for rel, text in pages().items():
         p = root / rel
         p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(text)
+        p.write_text(text, encoding="utf-8", newline="\n")
         written.append(p)
     return written

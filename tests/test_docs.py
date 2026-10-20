@@ -12,11 +12,11 @@ class DocsTest(unittest.TestCase):
     def test_generated_pages_are_current(self):
         for rel, text in pages().items():
             with self.subTest(page=rel):
-                self.assertEqual((ROOT / rel).read_text(), text,
+                self.assertEqual((ROOT / rel).read_text(encoding="utf-8"), text,
                                  f"{rel} is out of date: run `python3 -m omega_transform docs`")
 
     def test_every_example_page_is_in_the_navigation(self):
-        nav = (ROOT / "ckdocs.yml").read_text()
+        nav = (ROOT / "ckdocs.yml").read_text(encoding="utf-8")
         for rel in pages():
             if rel.startswith("docs/examples/"):
                 self.assertIn(f"- {rel}\n", nav, f"add {rel} to the nav in ckdocs.yml")
@@ -24,8 +24,8 @@ class DocsTest(unittest.TestCase):
     def test_every_benchmark_page_is_in_the_navigation(self):
         import json
         from omega_transform.report import load_results, render
-        nav = (ROOT / "ckdocs.yml").read_text()
-        check = json.loads((ROOT / "bench" / "model-check.json").read_text())
+        nav = (ROOT / "ckdocs.yml").read_text(encoding="utf-8")
+        check = json.loads((ROOT / "bench" / "model-check.json").read_text(encoding="utf-8"))
         for rel in render(load_results(ROOT / "bench" / "results"), check):
             with self.subTest(page=rel):
                 self.assertRegex(nav, rf"- (page: )?docs/{rel}\n",

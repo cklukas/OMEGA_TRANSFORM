@@ -205,7 +205,8 @@ def keep_tested(checks: list[ModelCheck], path) -> tuple[list[ModelCheck], list[
     if not p.exists():
         return checks, []
     try:
-        previous = {m["model"]: m for m in json.loads(p.read_text()).get("models", [])}
+        old = json.loads(p.read_text(encoding="utf-8"))
+        previous = {m["model"]: m for m in old.get("models", [])}
     except (ValueError, KeyError):
         return checks, []
     names = {f.name for f in fields(ModelCheck)}
@@ -226,17 +227,18 @@ def save(checks: list[ModelCheck], path) -> None:
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps({"checked": time.strftime("%Y-%m-%dT%H:%M:%S"),
-                             "models": [asdict(c) for c in checks]}, indent=1) + "\n")
+                             "models": [asdict(c) for c in checks]}, indent=1) + "\n",
+                 encoding="utf-8", newline="\n")
 
 
 def measured_memory(path) -> dict[str, float]:
     """Loaded size per model as measured by a model check."""
     from pathlib import Path
-    data = json.loads(Path(path).read_text())
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
     return {m["model"]: m["memory_gb"] for m in data.get("models", []) if m.get("memory_gb")}
 
 
 def feasible_names(path) -> set[str]:
     from pathlib import Path
-    data = json.loads(Path(path).read_text())
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
     return {m["model"] for m in data.get("models", []) if m.get("verdict") == "ok"}

@@ -17,11 +17,11 @@ class BenchTest(unittest.TestCase):
     def test_summarize_run(self):
         cfg = load_config(TOY)
         cfg.search.iterations = 10
-        with tempfile.TemporaryDirectory() as tmp:
-            eng = Engine(cfg, Path(tmp), llm=ScriptedLLM(incrementer), log=lambda s: None)
-            self.addCleanup(eng.close)
-            eng.run()
-            s = summarize(eng.db)
+        tmp = self.enterContext(tempfile.TemporaryDirectory())
+        eng = Engine(cfg, Path(tmp), llm=ScriptedLLM(incrementer), log=lambda s: None)
+        self.addCleanup(eng.close)
+        eng.run()
+        s = summarize(eng.db)
         self.assertEqual(s["initial_score"], 1)
         self.assertGreater(s["best_score"], 1)
         self.assertGreaterEqual(s["attempts"], 10)
@@ -46,14 +46,14 @@ class BenchTest(unittest.TestCase):
             f = results / "20260101-000000_toy_m_no-think.json"
             old = {"schema": 1, "example": cfg.name, "model": "m", "variant": "no-think",
                    "best_score": 3}
-            f.write_text(json.dumps(old))
+            f.write_text(json.dumps(old), encoding="utf-8", newline="\n")
             run_dir = run_dir_of(f, runs, old)
             self.assertEqual(run_dir, runs / "20260101-000000" / "toy" / "m_no-think")
             with Engine(cfg, run_dir, llm=ScriptedLLM(incrementer), log=lambda s: None) as eng:
                 eng.run()
                 best = summarize(eng.db)["best_score"]
             self.assertEqual(add_details(results, runs, log=lambda s: None), [f])
-            r = json.loads(f.read_text())
+            r = json.loads(f.read_text(encoding="utf-8"))
             self.assertEqual(r["schema"], 2)
             self.assertEqual(r["best_lineage"][-1]["score"], best)
             self.assertTrue(r["best_diff"])
@@ -107,10 +107,11 @@ class BenchTest(unittest.TestCase):
             results.mkdir(parents=True)
             (results / "1.json").write_text(json.dumps(
                 {"example": "toy", "model": "m:1", "minutes_budget": 5, "best_score": 2.0,
-                 "initial_score": 1.0, "attempts": 1, "ok": 1, "started": "1"}))
+                 "initial_score": 1.0, "attempts": 1, "ok": 1, "started": "1"}),
+                encoding="utf-8", newline="\n")
             out = Path(tmp) / "docs" / "benchmarks.md"
             (out.parent / "benchmarks").mkdir(parents=True)
-            (out.parent / "benchmarks" / "gone.md").write_text("old")
+            (out.parent / "benchmarks" / "gone.md").write_text("old", encoding="utf-8", newline="\n")
             write_report(results, out)
             self.assertTrue(out.exists())
             self.assertEqual(sorted(p.name for p in (out.parent / "benchmarks").iterdir()),
@@ -259,7 +260,7 @@ class BenchTest(unittest.TestCase):
                 {"model": "a", "params": "7B", "size_gb": 4.7, "thinking_capable": False,
                  "verdict": "ok", "gen_tokens_per_s": 30.0},
                 {"model": "b", "params": "", "size_gb": 9.0, "thinking_capable": False,
-                 "verdict": "not enough RAM"}]}))
+                 "verdict": "not enough RAM"}]}), encoding="utf-8", newline="\n")
             now = [ModelCheck("a", "7B", 4.7, False, verdict="not enough RAM"),
                    ModelCheck("b", "", 9.0, False, verdict="not enough RAM"),
                    ModelCheck("c", "", 2.0, False, verdict="broken")]

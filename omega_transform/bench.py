@@ -12,9 +12,12 @@ from __future__ import annotations
 
 import difflib
 import json
+import os
 import platform
 import re
+import shutil
 import subprocess
+import sys
 import time
 import urllib.request
 from dataclasses import asdict, dataclass, field
@@ -104,7 +107,58 @@ def inference_summary(calls: list[dict]) -> dict:
     }
 
 
+def _windows_machine_info() -> dict:
+    import winreg
+
+    def reg(path: str, name: str) -> str:
+        try:
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, path) as k:
+                return str(winreg.QueryValueEx(k, name)[0]).strip()
+        except OSError:
+            return ""
+    from .winjob import total_bytes
+    try:
+        mem = total_bytes()
+    except OSError:
+        mem = 0
+    return {
+        "platform": platform.platform(),
+        "machine": platform.machine(),
+        "cpu": reg(r"HARDWARE\DESCRIPTION\System\CentralProcessor\0", "ProcessorNameString")
+        or platform.processor(),
+        "model": reg(r"HARDWARE\DESCRIPTION\System\BIOS", "SystemProductName"),
+        "cores": str(os.cpu_count() or ""),
+        "memory_gb": round(mem / 2**30) if mem else None,
+        "python": platform.python_version(),
+    }
+
+
+def gpu_info() -> list[str]:
+    """The NVIDIA GPUs Ollama can offload to (name and memory), if nvidia-smi is there."""
+    smi = shutil.which("nvidia-smi")
+    if not smi:
+        return []
+    try:
+        out = subprocess.run([smi, "--query-gpu=name,memory.total", "--format=csv,noheader"],
+                             capture_output=True, text=True, encoding="utf-8", timeout=10).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return []
+    return [", ".join(x.strip() for x in line.split(",")) for line in out.splitlines()
+            if line.strip()]
+
+
 def machine_info() -> dict:
+    if sys.platform == "win32":
+        info = _windows_machine_info()
+    else:
+        info = _posix_machine_info()
+    gpus = gpu_info()
+    if gpus:
+        info["gpus"] = gpus
+    return info
+
+
+def _posix_machine_info() -> dict:
     def sysctl(key: str) -> str:
         try:
             return subprocess.run(["sysctl", "-n", key], capture_output=True, text=True,
@@ -257,7 +311,7 @@ def add_details(results_dir: Path, runs_dir: Path, log=print) -> list[Path]:
     from the run databases that are still there; returns the files changed."""
     changed = []
     for path in sorted(results_dir.glob("*.json")):
-        r = json.loads(path.read_text())
+        r = json.loads(path.read_text(encoding="utf-8"))
         if "best_lineage" in r:
             continue
         db_path = run_dir_of(path, runs_dir, r) / "omega.sqlite"
@@ -268,7 +322,7 @@ def add_details(results_dir: Path, runs_dir: Path, log=print) -> list[Path]:
             s = summarize(db)
         r["best_lineage"], r["best_diff"] = s["best_lineage"], s["best_diff"]
         r["schema"] = max(r.get("schema", 1), 2)
-        path.write_text(json.dumps(r, indent=1) + "\n")
+        path.write_text(json.dumps(r, indent=1) + "\n", encoding="utf-8", newline="\n")
         changed.append(path)
         log(f"  {path.name}: {len(r['best_lineage'])} steps, "
             f"{r['best_diff'].count(chr(10))} diff lines")
@@ -317,10 +371,10 @@ def add_solutions(results_dir: Path, runs_dir: Path, examples_dir: Path,
             shutil.rmtree(jobs, ignore_errors=True)
         if not any(found.values()):
             continue
-        d = json.loads(path.read_text())
+        d = json.loads(path.read_text(encoding="utf-8"))
         d.update(found)
         d["schema"] = max(d.get("schema", 1), RESULT_SCHEMA)
-        path.write_text(json.dumps(d, indent=1) + "\n")
+        path.write_text(json.dumps(d, indent=1) + "\n", encoding="utf-8", newline="\n")
         changed.append(path)
     return changed
 
@@ -408,7 +462,8 @@ def run_bench(examples: list[Path], models: list[dict], minutes: float, out_dir:
                     unload(cfg.llm.base_url, m["name"])
             res.wall_minutes = round((time.monotonic() - t0) / 60, 1)
             path = out_dir / f"{stamp}_{slug(cfg.name)}_{slug(m['name'])}_{variant}.json"
-            path.write_text(json.dumps(asdict(res), indent=1) + "\n")
+            path.write_text(json.dumps(asdict(res), indent=1) + "\n", encoding="utf-8",
+                            newline="\n")
             written.append(path)
             log(f"  -> {path.name}: best {res.best_score} (x{(res.improvement or 0):.2f}), "
                 f"{res.llm_calls} LLM calls, {res.gen_tokens_per_s} tok/s, "

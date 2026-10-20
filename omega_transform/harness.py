@@ -27,7 +27,7 @@ import sys
 import time
 import traceback
 
-from .candidate_runner import decode, encode
+from .candidate_runner import cpu_clock, decode, encode
 
 
 class CandidateError(Exception):
@@ -58,7 +58,11 @@ def _connect():
         if not runner:
             return None
         req, resp = runner.split(os.pathsep)
-        _channel = (open(req, "w", encoding="utf-8"), open(resp, "r", encoding="utf-8"))
+        if sys.platform == "win32":  # named pipes the runner creates, maybe not yet
+            from .winjob import open_pipe
+            _channel = (open_pipe(req, "w"), open_pipe(resp, "r"))
+        else:
+            _channel = (open(req, "w", encoding="utf-8"), open(resp, "r", encoding="utf-8"))
     return _channel
 
 
@@ -91,8 +95,15 @@ class Candidate:
                 raise CandidateError(out.get("error", "unknown error"))
             r = out["result"]
             return RunResult(r["code"], r["stdout"], r["stderr"], r["timed_out"])
-        import resource
         import subprocess
+        if sys.platform == "win32":
+            from .winjob import run_measured
+            p, self.last_cpu, _, _ = run_measured([str(a) for a in argv], timeout=timeout,
+                                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                                  text=True, encoding="utf-8", errors="replace")
+            return RunResult(p.returncode, p.stdout, p.stderr, False) if p is not None else \
+                RunResult(None, "", "", True)
+        import resource
         before = resource.getrusage(resource.RUSAGE_CHILDREN)
         try:
             p = subprocess.run([str(a) for a in argv], capture_output=True, text=True,
@@ -126,7 +137,7 @@ class Candidate:
     def _local(self, fn, args, kwargs):
         load_cpu = 0.0
         if self._module is None:
-            t_load = time.process_time()
+            t_load = cpu_clock()
             try:
                 spec = importlib.util.spec_from_file_location("candidate", self.path)
                 module = importlib.util.module_from_spec(spec)
@@ -135,12 +146,12 @@ class Candidate:
                 raise CandidateError(f"{type(e).__name__}: {e}",
                                      _tail(traceback.format_exc())) from None
             self._module = module
-            load_cpu = time.process_time() - t_load  # work at the top level counts too
+            load_cpu = cpu_clock() - t_load  # work at the top level counts too
         f = getattr(self._module, fn, None)
         if not callable(f):
             raise CandidateError(f"the program defines no function {fn!r}")
         stdout, sys.stdout = sys.stdout, sys.stderr  # keep the evaluator's JSON line clean
-        t0 = time.process_time() - load_cpu
+        t0 = cpu_clock() - load_cpu
         try:
             # Round-trip through the wire format so results look the same as isolated.
             result = decode(encode(f(*args, **kwargs)))
@@ -148,7 +159,7 @@ class Candidate:
             raise CandidateError(f"{type(e).__name__}: {e}",
                                  _tail(traceback.format_exc())) from None
         finally:
-            self.last_cpu = time.process_time() - t0
+            self.last_cpu = cpu_clock() - t0
             sys.stdout = stdout
         return result
 

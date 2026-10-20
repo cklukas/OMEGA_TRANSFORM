@@ -4,7 +4,8 @@
 
 Each candidate gets its own job directory. For C/C++ the build step runs
 first; then the evaluator command runs once per cascade stage. Each step is a
-separate process in its own process group, so a timeout kills the whole tree.
+separate process in its own process group (on Windows: its own Job Object,
+``winjob.py``), so a timeout kills the whole tree.
 
 Evaluator protocol: the command prints one JSON object as its last stdout
 line, for example::
@@ -52,7 +53,9 @@ def foreign_symbols(obj: Path, exports: list[str]) -> list[str]:
     """
     nm = shutil.which("nm") or shutil.which("llvm-nm") or "nm"
     out = subprocess.run([nm, "-g", str(obj)], capture_output=True, text=True,
-                         timeout=60).stdout
+                         encoding="utf-8", errors="replace", timeout=60).stdout
+    if sys.platform == "win32":
+        return filter_symbols_coff(out, exports)
     return filter_symbols(out, exports, darwin=sys.platform == "darwin")
 
 
@@ -81,17 +84,58 @@ def filter_symbols(nm_output: str, exports: list[str], darwin: bool) -> list[str
     return sorted(set(bad))
 
 
-class _Runner:
-    """A started candidate runner and the pipe pair the evaluator talks through."""
+# MSVC-mangled global operator new/delete (scalar and array).
+_MSVC_NEW_DELETE = ("??2@", "??3@", "??_U@", "??_V@")
+# What the Windows C runtime's and the MSVC STL's headers define, so that every object
+# using them carries a definition of its own: the printf/scanf family and their helpers,
+# and names reserved for the implementation (underscore and a capital letter, such as
+# the STL's _Avx2WmemEnabledWeakValue).
+_UCRT_INLINE = re.compile(r"_*v?[fs]?n?w?(printf|scanf)(_s|_p)?(_l)?|__local_stdio_\w+_options"
+                          r"|_[A-Z]\w*")
+_C_IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 
-    def __init__(self, proc: subprocess.Popen, channel: str):
-        self.proc, self.channel = proc, channel
+
+def filter_symbols_coff(nm_output: str, exports: list[str]) -> list[str]:
+    """``filter_symbols`` for COFF objects (Windows, MSVC ABI): C++ names are mangled with
+    a leading ``?``, and names that are no C identifier (``__real@...`` constants) are
+    compiler-generated."""
+    allowed = set(exports)
+    bad = []
+    for line in nm_output.splitlines():
+        parts = line.split()
+        if len(parts) < 3 or parts[-2] in ("U", "u", "w", "v"):
+            continue
+        name = parts[-1]
+        if name.startswith("?"):
+            if name.startswith(_MSVC_NEW_DELETE):
+                bad.append(name)
+            continue
+        if name in allowed or name in _COMPILER_SYMBOLS or not _C_IDENTIFIER.fullmatch(name) \
+                or _UCRT_INLINE.fullmatch(name):
+            continue
+        bad.append(name)
+    return sorted(set(bad))
+
+
+WINDOWS = sys.platform == "win32"
+
+
+class _Runner:
+    """A started candidate runner and the pipe pair the evaluator talks through.
+    ``job``: on Windows, the Job Object the runner and the evaluator share."""
+
+    def __init__(self, proc: subprocess.Popen, channel: str, job=None):
+        self.proc, self.channel, self.job = proc, channel, job
 
     def stop(self) -> None:
-        try:
-            os.killpg(self.proc.pid, signal.SIGKILL)
-        except (ProcessLookupError, PermissionError):
-            pass
+        if self.job is not None:
+            self.job.terminate()
+            self.job.close()
+        else:
+            try:
+                os.killpg(self.proc.pid, signal.SIGKILL)
+            except (ProcessLookupError, PermissionError):
+                pass
         try:
             self.proc.wait(timeout=10)
         except subprocess.TimeoutExpired:
@@ -179,14 +223,26 @@ def group_rss_mb(pgid: int) -> float:
 
 
 def _run(cmd: list[str], cwd: Path, timeout: float, env: dict,
-         max_memory_mb: float = 0.0, group: int | None = None) -> _Run:
-    """Run ``cmd`` in its own process group, or join ``group`` (the candidate runner's);
-    kill the whole group on timeout or memory excess."""
+         max_memory_mb: float = 0.0, runner: _Runner | None = None) -> _Run:
+    """Run ``cmd`` in its own process group, or join the candidate runner's group; kill
+    the whole group on timeout or memory excess. On Windows a Job Object (the runner's,
+    or one of its own) takes the place of the group."""
     t0 = time.monotonic()
-    placement = {"process_group": group} if group else {"start_new_session": True}
+    job = None
+    if WINDOWS:
+        from .winjob import Job
+        job = runner.job if runner is not None else Job()
+        placement = {}
+    elif runner is not None:
+        placement = {"process_group": runner.proc.pid}
+    else:
+        placement = {"start_new_session": True}
     proc = subprocess.Popen(cmd, cwd=cwd, env=env, stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE, text=True, errors="replace", **placement)
-    pgid = group or proc.pid
+                            stderr=subprocess.PIPE, text=True, encoding="utf-8",
+                            errors="replace", **placement)
+    if job is not None:
+        job.assign(proc)
+    pgid = runner.proc.pid if runner is not None else proc.pid
     result: dict[str, str] = {}
 
     def collect():
@@ -204,16 +260,21 @@ def _run(cmd: list[str], cwd: Path, timeout: float, env: dict,
             killed = "timeout"
         elif max_memory_mb and now >= next_check:
             next_check = now + 0.5
-            peak = max(peak, group_rss_mb(pgid))
+            peak = max(peak, job.peak_mb() if job is not None else group_rss_mb(pgid))
             if peak > max_memory_mb:
                 killed = "memory"
         if killed:
-            try:
-                os.killpg(pgid, signal.SIGKILL)
-            except ProcessLookupError:
-                pass
+            if job is not None:
+                job.terminate()
+            else:
+                try:
+                    os.killpg(pgid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
             reader.join()
             break
+    if job is not None and runner is None:
+        job.close()
     return _Run(None if killed else proc.returncode, result.get("out", ""),
                 result.get("err", ""), time.monotonic() - t0, killed, peak)
 
@@ -223,7 +284,7 @@ RUSAGE_WRAPPER = str(Path(__file__).with_name("rusage_wrap.py"))
 
 def read_usage(path: Path) -> dict:
     try:
-        return json.loads(path.read_text())
+        return json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {}
 
@@ -425,14 +486,25 @@ class Evaluator:
 
     def _start_runner(self, cand: Path, wd: Path, env: dict) -> _Runner:
         """Start the candidate's own process before the evaluator, which joins its group."""
-        req, resp = wd / ".omega-req", wd / ".omega-resp"
-        for fifo in (req, resp):
-            if fifo.exists():
-                fifo.unlink()
-            os.mkfifo(fifo)
+        if WINDOWS:  # named pipes, which the runner creates as their server
+            from .winjob import pipe_name
+            req, resp = pipe_name("req"), pipe_name("resp")
+        else:
+            req, resp = wd / ".omega-req", wd / ".omega-resp"
+            for fifo in (req, resp):
+                if fifo.exists():
+                    fifo.unlink()
+                os.mkfifo(fifo)
         cmd = self._candidate_prefix(wd) + [self.ev.python, "-I", CANDIDATE_RUNNER, str(cand),
                                             str(req), str(resp)]
         renv = {k: v for k, v in env.items() if k != "OMEGA_RUNNER"}
+        if WINDOWS:
+            from .winjob import Job
+            job = Job()
+            proc = subprocess.Popen(cmd, cwd=wd, env=renv, stdin=subprocess.DEVNULL,
+                                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            job.assign(proc)
+            return _Runner(proc, f"{req}{os.pathsep}{resp}", job)
         # A new process group in this session (not a new session): the evaluator can
         # only join a group of its own session.
         proc = subprocess.Popen(cmd, cwd=wd, env=renv, stdin=subprocess.DEVNULL,
@@ -453,16 +525,19 @@ class Evaluator:
         wd = (self.jobs_dir / job_id).resolve()
         wd.mkdir(parents=True, exist_ok=True)
         cand = wd / self.cfg.candidate_name
-        cand.write_text(code)
+        cand.write_text(code, encoding="utf-8", newline="\n")
         binary = wd / "candidate.bin"
         m = {"python": self.ev.python, "candidate": str(cand), "binary": str(binary),
              "object": str(wd / "candidate.o"),
              "workdir": str(wd), "problem_dir": str(self.cfg.problem_dir), "stage": ""}
         env = dict(os.environ, OMEGA_CANDIDATE=str(cand), OMEGA_BINARY=str(binary),
                    OMEGA_WORKDIR=str(wd), OMEGA_PROBLEM_DIR=str(self.cfg.problem_dir),
-                   PYTHONDONTWRITEBYTECODE="1", TMPDIR=str(wd),
+                   PYTHONDONTWRITEBYTECODE="1", TMPDIR=str(wd), PYTHONUTF8="1",
                    PYTHONPATH=os.pathsep.join(
                        [PACKAGE_PARENT] + [p for p in [os.environ.get("PYTHONPATH")] if p]))
+        if WINDOWS:  # where Windows programs put temporary files; the cycle-clock rate
+            from .winjob import tsc_hz
+            env.update(TMP=str(wd), TEMP=str(wd), OMEGA_TSC_HZ=repr(tsc_hz()))
         prefix = list(self.ev.launcher)
         if self.sandboxed:
             prefix += sandbox_prefix(wd)
@@ -475,7 +550,7 @@ class Evaluator:
             return prefix + [sys.executable, "-I", RUSAGE_WRAPPER, str(out)] + cmd, out
 
         def clean(text: str) -> str:  # job paths only cost the LLM context
-            return text.replace(str(wd) + "/", "")
+            return text.replace(str(wd) + os.sep, "").replace(str(wd) + "/", "")
 
         try:
             if self.ev.compile:
@@ -519,8 +594,7 @@ class Evaluator:
                 if quiet is not None:
                     quiet.acquire()
                 try:
-                    r = _run(cmd, self.cfg.problem_dir, st.timeout, env, mem,
-                             group=runner.proc.pid if runner is not None else None)
+                    r = _run(cmd, self.cfg.problem_dir, st.timeout, env, mem, runner=runner)
                     usage[st.name] = read_usage(ufile)
                 finally:
                     if runner is not None:

@@ -13,14 +13,46 @@
 #if defined(__ARM_NEON)
 #include <arm_neon.h>
 #endif
+#if defined(_WIN32)
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+#include <intrin.h>
+#endif
 
 // The candidate's interface (defined in matmul.cpp).
 extern "C" void matmul(int n, const float* A, const float* B, float* C);
 
+#if defined(_WIN32)
+// Windows advances a process's CPU times only once per scheduler tick (15.6 ms), too
+// coarse for these timings. The CPU cycles its threads ran are exact, and with an
+// invariant TSC they count at its constant rate, measured here against the
+// performance counter.
+static double tsc_hz() {
+    static double hz = 0;
+    if (hz == 0) {
+        LARGE_INTEGER f, q0, q1;
+        QueryPerformanceFrequency(&f);
+        QueryPerformanceCounter(&q0);
+        unsigned long long c0 = __rdtsc();
+        Sleep(20);
+        QueryPerformanceCounter(&q1);
+        hz = (__rdtsc() - c0) / (double(q1.QuadPart - q0.QuadPart) / f.QuadPart);
+    }
+    return hz;
+}
+#endif
+
 static double cpu_seconds() {
+#if defined(_WIN32)
+    ULONG64 cycles = 0;
+    QueryProcessCycleTime(GetCurrentProcess(), &cycles);
+    return cycles / tsc_hz();
+#else
     timespec ts;
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts);
     return ts.tv_sec + ts.tv_nsec * 1e-9;
+#endif
 }
 
 static void reference(int n, const float* A, const float* B, double* C) {

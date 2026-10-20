@@ -11,6 +11,7 @@ from __future__ import annotations
 import os
 import re
 import subprocess
+import sys
 
 # Loaded size ~ weights x 1.06 plus context cache and buffers (measured: 17.4 GB
 # of weights -> 18.4 GB loaded at a 32k context); the margin errs on the safe side.
@@ -34,7 +35,10 @@ def estimate_model_gb(size_bytes: int) -> float:
 def available_gb() -> float | None:
     """Memory that can be used without swapping: free plus reclaimable pages."""
     try:
-        if os.uname().sysname == "Darwin":
+        if sys.platform == "win32":
+            from .winjob import available_bytes
+            return available_bytes() / 1e9
+        if sys.platform == "darwin":
             out = subprocess.run(["vm_stat"], capture_output=True, text=True, timeout=5).stdout
             page = int(re.search(r"page size of (\d+)", out).group(1))
             pages = 0
@@ -43,7 +47,7 @@ def available_gb() -> float | None:
                 if m:
                     pages += int(m.group(1))
             return pages * page / 1e9
-        with open("/proc/meminfo") as f:
+        with open("/proc/meminfo", encoding="utf-8") as f:
             m = re.search(r"MemAvailable:\s+(\d+) kB", f.read())
             return int(m.group(1)) * 1024 / 1e9 if m else None
     except (OSError, AttributeError, ValueError, subprocess.TimeoutExpired):

@@ -104,12 +104,13 @@ class Engine:
         for m in messages:
             parts.append(f"\n---- {m['role']} ----\n{m['content']}\n")
         parts.append(f"\n---- response ----\n{response}\n")
-        (self.run_dir / "llm" / f"{pid}.md").write_text("".join(parts))
+        (self.run_dir / "llm" / f"{pid}.md").write_text("".join(parts), encoding="utf-8",
+                                                        newline="\n")
 
     # ------------------------------------------------------------- set-up
     def initialize(self) -> Program:
         """Evaluate and store the initial program (once per run directory)."""
-        code = self.cfg.initial_path.read_text()
+        code = self.cfg.initial_path.read_text(encoding="utf-8")
         self._initial_size = max(1, len(editable_text(code)))
         root_id = self.db.meta("root_id")
         if root_id:
@@ -412,7 +413,8 @@ class Engine:
                  f"  [{child.llm_seconds:.0f}s llm, {child.eval_seconds:.1f}s eval]")
         if new_best:
             self.db.set_meta("best_id", child.id)
-            (self.run_dir / f"best_{self.cfg.candidate_name}").write_text(child.code)
+            (self.run_dir / f"best_{self.cfg.candidate_name}").write_text(
+                child.code, encoding="utf-8", newline="\n")
         if migrate and self.s.islands > 1:
             for i, j, pid in self.db.migrate():
                 self.log(f"  migrate #{pid[:6]} island {i} -> {j}")
@@ -442,7 +444,8 @@ class Engine:
             text = strip_thinking(text).strip()
             if text:
                 self.db.add_note(self.stats.iterations_done, text)
-                (self.run_dir / "notebook.md").write_text(text + "\n")
+                (self.run_dir / "notebook.md").write_text(text + "\n", encoding="utf-8",
+                                                          newline="\n")
                 self.log(f"  notebook updated; strategy wins/tries: {self.policy.summary()}")
         except LLMError as e:
             self.log(f"  notebook update failed: {e}")
