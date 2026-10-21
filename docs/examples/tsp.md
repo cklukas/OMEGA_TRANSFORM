@@ -69,11 +69,7 @@ def solve(points, time_limit):
 
 ## Benchmark results
 
-The best result so far comes from **gemma4:e4b-it-qat (no-think)**, run locally with Ollama on 2026-10-15: a score of **1.13768** (×1.14 the starting program's 1), reached after 7.43 of 15 minutes with 43 model requests.
-
-What the starting program produces (left) and what the best program by gemma4:e4b-it-qat (no-think) produces (right), drawn for the instance `n200`:
-
-![tsp: the starting program's solution and the best one](../assets/examples/tsp.svg)
+The best result so far comes from **muse-glimmer:30b (no-think)**, run locally with Ollama on 2026-10-19: a score of **1.14317** (×1.14 the starting program's 1), reached after 9.47 of 15 minutes with 4 model requests.
 
 ### How it got there
 
@@ -82,8 +78,7 @@ The best program's ancestry, from the starting program on. "Edit" and "rewrite" 
 | Step | Minute | Score | Kind | Idea |
 |--:|--:|--:|---|---|
 | 0 | 0.0 | 1 | start | initial program |
-| 1 | 4.8 | 1.0954 | edit | Implement a standard 2-opt local search starting from the nearest neighbor tour to iteratively improve the tour length, as this is a known high-impact heuristic. |
-| 2 | 7.4 | 1.13768 | edit | Replace the greedy first-improvement strategy in 2-opt with a full pass iteration (iteratively improving until no local improvement is found in one pass) to avoid premature convergence. |
+| 1 | 9.5 | 1.14317 | edit | Keep the nearest-neighbour construction but add a fast 2-opt local search that repeatedly reverses improving edges until time runs out, using pre-extracted coordinate lists and incremental time checks to raise tour quality. |
 
 ### The best program
 
@@ -92,82 +87,59 @@ What changed compared with the starting program:
 ```diff
 --- initial
 +++ best
-@@ -21,13 +21,70 @@
+@@ -21,13 +21,50 @@
      Current method: plain nearest-neighbour construction starting at city 0.
      """
      n = len(points)
-+    
-+    # Nearest Neighbour construction
++    xs = [p[0] for p in points]
++    ys = [p[1] for p in points]
++
      unvisited = set(range(1, n))
      tour = [0]
 -    x, y = points[0]
-+    current_city = 0
++    x, y = xs[0], ys[0]
      while unvisited:
 -        nxt = min(unvisited, key=lambda j: (points[j][0] - x) ** 2 + (points[j][1] - y) ** 2)
--        unvisited.remove(nxt)
--        tour.append(nxt)
++        # nearest neighbour by squared distance
++        nxt = min(unvisited, key=lambda j: (xs[j] - x) ** 2 + (ys[j] - y) ** 2)
+         unvisited.remove(nxt)
+         tour.append(nxt)
 -        x, y = points[nxt]
--    return tour
-+        best_nxt = -1
-+        min_dist_sq = float('inf')
-+        for j in unvisited:
-+            d_sq = (points[current_city][0] - points[j][0])**2 + (points[current_city][1] - points[j][1])**2
-+            if d_sq < min_dist_sq:
-+                min_dist_sq = d_sq
-+                best_nxt = j
-+        
-+        tour.append(best_nxt)
-+        unvisited.remove(best_nxt)
-+        current_city = best_nxt
++        x, y = xs[nxt], ys[nxt]
 +
-+    best_tour = list(tour)
-+    
-+    # Helper functions
++    # 2-opt improvement with time limit
++    start = time.process_time()
++    hypot = math.hypot
 +    def dist(i, j):
-+        p1, p2 = points[i], points[j]
-+        return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
++        return hypot(xs[i] - xs[j], ys[i] - ys[j])
 +
-+    # 2-Opt Local Search
-+    start_time = time.process_time()
-+    while time.process_time() - start_time < time_limit * 0.95:
++    improved = True
++    while improved:
++        if time.process_time() - start >= time_limit * 0.95:
++            break
 +        improved = False
++        # simple first-improvement 2-opt
 +        for i in range(n - 1):
-+            for k in range(i + 1, n):
-+                # Check for 2-opt improvement by reversing segment tour[i+1:k+1]
-+                # Edges replaced: (tour[i], tour[i+1]) and (tour[k], tour[k+1] or tour[0])
-+                # New edges: (tour[i], tour[k]) and (tour[i+1], tour[k+1] or tour[0])
-+                
-+                p_i = best_tour[i]
-+                p_i1 = best_tour[i+1]
-+                p_k = best_tour[k]
-+                
-+                # Handle wrap around for the second edge: (tour[k], tour[k+1])
-+                if k == n - 1:
-+                    p_k1 = best_tour[0]
-+                else:
-+                    p_k1 = best_tour[k+1]
-+
-+                # Ensure the swap is valid (i and k are not adjacent/endpoints of the full cycle segment)
-+                if k == i+1: continue 
-+                
-+                # Calculate old distance
-+                old_dist = dist(p_i, p_i1) + dist(p_k, p_k1)
-+                
-+                # Calculate new distance
-+                new_dist = dist(p_i, p_k) + dist(p_i1, p_k1)
-+
-+                if new_dist < old_dist:
-+                    # Perform 2-opt swap: reverse the segment tour[i+1:k+1]
-+                    new_tour = list(best_tour)
-+                    segment = new_tour[i+1:k+1]
-+                    segment.reverse()
-+                    new_tour[i+1:k+1] = segment
-+                    
-+                    best_tour = new_tour
++            if time.process_time() - start >= time_limit * 0.95:
++                break
++            a = tour[i]
++            b = tour[i + 1]
++            da = dist(a, b)
++            for j in range(i + 2, n):
++                if i == 0 and j == n - 1:
++                    continue
++                c = tour[j]
++                d = tour[(j + 1) % n]
++                # delta = old - new
++                if da + dist(c, d) > dist(a, c) + dist(b, d):
++                    # reverse segment i+1 .. j
++                    tour[i + 1:j + 1] = reversed(tour[i + 1:j + 1])
 +                    improved = True
-+                    # Continue search from the current iteration (Iterative improvement)
-+                
-+    return best_tour
++                    # update b for next j in this i (since tour changed)
++                    b = tour[i + 1]
++                    da = dist(a, b)
++                    break
+     return tour
  # OMEGA-BLOCK-END
 ```
 
@@ -177,6 +149,7 @@ The latest run per model and reasoning mode; the [model benchmarks](../benchmark
 
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|
+| muse-glimmer:30b (no-think) | local | 1.14317 | ×1.14 | 9.5 | 2 |
 | gemma4:e4b-it-qat (no-think) | local | 1.13768 | ×1.14 | 7.4 | 4 |
 | gpt-oss:20b (think) | local | 1.12957 | ×1.13 | 13.8 | 3 |
 | gpt-oss:20b (no-think) | local | 1.12373 | ×1.12 | 6.5 | 3 |
@@ -184,15 +157,20 @@ The latest run per model and reasoning mode; the [model benchmarks](../benchmark
 | gemma4:latest (no-think) | local | 1.11505 | ×1.12 | 13.3 | 3 |
 | qwen3.8:27b-mtp-q4_K_M (think) | local | 1.1141 | ×1.11 | 21.8 | 3 |
 | gemma4:latest (think) | local | 1.11397 | ×1.11 | 13.2 | 4 |
+| muse-glimmer:30b (think) | local | 1.10953 | ×1.11 | 9.5 | 1 |
 | qwen3.8:27b-mtp-q4_K_M (no-think) | local | 1.10094 | ×1.10 | 11.4 | 1 |
 | gemma4:12b-it-qat (no-think) | local | 1.0975 | ×1.10 | 15.4 | 3 |
 | gemma4:e4b-it-qat (think) | local | 1.09408 | ×1.09 | 2.5 | 1 |
 | gemma4:26b-a4b-it-qat (no-think) | local | 1.08016 | ×1.08 | 10.8 | 3 |
 | gemma4:12b-it-qat (think) | local | 1.07929 | ×1.08 | 9.7 | 1 |
 | qwen3.5:27b (think) | local | 1.05746 | ×1.06 | 9.7 | 2 |
+| ingu627/exaone4.0:32b (no-think) | local | 1.05627 | ×1.06 | 16.4 | 1 |
 | qwen3-coder:30b (no-think) | local | 1.03514 | ×1.04 | 12.8 | 1 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 1.0154 | ×1.02 | 3.0 | 1 |
+| nemotron-3-nano:30b-a3b-mlx (think) | local | 1.00824 | ×1.01 | 13.2 | 2 |
 | qwen2.5-coder:7b (no-think) | local | 1.00546 | ×1.01 | 3.0 | 1 |
+| devstral-small-2:24b (no-think) | local | 1.00134 | ×1.00 | 14.4 | 1 |
+| richardyoung/frognano-4b-2609:latest (no-think) | local | 1.00129 | ×1.00 | 5.5 | 2 |
 | qwen3.5:latest (no-think) | local | 1 | ×1.00 | - | 0 |
 | gemma4:e2b (no-think) | local | 1 | ×1.00 | - | 0 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 1 | ×1.00 | - | 0 |
@@ -201,3 +179,16 @@ The latest run per model and reasoning mode; the [model benchmarks](../benchmark
 | gemma4:26b-a4b-it-qat (think) | local | | | | failed: all 2 model requests failed: gemma4:26b-a4b-it-qat: answer … |
 | qwen3.6:27b-coding-mtp-q4_K_M (think) | local | | | | failed: all 1 model requests failed: qwen3.6:27b-coding-mtp-q4_K_M … |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | 1 | ×1.00 | - | 0 |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | 1 | ×1.00 | - | 0 |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | 1 | ×1.00 | - | 0 |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | local | 1 | ×1.00 | - | 0 |
+| glm-4.7-flash:latest (no-think) | local | 1 | ×1.00 | - | 0 |
+| richardyoung/frognano-4b-2609:latest (think) | local | 1 | ×1.00 | - | 0 |
+| glm-4.7-flash:latest (think) | local | 1 | ×1.00 | - | 0 |
+| frob/sarvam:30b (think) | local | | | | failed: all 4 model requests failed: frob/sarvam:30b: answer … |
+| frob/sarvam:30b (no-think) | local | 1 | ×1.00 | - | 0 |
+| nemotron-3-nano:4b (no-think) | local | 1 | ×1.00 | - | 0 |
+| nemotron-3-nano:30b-a3b-mlx (no-think) | local | 1 | ×1.00 | - | 0 |
+| nemotron-3.5-lightning:30b-mlx (no-think) | local | 1 | ×1.00 | - | 0 |
+| nemotron-3-nano:4b (think) | local | 1 | ×1.00 | - | 0 |
+| nemotron-3.5-lightning:30b-mlx (think) | local | | | | failed: all 2 model requests failed … |

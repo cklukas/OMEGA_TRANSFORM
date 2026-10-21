@@ -1,0 +1,103 @@
+{
+ "schema": 2,
+ "example": "prefix_sum_histogram_single_thread",
+ "model": "devstral-small-2:24b",
+ "variant": "no-think",
+ "model_size_gb": 15.2,
+ "model_params": "24.0B",
+ "started": "2026-10-19T11:23:47",
+ "minutes_budget": 15.0,
+ "wall_minutes": 17.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "502fbf9",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 4.7117,
+ "best_score": 12.0355,
+ "improvement": 2.5543858904429397,
+ "llm_calls": 8,
+ "mean_llm_seconds": 127.5,
+ "attempts": 8,
+ "ok": 3,
+ "statuses": {
+  "llm_error": 3,
+  "ok": 3,
+  "compile_error": 1,
+  "duplicate": 1
+ },
+ "sweeps": 2,
+ "sweep_variants": 29,
+ "improvements": 4,
+ "minutes_to_best": 14.32,
+ "best_idea": "Use ARM NEON SIMD to process 2 or 4 input elements per iteration, parallelize the prefix sum and histogram update, and minimize memory operations with NEON intrinsics for better cache utilization and ",
+ "progress": [
+  [
+   0.0,
+   4.7117
+  ],
+  [
+   4.35,
+   10.0226
+  ],
+  [
+   4.35,
+   10.7657
+  ],
+  [
+   11.01,
+   10.805
+  ],
+  [
+   14.32,
+   12.0355
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 4.7117,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 14.32,
+   "score": 12.0355,
+   "model": "devstral-small-2:24b",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Use ARM NEON SIMD to process 2 or 4 input elements per iteration, parallelize the prefix sum and histogram update, and minimize memory operations with NEON intrinsics for better cache utilization and reduced instruction overhead."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -28,12 +28,68 @@\n // hist is zeroed by the caller. n is any size from 0 to 20'000'000; the sums\n // never overflow int64.\n extern \"C\" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, uint64_t* hist) {\n-    for (int b = 0; b < 256; ++b) hist[b] = 0;\n+    constexpr int UNROLL = 2;\n+    constexpr int SUBHIST = 15;\n+\n+    // Initialize histogram bins to 0\n+    for (int b = 0; b < 256; ++b) {\n+        hist[b] = 0;\n+    }\n+\n+    // Private sub-histograms to reduce cache contention on hot bins\n+    uint32_t sub_hist[SUBHIST][256] = {{0}};\n+\n     int64_t sum = 0;\n-    for (size_t i = 0; i < n; ++i) {\n+    size_t i = 0;\n+    for (; i + UNROLL <= n; i += UNROLL) {\n+        // Load UNROLL elements\n+        int64_t v0 = in[i];\n+        int64_t v1 = in[i+1];\n+\n+        // Update prefix sums\n+        int64_t s0 = sum + v0;\n+        int64_t s1 = s0 + v1;\n+\n+        // Update histogram\n+        uint8_t b0 = v0 & 255;\n+        uint8_t b1 = v1 & 255;\n+        sub_hist[i % SUBHIST][b0]++;\n+        sub_hist[(i+1) % SUBHIST][b1]++;\n+\n+        // Store results\n+        out[i] = s0;\n+        out[i+1] = s1;\n+\n+        sum = s1;\n+    }\n+\n+    // Handle remaining elements\n+    for (; i < n; ++i) {\n         sum += in[i];\n         out[i] = sum;\n-        hist[in[i] & 255]++;\n+        uint8_t bin = in[i] & 255;\n+        sub_hist[i % SUBHIST][bin]++;\n+    }\n+\n+    // Merge sub-histograms into final histogram with loop unrolling\n+    for (int b = 0; b < 256; ++b) {\n+        uint64_t total = 0;\n+        total += sub_hist[0][b];\n+        total += sub_hist[1][b];\n+        total += sub_hist[2][b];\n+        total += sub_hist[3][b];\n+        total += sub_hist[4][b];\n+        total += sub_hist[5][b];\n+        total += sub_hist[6][b];\n+        total += sub_hist[7][b];\n+        total += sub_hist[8][b];\n+        total += sub_hist[9][b];\n+        total += sub_hist[10][b];\n+        total += sub_hist[11][b];\n+        total += sub_hist[12][b];\n+        total += sub_hist[13][b];\n+        total += sub_hist[14][b];\n+        hist[b] = total;\n     }\n }\n // OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 19.7,
+ "model_gpu_memory_gb": 19.7,
+ "context_length": 32768,
+ "load_seconds": 0.0,
+ "median_call_seconds": 137.7,
+ "p90_call_seconds": 208.6,
+ "prompt_tokens_per_s": 217.0,
+ "gen_tokens_per_s": 10.5,
+ "mean_prompt_tokens": 4314,
+ "mean_gen_tokens": 937,
+ "stopped_calls": 3,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -1,0 +1,124 @@
+{
+ "schema": 3,
+ "example": "log_compressor",
+ "model": "muse-glimmer:30b",
+ "variant": "think",
+ "model_size_gb": 18.2,
+ "model_params": "27.9B",
+ "started": "2026-10-20T01:18:02",
+ "minutes_budget": 15.0,
+ "wall_minutes": 18.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 11.28605206956168,
+ "best_score": 24.941173165524216,
+ "improvement": 2.209911225980447,
+ "llm_calls": 1,
+ "mean_llm_seconds": 1089.1,
+ "attempts": 1,
+ "ok": 1,
+ "statuses": {
+  "ok": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 18.17,
+ "best_idea": "Parse Apache combined log lines into separate columns, compress each column independently with lzma and reconstruct via a flag-byte with generic lzma fallback for non-log data, exploiting column local",
+ "progress": [
+  [
+   0.0,
+   11.28605206956168
+  ],
+  [
+   18.17,
+   24.941173165524216
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 11.28605206956168,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 18.17,
+   "score": 24.941173165524216,
+   "model": "muse-glimmer:30b",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Parse Apache combined log lines into separate columns, compress each column independently with lzma and reconstruct via a flag-byte with generic lzma fallback for non-log data, exploiting column locality to beat generic compressors."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -10,6 +10,10 @@\n import zlib\n \n # OMEGA-BLOCK-START\n+import re\n+import lzma\n+import struct\n+\n def compress(data: bytes) -> bytes:\n     \"\"\"Compress arbitrary bytes losslessly and return the compressed blob.\n \n@@ -18,15 +22,98 @@\n       IP - - [DD/Mon/YYYY:HH:MM:SS +0000] \"METHOD PATH HTTP/1.1\" STATUS SIZE \"REFERER\" \"USER-AGENT\"\n     Only the Python standard library may be used (zlib, lzma, bz2, struct, re, ...).\n     Compress plus decompress of the main input must stay within 20 CPU seconds.\n-\n-    Current method: plain zlib at level 1.\n     \"\"\"\n-    return zlib.compress(data, 1)\n+    if not data:\n+        return b'\\x00' + lzma.compress(data)\n+    try:\n+        lines = data.splitlines()\n+        if not lines:\n+            raise ValueError\n+        pat = re.compile(br'^(\\S+) \\S+ \\S+ \\[([^\\]]+)\\] \"(\\S+) (\\S+) \\S+\" (\\d{3}) (\\S+) \"([^\"]*)\" \"([^\"]*)\"$')\n+        if not pat.match(lines[0]):\n+            raise ValueError\n+        ips = []\n+        times = []\n+        methods = []\n+        paths = []\n+        statuses = []\n+        sizes = []\n+        refs = []\n+        uas = []\n+        for ln in lines:\n+            m = pat.match(ln)\n+            if not m:\n+                raise ValueError\n+            ips.append(m.group(1))\n+            times.append(m.group(2))\n+            methods.append(m.group(3))\n+            paths.append(m.group(4))\n+            statuses.append(m.group(5))\n+            sizes.append(m.group(6))\n+            refs.append(m.group(7))\n+            uas.append(m.group(8))\n+        cols = []\n+        for lst in (ips, times, methods, paths, statuses, sizes, refs, uas):\n+            col_bytes = b'\\n'.join(lst)\n+            cols.append(lzma.compress(col_bytes, preset=9))\n+        out = bytearray()\n+        out.append(1)\n+        out.extend(struct.pack('>I', len(lines)))\n+        out.append(1 if data.endswith(b'\\n') else 0)\n+        for c in cols:\n+            out.extend(struct.pack('>I', len(c)))\n+            out.extend(c)\n+        return bytes(out)\n+    except Exception:\n+        return b'\\x00' + lzma.compress(data, preset=9)\n \n \n def decompress(blob: bytes) -> bytes:\n     \"\"\"Invert compress() exactly.\"\"\"\n-    return zlib.decompress(blob)\n+    if not blob:\n+        return b''\n+    flag = blob[0]\n+    if flag == 0:\n+        return lzma.decompress(blob[1:])\n+    if flag == 1:\n+        if len(blob) < 6:\n+            return b''\n+        n = struct.unpack('>I', blob[1:5])[0]\n+        trailing = blob[5]\n+        off = 6\n+        cols = []\n+        for _ in range(8):\n+            if off + 4 > len(blob):\n+                break\n+            clen = struct.unpack('>I', blob[off:off+4])[0]\n+            off += 4\n+            comp = blob[off:off+clen]\n+            off += clen\n+            cols.append(lzma.decompress(comp))\n+        ips = cols[0].split(b'\\n')\n+        times = cols[1].split(b'\\n')\n+        methods = cols[2].split(b'\\n')\n+        paths = cols[3].split(b'\\n')\n+        statuses = cols[4].split(b'\\n')\n+        sizes = cols[5].split(b'\\n')\n+        refs = cols[6].split(b'\\n')\n+        uas = cols[7].split(b'\\n')\n+        out_lines = []\n+        for i in range(n):\n+            line = b''.join([\n+                ips[i], b' - - [', times[i], b'] \"', methods[i], b' ', paths[i],\n+                b' HTTP/1.1\" ', statuses[i], b' ', sizes[i], b' \"', refs[i],\n+                b'\" \"', uas[i], b'\"'\n+            ])\n+            out_lines.append(line)\n+        out = b'\\n'.join(out_lines)\n+        if trailing:\n+            out += b'\\n'\n+        return out\n+    try:\n+        return lzma.decompress(blob[1:])\n+    except Exception:\n+        return blob\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "compression",
+  "input": "web server access log",
+  "head": [
+   "203.242.94.172 - - [04/Oct/2024:09:52:35 +0000] \"GET /search?q=novel&page=1 HTTP/1.1\" 200 13481 \"https://search.example.net/?q=shop\" \"Mozilla/5.0 (compatible; ExampleBot/2.1; +http://bot.example.org/info)\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/155 HTTP/1.1\" 200 23584 \"https://www.example.com/\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/books/203?ref=search HTTP/1.1\" 200 25206 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/106 HTTP/1.1\" 404 24868 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\""
+  ],
+  "lines": 2000,
+  "original_bytes": 443903,
+  "compressed_bytes": 39332,
+  "references": {
+   "zlib -9": 25176,
+   "bz2 -9": 16530,
+   "lzma -9e": 20656
+  }
+ },
+ "best_solution": {
+  "kind": "compression",
+  "input": "web server access log",
+  "head": [
+   "203.242.94.172 - - [04/Oct/2024:09:52:35 +0000] \"GET /search?q=novel&page=1 HTTP/1.1\" 200 13481 \"https://search.example.net/?q=shop\" \"Mozilla/5.0 (compatible; ExampleBot/2.1; +http://bot.example.org/info)\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/155 HTTP/1.1\" 200 23584 \"https://www.example.com/\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/books/203?ref=search HTTP/1.1\" 200 25206 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/106 HTTP/1.1\" 404 24868 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\""
+  ],
+  "lines": 2000,
+  "original_bytes": 443903,
+  "compressed_bytes": 17798,
+  "references": {
+   "zlib -9": 25176,
+   "bz2 -9": 16530,
+   "lzma -9e": 20656
+  }
+ },
+ "error": "",
+ "model_memory_gb": 15.6,
+ "model_gpu_memory_gb": 15.6,
+ "context_length": 32768,
+ "load_seconds": 74.8,
+ "median_call_seconds": 1089.1,
+ "p90_call_seconds": 1089.1,
+ "prompt_tokens_per_s": 90.6,
+ "gen_tokens_per_s": 10.6,
+ "mean_prompt_tokens": 1757,
+ "mean_gen_tokens": 10559,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

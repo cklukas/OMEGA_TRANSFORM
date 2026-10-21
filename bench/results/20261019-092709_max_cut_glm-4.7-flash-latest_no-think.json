@@ -1,0 +1,91 @@
+{
+ "schema": 2,
+ "example": "max_cut",
+ "model": "glm-4.7-flash:latest",
+ "variant": "no-think",
+ "model_size_gb": 19.0,
+ "model_params": "29.9B",
+ "started": "2026-10-19T09:27:09",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.9,
+ "omega_version": "0.1.0",
+ "omega_commit": "502fbf9",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.5121828962692699,
+ "best_score": 0.7222433028173733,
+ "improvement": 1.4101277260099452,
+ "llm_calls": 22,
+ "mean_llm_seconds": 42.1,
+ "attempts": 22,
+ "ok": 14,
+ "statuses": {
+  "invalid": 5,
+  "ok": 14,
+  "timeout": 2,
+  "llm_error": 1
+ },
+ "sweeps": 1,
+ "sweep_variants": 16,
+ "improvements": 1,
+ "minutes_to_best": 2.94,
+ "best_idea": "Implement greedy construction using incremental gain tracking to effectively utilize the edge weights, moving from random to weighted partitioning, and add a one-flip local search to refine the soluti",
+ "progress": [
+  [
+   0.0,
+   0.5121828962692699
+  ],
+  [
+   2.94,
+   0.7222433028173733
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.5121828962692699,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.94,
+   "score": 0.7222433028173733,
+   "model": "glm-4.7-flash:latest",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Implement greedy construction using incremental gain tracking to effectively utilize the edge weights, moving from random to weighted partitioning, and add a one-flip local search to refine the solution."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,7 +19,63 @@\n     time limit of 2.0 s (time.process_time(); more than 1.5 x the limit makes the program\n     invalid). Only the Python standard library may be used.\n \n-    Current method: alternate the sides by node index (ignores the edges entirely).\n+    Strategy: Greedy construction with incremental gains followed by a local search.\n     \"\"\"\n-    return [i % 2 for i in range(n)]\n+    # Build adjacency list and gain tracking structures\n+    adj = [[] for _ in range(n)]\n+    for u, v, w in edges:\n+        adj[u].append((v, w))\n+        adj[v].append((u, w))\n+    side = [0] * n\n+\n+    # Greedy construction\n+    for i in range(n):\n+        max_gain = -float('inf')\n+        best_node = -1\n+        # Track edges to update gains\n+        new_edges = []\n+        for v, w in adj[i]:\n+            gain = -w if side[v] == 0 else w\n+            new_edges.append((v, gain))\n+            if gain > max_gain:\n+                max_gain = gain\n+                best_node = v\n+        if best_node != -1:\n+            side[i] = 1 - side[best_node]\n+            # Update gains for neighbors of i based on the new side\n+            for v, _ in adj[i]:\n+                # The gain of neighbor v changes if its neighbor i flips\n+                # We don't strictly need to update all, just for the next steps\n+                # But for correctness in greedy, we mark that i's side is now fixed\n+                pass\n+        else:\n+            side[i] = 0\n+\n+    # Local search: one-flip local search with incremental gain\n+    best_cut = 0\n+    best_assignment = side[:]\n+    for _ in range(1000):\n+        best_gain = -float('inf')\n+        flip_node = -1\n+        current_gain = 0\n+        for node in range(n):\n+            for neighbor, weight in adj[node]:\n+                if side[neighbor] != side[node]:\n+                    current_gain -= weight\n+                else:\n+                    current_gain += weight\n+            if current_gain > best_gain:\n+                best_gain = current_gain\n+                flip_node = node\n+            current_gain = 0\n+        if flip_node == -1:\n+            break\n+        side[flip_node] ^= 1\n+        if best_cut + best_gain < 0:\n+            break\n+        best_cut += best_gain\n+        if best_cut > 0:\n+            best_assignment = side[:]\n+\n+    return best_assignment\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 20.8,
+ "model_gpu_memory_gb": 20.8,
+ "context_length": 32768,
+ "load_seconds": 50.9,
+ "median_call_seconds": 39.7,
+ "p90_call_seconds": 71.9,
+ "prompt_tokens_per_s": 433.0,
+ "gen_tokens_per_s": 26.4,
+ "mean_prompt_tokens": 2788,
+ "mean_gen_tokens": 860,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

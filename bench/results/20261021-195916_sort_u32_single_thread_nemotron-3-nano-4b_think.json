@@ -1,0 +1,126 @@
+{
+ "schema": 3,
+ "example": "sort_u32_single_thread",
+ "model": "nemotron-3-nano:4b",
+ "variant": "think",
+ "model_size_gb": 2.9,
+ "model_params": "",
+ "started": "2026-10-21T19:59:16",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 23.822774385141173,
+ "best_score": 130.41220291678837,
+ "improvement": 5.4742659611522635,
+ "llm_calls": 24,
+ "mean_llm_seconds": 37.2,
+ "attempts": 24,
+ "ok": 2,
+ "statuses": {
+  "compile_error": 3,
+  "edit_error": 11,
+  "invalid": 6,
+  "ok": 2,
+  "duplicate": 2
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 2,
+ "minutes_to_best": 13.09,
+ "best_idea": "Replace the full std::sort call with a cheap O(n) scan that detects already\u2011sorted or reverse\u2011sorted inputs and uses an in\u2011place reverse instead, avoiding unnecessary work and branching.",
+ "progress": [
+  [
+   0.0,
+   23.822774385141173
+  ],
+  [
+   4.56,
+   126.906786968627
+  ],
+  [
+   13.09,
+   130.41220291678837
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 23.822774385141173,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 4.56,
+   "score": 126.906786968627,
+   "model": "nemotron-3-nano:4b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the temporary vector and merge\u2011sort implementation with a single call to std::sort for better performance."
+  },
+  {
+   "minutes": 13.09,
+   "score": 130.41220291678837,
+   "model": "nemotron-3-nano:4b",
+   "mode": "best/rewrite/tune",
+   "status": "ok",
+   "idea": "Replace the full std::sort call with a cheap O(n) scan that detects already\u2011sorted or reverse\u2011sorted inputs and uses an in\u2011place reverse instead, avoiding unnecessary work and branching."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,8 +19,6 @@\n #endif\n \n // OMEGA-BLOCK-START\n-// Sorts a[0..n) ascending, in place, on the calling thread. n is any size from\n-// 0 to 2'000'000. Extra memory may be allocated freely.\n static void merge_sort_rec(uint32_t* a, uint32_t* tmp, size_t lo, size_t hi) {\n     if (hi - lo < 2) return;\n     size_t mid = lo + (hi - lo) / 2;\n@@ -34,7 +32,18 @@\n }\n \n extern \"C\" void sort_u32(uint32_t* a, size_t n) {\n-    std::vector<uint32_t> tmp(n);\n-    merge_sort_rec(a, tmp.data(), 0, n);\n+    if (n == 0) return;\n+    bool sorted = true, reverse = true;\n+    for (size_t i = 1; i < n; ++i) {\n+        if (a[i-1] > a[i]) sorted = false;\n+        if (a[i-1] < a[i]) reverse = false;\n+        if (!sorted && !reverse) break;\n+    }\n+    if (sorted) return;\n+    if (reverse) {\n+        std::reverse(a, a + n);\n+        return;\n+    }\n+    std::sort(a, a + n);\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "best_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 10.4,
+ "model_gpu_memory_gb": 10.4,
+ "context_length": 32768,
+ "load_seconds": 7.6,
+ "median_call_seconds": 38.6,
+ "p90_call_seconds": 65.5,
+ "prompt_tokens_per_s": 1002.6,
+ "gen_tokens_per_s": 61.7,
+ "mean_prompt_tokens": 3886,
+ "mean_gen_tokens": 2033,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

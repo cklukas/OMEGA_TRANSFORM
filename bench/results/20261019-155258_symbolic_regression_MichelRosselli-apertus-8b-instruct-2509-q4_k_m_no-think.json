@@ -1,0 +1,99 @@
+{
+ "schema": 2,
+ "example": "symbolic_regression",
+ "model": "MichelRosselli/apertus:8b-instruct-2509-q4_k_m",
+ "variant": "no-think",
+ "model_size_gb": 5.1,
+ "model_params": "8.1B",
+ "started": "2026-10-19T15:52:58",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "502fbf9",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.3128434055615448,
+ "best_score": 0.49713545872495385,
+ "improvement": 1.5890872234708295,
+ "llm_calls": 25,
+ "mean_llm_seconds": 35.5,
+ "attempts": 25,
+ "ok": 9,
+ "statuses": {
+  "ok": 9,
+  "edit_error": 11,
+  "invalid": 4,
+  "duplicate": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 3,
+ "minutes_to_best": 8.97,
+ "best_idea": "Add polynomial terms beyond x^3 to improve extrapolation.",
+ "progress": [
+  [
+   0.0,
+   0.3128434055615448
+  ],
+  [
+   0.76,
+   0.3740355611003214
+  ],
+  [
+   1.73,
+   0.4971348602514754
+  ],
+  [
+   8.97,
+   0.49713545872495385
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.3128434055615448,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 8.97,
+   "score": 0.49713545872495385,
+   "model": "MichelRosselli/apertus:8b-instruct-2509-q4_k_m",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Add polynomial terms beyond x^3 to improve extrapolation."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -35,7 +35,25 @@\n # OMEGA-BLOCK-START\n def basis(x1, x2, x3):\n     \"\"\"Basis functions of the model; the prediction is a weighted sum of them.\"\"\"\n-    return [1.0, x1, x2, x3]\n+    return [\n+        1.0,\n+        x1, x2, x3,\n+        x1**2, x1*x2, x1*x3, x2*x3,\n+        x1**3, x1**2*x2, x1**2*x3, x1*x2**2, x1*x2*x3,\n+        x2**2, x2*x3, x3**2,\n+        x1**2+x2**2+x3**2, x1*x2+x1*x3+x2*x3,\n+        x1**4, x1**3*x2, x1**3*x3, x1**2*x2**2, x1**2*x2*x3, x1**2*x3**2,\n+        x2**3, x2**2*x3, x2*x3**2,\n+        x3**3, x3**2*x1, x3**2*x2, x3**2*x3,\n+        x1**2*x2**2, x1**2*x2*x3, x1**2*x3**2,\n+        x2**2*x3**2, x1**2*x2**2*x3, x1**2*x2*x3**2,\n+        x1**3*x2**3, x1**3*x2**2*x3, x1**3*x2*x3**2,\n+        x1**3*x3**3, x1**3*x3**2*x2, x1**3*x3**2*x3,\n+        x1**4*x2, x1**4*x3, x1**3*x2**2*x3, x1**3*x2*x3**2,\n+        x2**4*x3, x2**3*x1*x3, x2**3*x1*x2, x2**3*x1*x1,\n+        x3**4, x3**3*x1, x3**3*x2, x3**3*x3**2,\n+        x1**2*x2**2*x3, x1**2*x2*x3**2, x1**2*x2**2*x3, x1**2*x2*x3**2*x1\n+    ]\n \n \n def fit(rows):\n",
+ "error": "",
+ "model_memory_gb": 8.9,
+ "model_gpu_memory_gb": 8.9,
+ "context_length": 32768,
+ "load_seconds": 16.9,
+ "median_call_seconds": 32.9,
+ "p90_call_seconds": 59.5,
+ "prompt_tokens_per_s": 396.5,
+ "gen_tokens_per_s": 28.8,
+ "mean_prompt_tokens": 4397,
+ "mean_gen_tokens": 666,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

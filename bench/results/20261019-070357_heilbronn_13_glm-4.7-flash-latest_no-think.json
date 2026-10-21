@@ -1,0 +1,103 @@
+{
+ "schema": 2,
+ "example": "heilbronn_13",
+ "model": "glm-4.7-flash:latest",
+ "variant": "no-think",
+ "model_size_gb": 19.0,
+ "model_params": "29.9B",
+ "started": "2026-10-19T07:03:57",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "502fbf9",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.004790811518724618,
+ "best_score": 0.013307809774235053,
+ "improvement": 2.7777777777777786,
+ "llm_calls": 34,
+ "mean_llm_seconds": 26.2,
+ "attempts": 34,
+ "ok": 8,
+ "statuses": {
+  "ok": 8,
+  "invalid": 17,
+  "duplicate": 5,
+  "edit_error": 4
+ },
+ "sweeps": 3,
+ "sweep_variants": 25,
+ "improvements": 2,
+ "minutes_to_best": 0.93,
+ "best_idea": "tuned radius=0.5 on top of: Expand the radius to fully utilize the square, increasing the minimum triangle area.",
+ "progress": [
+  [
+   0.0,
+   0.004790811518724618
+  ],
+  [
+   0.93,
+   0.012264477487935023
+  ],
+  [
+   0.93,
+   0.013307809774235053
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.004790811518724618,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 0.93,
+   "score": 0.012264477487935023,
+   "model": "glm-4.7-flash:latest",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Expand the radius to fully utilize the square, increasing the minimum triangle area."
+  },
+  {
+   "minutes": 0.93,
+   "score": 0.013307809774235053,
+   "model": "glm-4.7-flash:latest",
+   "mode": "sweep/exploit/diff/refine",
+   "status": "ok",
+   "idea": "tuned radius=0.5 on top of: Expand the radius to fully utilize the square, increasing the minimum triangle area."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -13,7 +13,7 @@\n     the points on a regular polygon on a small circle around the center, which\n     avoids collinear triples but wastes most of the square.\n     \"\"\"\n-    radius = 0.3\n+    radius = 0.5\n     return [(0.5 + radius * math.cos(2 * math.pi * k / n),\n              0.5 + radius * math.sin(2 * math.pi * k / n)) for k in range(n)]\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 20.8,
+ "model_gpu_memory_gb": 20.8,
+ "context_length": 32768,
+ "load_seconds": 47.8,
+ "median_call_seconds": 23.5,
+ "p90_call_seconds": 46.1,
+ "prompt_tokens_per_s": 529.1,
+ "gen_tokens_per_s": 31.6,
+ "mean_prompt_tokens": 2779,
+ "mean_gen_tokens": 617,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

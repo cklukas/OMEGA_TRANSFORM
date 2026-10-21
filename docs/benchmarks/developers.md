@@ -15,18 +15,36 @@ Every benchmarked model and the company that develops it, which the comparisons 
 | Alibaba (Qwen) | qwen2.5-coder:7b, qwen3-coder:30b, qwen3.5:27b, qwen3.5:latest, qwen3.6:27b-coding-mtp-q4_K_M, qwen3.8:27b-mtp-q4_K_M, qwen3:30b-a3b-instruct-2507-q4_K_M | – |
 | Cohere | – | cohere/north-mini-code:free |
 | Google | gemma4:12b-it-qat, gemma4:26b-a4b-it-qat, gemma4:e2b, gemma4:e4b-it-qat, gemma4:latest | – |
-| NVIDIA | – | nvidia/nemotron-3-super-120b-a12b:free, nvidia/nemotron-3-ultra-550b-a55b:free |
+| LG | ingu627/exaone4.0:32b | – |
+| Meta | muse-glimmer:30b | – |
+| Microsoft | richardyoung/frognano-4b-2609:latest | – |
+| Mistral AI | devstral-small-2:24b | – |
+| NII (LLM-jp) | llm-jp-4-8b-omega:q4_k_m | – |
+| NVIDIA | nemotron-3-nano:30b-a3b-mlx, nemotron-3-nano:4b, nemotron-3.5-lightning:30b-mlx | nvidia/nemotron-3-super-120b-a12b:free, nvidia/nemotron-3-ultra-550b-a55b:free |
 | OpenAI | gpt-oss:20b | – |
 | Poolside | – | poolside/laguna-s-2.1:free |
+| Sarvam AI | frob/sarvam:30b | – |
+| Swiss AI Initiative | MichelRosselli/apertus:8b-instruct-2509-q4_k_m | – |
+| Yandex | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest | – |
+| Z.ai | glm-4.7-flash:latest | – |
 
 **About the developers** (as of October 2026; many of these companies and their open models are only a few years old):
 
 - **Alibaba (Qwen)** (founded 1999, Hangzhou, China): China's largest e-commerce and cloud group. Its Qwen team has released open-weight models since 2023, in many sizes and mostly under Apache 2.0; Qwen is among the most widely used open model families.
 - **Cohere** (founded 2019, Toronto, Canada): Builds language models for enterprise use (the Command family); some are published as open weights.
 - **Google** (founded 1998, Mountain View, USA): Publishes the Gemma family as open-weight models since 2024, built from the research behind its larger proprietary models, from phone-sized to mid-sized models.
+- **LG** (founded 2020, Seoul, South Korea): LG AI Research, the AI lab of the LG group, develops the EXAONE models.
+- **Meta** (founded 2004, Menlo Park, USA): Opened up large models with Llama (2023–2025); its newer Muse family is mostly proprietary, with Muse Glimmer (30B, Apache 2.0, August 2026) and a large Muse Spark released as open weights.
+- **Microsoft** (founded 1975, Redmond, USA): Publishes small open models under the MIT license: the Phi family since 2023 and, in 2026, FrogNano, a 4B coding agent built on Qwen3.5-4B and trained with reinforcement learning on software-engineering tasks.
+- **Mistral AI** (founded 2023, Paris, France): Europe's largest developer of language models; publishes open-weight general models and the Codestral and Devstral coding models.
+- **NII (LLM-jp)** (founded 2000, Tokyo, Japan): Japan's National Institute of Informatics leads LLM-jp, a consortium of universities and companies that has trained fully open Japanese-English models from scratch since 2023 (LLM-jp-4 in 2026, Apache 2.0).
 - **NVIDIA** (founded 1993, Santa Clara, USA): The leading maker of AI accelerators. Its Nemotron models are open-weight, often with their training data published, and partly built on other open models.
 - **OpenAI** (founded 2015, San Francisco, USA): Best known for ChatGPT and its proprietary GPT models; gpt-oss (August 2025, Apache 2.0) were its first open-weight language models since GPT-2 in 2019.
 - **Poolside** (founded 2023, Paris, France): Founded by a former GitHub CTO to build models for software development, trained with reinforcement learning from executing code; Laguna is its open-weight line (2026).
+- **Sarvam AI** (founded 2023, Bengaluru, India): Builds models for India's languages; released the Sarvam 30B and 105B mixture-of-experts models (March 2026, Apache 2.0), trained in India under the national IndiaAI mission.
+- **Swiss AI Initiative** (founded 2023, Lausanne and Zurich, Switzerland): A joint effort of EPFL, ETH Zurich and the national supercomputing centre CSCS; its Apertus models (2025) are fully open, with training data and recipes, under Apache 2.0.
+- **Yandex** (founded 1997, Moscow, Russia): Russia's largest search engine; published YandexGPT 5 Lite (8B) as open weights in 2025, while its flagship models (now Alice AI) remain proprietary.
+- **Z.ai** (founded 2019, Beijing, China): Founded as Zhipu AI, a spin-off of Tsinghua University; develops the GLM family, whose recent models are among the strongest open-weight coding models.
 
 ## Local models
 
@@ -36,9 +54,19 @@ The developer's best single model, the mean share over all its models, and the m
 
 | Developer | Models | Best model | Released | Best model's share | Mean over its models | Best per example |
 |---|--:|---|---|--:|--:|--:|
-| Google | 10 | gemma4:26b-a4b-it-qat (no-think) | 2026-03-11 | **79%** | 54% | 93% |
-| OpenAI | 2 | gpt-oss:20b (think) | 2025-08-04 | **79%** | 72% | 80% |
+| Google | 10 | gemma4:26b-a4b-it-qat (no-think) | 2026-03-11 | **79%** | 54% | 92% |
+| OpenAI | 2 | gpt-oss:20b (think) | 2025-08-04 | **79%** | 72% | 79% |
+| Meta | 2 | muse-glimmer:30b (no-think) | 2026-08-09 | **68%** | 65% | 73% |
 | Alibaba (Qwen) | 12 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | 2025-07-28 | **60%** | 43% | 88% |
+| NVIDIA | 6 | nemotron-3-nano:30b-a3b-mlx (think) | 2025-12-04 | **45%** | 30% | 62% |
+| LG | 1 | ingu627/exaone4.0:32b (no-think) | 2025-07-11 | **39%** | 39% | 39% |
+| Mistral AI | 1 | devstral-small-2:24b (no-think) | 2025-11-28 | **37%** | 37% | 37% |
+| Microsoft | 2 | richardyoung/frognano-4b-2609:latest (no-think) | 2026-09-17 | **35%** | 29% | 43% |
+| Z.ai | 2 | glm-4.7-flash:latest (no-think) | 2026-01-19 | **34%** | 26% | 36% |
+| Sarvam AI | 2 | frob/sarvam:30b (no-think) | 2026-03-03 | **21%** | 15% | 21% |
+| Yandex | 1 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 2025-03-28 | **18%** | 18% | 18% |
+| Swiss AI Initiative | 1 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 2025-08-13 | **13%** | 13% | 13% |
+| NII (LLM-jp) | 1 | llm-jp-4-8b-omega:q4_k_m (no-think) | 2026-03-16 | **4%** | 4% | 4% |
 
 ### Progress over time
 
@@ -58,14 +86,26 @@ Each developer's ranked models by release date (the original publication on Hugg
 | Google | under 15B | 2026-03-02 | gemma4:latest (no-think) | 8.1B | 72% |
 | Google | under 15B | 2026-05-23 | gemma4:12b-it-qat (no-think) | 11.9B | 65% |
 | Google | 15B and up | 2026-03-11 | gemma4:26b-a4b-it-qat (no-think) | 25.2B | 79% |
+| LG | 15B and up | 2025-07-11 | ingu627/exaone4.0:32b (no-think) | 32B | 39% |
+| Meta | 15B and up | 2026-08-09 | muse-glimmer:30b (no-think) | 27.9B | 68% |
+| Microsoft | under 15B | 2026-09-17 | richardyoung/frognano-4b-2609:latest (no-think) | 4.3B | 35% |
+| Mistral AI | 15B and up | 2025-11-28 | devstral-small-2:24b (no-think) | 24B | 37% |
+| NII (LLM-jp) | under 15B | 2026-03-16 | llm-jp-4-8b-omega:q4_k_m (no-think) | 8.6B | 4% |
+| NVIDIA | under 15B | 2026-03-07 | nemotron-3-nano:4b (no-think) | 4B | 28% |
+| NVIDIA | 15B and up | 2025-12-04 | nemotron-3-nano:30b-a3b-mlx (think) | 31.6B | 45% |
+| NVIDIA | 15B and up | 2026-08-01 | nemotron-3.5-lightning:30b-mlx (no-think) | 32.9B | 31% |
 | OpenAI | 15B and up | 2025-08-04 | gpt-oss:20b (think) | 20.9B | 79% |
+| Sarvam AI | 15B and up | 2026-03-03 | frob/sarvam:30b (no-think) | 32.2B | 21% |
+| Swiss AI Initiative | under 15B | 2025-08-13 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 8.1B | 13% |
+| Yandex | under 15B | 2025-03-28 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 8B | 18% |
+| Z.ai | 15B and up | 2026-01-19 | glm-4.7-flash:latest (no-think) | 29.9B | 34% |
 
 ```mermaid
 xychart-beta
     title "Alibaba (Qwen), local, 15B and up: share by release date"
     x-axis ["qwen3:30b-a3b-instruct-2507-q4_K_M (2025-07)", "qwen3-coder:30b (2025-07)", "qwen3.5:27b (2026-02)", "qwen3.6:27b-coding-mtp-q4_K_M (2026-04)", "qwen3.8:27b-mtp-q4_K_M (2026-08)"]
     y-axis "% of the best gain" 0 --> 100
-    line [59.56, 42.58, 43.21, 51.93, 57.26]
+    line [59.53, 42.52, 42.99, 51.93, 57.07]
 ```
 
 ## Cloud models (OpenRouter)

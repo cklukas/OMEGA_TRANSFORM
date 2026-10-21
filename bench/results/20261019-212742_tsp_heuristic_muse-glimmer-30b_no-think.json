@@ -1,0 +1,92 @@
+{
+ "schema": 2,
+ "example": "tsp_heuristic",
+ "model": "muse-glimmer:30b",
+ "variant": "no-think",
+ "model_size_gb": 18.2,
+ "model_params": "27.9B",
+ "started": "2026-10-19T21:27:42",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.8,
+ "omega_version": "0.1.0",
+ "omega_commit": "cdb6ddd",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.0,
+ "best_score": 1.1431723924793291,
+ "improvement": 1.1431723924793291,
+ "llm_calls": 4,
+ "mean_llm_seconds": 246.3,
+ "attempts": 4,
+ "ok": 4,
+ "statuses": {
+  "ok": 4
+ },
+ "sweeps": 1,
+ "sweep_variants": 12,
+ "improvements": 2,
+ "minutes_to_best": 9.47,
+ "best_idea": "Keep the nearest-neighbour construction but add a fast 2-opt local search that repeatedly reverses improving edges until time runs out, using pre-extracted coordinate lists and incremental time checks",
+ "progress": [
+  [
+   0.0,
+   1.0
+  ],
+  [
+   6.39,
+   1.1335695308876919
+  ],
+  [
+   9.47,
+   1.1431723924793291
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.0,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 9.47,
+   "score": 1.1431723924793291,
+   "model": "muse-glimmer:30b",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Keep the nearest-neighbour construction but add a fast 2-opt local search that repeatedly reverses improving edges until time runs out, using pre-extracted coordinate lists and incremental time checks to raise tour quality."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -21,13 +21,50 @@\n     Current method: plain nearest-neighbour construction starting at city 0.\n     \"\"\"\n     n = len(points)\n+    xs = [p[0] for p in points]\n+    ys = [p[1] for p in points]\n+\n     unvisited = set(range(1, n))\n     tour = [0]\n-    x, y = points[0]\n+    x, y = xs[0], ys[0]\n     while unvisited:\n-        nxt = min(unvisited, key=lambda j: (points[j][0] - x) ** 2 + (points[j][1] - y) ** 2)\n+        # nearest neighbour by squared distance\n+        nxt = min(unvisited, key=lambda j: (xs[j] - x) ** 2 + (ys[j] - y) ** 2)\n         unvisited.remove(nxt)\n         tour.append(nxt)\n-        x, y = points[nxt]\n+        x, y = xs[nxt], ys[nxt]\n+\n+    # 2-opt improvement with time limit\n+    start = time.process_time()\n+    hypot = math.hypot\n+    def dist(i, j):\n+        return hypot(xs[i] - xs[j], ys[i] - ys[j])\n+\n+    improved = True\n+    while improved:\n+        if time.process_time() - start >= time_limit * 0.95:\n+            break\n+        improved = False\n+        # simple first-improvement 2-opt\n+        for i in range(n - 1):\n+            if time.process_time() - start >= time_limit * 0.95:\n+                break\n+            a = tour[i]\n+            b = tour[i + 1]\n+            da = dist(a, b)\n+            for j in range(i + 2, n):\n+                if i == 0 and j == n - 1:\n+                    continue\n+                c = tour[j]\n+                d = tour[(j + 1) % n]\n+                # delta = old - new\n+                if da + dist(c, d) > dist(a, c) + dist(b, d):\n+                    # reverse segment i+1 .. j\n+                    tour[i + 1:j + 1] = reversed(tour[i + 1:j + 1])\n+                    improved = True\n+                    # update b for next j in this i (since tour changed)\n+                    b = tour[i + 1]\n+                    da = dist(a, b)\n+                    break\n     return tour\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 15.6,
+ "model_gpu_memory_gb": 15.6,
+ "context_length": 32768,
+ "load_seconds": 56.4,
+ "median_call_seconds": 202.2,
+ "p90_call_seconds": 420.0,
+ "prompt_tokens_per_s": 110.7,
+ "gen_tokens_per_s": 10.5,
+ "mean_prompt_tokens": 1924,
+ "mean_gen_tokens": 2257,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

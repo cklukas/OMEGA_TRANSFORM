@@ -1,0 +1,91 @@
+{
+ "schema": 2,
+ "example": "circles_in_circle_21",
+ "model": "ingu627/exaone4.0:32b",
+ "variant": "no-think",
+ "model_size_gb": 19.3,
+ "model_params": "32.0B",
+ "started": "2026-10-18T21:38:54",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "502fbf9",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 3.1890454825108625,
+ "best_score": 3.6446234085838434,
+ "improvement": 1.142857142857143,
+ "llm_calls": 12,
+ "mean_llm_seconds": 80.0,
+ "attempts": 12,
+ "ok": 6,
+ "statuses": {
+  "edit_error": 1,
+  "invalid": 4,
+  "ok": 6,
+  "duplicate": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 6.22,
+ "best_idea": "Adjust the initial ring radii to allow for larger circles in the outer rings while maintaining non-overlapping constraints.",
+ "progress": [
+  [
+   0.0,
+   3.1890454825108625
+  ],
+  [
+   6.22,
+   3.6446234085838434
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.1890454825108625,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 6.22,
+   "score": 3.6446234085838434,
+   "model": "ingu627/exaone4.0:32b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Adjust the initial ring radii to allow for larger circles in the outer rings while maintaining non-overlapping constraints."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -13,7 +13,7 @@\n     apart and every circle inside the container.\n     \"\"\"\n     centers = [(0.0, 0.0)]\n-    for count, ring in ((7, 0.35), (n - 8, 0.75)):\n+    for count, ring in ((7, 0.4), (n - 8, 0.8)):\n         centers += [(ring * math.cos(2 * math.pi * k / count),\n                      ring * math.sin(2 * math.pi * k / count)) for k in range(count)]\n     r = min(1.0 - math.hypot(x, y) for x, y in centers)\n",
+ "error": "",
+ "model_memory_gb": 20.2,
+ "model_gpu_memory_gb": 20.2,
+ "context_length": 32768,
+ "load_seconds": 49.8,
+ "median_call_seconds": 78.0,
+ "p90_call_seconds": 123.2,
+ "prompt_tokens_per_s": 76.8,
+ "gen_tokens_per_s": 9.0,
+ "mean_prompt_tokens": 1977,
+ "mean_gen_tokens": 416,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

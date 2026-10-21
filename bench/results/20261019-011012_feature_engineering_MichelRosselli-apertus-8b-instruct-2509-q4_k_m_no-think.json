@@ -1,0 +1,123 @@
+{
+ "schema": 2,
+ "example": "feature_engineering",
+ "model": "MichelRosselli/apertus:8b-instruct-2509-q4_k_m",
+ "variant": "no-think",
+ "model_size_gb": 5.1,
+ "model_params": "8.1B",
+ "started": "2026-10-19T01:10:12",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "502fbf9",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.623,
+ "best_score": 0.738,
+ "improvement": 1.1845906902086678,
+ "llm_calls": 28,
+ "mean_llm_seconds": 24.0,
+ "attempts": 28,
+ "ok": 8,
+ "statuses": {
+  "edit_error": 11,
+  "ok": 8,
+  "invalid": 7,
+  "duplicate": 2
+ },
+ "sweeps": 4,
+ "sweep_variants": 44,
+ "improvements": 3,
+ "minutes_to_best": 15.06,
+ "best_idea": "Probe the product of x3 and x6 to better capture their nonlinear quadrant effect and log(x6) to better fit its skewed input.",
+ "progress": [
+  [
+   0.0,
+   0.623
+  ],
+  [
+   1.86,
+   0.736
+  ],
+  [
+   6.97,
+   0.737
+  ],
+  [
+   15.06,
+   0.738
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.623,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.86,
+   "score": 0.507,
+   "model": "MichelRosselli/apertus:8b-instruct-2509-q4_k_m",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "Probe various values for a threshold on x3 to see whether it helps identify the hidden rule. Use the sign of (x3 - threshold) as a new feature."
+  },
+  {
+   "minutes": 1.86,
+   "score": 0.736,
+   "model": "MichelRosselli/apertus:8b-instruct-2509-q4_k_m",
+   "mode": "sweep/exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "tuned threshold=1 on top of: Probe various values for a threshold on x3 to see whether it helps identify the hidden rule. Use the sign of (x3 - threshold) as a new feature."
+  },
+  {
+   "minutes": 6.97,
+   "score": 0.737,
+   "model": "MichelRosselli/apertus:8b-instruct-2509-q4_k_m",
+   "mode": "best/rewrite/tune",
+   "status": "ok",
+   "idea": "Probe the squared radius of x4 and x5 (each [-2, 2]) as a new feature to capture circular or curved regions, and introduce a threshold on x3 to capture the quadrant effect and log(x6) to better fit its skewed input."
+  },
+  {
+   "minutes": 15.06,
+   "score": 0.738,
+   "model": "MichelRosselli/apertus:8b-instruct-2509-q4_k_m",
+   "mode": "explore/rewrite/refine",
+   "status": "ok",
+   "idea": "Probe the product of x3 and x6 to better capture their nonlinear quadrant effect and log(x6) to better fit its skewed input."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -10,16 +10,16 @@\n \n # OMEGA-BLOCK-START\n def features(row):\n-    \"\"\"Return the feature vector (a list of at most 30 finite floats) for one row.\n+    threshold = 1.0  # Sweep: threshold = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]\n+    log_cutoff = 0.0  # Sweep: log_cutoff = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]\n+    squared_radius = row[3] ** 2 + row[4] ** 2  # Product of squared radii\n \n-    row: list of 6 floats [x1, x2, x3, x4, x5, x6]. Roughly: x1, x2, x6 are\n-    standard-normal-like, x3 is positive and right-skewed (lognormal-like), x4 and x5\n-    lie in [-2, 2]. The label is a hidden NONLINEAR function of the inputs plus noise.\n-    Every row must give the same number of features. The classifier is linear in the\n-    features (they are standardized and a bias is added), so nonlinear structure only\n-    helps if a feature expresses it. Only the Python standard library may be used.\n+    x3_sign = row[2] > threshold\n+    x6_sign = row[5] > log_cutoff\n \n-    Current method: the raw inputs.\n-    \"\"\"\n-    return list(row)\n+    product = x3_sign * x6_sign\n+    return [\n+        row[0], row[1], x3_sign, squared_radius,\n+        row[3], row[4], row[5], product\n+    ]\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 8.9,
+ "model_gpu_memory_gb": 8.9,
+ "context_length": 32768,
+ "load_seconds": 15.5,
+ "median_call_seconds": 23.2,
+ "p90_call_seconds": 35.8,
+ "prompt_tokens_per_s": 420.6,
+ "gen_tokens_per_s": 31.4,
+ "mean_prompt_tokens": 3177,
+ "mean_gen_tokens": 495,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -1,0 +1,233 @@
+{
+ "schema": 3,
+ "example": "heilbronn_13",
+ "model": "richardyoung/frognano-4b-2609:latest",
+ "variant": "think",
+ "model_size_gb": 3.5,
+ "model_params": "4.3B",
+ "started": "2026-10-20T04:42:57",
+ "minutes_budget": 15.0,
+ "wall_minutes": 17.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.004790811518724618,
+ "best_score": 0.0055521733143175656,
+ "improvement": 1.1589212584584485,
+ "llm_calls": 21,
+ "mean_llm_seconds": 43.9,
+ "attempts": 21,
+ "ok": 8,
+ "statuses": {
+  "invalid": 8,
+  "ok": 8,
+  "edit_error": 4,
+  "llm_error": 1
+ },
+ "sweeps": 3,
+ "sweep_variants": 48,
+ "improvements": 2,
+ "minutes_to_best": 7.82,
+ "best_idea": "tuned INIT_RADIUS=0.15, ANNEALING_START_BETA=0.5, ANNEALING_COOLING=1.02, NUM_RESTARTS=50 on top of: Fix the annealing schedule (increase beta to cool down), reset best metrics per restart, inline tri",
+ "progress": [
+  [
+   0.0,
+   0.004790811518724618
+  ],
+  [
+   4.34,
+   0.004992448503367455
+  ],
+  [
+   7.82,
+   0.0055521733143175656
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.004790811518724618,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.44,
+   "score": null,
+   "model": "richardyoung/frognano-4b-2609:latest",
+   "mode": "exploit/rewrite/tune",
+   "status": "invalid",
+   "idea": "Replace the circular center-only initialization with a boundary-heavy symmetric layout, add multiple optimization restarts with simulated annealing and coordinate perturbations, expose all numeric parameters as constants for sweeping to find optimal initialization and optimization settings."
+  },
+  {
+   "minutes": 4.34,
+   "score": 0.004992448503367455,
+   "model": "richardyoung/frognano-4b-2609:latest",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Add missing `import random` statement to fix the NameError and enable the random perturbations needed for optimization."
+  },
+  {
+   "minutes": 7.81,
+   "score": 0.0030475075073028157,
+   "model": "richardyoung/frognano-4b-2609:latest",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Fix the annealing schedule (increase beta to cool down), reset best metrics per restart, inline triangle area calculation for speed, and ensure math is imported inside the block per policy."
+  },
+  {
+   "minutes": 7.82,
+   "score": 0.0055521733143175656,
+   "model": "richardyoung/frognano-4b-2609:latest",
+   "mode": "sweep/exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "tuned INIT_RADIUS=0.15, ANNEALING_START_BETA=0.5, ANNEALING_COOLING=1.02, NUM_RESTARTS=50 on top of: Fix the annealing schedule (increase beta to cool down), reset best metrics per restart, inline triangle area calculation for speed, and ensure math is imported inside the block per policy."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -5,17 +5,126 @@\n import math\n \n # OMEGA-BLOCK-START\n+import random\n+\n+# Sweeping parameters for initialization and optimization\n+INIT_RADIUS = 0.15\n+BOUNDARY_COUNT = 8\n+ANNEALING_COOLING = 1.02\n+ANNEALING_START_BETA = 0.5\n+ANNEALING_END_BETA = 10.0\n+NUM_RESTARTS = 50\n+OPT_STEP_SCALE = 0.1\n+CLAMP_EPS = 1e-12\n+\n+def clamp(val):\n+    return max(0.0, min(1.0, val))\n+\n+def _triangle_area(a, b, c):\n+    return abs((a[0]*(b[1]-c[1]) + b[0]*(c[1]-a[1]) + c[0]*(a[1]-b[1])) / 2.0)\n+\n+def _compute_min_area(points):\n+    \"\"\"Compute minimum triangle area among all triples.\"\"\"\n+    if len(points) < 3:\n+        return 0.0\n+    \n+    n = len(points)\n+    min_area = float('inf')\n+    # Inline loop for speed\n+    for i in range(n):\n+        xi, yi = points[i]\n+        for j in range(i+1, n):\n+            xj, yj = points[j]\n+            for k in range(j+1, n):\n+                xk, yk = points[k]\n+                area = _triangle_area((xi, yi), (xj, yj), (xk, yk))\n+                if area < min_area:\n+                    min_area = area\n+    return min_area\n+\n+def _perturb(points, scale):\n+    return [(clamp(p[0] + random.uniform(-scale, scale)),\n+             clamp(p[1] + random.uniform(-scale, scale))) for p in points]\n+\n def construct(n=13):\n     \"\"\"Return a list of n points (x, y) inside the closed unit square [0,1]^2.\n \n-    The score is the smallest area among all triangles with corners at three of\n-    the points, so no three points may be (nearly) collinear. This start puts\n-    the points on a regular polygon on a small circle around the center, which\n-    avoids collinear triples but wastes most of the square.\n+    Uses boundary-heavy symmetric initialization with corners and edges.\n+    Then applies local optimization via simulated annealing.\n     \"\"\"\n-    radius = 0.3\n-    return [(0.5 + radius * math.cos(2 * math.pi * k / n),\n-             0.5 + radius * math.sin(2 * math.pi * k / n)) for k in range(n)]\n+    points = []\n+    \n+    # Add corners first\n+    corners = [(0, 0), (1, 0), (0, 1), (1, 1)]\n+    for i, (x, y) in enumerate(corners):\n+        points.append((clamp(x), clamp(y)))\n+    \n+    # Add midpoints on edges\n+    edge_mids = [(0.5, 0), (1, 0.5), (0.5, 1), (0, 0.5)]\n+    for i, (x, y) in enumerate(edge_mids):\n+        points.append((clamp(x), clamp(y)))\n+    \n+    # Add center points to fill remaining (n - 8 = 5)\n+    center_x = 0.5\n+    center_y = 0.5\n+    remaining = n - len(points)\n+    for i in range(remaining):\n+        angle = 2 * math.pi * i / remaining\n+        r = INIT_RADIUS\n+        x = center_x + r * math.cos(angle)\n+        y = center_y + r * math.sin(angle)\n+        points.append((clamp(x), clamp(y)))\n+    \n+    # Sort by index to ensure determinism\n+    points.sort()\n+    \n+    # Global best tracker\n+    global_best_points = None\n+    global_best_min_area = float('-inf')\n+    \n+    for restart in range(NUM_RESTARTS):\n+        # Start from best or random perturbation\n+        if restart == 0:\n+            current_points = points[:]\n+        else:\n+            current_points = _perturb(points, OPT_STEP_SCALE)\n+        \n+        # Reset best per restart\n+        current_min_area = _compute_min_area(current_points)\n+        best_min_area = current_min_area\n+        best_points = current_points[:]\n+        beta = ANNEALING_START_BETA\n+        \n+        for step in range(1000):\n+            # Generate perturbed candidate\n+            current_points = _perturb(current_points, OPT_STEP_SCALE * (0.1 + 0.9 * step / 1000))\n+            \n+            new_min_area = _compute_min_area(current_points)\n+            \n+            # Accept if better or with probability from beta\n+            if new_min_area > best_min_area:\n+                best_min_area = new_min_area\n+                best_points = current_points[:]\n+                beta = ANNEALING_COOLING * beta\n+            else:\n+                # Accept worse with probability exp(-beta * delta)\n+                delta = best_min_area - new_min_area\n+                if delta < 0:\n+                    prob = math.exp(-beta * delta)\n+                    if random.random() < prob:\n+                        best_min_area = new_min_area\n+                        best_points = current_points[:]\n+                beta = ANNEALING_COOLING * beta\n+    \n+    # Update global best if this restart improved\n+    if best_min_area > global_best_min_area:\n+        global_best_min_area = best_min_area\n+        global_best_points = best_points[:]\n+    \n+    return global_best_points\n+\n+def run():\n+    return construct(13)\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "heilbronn",
+  "points": [
+   [
+    0.8,
+    0.5
+   ],
+   [
+    0.765636807695963,
+    0.6394169516131305
+   ],
+   [
+    0.6704194240193467,
+    0.7468951597680968
+   ],
+   [
+    0.536161004076597,
+    0.7978126622294162
+   ],
+   [
+    0.3936185338872394,
+    0.7805048728056244
+   ],
+   [
+    0.27544677554866964,
+    0.6989367974722386
+   ],
+   [
+    0.2087174547721844,
+    0.5717946992862672
+   ],
+   [
+    0.2087174547721844,
+    0.42820530071373275
+   ],
+   [
+    0.2754467755486696,
+    0.30106320252776153
+   ],
+   [
+    0.3936185338872392,
+    0.21949512719437558
+   ],
+   [
+    0.536161004076597,
+    0.20218733777058384
+   ],
+   [
+    0.6704194240193464,
+    0.25310484023190294
+   ],
+   [
+    0.765636807695963,
+    0.3605830483868695
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "heilbronn",
+  "points": [
+   [
+    0.06610447078578502,
+    0.040631322757424884
+   ],
+   [
+    0.2827088325173138,
+    0.640271907326753
+   ],
+   [
+    0.43449586215613895,
+    0.9313497088200493
+   ],
+   [
+    0.6586676150444482,
+    0.6885785158355221
+   ],
+   [
+    0.21801295483786642,
+    0.8854783466611041
+   ],
+   [
+    0.3331747066659104,
+    0.013607571481642957
+   ],
+   [
+    0.5125925651485278,
+    1.0
+   ],
+   [
+    0.5034593826671016,
+    0.22865108072838236
+   ],
+   [
+    0.12802368229395705,
+    0.47017053977103657
+   ],
+   [
+    0.8978787682841564,
+    0.5529128539996641
+   ],
+   [
+    0.9839973915328142,
+    0.07834473792720115
+   ],
+   [
+    0.9415920386869777,
+    0.47336682383832773
+   ],
+   [
+    0.9760994712255796,
+    0.9728021477999667
+   ]
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 4.4,
+ "model_gpu_memory_gb": 4.4,
+ "context_length": 32768,
+ "load_seconds": 11.4,
+ "median_call_seconds": 39.2,
+ "p90_call_seconds": 55.9,
+ "prompt_tokens_per_s": 794.9,
+ "gen_tokens_per_s": 55.8,
+ "mean_prompt_tokens": 2649,
+ "mean_gen_tokens": 2223,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -1,0 +1,107 @@
+{
+ "schema": 2,
+ "example": "prefix_sum_histogram_single_thread",
+ "model": "MichelRosselli/apertus:8b-instruct-2509-q4_k_m",
+ "variant": "no-think",
+ "model_size_gb": 5.1,
+ "model_params": "8.1B",
+ "started": "2026-10-19T10:51:35",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.8,
+ "omega_version": "0.1.0",
+ "omega_commit": "502fbf9",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 4.63526,
+ "best_score": 5.35117,
+ "improvement": 1.1544487256378284,
+ "llm_calls": 23,
+ "mean_llm_seconds": 39.4,
+ "attempts": 23,
+ "ok": 3,
+ "statuses": {
+  "compile_error": 15,
+  "ok": 3,
+  "edit_error": 3,
+  "llm_error": 2
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 3,
+ "minutes_to_best": 10.88,
+ "best_idea": "Unroll the loop by 4 and use NEON vectorization if possible.",
+ "progress": [
+  [
+   0.0,
+   4.63526
+  ],
+  [
+   1.16,
+   5.06907
+  ],
+  [
+   2.01,
+   5.09944
+  ],
+  [
+   10.88,
+   5.35117
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 4.63526,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.16,
+   "score": 5.06907,
+   "model": "MichelRosselli/apertus:8b-instruct-2509-q4_k_m",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Unroll the main loop to eliminate some latency and improve performance."
+  },
+  {
+   "minutes": 10.88,
+   "score": 5.35117,
+   "model": "MichelRosselli/apertus:8b-instruct-2509-q4_k_m",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Unroll the loop by 4 and use NEON vectorization if possible."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -30,10 +30,26 @@\n extern \"C\" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, uint64_t* hist) {\n     for (int b = 0; b < 256; ++b) hist[b] = 0;\n     int64_t sum = 0;\n-    for (size_t i = 0; i < n; ++i) {\n+    // Unroll the loop by 4\n+    for (size_t i = 0; i < n; i += 4) {\n         sum += in[i];\n         out[i] = sum;\n         hist[in[i] & 255]++;\n+        if (i + 1 < n) {\n+            sum += in[i + 1];\n+            out[i + 1] = sum;\n+            hist[in[i + 1] & 255]++;\n+        }\n+        if (i + 2 < n) {\n+            sum += in[i + 2];\n+            out[i + 2] = sum;\n+            hist[in[i + 2] & 255]++;\n+        }\n+        if (i + 3 < n) {\n+            sum += in[i + 3];\n+            out[i + 3] = sum;\n+            hist[in[i + 3] & 255]++;\n+        }\n     }\n }\n // OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 8.9,
+ "model_gpu_memory_gb": 8.9,
+ "context_length": 32768,
+ "load_seconds": 16.1,
+ "median_call_seconds": 32.9,
+ "p90_call_seconds": 53.9,
+ "prompt_tokens_per_s": 582.4,
+ "gen_tokens_per_s": 29.8,
+ "mean_prompt_tokens": 4129,
+ "mean_gen_tokens": 609,
+ "stopped_calls": 2,
+ "provider": "ollama",
+ "cost_usd": 0
+}

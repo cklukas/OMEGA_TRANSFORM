@@ -1,0 +1,198 @@
+{
+ "schema": 3,
+ "example": "feature_engineering",
+ "model": "frob/sarvam:30b",
+ "variant": "think",
+ "model_size_gb": 19.6,
+ "model_params": "32.2B",
+ "started": "2026-10-20T03:11:16",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.9,
+ "omega_version": "0.1.0",
+ "omega_commit": "",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.623,
+ "best_score": 0.706,
+ "improvement": 1.1332263242375602,
+ "llm_calls": 6,
+ "mean_llm_seconds": 168.7,
+ "attempts": 6,
+ "ok": 2,
+ "statuses": {
+  "llm_error": 3,
+  "ok": 2,
+  "invalid": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 12.5,
+ "best_idea": "Add a log-transformed feature for the positive-skewed input x3 to linearize its relationship with the label.",
+ "progress": [
+  [
+   0.0,
+   0.623
+  ],
+  [
+   12.5,
+   0.706
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.623,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 12.5,
+   "score": 0.706,
+   "model": "frob/sarvam:30b",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Add a log-transformed feature for the positive-skewed input x3 to linearize its relationship with the label."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -10,16 +10,16 @@\n \n # OMEGA-BLOCK-START\n def features(row):\n-    \"\"\"Return the feature vector (a list of at most 30 finite floats) for one row.\n+    \"\"\"Return the feature vector for one row.\n \n-    row: list of 6 floats [x1, x2, x3, x4, x5, x6]. Roughly: x1, x2, x6 are\n-    standard-normal-like, x3 is positive and right-skewed (lognormal-like), x4 and x5\n-    lie in [-2, 2]. The label is a hidden NONLINEAR function of the inputs plus noise.\n-    Every row must give the same number of features. The classifier is linear in the\n-    features (they are standardized and a bias is added), so nonlinear structure only\n-    helps if a feature expresses it. Only the Python standard library may be used.\n+    We add a log-transformed version of x3 (positive-skewed) to linearize\n+    its relationship with the label. The transformed feature is log(1+x3)\n+    to avoid log(0). The raw x3 is also kept.\n \n-    Current method: the raw inputs.\n     \"\"\"\n-    return list(row)\n+    x1, x2, x3, x4, x5, x6 = row\n+    # Log-transform the positive-skewed input x3\n+    log_x3 = math.log1p(x3)\n+    # Return the original features plus the transformed one\n+    return [x1, x2, x3, x4, x5, x6, log_x3]\n # OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "classification",
+  "columns": [
+   "x1",
+   "x2",
+   "x3",
+   "x4",
+   "x5",
+   "x6"
+  ],
+  "head": [
+   [
+    0.14,
+    1.08,
+    1.79,
+    -0.66,
+    1.01,
+    -0.54
+   ],
+   [
+    -1.03,
+    -0.71,
+    0.47,
+    1.72,
+    0.77,
+    -0.69
+   ],
+   [
+    0.36,
+    -0.3,
+    0.1,
+    -2.0,
+    0.57,
+    -0.15
+   ],
+   [
+    1.13,
+    1.16,
+    1.34,
+    1.26,
+    1.29,
+    0.92
+   ]
+  ],
+  "head_labels": [
+   1,
+   1,
+   0,
+   1
+  ],
+  "train_rows": 1000,
+  "num_features": 6,
+  "test_correct": "1110101111000101011111011010101001101100111100110111111101011110101110011011001101101000011100011010111110110111011110000011111111011100100110111110101000001001110101111110101010111011101101000010010100000101110011000100110001010111011001101100110011110111111010101001011101111011110101110011100101100100011011010011101011000101100100110110111110100101101111110111101100011110111111110110111111101100010111110011111011001100001101010011101100101011010111110000111000010111111111100111110101010101111011001000111110111101110001011111011110011101010011011101111101001101110110101100001110001001101010001011011001111110111110101111110110110110101010111001011111101111111101101111001111001000101101001000000100100101111111111011011101110111110101111110001111001101111101111101011111111011111111111111111000111001001110010010010000110000101111110101001111101111000111011000111111101111101111000111011111010001001101100011000110110111000010111110110001111111111101001111101100011100101100101011101110111010"
+ },
+ "best_solution": {
+  "kind": "classification",
+  "columns": [
+   "x1",
+   "x2",
+   "x3",
+   "x4",
+   "x5",
+   "x6"
+  ],
+  "head": [
+   [
+    0.14,
+    1.08,
+    1.79,
+    -0.66,
+    1.01,
+    -0.54
+   ],
+   [
+    -1.03,
+    -0.71,
+    0.47,
+    1.72,
+    0.77,
+    -0.69
+   ],
+   [
+    0.36,
+    -0.3,
+    0.1,
+    -2.0,
+    0.57,
+    -0.15
+   ],
+   [
+    1.13,
+    1.16,
+    1.34,
+    1.26,
+    1.29,
+    0.92
+   ]
+  ],
+  "head_labels": [
+   1,
+   1,
+   0,
+   1
+  ],
+  "train_rows": 1000,
+  "num_features": 7,
+  "test_correct": "1101101111010001111111011010101111101010111100110101111011111010101100111111101100001001011100011011111110111111011111101011111101110001100110111110110001001011110101111111101101111110111101000111011101010101111110010101110111000011111001100101110010110110111011111111111111111111110101110011111101100110011111110011101111101101101101110110111110101100101111110111101111011110111101110110111111111100011111010111111011011110011101010111101110111000010111011001011100111110110110011110111111010101011111101001111110111101111001010111111111011101010011011100111101101111111110100100011111001101101010001001010011111010111110101111110110100010101110111001111101101111111101111111001111101101101111011110011111110101111110111111011111010111111111011110010111001100111101111111011110111111111111011101111101111011011110110010001100110100101111110111101111101111000111010101111111001111111111011111010111010001101101100111100011111111111011011110110101111111101101001111001100011110111110101101101111111010"
+ },
+ "error": "",
+ "model_memory_gb": 18.9,
+ "model_gpu_memory_gb": 18.9,
+ "context_length": 32768,
+ "load_seconds": 0.0,
+ "median_call_seconds": 205.3,
+ "p90_call_seconds": 249.6,
+ "prompt_tokens_per_s": 1671.9,
+ "gen_tokens_per_s": 65.1,
+ "mean_prompt_tokens": 1984,
+ "mean_gen_tokens": 7482,
+ "stopped_calls": 3,
+ "provider": "ollama",
+ "cost_usd": 0
+}

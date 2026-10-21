@@ -1,0 +1,95 @@
+{
+ "schema": 2,
+ "example": "bin_packing_1d",
+ "model": "devstral-small-2:24b",
+ "variant": "no-think",
+ "model_size_gb": 15.2,
+ "model_params": "24.0B",
+ "started": "2026-10-18T18:23:13",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "d42083e",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.7942635036246238,
+ "best_score": 0.9512800819252432,
+ "improvement": 1.1976882704342748,
+ "llm_calls": 12,
+ "mean_llm_seconds": 78.9,
+ "attempts": 12,
+ "ok": 7,
+ "statuses": {
+  "ok": 7,
+  "duplicate": 2,
+  "edit_error": 1,
+  "invalid": 2
+ },
+ "sweeps": 1,
+ "sweep_variants": 4,
+ "improvements": 2,
+ "minutes_to_best": 2.21,
+ "best_idea": "Use a First Fit Decreasing (FFD) heuristic with sorting by descending size to improve packing efficiency by reducing the number of bins needed.",
+ "progress": [
+  [
+   0.0,
+   0.7942635036246238
+  ],
+  [
+   1.31,
+   0.795872454551847
+  ],
+  [
+   2.21,
+   0.9512800819252432
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.7942635036246238,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.21,
+   "score": 0.9512800819252432,
+   "model": "devstral-small-2:24b",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Use a First Fit Decreasing (FFD) heuristic with sorting by descending size to improve packing efficiency by reducing the number of bins needed."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,17 +19,20 @@\n     (time.process_time(); more than 1.5 x the limit makes the program invalid).\n     Only the Python standard library may be used.\n \n-    Current method: next fit (open a new bin whenever the next item does not fit).\n+    Current method: first fit decreasing (sort by descending size, then first fit).\n     \"\"\"\n+    # Create list of (size, index) tuples, sort by size descending\n+    items = sorted([(s, i) for i, s in enumerate(sizes)], key=lambda x: x[0], reverse=True)\n     bins = []\n-    current, load = [], 0\n-    for i, s in enumerate(sizes):\n-        if load + s > capacity:\n-            bins.append(current)\n-            current, load = [], 0\n-        current.append(i)\n-        load += s\n-    if current:\n-        bins.append(current)\n+    for s, i in items:\n+        placed = False\n+        for bin in bins:\n+            bin_load = sum(sizes[idx] for idx in bin)\n+            if bin_load + s <= capacity:\n+                bin.append(i)\n+                placed = True\n+                break\n+        if not placed:\n+            bins.append([i])\n     return bins\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 19.7,
+ "model_gpu_memory_gb": 19.7,
+ "context_length": 32768,
+ "load_seconds": 41.4,
+ "median_call_seconds": 78.7,
+ "p90_call_seconds": 118.7,
+ "prompt_tokens_per_s": 122.8,
+ "gen_tokens_per_s": 11.1,
+ "mean_prompt_tokens": 2688,
+ "mean_gen_tokens": 589,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

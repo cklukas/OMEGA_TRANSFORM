@@ -1,0 +1,92 @@
+{
+ "schema": 2,
+ "example": "log_compressor",
+ "model": "MichelRosselli/apertus:8b-instruct-2509-q4_k_m",
+ "variant": "no-think",
+ "model_size_gb": 5.1,
+ "model_params": "8.1B",
+ "started": "2026-10-18T22:43:11",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "502fbf9",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 11.28605206956168,
+ "best_score": 21.490269171185126,
+ "improvement": 1.9041440743609603,
+ "llm_calls": 28,
+ "mean_llm_seconds": 31.4,
+ "attempts": 28,
+ "ok": 2,
+ "statuses": {
+  "llm_error": 3,
+  "edit_error": 11,
+  "invalid": 9,
+  "ok": 2,
+  "duplicate": 3
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 2.51,
+ "best_idea": "Use LZMA with extreme compression settings to achieve higher compression ratio.",
+ "progress": [
+  [
+   0.0,
+   11.28605206956168
+  ],
+  [
+   2.51,
+   21.490269171185126
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 11.28605206956168,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.51,
+   "score": 21.490269171185126,
+   "model": "MichelRosselli/apertus:8b-instruct-2509-q4_k_m",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Use LZMA with extreme compression settings to achieve higher compression ratio."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -10,6 +10,8 @@\n import zlib\n \n # OMEGA-BLOCK-START\n+import lzma\n+\n def compress(data: bytes) -> bytes:\n     \"\"\"Compress arbitrary bytes losslessly and return the compressed blob.\n \n@@ -21,12 +23,12 @@\n \n     Current method: plain zlib at level 1.\n     \"\"\"\n-    return zlib.compress(data, 1)\n+    return lzma.compress(data, preset=9 | lzma.PRESET_EXTREME)\n \n \n def decompress(blob: bytes) -> bytes:\n     \"\"\"Invert compress() exactly.\"\"\"\n-    return zlib.decompress(blob)\n+    return lzma.decompress(blob)\n # OMEGA-BLOCK-END\n \n \n",
+ "error": "",
+ "model_memory_gb": 8.9,
+ "model_gpu_memory_gb": 8.9,
+ "context_length": 32768,
+ "load_seconds": 0.0,
+ "median_call_seconds": 25.9,
+ "p90_call_seconds": 61.4,
+ "prompt_tokens_per_s": 497.5,
+ "gen_tokens_per_s": 29.8,
+ "mean_prompt_tokens": 2940,
+ "mean_gen_tokens": 639,
+ "stopped_calls": 3,
+ "provider": "ollama",
+ "cost_usd": 0
+}

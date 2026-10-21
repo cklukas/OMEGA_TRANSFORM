@@ -1,0 +1,363 @@
+{
+ "schema": 3,
+ "example": "circle_packing_26",
+ "model": "glm-4.7-flash:latest",
+ "variant": "no-think",
+ "model_size_gb": 19.0,
+ "model_params": "29.9B",
+ "started": "2026-10-20T22:19:32",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 1.5455649591816325,
+ "improvement": 1.0372209272077821,
+ "llm_calls": 27,
+ "mean_llm_seconds": 33.3,
+ "attempts": 27,
+ "ok": 16,
+ "statuses": {
+  "ok": 16,
+  "invalid": 7,
+  "duplicate": 2,
+  "edit_error": 2
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 8.7,
+ "best_idea": "Replace the fixed grid layout with a hexagonal (triangular) lattice seed to better utilize the available area and reduce gaps, then compute radii by shrinking overlapping pairs.",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   8.7,
+   1.5455649591816325
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 8.7,
+   "score": 1.5455649591816325,
+   "model": "glm-4.7-flash:latest",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the fixed grid layout with a hexagonal (triangular) lattice seed to better utilize the available area and reduce gaps, then compute radii by shrinking overlapping pairs."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -9,12 +9,19 @@\n # OMEGA-BLOCK-START\n def construct_packing(n=26):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n-    cols = math.ceil(math.sqrt(n))\n-    rows = math.ceil(n / cols)\n     centers = []\n-    for k in range(n):\n-        i, j = k % cols, k // cols\n-        centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n+    # Hexagonal lattice seed\n+    idx = 0\n+    for row in range(int(n ** 0.5) + 1):\n+        for col in range(int(n ** 0.5) + 1):\n+            if idx >= n:\n+                break\n+            x = (col + 0.5) / (int(n ** 0.5) + 1)\n+            y = (row + 0.5 + (col % 2) * 0.5) / (int(n ** 0.5) + 1)\n+            if x > 1 or y > 1:\n+                continue\n+            centers.append((x, y))\n+            idx += 1\n     radii = max_radii(centers)\n     return [(x, y, r) for (x, y), r in zip(centers, radii)]\n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.083333,
+    0.1,
+    0.060545
+   ],
+   [
+    0.25,
+    0.1,
+    0.039234
+   ],
+   [
+    0.416667,
+    0.1,
+    0.034262
+   ],
+   [
+    0.583333,
+    0.1,
+    0.040566
+   ],
+   [
+    0.75,
+    0.1,
+    0.05694
+   ],
+   [
+    0.916667,
+    0.1,
+    0.080973
+   ],
+   [
+    0.083333,
+    0.3,
+    0.047978
+   ],
+   [
+    0.25,
+    0.3,
+    0.032893
+   ],
+   [
+    0.416667,
+    0.3,
+    0.029299
+   ],
+   [
+    0.583333,
+    0.3,
+    0.040366
+   ],
+   [
+    0.75,
+    0.3,
+    0.058083
+   ],
+   [
+    0.916667,
+    0.3,
+    0.076636
+   ],
+   [
+    0.083333,
+    0.5,
+    0.05004
+   ],
+   [
+    0.25,
+    0.5,
+    0.036525
+   ],
+   [
+    0.416667,
+    0.5,
+    0.03396
+   ],
+   [
+    0.583333,
+    0.5,
+    0.041209
+   ],
+   [
+    0.75,
+    0.5,
+    0.058085
+   ],
+   [
+    0.916667,
+    0.5,
+    0.076976
+   ],
+   [
+    0.083333,
+    0.7,
+    0.059259
+   ],
+   [
+    0.25,
+    0.7,
+    0.06822
+   ],
+   [
+    0.416667,
+    0.7,
+    0.065257
+   ],
+   [
+    0.583333,
+    0.7,
+    0.069461
+   ],
+   [
+    0.75,
+    0.7,
+    0.089736
+   ],
+   [
+    0.916667,
+    0.7,
+    0.07693
+   ],
+   [
+    0.083333,
+    0.9,
+    0.075758
+   ],
+   [
+    0.25,
+    0.9,
+    0.090909
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.083333,
+    0.083333,
+    0.05916
+   ],
+   [
+    0.25,
+    0.166667,
+    0.021432
+   ],
+   [
+    0.416667,
+    0.083333,
+    0.035641
+   ],
+   [
+    0.583333,
+    0.166667,
+    0.020066
+   ],
+   [
+    0.75,
+    0.083333,
+    0.052485
+   ],
+   [
+    0.916667,
+    0.166667,
+    0.071882
+   ],
+   [
+    0.083333,
+    0.25,
+    0.067891
+   ],
+   [
+    0.25,
+    0.333333,
+    0.020061
+   ],
+   [
+    0.416667,
+    0.25,
+    0.044576
+   ],
+   [
+    0.583333,
+    0.333333,
+    0.025717
+   ],
+   [
+    0.75,
+    0.25,
+    0.061553
+   ],
+   [
+    0.916667,
+    0.333333,
+    0.074484
+   ],
+   [
+    0.083333,
+    0.416667,
+    0.071264
+   ],
+   [
+    0.25,
+    0.5,
+    0.028559
+   ],
+   [
+    0.416667,
+    0.416667,
+    0.045647
+   ],
+   [
+    0.583333,
+    0.5,
+    0.029187
+   ],
+   [
+    0.75,
+    0.416667,
+    0.061208
+   ],
+   [
+    0.916667,
+    0.5,
+    0.08225
+   ],
+   [
+    0.083333,
+    0.583333,
+    0.077387
+   ],
+   [
+    0.25,
+    0.666667,
+    0.061272
+   ],
+   [
+    0.416667,
+    0.583333,
+    0.077832
+   ],
+   [
+    0.583333,
+    0.666667,
+    0.095106
+   ],
+   [
+    0.75,
+    0.583333,
+    0.091233
+   ],
+   [
+    0.916667,
+    0.666667,
+    0.083333
+   ],
+   [
+    0.083333,
+    0.75,
+    0.082279
+   ],
+   [
+    0.25,
+    0.833333,
+    0.10406
+   ]
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 20.8,
+ "model_gpu_memory_gb": 20.8,
+ "context_length": 32768,
+ "load_seconds": 49.5,
+ "median_call_seconds": 28.9,
+ "p90_call_seconds": 55.0,
+ "prompt_tokens_per_s": 465.9,
+ "gen_tokens_per_s": 31.4,
+ "mean_prompt_tokens": 2227,
+ "mean_gen_tokens": 834,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

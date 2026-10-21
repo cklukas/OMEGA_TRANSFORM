@@ -1,0 +1,338 @@
+{
+ "schema": 3,
+ "example": "circles_in_circle_21",
+ "model": "nemotron-3-nano:30b-a3b-mlx",
+ "variant": "no-think",
+ "model_size_gb": 18.3,
+ "model_params": "",
+ "started": "2026-10-21T02:44:47",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 3.1890454825108625,
+ "best_score": 3.7799999999962206,
+ "improvement": 1.185307647923565,
+ "llm_calls": 34,
+ "mean_llm_seconds": 26.8,
+ "attempts": 34,
+ "ok": 7,
+ "statuses": {
+  "llm_error": 2,
+  "edit_error": 14,
+  "invalid": 9,
+  "ok": 7,
+  "duplicate": 2
+ },
+ "sweeps": 3,
+ "sweep_variants": 28,
+ "improvements": 3,
+ "minutes_to_best": 12.06,
+ "best_idea": "tuned outer_radius=0.81 on top of: Increase the outer ring radius to better fill the container while keeping inner radius fixed to maintain a robust configuration",
+ "progress": [
+  [
+   0.0,
+   3.1890454825108625
+  ],
+  [
+   6.22,
+   3.4279084997630136
+  ],
+  [
+   7.16,
+   3.6749999999963254
+  ],
+  [
+   12.06,
+   3.7799999999962206
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.1890454825108625,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 7.16,
+   "score": 3.6749999999963254,
+   "model": "nemotron-3-nano:30b-a3b-mlx",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Replace fixed ring radii with configurable parameters to allow larger outer ring radius and inner radius for better circle size distribution."
+  },
+  {
+   "minutes": 12.06,
+   "score": 3.149999999996848,
+   "model": "nemotron-3-nano:30b-a3b-mlx",
+   "mode": "best/rewrite/refine",
+   "status": "ok",
+   "idea": "Increase the outer ring radius to better fill the container while keeping inner radius fixed to maintain a robust configuration"
+  },
+  {
+   "minutes": 12.06,
+   "score": 3.7799999999962206,
+   "model": "nemotron-3-nano:30b-a3b-mlx",
+   "mode": "sweep/best/rewrite/refine",
+   "status": "ok",
+   "idea": "tuned outer_radius=0.81 on top of: Increase the outer ring radius to better fill the container while keeping inner radius fixed to maintain a robust configuration"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -8,12 +8,15 @@\n     \"\"\"Return a list of n circles (x, y, r) inside the unit circle (center (0,0),\n     radius 1) without overlaps.\n \n-    This start places one circle at the center and two concentric rings of 7 and\n-    13 circles, all with the same radius: the largest one that keeps every pair\n+    This start places one circle at the center and two concentric rings,\n+    one with 7 circles at radius 0.45 and one with 13 circles at radius 0.80,\n+    all with the same radius: the largest one that keeps every pair\n     apart and every circle inside the container.\n     \"\"\"\n+    inner_radius = 0.45\n+    outer_radius = 0.81\n     centers = [(0.0, 0.0)]\n-    for count, ring in ((7, 0.35), (n - 8, 0.75)):\n+    for count, ring in ((7, inner_radius), (n - 8, outer_radius)):\n         centers += [(ring * math.cos(2 * math.pi * k / count),\n                      ring * math.sin(2 * math.pi * k / count)) for k in range(count)]\n     r = min(1.0 - math.hypot(x, y) for x, y in centers)\n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.0,
+    0.0,
+    0.151859
+   ],
+   [
+    0.35,
+    0.0,
+    0.151859
+   ],
+   [
+    0.218221,
+    0.273641,
+    0.151859
+   ],
+   [
+    -0.077882,
+    0.341225,
+    0.151859
+   ],
+   [
+    -0.315339,
+    0.151859,
+    0.151859
+   ],
+   [
+    -0.315339,
+    -0.151859,
+    0.151859
+   ],
+   [
+    -0.077882,
+    -0.341225,
+    0.151859
+   ],
+   [
+    0.218221,
+    -0.273641,
+    0.151859
+   ],
+   [
+    0.75,
+    0.0,
+    0.151859
+   ],
+   [
+    0.664092,
+    0.348542,
+    0.151859
+   ],
+   [
+    0.426049,
+    0.617238,
+    0.151859
+   ],
+   [
+    0.090403,
+    0.744532,
+    0.151859
+   ],
+   [
+    -0.265954,
+    0.701262,
+    0.151859
+   ],
+   [
+    -0.561383,
+    0.497342,
+    0.151859
+   ],
+   [
+    -0.728206,
+    0.179487,
+    0.151859
+   ],
+   [
+    -0.728206,
+    -0.179487,
+    0.151859
+   ],
+   [
+    -0.561383,
+    -0.497342,
+    0.151859
+   ],
+   [
+    -0.265954,
+    -0.701262,
+    0.151859
+   ],
+   [
+    0.090403,
+    -0.744532,
+    0.151859
+   ],
+   [
+    0.426049,
+    -0.617238,
+    0.151859
+   ],
+   [
+    0.664092,
+    -0.348542,
+    0.151859
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.0,
+    0.0,
+    0.18
+   ],
+   [
+    0.45,
+    0.0,
+    0.18
+   ],
+   [
+    0.28057,
+    0.351824,
+    0.18
+   ],
+   [
+    -0.100134,
+    0.438718,
+    0.18
+   ],
+   [
+    -0.405436,
+    0.195248,
+    0.18
+   ],
+   [
+    -0.405436,
+    -0.195248,
+    0.18
+   ],
+   [
+    -0.100134,
+    -0.438718,
+    0.18
+   ],
+   [
+    0.28057,
+    -0.351824,
+    0.18
+   ],
+   [
+    0.81,
+    0.0,
+    0.18
+   ],
+   [
+    0.717219,
+    0.376426,
+    0.18
+   ],
+   [
+    0.460132,
+    0.666617,
+    0.18
+   ],
+   [
+    0.097635,
+    0.804094,
+    0.18
+   ],
+   [
+    -0.28723,
+    0.757363,
+    0.18
+   ],
+   [
+    -0.606294,
+    0.537129,
+    0.18
+   ],
+   [
+    -0.786463,
+    0.193846,
+    0.18
+   ],
+   [
+    -0.786463,
+    -0.193846,
+    0.18
+   ],
+   [
+    -0.606294,
+    -0.537129,
+    0.18
+   ],
+   [
+    -0.28723,
+    -0.757363,
+    0.18
+   ],
+   [
+    0.097635,
+    -0.804094,
+    0.18
+   ],
+   [
+    0.460132,
+    -0.666617,
+    0.18
+   ],
+   [
+    0.717219,
+    -0.376426,
+    0.18
+   ]
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 23.9,
+ "model_gpu_memory_gb": 23.9,
+ "context_length": 32768,
+ "load_seconds": 0.0,
+ "median_call_seconds": 19.6,
+ "p90_call_seconds": 38.5,
+ "prompt_tokens_per_s": 652.1,
+ "gen_tokens_per_s": 56.4,
+ "mean_prompt_tokens": 3035,
+ "mean_gen_tokens": 971,
+ "stopped_calls": 2,
+ "provider": "ollama",
+ "cost_usd": 0
+}

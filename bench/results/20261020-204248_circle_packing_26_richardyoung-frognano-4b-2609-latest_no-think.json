@@ -1,0 +1,364 @@
+{
+ "schema": 3,
+ "example": "circle_packing_26",
+ "model": "richardyoung/frognano-4b-2609:latest",
+ "variant": "no-think",
+ "model_size_gb": 3.5,
+ "model_params": "4.3B",
+ "started": "2026-10-20T20:42:48",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 2.1666666666666665,
+ "improvement": 1.4540391819830936,
+ "llm_calls": 22,
+ "mean_llm_seconds": 42.9,
+ "attempts": 22,
+ "ok": 9,
+ "statuses": {
+  "invalid": 9,
+  "ok": 9,
+  "edit_error": 2,
+  "timeout": 1,
+  "llm_error": 1
+ },
+ "sweeps": 1,
+ "sweep_variants": 16,
+ "improvements": 1,
+ "minutes_to_best": 1.45,
+ "best_idea": "Replace the inefficient nested O(N^2) loop in max_radii with an O(N^2 log N) sorted approach and fix the radius scaling logic to preserve total sum better during overlap resolution, which should signi",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   1.45,
+   2.1666666666666665
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.45,
+   "score": 2.1666666666666665,
+   "model": "richardyoung/frognano-4b-2609:latest",
+   "mode": "explore/diff/tune",
+   "status": "ok",
+   "idea": "Replace the inefficient nested O(N^2) loop in max_radii with an O(N^2 log N) sorted approach and fix the radius scaling logic to preserve total sum better during overlap resolution, which should significantly improve the sum of radii for 26 circles."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -22,13 +22,31 @@\n def max_radii(centers):\n     \"\"\"Largest radii for fixed centers: limit by walls, then shrink overlapping pairs.\"\"\"\n     radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n-    for a in range(len(centers)):\n-        for b in range(a + 1, len(centers)):\n-            d = math.dist(centers[a], centers[b])\n-            if radii[a] + radii[b] > d:\n-                s = d / (radii[a] + radii[b])\n-                radii[a] *= s\n-                radii[b] *= s\n+    # Sort indices by current radius to process largest overlaps first\n+    indices = list(range(len(radii)))\n+    while True:\n+        # Re-sort to process tightest constraints first\n+        indices.sort(key=lambda i: radii[i], reverse=True)\n+        made_change = False\n+        for i in range(len(indices)):\n+            for j in range(i + 1, len(indices)):\n+                idx_a, idx_b = indices[i], indices[j]\n+                d = math.dist(centers[idx_a], centers[idx_b])\n+                if radii[idx_a] + radii[idx_b] > d:\n+                    # Scale down the larger one relative to the sum constraint\n+                    # Ensure we don't make it smaller than necessary, just fit within d\n+                    # New sum = d, scale factor for sum\n+                    # We want to keep ratio roughly same but satisfy d\n+                    # Simple greedy: reduce the larger radius\n+                    if radii[idx_a] > radii[idx_b]:\n+                        scale = d / (radii[idx_a] + radii[idx_b])\n+                        radii[idx_a] *= scale\n+                    else:\n+                        scale = d / (radii[idx_a] + radii[idx_b])\n+                        radii[idx_b] *= scale\n+                    made_change = True\n+        if not made_change:\n+            break\n     return radii\n # OMEGA-BLOCK-END\n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.083333,
+    0.1,
+    0.060545
+   ],
+   [
+    0.25,
+    0.1,
+    0.039234
+   ],
+   [
+    0.416667,
+    0.1,
+    0.034262
+   ],
+   [
+    0.583333,
+    0.1,
+    0.040566
+   ],
+   [
+    0.75,
+    0.1,
+    0.05694
+   ],
+   [
+    0.916667,
+    0.1,
+    0.080973
+   ],
+   [
+    0.083333,
+    0.3,
+    0.047978
+   ],
+   [
+    0.25,
+    0.3,
+    0.032893
+   ],
+   [
+    0.416667,
+    0.3,
+    0.029299
+   ],
+   [
+    0.583333,
+    0.3,
+    0.040366
+   ],
+   [
+    0.75,
+    0.3,
+    0.058083
+   ],
+   [
+    0.916667,
+    0.3,
+    0.076636
+   ],
+   [
+    0.083333,
+    0.5,
+    0.05004
+   ],
+   [
+    0.25,
+    0.5,
+    0.036525
+   ],
+   [
+    0.416667,
+    0.5,
+    0.03396
+   ],
+   [
+    0.583333,
+    0.5,
+    0.041209
+   ],
+   [
+    0.75,
+    0.5,
+    0.058085
+   ],
+   [
+    0.916667,
+    0.5,
+    0.076976
+   ],
+   [
+    0.083333,
+    0.7,
+    0.059259
+   ],
+   [
+    0.25,
+    0.7,
+    0.06822
+   ],
+   [
+    0.416667,
+    0.7,
+    0.065257
+   ],
+   [
+    0.583333,
+    0.7,
+    0.069461
+   ],
+   [
+    0.75,
+    0.7,
+    0.089736
+   ],
+   [
+    0.916667,
+    0.7,
+    0.07693
+   ],
+   [
+    0.083333,
+    0.9,
+    0.075758
+   ],
+   [
+    0.25,
+    0.9,
+    0.090909
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.083333,
+    0.1,
+    0.083333
+   ],
+   [
+    0.25,
+    0.1,
+    0.083333
+   ],
+   [
+    0.416667,
+    0.1,
+    0.083333
+   ],
+   [
+    0.583333,
+    0.1,
+    0.083333
+   ],
+   [
+    0.75,
+    0.1,
+    0.083333
+   ],
+   [
+    0.916667,
+    0.1,
+    0.083333
+   ],
+   [
+    0.083333,
+    0.3,
+    0.083333
+   ],
+   [
+    0.25,
+    0.3,
+    0.083333
+   ],
+   [
+    0.416667,
+    0.3,
+    0.083333
+   ],
+   [
+    0.583333,
+    0.3,
+    0.083333
+   ],
+   [
+    0.75,
+    0.3,
+    0.083333
+   ],
+   [
+    0.916667,
+    0.3,
+    0.083333
+   ],
+   [
+    0.083333,
+    0.5,
+    0.083333
+   ],
+   [
+    0.25,
+    0.5,
+    0.083333
+   ],
+   [
+    0.416667,
+    0.5,
+    0.083333
+   ],
+   [
+    0.583333,
+    0.5,
+    0.083333
+   ],
+   [
+    0.75,
+    0.5,
+    0.083333
+   ],
+   [
+    0.916667,
+    0.5,
+    0.083333
+   ],
+   [
+    0.083333,
+    0.7,
+    0.083333
+   ],
+   [
+    0.25,
+    0.7,
+    0.083333
+   ],
+   [
+    0.416667,
+    0.7,
+    0.083333
+   ],
+   [
+    0.583333,
+    0.7,
+    0.083333
+   ],
+   [
+    0.75,
+    0.7,
+    0.083333
+   ],
+   [
+    0.916667,
+    0.7,
+    0.083333
+   ],
+   [
+    0.083333,
+    0.9,
+    0.083333
+   ],
+   [
+    0.25,
+    0.9,
+    0.083333
+   ]
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 4.4,
+ "model_gpu_memory_gb": 4.4,
+ "context_length": 32768,
+ "load_seconds": 12.2,
+ "median_call_seconds": 39.0,
+ "p90_call_seconds": 79.4,
+ "prompt_tokens_per_s": 738.8,
+ "gen_tokens_per_s": 30.2,
+ "mean_prompt_tokens": 2586,
+ "mean_gen_tokens": 1104,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

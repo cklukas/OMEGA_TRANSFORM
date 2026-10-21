@@ -1,0 +1,101 @@
+{
+ "schema": 2,
+ "example": "symbolic_regression",
+ "model": "ingu627/exaone4.0:32b",
+ "variant": "no-think",
+ "model_size_gb": 19.3,
+ "model_params": "32.0B",
+ "started": "2026-10-19T17:10:09",
+ "minutes_budget": 15.0,
+ "wall_minutes": 20.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "502fbf9",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.3128434055615448,
+ "best_score": 0.45589148803074436,
+ "improvement": 1.4572513913548295,
+ "llm_calls": 7,
+ "mean_llm_seconds": 170.1,
+ "attempts": 7,
+ "ok": 6,
+ "statuses": {
+  "ok": 6,
+  "duplicate": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 2,
+ "minutes_to_best": 19.97,
+ "best_idea": "Introduce a combination of trigonometric and polynomial terms to better capture periodic patterns and nonlinear relationships, which should improve both interpolation and extrapolation performance.",
+ "progress": [
+  [
+   0.0,
+   0.3128434055615448
+  ],
+  [
+   2.21,
+   0.3794462082124446
+  ],
+  [
+   19.97,
+   0.45589148803074436
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.3128434055615448,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.21,
+   "score": 0.3794462082124446,
+   "model": "ingu627/exaone4.0:32b",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Introduce a basis function with pairwise products and squares to capture interactions and nonlinear effects, which should improve extrapolation performance by better modeling the underlying function's structure."
+  },
+  {
+   "minutes": 19.97,
+   "score": 0.45589148803074436,
+   "model": "ingu627/exaone4.0:32b",
+   "mode": "explore/rewrite/bold",
+   "status": "ok",
+   "idea": "Introduce a combination of trigonometric and polynomial terms to better capture periodic patterns and nonlinear relationships, which should improve both interpolation and extrapolation performance."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -35,21 +35,24 @@\n # OMEGA-BLOCK-START\n def basis(x1, x2, x3):\n     \"\"\"Basis functions of the model; the prediction is a weighted sum of them.\"\"\"\n-    return [1.0, x1, x2, x3]\n+    return [\n+        1.0, x1, x2, x3,\n+        x1*x1, x2*x2, x3*x3,\n+        x1*x2, x1*x3, x2*x3,\n+        math.sin(x1), math.cos(x1),\n+        math.sin(x2), math.cos(x2),\n+        math.sin(x3), math.cos(x3),\n+        math.sin(x1 + x2), math.cos(x1 + x2),\n+        math.sin(x1 + x3), math.cos(x1 + x3),\n+        math.sin(x2 + x3), math.cos(x2 + x3),\n+        math.sin(x1 * x2), math.cos(x1 * x2),\n+        math.sin(x1 * x3), math.cos(x1 * x3),\n+        math.sin(x2 * x3), math.cos(x2 * x3)\n+    ]\n \n \n def fit(rows):\n-    \"\"\"Fit the model on the training rows and return its parameters.\n-\n-    The parameters must be plain data (numbers, strings, lists, dicts), not functions\n-    or class instances. predict() receives them as JSON would carry them: tuples become\n-    lists and dict keys become strings.\n-    rows: list of [x1, x2, x3, y] float lists, x1 in [-3, 3], x2 in [-2, 2],\n-    x3 in [0, 3]. Only the Python standard library may be used (math, statistics,\n-    random, ...; no numpy). fit plus all predictions must take at most 10 CPU seconds.\n-\n-    Current method: linear regression on the raw inputs.\n-    \"\"\"\n+    \"\"\"Fit the model on the training rows and return its parameters.\"\"\"\n     cols = list(zip(*[basis(x1, x2, x3) for x1, x2, x3, _ in rows]))\n     return least_squares([list(c) for c in cols], [y for *_, y in rows])\n \n",
+ "error": "",
+ "model_memory_gb": 20.2,
+ "model_gpu_memory_gb": 20.2,
+ "context_length": 32768,
+ "load_seconds": 61.4,
+ "median_call_seconds": 138.0,
+ "p90_call_seconds": 363.6,
+ "prompt_tokens_per_s": 54.2,
+ "gen_tokens_per_s": 8.6,
+ "mean_prompt_tokens": 3569,
+ "mean_gen_tokens": 384,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -1,0 +1,91 @@
+{
+ "schema": 2,
+ "example": "max_cut",
+ "model": "yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest",
+ "variant": "no-think",
+ "model_size_gb": 4.9,
+ "model_params": "8.0B",
+ "started": "2026-10-19T08:06:40",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "502fbf9",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.5121828962692699,
+ "best_score": 0.5176639290112287,
+ "improvement": 1.0107013193565864,
+ "llm_calls": 30,
+ "mean_llm_seconds": 30.5,
+ "attempts": 30,
+ "ok": 17,
+ "statuses": {
+  "invalid": 9,
+  "ok": 17,
+  "duplicate": 2,
+  "edit_error": 2
+ },
+ "sweeps": 5,
+ "sweep_variants": 51,
+ "improvements": 1,
+ "minutes_to_best": 6.31,
+ "best_idea": "Implement a simple one-flip local search to improve the initial split by iteratively flipping nodes to the side that increases the cut weight.",
+ "progress": [
+  [
+   0.0,
+   0.5121828962692699
+  ],
+  [
+   6.31,
+   0.5176639290112287
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.5121828962692699,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 6.31,
+   "score": 0.5176639290112287,
+   "model": "yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Implement a simple one-flip local search to improve the initial split by iteratively flipping nodes to the side that increases the cut weight."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -21,5 +21,34 @@\n \n     Current method: alternate the sides by node index (ignores the edges entirely).\n     \"\"\"\n-    return [i % 2 for i in range(n)]\n+    side = [i % 2 for i in range(n)]\n+\n+    # Calculate the initial cut weight\n+    cut_weight = sum(weight for u, v, weight in edges if side[u] != side[v])\n+\n+    # Perform local search\n+    while time.process_time() < 2.0:\n+        max_gain = -float('inf')\n+        best_node = None\n+\n+        for node in range(n):\n+            gain_0 = sum(weight for u, v, weight in edges if u == node or v == node) - sum(weight for u, v, weight in edges if (side[u] == 1 and v == node) or (side[v] == 1 and u == node))\n+            gain_1 = sum(weight for u, v, weight in edges if u == node or v == node) - sum(weight for u, v, weight in edges if (side[u] == 0 and v == node) or (side[v] == 0 and u == node))\n+\n+            if gain_0 > gain_1:\n+                current_side = 0\n+                gain = gain_0\n+            else:\n+                current_side = 1\n+                gain = gain_1\n+\n+            if gain > max_gain:\n+                max_gain = gain\n+                best_node = node\n+\n+        if max_gain > 0:\n+            side[best_node] = 1 - side[best_node]\n+            cut_weight += max_gain\n+\n+    return side\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 8.8,
+ "model_gpu_memory_gb": 8.8,
+ "context_length": 32768,
+ "load_seconds": 14.7,
+ "median_call_seconds": 29.1,
+ "p90_call_seconds": 46.0,
+ "prompt_tokens_per_s": 450.1,
+ "gen_tokens_per_s": 36.1,
+ "mean_prompt_tokens": 2929,
+ "mean_gen_tokens": 846,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

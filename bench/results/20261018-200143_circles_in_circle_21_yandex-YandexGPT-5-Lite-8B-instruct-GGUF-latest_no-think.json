@@ -1,0 +1,78 @@
+{
+ "schema": 2,
+ "example": "circles_in_circle_21",
+ "model": "yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest",
+ "variant": "no-think",
+ "model_size_gb": 4.9,
+ "model_params": "8.0B",
+ "started": "2026-10-18T20:01:43",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "d42083e",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 3.1890454825108625,
+ "best_score": 3.1890454825108625,
+ "improvement": 1.0,
+ "llm_calls": 36,
+ "mean_llm_seconds": 24.7,
+ "attempts": 36,
+ "ok": 18,
+ "statuses": {
+  "invalid": 13,
+  "ok": 18,
+  "duplicate": 5
+ },
+ "sweeps": 6,
+ "sweep_variants": 44,
+ "improvements": 0,
+ "minutes_to_best": null,
+ "best_idea": "initial program",
+ "progress": [
+  [
+   0.0,
+   3.1890454825108625
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.1890454825108625,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  }
+ ],
+ "best_diff": "",
+ "error": "",
+ "model_memory_gb": 8.8,
+ "model_gpu_memory_gb": 8.8,
+ "context_length": 32768,
+ "load_seconds": 16.2,
+ "median_call_seconds": 23.1,
+ "p90_call_seconds": 36.8,
+ "prompt_tokens_per_s": 468.9,
+ "gen_tokens_per_s": 33.0,
+ "mean_prompt_tokens": 2329,
+ "mean_gen_tokens": 633,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

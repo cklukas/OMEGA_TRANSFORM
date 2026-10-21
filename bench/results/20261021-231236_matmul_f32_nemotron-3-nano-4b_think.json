@@ -1,0 +1,101 @@
+{
+ "schema": 3,
+ "example": "matmul_f32",
+ "model": "nemotron-3-nano:4b",
+ "variant": "think",
+ "model_size_gb": 2.9,
+ "model_params": "",
+ "started": "2026-10-21T23:12:36",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.4878,
+ "best_score": 1.66861,
+ "improvement": 1.121528431240758,
+ "llm_calls": 19,
+ "mean_llm_seconds": 49.7,
+ "attempts": 19,
+ "ok": 1,
+ "statuses": {
+  "compile_error": 11,
+  "invalid": 2,
+  "edit_error": 5,
+  "ok": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 15.98,
+ "best_idea": "parallelize row computation across up to 10 threads using chunked rows to reduce wall\u2011clock time.",
+ "progress": [
+  [
+   0.0,
+   1.4878
+  ],
+  [
+   15.98,
+   1.66861
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4878,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 15.98,
+   "score": 1.66861,
+   "model": "nemotron-3-nano:4b",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "parallelize row computation across up to 10 threads using chunked rows to reduce wall\u2011clock time."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,14 +19,19 @@\n #endif\n \n // OMEGA-BLOCK-START\n-// Computes C = A * B. C is NOT zeroed by the caller. Any number of threads may be\n-// used (std::thread is available); n is any size from 1 to 2048.\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+    constexpr int THREADS = 10;\n+    int chunk = n / THREADS;\n+    for (int i = 0; i < THREADS; ++i) {\n+        int start = i * chunk;\n+        int end = (i == THREADS-1) ? n : start + chunk;\n+        for (int ii = start; ii < end; ++ii) {\n+            for (int j = 0; j < n; ++j) {\n+                float s = 0.0f;\n+                for (int k = 0; k < n; ++k) s += A[ii * n + k] * B[k * n + j];\n+                C[ii * n + j] = s;\n+            }\n         }\n+    }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "error": "",
+ "model_memory_gb": 8.8,
+ "model_gpu_memory_gb": 8.8,
+ "context_length": 32768,
+ "load_seconds": 7.7,
+ "median_call_seconds": 39.0,
+ "p90_call_seconds": 85.7,
+ "prompt_tokens_per_s": 934.6,
+ "gen_tokens_per_s": 60.5,
+ "mean_prompt_tokens": 2721,
+ "mean_gen_tokens": 2806,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

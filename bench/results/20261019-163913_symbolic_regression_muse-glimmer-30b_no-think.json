@@ -1,0 +1,104 @@
+{
+ "schema": 2,
+ "example": "symbolic_regression",
+ "model": "muse-glimmer:30b",
+ "variant": "no-think",
+ "model_size_gb": 18.2,
+ "model_params": "27.9B",
+ "started": "2026-10-19T16:39:13",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "502fbf9",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.3128434055615448,
+ "best_score": 0.3799872552434046,
+ "improvement": 1.214624468626208,
+ "llm_calls": 4,
+ "mean_llm_seconds": 225.8,
+ "attempts": 4,
+ "ok": 4,
+ "statuses": {
+  "ok": 4
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 3,
+ "minutes_to_best": 8.61,
+ "best_idea": "reduce harmful high-degree growth by dropping cubic monomials and add physically plausible x3 non-linearities (exp and log1p) which are hinted for non-negative inputs, to improve extrapolation stabili",
+ "progress": [
+  [
+   0.0,
+   0.3128434055615448
+  ],
+  [
+   3.61,
+   0.3751948820787321
+  ],
+  [
+   5.4,
+   0.37836257300964476
+  ],
+  [
+   8.61,
+   0.3799872552434046
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.3128434055615448,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.61,
+   "score": 0.3751948820787321,
+   "model": "muse-glimmer:30b",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "replace the trivial linear basis with a richer set including quadratic/cubic monomials and sin/cos of each input, then fit them linearly with least_squares so the model can capture periodic and interaction effects that extrapolate better."
+  },
+  {
+   "minutes": 8.61,
+   "score": 0.3799872552434046,
+   "model": "muse-glimmer:30b",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "reduce harmful high-degree growth by dropping cubic monomials and add physically plausible x3 non-linearities (exp and log1p) which are hinted for non-negative inputs, to improve extrapolation stability."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -35,7 +35,25 @@\n # OMEGA-BLOCK-START\n def basis(x1, x2, x3):\n     \"\"\"Basis functions of the model; the prediction is a weighted sum of them.\"\"\"\n-    return [1.0, x1, x2, x3]\n+    s1 = math.sin(x1)\n+    c1 = math.cos(x1)\n+    s2 = math.sin(x2)\n+    c2 = math.cos(x2)\n+    s3 = math.sin(x3)\n+    c3 = math.cos(x3)\n+    x1_2 = x1 * x1\n+    x2_2 = x2 * x2\n+    x3_2 = x3 * x3\n+    exp_x3 = math.exp(x3)\n+    log1p_x3 = math.log1p(x3)\n+    return [\n+        1.0,\n+        x1, x2, x3,\n+        x1_2, x2_2, x3_2,\n+        x1 * x2, x1 * x3, x2 * x3,\n+        s1, c1, s2, c2, s3, c3,\n+        exp_x3, log1p_x3,\n+    ]\n \n \n def fit(rows):\n@@ -48,7 +66,7 @@\n     x3 in [0, 3]. Only the Python standard library may be used (math, statistics,\n     random, ...; no numpy). fit plus all predictions must take at most 10 CPU seconds.\n \n-    Current method: linear regression on the raw inputs.\n+    Current method: linear regression on expanded polynomial+trig basis.\n     \"\"\"\n     cols = list(zip(*[basis(x1, x2, x3) for x1, x2, x3, _ in rows]))\n     return least_squares([list(c) for c in cols], [y for *_, y in rows])\n",
+ "error": "",
+ "model_memory_gb": 15.6,
+ "model_gpu_memory_gb": 15.6,
+ "context_length": 32768,
+ "load_seconds": 57.4,
+ "median_call_seconds": 216.1,
+ "p90_call_seconds": 387.2,
+ "prompt_tokens_per_s": 110.3,
+ "gen_tokens_per_s": 9.8,
+ "mean_prompt_tokens": 3062,
+ "mean_gen_tokens": 1795,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

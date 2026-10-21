@@ -20,21 +20,21 @@ else the machine was doing.
 | [Models by developer](benchmarks/developers.md) | who develops each model, the ranking grouped by developer, and each developer's progress over time |
 | [Models by country](benchmarks/countries.md) | the best model of each country |
 | [Model check](benchmarks/model-check.md) | which installed models were usable before the benchmark |
-| [bin_packing_1d](benchmarks/bin_packing_1d.md) | 24 models on this example: scores, speed, memory and progress over time |
-| [circle_packing_26](benchmarks/circle_packing_26.md) | 32 models on this example: scores, speed, memory and progress over time |
-| [circles_in_circle_21](benchmarks/circles_in_circle_21.md) | 24 models on this example: scores, speed, memory and progress over time |
-| [feature_engineering](benchmarks/feature_engineering.md) | 24 models on this example: scores, speed, memory and progress over time |
-| [float_parse_single_thread](benchmarks/float_parse_single_thread.md) | 24 models on this example: scores, speed, memory and progress over time |
-| [heilbronn_13](benchmarks/heilbronn_13.md) | 24 models on this example: scores, speed, memory and progress over time |
-| [log_compressor](benchmarks/log_compressor.md) | 24 models on this example: scores, speed, memory and progress over time |
-| [matmul_f32](benchmarks/matmul_f32.md) | 24 models on this example: scores, speed, memory and progress over time |
-| [matmul_f32_single_thread](benchmarks/matmul_f32_single_thread.md) | 32 models on this example: scores, speed, memory and progress over time |
-| [max_cut](benchmarks/max_cut.md) | 24 models on this example: scores, speed, memory and progress over time |
-| [prefix_sum_histogram_single_thread](benchmarks/prefix_sum_histogram_single_thread.md) | 24 models on this example: scores, speed, memory and progress over time |
-| [sort_u32_single_thread](benchmarks/sort_u32_single_thread.md) | 24 models on this example: scores, speed, memory and progress over time |
-| [symbolic_regression](benchmarks/symbolic_regression.md) | 24 models on this example: scores, speed, memory and progress over time |
-| [tammes_30](benchmarks/tammes_30.md) | 24 models on this example: scores, speed, memory and progress over time |
-| [tsp_heuristic](benchmarks/tsp_heuristic.md) | 24 models on this example: scores, speed, memory and progress over time |
+| [bin_packing_1d](benchmarks/bin_packing_1d.md) | 43 models on this example: scores, speed, memory and progress over time |
+| [circle_packing_26](benchmarks/circle_packing_26.md) | 51 models on this example: scores, speed, memory and progress over time |
+| [circles_in_circle_21](benchmarks/circles_in_circle_21.md) | 43 models on this example: scores, speed, memory and progress over time |
+| [feature_engineering](benchmarks/feature_engineering.md) | 43 models on this example: scores, speed, memory and progress over time |
+| [float_parse_single_thread](benchmarks/float_parse_single_thread.md) | 43 models on this example: scores, speed, memory and progress over time |
+| [heilbronn_13](benchmarks/heilbronn_13.md) | 43 models on this example: scores, speed, memory and progress over time |
+| [log_compressor](benchmarks/log_compressor.md) | 43 models on this example: scores, speed, memory and progress over time |
+| [matmul_f32](benchmarks/matmul_f32.md) | 43 models on this example: scores, speed, memory and progress over time |
+| [matmul_f32_single_thread](benchmarks/matmul_f32_single_thread.md) | 51 models on this example: scores, speed, memory and progress over time |
+| [max_cut](benchmarks/max_cut.md) | 43 models on this example: scores, speed, memory and progress over time |
+| [prefix_sum_histogram_single_thread](benchmarks/prefix_sum_histogram_single_thread.md) | 43 models on this example: scores, speed, memory and progress over time |
+| [sort_u32_single_thread](benchmarks/sort_u32_single_thread.md) | 43 models on this example: scores, speed, memory and progress over time |
+| [symbolic_regression](benchmarks/symbolic_regression.md) | 43 models on this example: scores, speed, memory and progress over time |
+| [tammes_30](benchmarks/tammes_30.md) | 43 models on this example: scores, speed, memory and progress over time |
+| [tsp_heuristic](benchmarks/tsp_heuristic.md) | 43 models on this example: scores, speed, memory and progress over time |
 
 Machine: Apple M1 Max (Mac13,1), 10 cores, 32 GB.
 
@@ -50,33 +50,52 @@ Scores of different examples cannot be added up (a matrix multiply gains ×80, a
 | 2 | gpt-oss:20b (think) | 2025-08-04 | **79%** | ×3.30 | 2 | 0 | 15 |
 | 3 | gemma4:e4b-it-qat (think) | 2026-03-02 | **76%** | ×3.29 | 2 | 0 | 15 |
 | 4 | gemma4:latest (no-think) | 2026-03-02 | **72%** | ×3.10 | 0 | 0 | 15 |
-| 5 | gpt-oss:20b (no-think) | 2025-08-04 | **66%** | ×3.06 | 2 | 1 | 15 |
-| 6 | gemma4:e4b-it-qat (no-think) | 2026-03-02 | **65%** | ×3.05 | 1 | 1 | 15 |
-| 7 | gemma4:12b-it-qat (no-think) | 2026-05-23 | **65%** | ×3.10 | 0 | 1 | 15 |
-| 8 | gemma4:latest (think) | 2026-03-02 | **61%** | ×2.85 | 2 | 1 | 15 |
-| 9 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | 2025-07-28 | **60%** | ×2.71 | 0 | 1 | 15 |
-| 10 | qwen3.8:27b-mtp-q4_K_M (no-think) | 2026-08-05 | **57%** | ×2.79 | 0 | 1 | 15 |
-| 11 | qwen3:30b-a3b-instruct-2507-q4_K_M (think) | 2025-07-28 | **56%** | ×2.48 | 2 | 2 | 15 |
-| 12 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 2026-04-21 | **52%** | ×2.99 | 1 | 3 | 15 |
-| 13 | qwen3.5:27b (no-think) | 2026-02-24 | **43%** | ×2.41 | 1 | 5 | 15 |
-| 14 | qwen3-coder:30b (no-think) | 2025-07-31 | **43%** | ×1.81 | 0 | 2 | 15 |
-| 15 | qwen3.5:latest (think) | 2026-02-27 | **42%** | ×2.02 | 0 | 5 | 15 |
-| 16 | gemma4:26b-a4b-it-qat (think) | 2026-03-11 | **41%** | ×2.32 | 0 | 5 | 15 |
-| 17 | qwen3.8:27b-mtp-q4_K_M (think) | 2026-08-05 | **41%** | ×2.20 | 1 | 8 | 15 |
-| 18 | qwen3.5:27b (think) | 2026-02-24 | **40%** | ×2.13 | 0 | 5 | 15 |
-| 19 | gemma4:e2b (no-think) | 2026-03-02 | **34%** | ×1.55 | 0 | 2 | 15 |
-| 20 | qwen3.5:latest (no-think) | 2026-02-27 | **33%** | ×1.39 | 1 | 6 | 15 |
-| 21 | gemma4:12b-it-qat (think) | 2026-05-23 | **30%** | ×2.26 | 0 | 6 | 15 |
-| 22 | qwen3.6:27b-coding-mtp-q4_K_M (think) | 2026-04-21 | **26%** | ×1.68 | 0 | 9 | 15 |
-| 23 | qwen2.5-coder:7b (no-think) | 2024-09-17 | **20%** | ×1.63 | 0 | 6 | 15 |
-| 24 | gemma4:e2b (think) | 2026-03-02 | **19%** | ×1.21 | 0 | 8 | 15 |
+| 5 | muse-glimmer:30b (no-think) | 2026-08-09 | **68%** | ×3.08 | 1 | 1 | 15 |
+| 6 | gpt-oss:20b (no-think) | 2025-08-04 | **66%** | ×3.06 | 2 | 1 | 15 |
+| 7 | gemma4:e4b-it-qat (no-think) | 2026-03-02 | **65%** | ×3.05 | 0 | 1 | 15 |
+| 8 | gemma4:12b-it-qat (no-think) | 2026-05-23 | **65%** | ×3.10 | 0 | 1 | 15 |
+| 9 | muse-glimmer:30b (think) | 2026-08-09 | **63%** | ×2.64 | 0 | 2 | 15 |
+| 10 | gemma4:latest (think) | 2026-03-02 | **61%** | ×2.85 | 2 | 1 | 15 |
+| 11 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | 2025-07-28 | **60%** | ×2.71 | 0 | 1 | 15 |
+| 12 | qwen3.8:27b-mtp-q4_K_M (no-think) | 2026-08-05 | **57%** | ×2.79 | 0 | 1 | 15 |
+| 13 | qwen3:30b-a3b-instruct-2507-q4_K_M (think) | 2025-07-28 | **56%** | ×2.48 | 2 | 2 | 15 |
+| 14 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 2026-04-21 | **52%** | ×2.99 | 1 | 3 | 15 |
+| 15 | nemotron-3-nano:30b-a3b-mlx (think) | 2025-12-04 | **45%** | ×2.28 | 0 | 1 | 15 |
+| 16 | qwen3.5:27b (no-think) | 2026-02-24 | **43%** | ×2.41 | 1 | 5 | 15 |
+| 17 | qwen3-coder:30b (no-think) | 2025-07-31 | **43%** | ×1.81 | 0 | 2 | 15 |
+| 18 | qwen3.5:latest (think) | 2026-02-27 | **42%** | ×2.02 | 0 | 5 | 15 |
+| 19 | gemma4:26b-a4b-it-qat (think) | 2026-03-11 | **41%** | ×2.32 | 0 | 5 | 15 |
+| 20 | qwen3.8:27b-mtp-q4_K_M (think) | 2026-08-05 | **40%** | ×2.20 | 1 | 8 | 15 |
+| 21 | qwen3.5:27b (think) | 2026-02-24 | **40%** | ×2.13 | 0 | 5 | 15 |
+| 22 | ingu627/exaone4.0:32b (no-think) | 2025-07-11 | **39%** | ×1.82 | 0 | 5 | 15 |
+| 23 | devstral-small-2:24b (no-think) | 2025-11-28 | **37%** | ×1.78 | 0 | 4 | 15 |
+| 24 | richardyoung/frognano-4b-2609:latest (no-think) | 2026-09-17 | **35%** | ×1.41 | 0 | 5 | 15 |
+| 25 | glm-4.7-flash:latest (no-think) | 2026-01-19 | **34%** | ×1.90 | 0 | 3 | 15 |
+| 26 | gemma4:e2b (no-think) | 2026-03-02 | **34%** | ×1.55 | 0 | 2 | 15 |
+| 27 | qwen3.5:latest (no-think) | 2026-02-27 | **33%** | ×1.39 | 1 | 6 | 15 |
+| 28 | nemotron-3-nano:30b-a3b-mlx (no-think) | 2025-12-04 | **32%** | ×1.37 | 0 | 7 | 15 |
+| 29 | nemotron-3.5-lightning:30b-mlx (no-think) | 2026-08-01 | **31%** | ×1.54 | 0 | 9 | 15 |
+| 30 | gemma4:12b-it-qat (think) | 2026-05-23 | **30%** | ×2.26 | 0 | 6 | 15 |
+| 31 | nemotron-3-nano:4b (no-think) | 2026-03-07 | **28%** | ×1.32 | 0 | 3 | 15 |
+| 32 | nemotron-3-nano:4b (think) | 2026-03-07 | **26%** | ×1.44 | 0 | 6 | 15 |
+| 33 | qwen3.6:27b-coding-mtp-q4_K_M (think) | 2026-04-21 | **26%** | ×1.68 | 0 | 9 | 15 |
+| 34 | richardyoung/frognano-4b-2609:latest (think) | 2026-09-17 | **24%** | ×1.22 | 0 | 6 | 15 |
+| 35 | frob/sarvam:30b (no-think) | 2026-03-03 | **21%** | ×1.14 | 0 | 10 | 15 |
+| 36 | qwen2.5-coder:7b (no-think) | 2024-09-17 | **20%** | ×1.63 | 0 | 6 | 15 |
+| 37 | gemma4:e2b (think) | 2026-03-02 | **19%** | ×1.21 | 0 | 8 | 15 |
+| 38 | glm-4.7-flash:latest (think) | 2026-01-19 | **19%** | ×1.35 | 0 | 10 | 15 |
+| 39 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 2025-03-28 | **18%** | ×1.27 | 0 | 5 | 15 |
+| 40 | nemotron-3.5-lightning:30b-mlx (think) | 2026-08-01 | **15%** | ×1.26 | 0 | 11 | 15 |
+| 41 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 2025-08-13 | **13%** | ×1.25 | 0 | 9 | 15 |
+| 42 | frob/sarvam:30b (think) | 2026-03-03 | **9%** | ×1.03 | 0 | 12 | 15 |
+| 43 | llm-jp-4-8b-omega:q4_k_m (no-think) | 2026-03-16 | **4%** | ×1.03 | 0 | 13 | 15 |
 
 ```mermaid
 xychart-beta
     title "Overall, local: mean share of the best gain (%)"
-    x-axis ["gemma4:26b-a4b-it-qat (no-think)", "gpt-oss:20b (think)", "gemma4:e4b-it-qat (think)", "gemma4:latest (no-think)", "gpt-oss:20b (no-think)", "gemma4:e4b-it-qat (no-think)", "gemma4:12b-it-qat (no-think)", "gemma4:latest (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.5:27b (no-think)", "qwen3-coder:30b (no-think)", "qwen3.5:latest (think)", "gemma4:26b-a4b-it-qat (think)", "qwen3.8:27b-mtp-q4_K_M (think)", "qwen3.5:27b (think)", "gemma4:e2b (no-think)", "qwen3.5:latest (no-think)", "gemma4:12b-it-qat (think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "qwen2.5-coder:7b (no-think)", "gemma4:e2b (think)"]
-    y-axis "% of the best gain" 0 --> 86.86
-    bar [78.97, 78.78, 75.9, 71.86, 66.03, 65.4, 65.03, 61.04, 59.56, 57.26, 56.27, 51.93, 43.21, 42.58, 42.22, 41.1, 40.66, 40.3, 33.54, 32.99, 29.67, 25.84, 20.3, 19.25]
+    x-axis ["gemma4:26b-a4b-it-qat (no-think)", "gpt-oss:20b (think)", "gemma4:e4b-it-qat (think)", "gemma4:latest (no-think)", "muse-glimmer:30b (no-think)", "gpt-oss:20b (no-think)", "gemma4:e4b-it-qat (no-think)", "gemma4:12b-it-qat (no-think)", "muse-glimmer:30b (think)", "gemma4:latest (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "nemotron-3-nano:30b-a3b-mlx (think)", "qwen3.5:27b (no-think)", "qwen3-coder:30b (no-think)", "qwen3.5:latest (think)", "gemma4:26b-a4b-it-qat (think)", "qwen3.8:27b-mtp-q4_K_M (think)", "qwen3.5:27b (think)", "exaone4.0:32b (no-think)", "devstral-small-2:24b (no-think)", "frognano-4b-2609:latest (no-think)", "glm-4.7-flash:latest (no-think)", "gemma4:e2b (no-think)", "qwen3.5:latest (no-think)", "nemotron-3-nano:30b-a3b-mlx (no-think)", "nemotron-3.5-lightning:30b-mlx (no-think)", "gemma4:12b-it-qat (think)", "nemotron-3-nano:4b (no-think)", "nemotron-3-nano:4b (think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "frognano-4b-2609:latest (think)", "sarvam:30b (no-think)", "qwen2.5-coder:7b (no-think)", "gemma4:e2b (think)", "glm-4.7-flash:latest (think)", "YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think)", "nemotron-3.5-lightning:30b-mlx (think)", "apertus:8b-instruct-2509-q4_k_m (no-think)", "sarvam:30b (think)", "llm-jp-4-8b-omega:q4_k_m (no-think)"]
+    y-axis "% of the best gain" 0 --> 86.7
+    bar [78.82, 78.54, 75.73, 71.64, 67.58, 65.8, 65.15, 64.85, 62.9, 60.83, 59.53, 57.07, 56.27, 51.93, 45.43, 42.99, 42.52, 42.22, 41.1, 40.45, 40.2, 38.55, 37.31, 35.06, 33.7, 33.54, 32.99, 32.2, 30.85, 29.52, 28.19, 26.17, 25.84, 23.72, 20.86, 20.29, 19.25, 18.52, 18.07, 15, 13.44, 8.691, 4.033]
 ```
 
 ### Cloud models (OpenRouter)

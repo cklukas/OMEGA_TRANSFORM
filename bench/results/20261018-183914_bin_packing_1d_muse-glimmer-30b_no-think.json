@@ -1,0 +1,88 @@
+{
+ "schema": 2,
+ "example": "bin_packing_1d",
+ "model": "muse-glimmer:30b",
+ "variant": "no-think",
+ "model_size_gb": 18.2,
+ "model_params": "27.9B",
+ "started": "2026-10-18T18:39:14",
+ "minutes_budget": 15.0,
+ "wall_minutes": 19.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "d42083e",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.7942635036246238,
+ "best_score": 0.9512800819252432,
+ "improvement": 1.1976882704342748,
+ "llm_calls": 7,
+ "mean_llm_seconds": 163.2,
+ "attempts": 7,
+ "ok": 7,
+ "statuses": {
+  "ok": 7
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 2.65,
+ "best_idea": "Replace next-fit with first-fit decreasing by sorting items by decreasing size and placing each item in the first bin with enough remaining capacity, which dramatically reduces bins for the given inst",
+ "progress": [
+  [
+   0.0,
+   0.7942635036246238
+  ],
+  [
+   2.65,
+   0.9512800819252432
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.7942635036246238,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.65,
+   "score": 0.9512800819252432,
+   "model": "muse-glimmer:30b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace next-fit with first-fit decreasing by sorting items by decreasing size and placing each item in the first bin with enough remaining capacity, which dramatically reduces bins for the given instances."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,17 +19,23 @@\n     (time.process_time(); more than 1.5 x the limit makes the program invalid).\n     Only the Python standard library may be used.\n \n-    Current method: next fit (open a new bin whenever the next item does not fit).\n+    Current method: first-fit decreasing (sort by decreasing size then first fit).\n     \"\"\"\n-    bins = []\n-    current, load = [], 0\n-    for i, s in enumerate(sizes):\n-        if load + s > capacity:\n-            bins.append(current)\n-            current, load = [], 0\n-        current.append(i)\n-        load += s\n-    if current:\n-        bins.append(current)\n-    return bins\n+    # first-fit decreasing\n+    items = list(enumerate(sizes))\n+    items.sort(key=lambda x: -x[1])\n+    bins_items = []\n+    bins_load = []\n+    for idx, s in items:\n+        placed = False\n+        for b in range(len(bins_load)):\n+            if bins_load[b] + s <= capacity:\n+                bins_items[b].append(idx)\n+                bins_load[b] += s\n+                placed = True\n+                break\n+        if not placed:\n+            bins_items.append([idx])\n+            bins_load.append(s)\n+    return bins_items\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 15.6,
+ "model_gpu_memory_gb": 15.6,
+ "context_length": 32768,
+ "load_seconds": 52.4,
+ "median_call_seconds": 158.7,
+ "p90_call_seconds": 298.0,
+ "prompt_tokens_per_s": 99.7,
+ "gen_tokens_per_s": 10.6,
+ "mean_prompt_tokens": 2280,
+ "mean_gen_tokens": 1403,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

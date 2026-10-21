@@ -1,0 +1,100 @@
+{
+ "schema": 2,
+ "example": "sort_u32_single_thread",
+ "model": "muse-glimmer:30b",
+ "variant": "no-think",
+ "model_size_gb": 18.2,
+ "model_params": "27.9B",
+ "started": "2026-10-19T14:12:34",
+ "minutes_budget": 15.0,
+ "wall_minutes": 19.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "502fbf9",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 21.527887854613045,
+ "best_score": 231.74973977973613,
+ "improvement": 10.765094158091141,
+ "llm_calls": 4,
+ "mean_llm_seconds": 277.7,
+ "attempts": 4,
+ "ok": 4,
+ "statuses": {
+  "ok": 4
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 2,
+ "minutes_to_best": 18.86,
+ "best_idea": "add reverse-sorted detection with in-place reversal and switch to a 4-pass 8-bit LSD radix sort with tiny 256-entry histogram for lower cache pressure and faster uniform passes, keeping the small-n in",
+ "progress": [
+  [
+   0.0,
+   21.527887854613045
+  ],
+  [
+   5.33,
+   200.65804651254498
+  ],
+  [
+   18.86,
+   231.74973977973613
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 21.527887854613045,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 5.33,
+   "score": 200.65804651254498,
+   "model": "muse-glimmer:30b",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Replace the slow merge sort with a fast 2-pass 16-bit LSD radix sort using a reusable temporary buffer and a small-n insertion sort, which is much faster on Apple Silicon for the given distributions."
+  },
+  {
+   "minutes": 18.86,
+   "score": 231.74973977973613,
+   "model": "muse-glimmer:30b",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "add reverse-sorted detection with in-place reversal and switch to a 4-pass 8-bit LSD radix sort with tiny 256-entry histogram for lower cache pressure and faster uniform passes, keeping the small-n insertion fallback."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -21,20 +21,81 @@\n // OMEGA-BLOCK-START\n // Sorts a[0..n) ascending, in place, on the calling thread. n is any size from\n // 0 to 2'000'000. Extra memory may be allocated freely.\n-static void merge_sort_rec(uint32_t* a, uint32_t* tmp, size_t lo, size_t hi) {\n-    if (hi - lo < 2) return;\n-    size_t mid = lo + (hi - lo) / 2;\n-    merge_sort_rec(a, tmp, lo, mid);\n-    merge_sort_rec(a, tmp, mid, hi);\n-    size_t i = lo, j = mid, k = lo;\n-    while (i < mid && j < hi) tmp[k++] = (a[j] < a[i]) ? a[j++] : a[i++];\n-    while (i < mid) tmp[k++] = a[i++];\n-    while (j < hi) tmp[k++] = a[j++];\n-    for (size_t t = lo; t < hi; ++t) a[t] = tmp[t];\n+static void insertion_sort(uint32_t* a, size_t n) {\n+    for (size_t i = 1; i < n; ++i) {\n+        uint32_t v = a[i];\n+        size_t j = i;\n+        while (j > 0 && a[j - 1] > v) {\n+            a[j] = a[j - 1];\n+            --j;\n+        }\n+        a[j] = v;\n+    }\n+}\n+\n+static bool is_sorted_asc(const uint32_t* a, size_t n) {\n+    for (size_t i = 1; i < n; ++i) {\n+        if (a[i] < a[i - 1]) return false;\n+    }\n+    return true;\n+}\n+\n+static bool is_sorted_desc(const uint32_t* a, size_t n) {\n+    for (size_t i = 1; i < n; ++i) {\n+        if (a[i] > a[i - 1]) return false;\n+    }\n+    return true;\n }\n \n extern \"C\" void sort_u32(uint32_t* a, size_t n) {\n-    std::vector<uint32_t> tmp(n);\n-    merge_sort_rec(a, tmp.data(), 0, n);\n+    if (n <= 1) return;\n+    if (n < 4096) {\n+        insertion_sort(a, n);\n+        return;\n+    }\n+    if (is_sorted_asc(a, n)) return;\n+    if (is_sorted_desc(a, n)) {\n+        for (size_t i = 0, j = n - 1; i < j; ++i, --j) {\n+            uint32_t tmp = a[i];\n+            a[i] = a[j];\n+            a[j] = tmp;\n+        }\n+        return;\n+    }\n+\n+    static thread_local std::vector<uint32_t> buf;\n+    static thread_local std::vector<size_t> cnt;\n+    if (buf.size() < n) buf.resize(n);\n+    if (cnt.size() < 256) cnt.resize(256);\n+\n+    uint32_t* src = a;\n+    uint32_t* dst = buf.data();\n+\n+    const int BITS = 8;\n+    const int BUCKETS = 1 << BITS;\n+    const uint32_t MASK = BUCKETS - 1;\n+\n+    for (int pass = 0; pass < 4; ++pass) {\n+        int shift = pass * BITS;\n+        std::fill(cnt.begin(), cnt.begin() + BUCKETS, 0);\n+        for (size_t i = 0; i < n; ++i) {\n+            ++cnt[(src[i] >> shift) & MASK];\n+        }\n+        size_t sum = 0;\n+        for (int i = 0; i < BUCKETS; ++i) {\n+            size_t t = cnt[i];\n+            cnt[i] = sum;\n+            sum += t;\n+        }\n+        for (size_t i = 0; i < n; ++i) {\n+            uint32_t v = src[i];\n+            size_t idx = (v >> shift) & MASK;\n+            dst[cnt[idx]++] = v;\n+        }\n+        std::swap(src, dst);\n+    }\n+    if (src != a) {\n+        std::memcpy(a, src, n * sizeof(uint32_t));\n+    }\n }\n // OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 16.5,
+ "model_gpu_memory_gb": 16.5,
+ "context_length": 32768,
+ "load_seconds": 55.8,
+ "median_call_seconds": 292.5,
+ "p90_call_seconds": 377.2,
+ "prompt_tokens_per_s": 110.4,
+ "gen_tokens_per_s": 9.4,
+ "mean_prompt_tokens": 3472,
+ "mean_gen_tokens": 2184,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

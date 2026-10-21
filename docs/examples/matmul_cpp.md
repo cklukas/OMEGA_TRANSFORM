@@ -163,21 +163,40 @@ The latest run per model and reasoning mode; the [model benchmarks](../benchmark
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 154.8540 | ×93.38 | 16.3 | 2 |
 | gpt-oss:20b (no-think) | local | 152.3910 | ×91.99 | 17.4 | 4 |
 | gemma4:latest (no-think) | local | 151.3840 | ×95.53 | 15.6 | 5 |
+| muse-glimmer:30b (no-think) | local | 151.2800 | ×91.68 | 16.7 | 2 |
 | gpt-oss:20b (think) | local | 144.0540 | ×88.08 | 15.3 | 5 |
 | gemma4:e4b-it-qat (no-think) | local | 140.1020 | ×85.54 | 15.5 | 6 |
 | gemma4:e4b-it-qat (think) | local | 126.0000 | ×82.93 | 15.5 | 4 |
 | qwen3.8:27b-mtp-q4_K_M (no-think) | local | 120.7810 | ×72.88 | 16.4 | 1 |
+| muse-glimmer:30b (think) | local | 113.2980 | ×100.27 | 20.2 | 1 |
 | qwen3.8:27b-mtp-q4_K_M (think) | local | 109.8530 | ×71.24 | 18.3 | 1 |
 | gemma4:12b-it-qat (no-think) | local | 68.4243 | ×41.57 | 15.4 | 1 |
 | gemma4:12b-it-qat (think) | local | 66.2698 | ×55.31 | 18.3 | 1 |
 | gemma4:26b-a4b-it-qat (think) | local | 41.8195 | ×27.48 | 15.7 | 1 |
 | qwen3.5:27b (no-think) | local | 25.6098 | ×15.46 | 16.8 | 3 |
+| nemotron-3-nano:30b-a3b-mlx (think) | local | 25.4002 | ×15.53 | 15.9 | 1 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | 25.2873 | ×15.64 | 15.3 | 2 |
 | qwen2.5-coder:7b (no-think) | local | 12.1382 | ×7.25 | 15.4 | 2 |
 | qwen3-coder:30b (no-think) | local | 8.45239 | ×5.08 | 16.7 | 2 |
+| glm-4.7-flash:latest (no-think) | local | 2.49095 | ×1.47 | 10.5 | 2 |
+| nemotron-3-nano:4b (no-think) | local | 1.70706 | ×1.01 | 16.4 | 2 |
+| nemotron-3-nano:30b-a3b-mlx (no-think) | local | 1.70481 | ×1.00 | - | 0 |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | 1.70226 | ×1.01 | 16.4 | 1 |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | local | 1.69985 | ×1.00 | - | 0 |
+| ingu627/exaone4.0:32b (no-think) | local | 1.69695 | ×1.00 | - | 0 |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | 1.69487 | ×1.00 | - | 0 |
 | gemma4:e2b (no-think) | local | 1.68469 | ×1.05 | 15.8 | 3 |
 | qwen3.5:latest (no-think) | local | 1.6743 | ×1.00 | - | 0 |
+| frob/sarvam:30b (think) | local | | | | failed: all 3 model requests failed: frob/sarvam:30b: answer … |
+| nemotron-3-nano:4b (think) | local | 1.66861 | ×1.12 | 16.0 | 1 |
+| nemotron-3.5-lightning:30b-mlx (think) | local | | | | failed: all 4 model requests failed … |
+| nemotron-3.5-lightning:30b-mlx (no-think) | local | 1.66222 | ×1.00 | - | 0 |
+| devstral-small-2:24b (no-think) | local | 1.65728 | ×1.00 | - | 0 |
+| frob/sarvam:30b (no-think) | local | 1.59209 | ×1.00 | - | 0 |
 | gemma4:e2b (think) | local | 1.53353 | ×1.58 | 10.1 | 4 |
+| glm-4.7-flash:latest (think) | local | 1.51016 | ×1.00 | - | 0 |
+| richardyoung/frognano-4b-2609:latest (think) | local | 1.45546 | ×1.00 | - | 0 |
+| richardyoung/frognano-4b-2609:latest (no-think) | local | 1.36704 | ×1.00 | - | 0 |
 | qwen3.5:latest (think) | local | 1.33259 | ×1.00 | - | 0 |
 | qwen3.6:27b-coding-mtp-q4_K_M (think) | local | 1.32423 | ×1.00 | - | 0 |
 | qwen3.5:27b (think) | local | | | | failed: all 1 model requests failed: qwen3.5:27b: answer stopped … |

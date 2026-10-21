@@ -1,0 +1,105 @@
+{
+ "schema": 2,
+ "example": "feature_engineering",
+ "model": "ingu627/exaone4.0:32b",
+ "variant": "no-think",
+ "model_size_gb": 19.3,
+ "model_params": "32.0B",
+ "started": "2026-10-19T02:28:07",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "502fbf9",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.623,
+ "best_score": 0.813,
+ "improvement": 1.304975922953451,
+ "llm_calls": 10,
+ "mean_llm_seconds": 97.0,
+ "attempts": 10,
+ "ok": 9,
+ "statuses": {
+  "ok": 9,
+  "invalid": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 3,
+ "minutes_to_best": 6.15,
+ "best_idea": "Add interaction features between all standard-normal-like inputs (x1, x2, x6) and a squared version of the skewed input (x3^2) to capture more complex nonlinear relationships, and include radial featu",
+ "progress": [
+  [
+   0.0,
+   0.623
+  ],
+  [
+   2.13,
+   0.713
+  ],
+  [
+   4.4,
+   0.734
+  ],
+  [
+   6.15,
+   0.813
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.623,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.13,
+   "score": 0.713,
+   "model": "ingu627/exaone4.0:32b",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Create interaction features between the standard-normal-like inputs (x1, x2, x6) and the skewed input (x3) to capture nonlinear relationships, and add threshold features for x4 and x5 to handle their uniform distributions."
+  },
+  {
+   "minutes": 6.15,
+   "score": 0.813,
+   "model": "ingu627/exaone4.0:32b",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Add interaction features between all standard-normal-like inputs (x1, x2, x6) and a squared version of the skewed input (x3^2) to capture more complex nonlinear relationships, and include radial features for x4 and x5 to detect circular patterns."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -10,16 +10,20 @@\n \n # OMEGA-BLOCK-START\n def features(row):\n-    \"\"\"Return the feature vector (a list of at most 30 finite floats) for one row.\n-\n-    row: list of 6 floats [x1, x2, x3, x4, x5, x6]. Roughly: x1, x2, x6 are\n-    standard-normal-like, x3 is positive and right-skewed (lognormal-like), x4 and x5\n-    lie in [-2, 2]. The label is a hidden NONLINEAR function of the inputs plus noise.\n-    Every row must give the same number of features. The classifier is linear in the\n-    features (they are standardized and a bias is added), so nonlinear structure only\n-    helps if a feature expresses it. Only the Python standard library may be used.\n-\n-    Current method: the raw inputs.\n-    \"\"\"\n-    return list(row)\n+    \"\"\"Return the feature vector (a list of at most 30 finite floats) for one row.\"\"\"\n+    x1, x2, x3, x4, x5, x6 = row\n+    x3_sq = x3 * x3  # squared skewed feature for more complex interactions\n+    x4_sq = x4 * x4\n+    x5_sq = x5 * x5\n+    x4_rad = x4_sq + x5_sq  # radial feature for x4 and x5\n+    features = [\n+        x1, x2, x3, x4, x5, x6,  # raw features\n+        x1 * x3_sq, x2 * x3_sq, x6 * x3_sq,  # interactions with squared skewed feature\n+        x1 * x2, x1 * x6, x2 * x6,  # pairwise products of standard-normal-like inputs\n+        math.log(x3 + 1),  # log transform for skewed feature\n+        1 if x4 > 0 else 0, 1 if x5 > 0 else 0,  # threshold features\n+        math.tanh(x4 / 1.0), math.tanh(x5 / 1.0),  # soft threshold features\n+        x4_rad,  # radial feature\n+    ]\n+    return features\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 20.2,
+ "model_gpu_memory_gb": 20.2,
+ "context_length": 32768,
+ "load_seconds": 49.1,
+ "median_call_seconds": 106.2,
+ "p90_call_seconds": 138.0,
+ "prompt_tokens_per_s": 68.5,
+ "gen_tokens_per_s": 9.1,
+ "mean_prompt_tokens": 2501,
+ "mean_gen_tokens": 475,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

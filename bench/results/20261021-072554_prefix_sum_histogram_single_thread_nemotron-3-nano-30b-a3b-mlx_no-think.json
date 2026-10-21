@@ -1,0 +1,102 @@
+{
+ "schema": 3,
+ "example": "prefix_sum_histogram_single_thread",
+ "model": "nemotron-3-nano:30b-a3b-mlx",
+ "variant": "no-think",
+ "model_size_gb": 18.3,
+ "model_params": "",
+ "started": "2026-10-21T07:25:54",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 4.81174,
+ "best_score": 4.81174,
+ "improvement": 1.0,
+ "llm_calls": 24,
+ "mean_llm_seconds": 39.0,
+ "attempts": 24,
+ "ok": 0,
+ "statuses": {
+  "llm_error": 7,
+  "edit_error": 9,
+  "compile_error": 8
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 0,
+ "minutes_to_best": null,
+ "best_idea": "initial program",
+ "progress": [
+  [
+   0.0,
+   4.81174
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 4.81174,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  }
+ ],
+ "best_diff": "",
+ "initial_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "best_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 22.1,
+ "model_gpu_memory_gb": 22.1,
+ "context_length": 32768,
+ "load_seconds": 0.0,
+ "median_call_seconds": 31.8,
+ "p90_call_seconds": 69.2,
+ "prompt_tokens_per_s": 1031.6,
+ "gen_tokens_per_s": 55.6,
+ "mean_prompt_tokens": 4222,
+ "mean_gen_tokens": 1451,
+ "stopped_calls": 7,
+ "provider": "ollama",
+ "cost_usd": 0
+}

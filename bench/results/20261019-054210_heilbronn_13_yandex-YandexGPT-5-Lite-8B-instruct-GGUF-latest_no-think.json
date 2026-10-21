@@ -1,0 +1,106 @@
+{
+ "schema": 2,
+ "example": "heilbronn_13",
+ "model": "yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest",
+ "variant": "no-think",
+ "model_size_gb": 4.9,
+ "model_params": "8.0B",
+ "started": "2026-10-19T05:42:10",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "502fbf9",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.004790811518724618,
+ "best_score": 0.013307809774235053,
+ "improvement": 2.7777777777777786,
+ "llm_calls": 41,
+ "mean_llm_seconds": 20.9,
+ "attempts": 41,
+ "ok": 27,
+ "statuses": {
+  "invalid": 8,
+  "ok": 27,
+  "duplicate": 6
+ },
+ "sweeps": 20,
+ "sweep_variants": 165,
+ "improvements": 3,
+ "minutes_to_best": 4.3,
+ "best_idea": "tuned radius=0.5, distribution=regular on top of: Modify the placement of points to utilize the entire unit square more effectively by varying the radius and distribution to better balance the points ",
+ "progress": [
+  [
+   0.0,
+   0.004790811518724618
+  ],
+  [
+   1.6,
+   0.008516998255510434
+  ],
+  [
+   2.49,
+   0.012641961998643255
+  ],
+  [
+   4.3,
+   0.013307809774235053
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.004790811518724618,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 4.3,
+   "score": 0.004790811518724618,
+   "model": "yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "Modify the placement of points to utilize the entire unit square more effectively by varying the radius and distribution to better balance the points and maximize the minimum triangle area."
+  },
+  {
+   "minutes": 4.3,
+   "score": 0.013307809774235053,
+   "model": "yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest",
+   "mode": "sweep/exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "tuned radius=0.5, distribution=regular on top of: Modify the placement of points to utilize the entire unit square more effectively by varying the radius and distribution to better balance the points and maximize the minimum triangle area."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -11,9 +11,11 @@\n     The score is the smallest area among all triangles with corners at three of\n     the points, so no three points may be (nearly) collinear. This start puts\n     the points on a regular polygon on a small circle around the center, which\n-    avoids collinear triples but wastes most of the square.\n+    avoids collinear triples but wastes most of the square. We will vary the radius\n+    and distribution to improve the placement.\n     \"\"\"\n-    radius = 0.3\n+    radius = 0.5\n+    distribution = 'regular'\n     return [(0.5 + radius * math.cos(2 * math.pi * k / n),\n              0.5 + radius * math.sin(2 * math.pi * k / n)) for k in range(n)]\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 8.8,
+ "model_gpu_memory_gb": 8.8,
+ "context_length": 32768,
+ "load_seconds": 30.1,
+ "median_call_seconds": 20.4,
+ "p90_call_seconds": 26.2,
+ "prompt_tokens_per_s": 453.8,
+ "gen_tokens_per_s": 35.7,
+ "mean_prompt_tokens": 3680,
+ "mean_gen_tokens": 426,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

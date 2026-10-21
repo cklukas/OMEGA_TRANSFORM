@@ -1,0 +1,132 @@
+{
+ "schema": 2,
+ "example": "symbolic_regression",
+ "model": "glm-4.7-flash:latest",
+ "variant": "no-think",
+ "model_size_gb": 19.0,
+ "model_params": "29.9B",
+ "started": "2026-10-19T16:54:21",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.8,
+ "omega_version": "0.1.0",
+ "omega_commit": "502fbf9",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.3128434055615448,
+ "best_score": 0.43897823326736374,
+ "improvement": 1.4031883858296794,
+ "llm_calls": 25,
+ "mean_llm_seconds": 36.3,
+ "attempts": 25,
+ "ok": 25,
+ "statuses": {
+  "ok": 25
+ },
+ "sweeps": 2,
+ "sweep_variants": 22,
+ "improvements": 4,
+ "minutes_to_best": 11.69,
+ "best_idea": "tuned DECAY=0.01 on top of: Introduce variable decay factors for the higher-order basis terms to mitigate their aggressive influence during extrapolation, which currently causes diverging predictions.",
+ "progress": [
+  [
+   0.0,
+   0.3128434055615448
+  ],
+  [
+   1.57,
+   0.3794462082124446
+  ],
+  [
+   5.04,
+   0.4389782332616986
+  ],
+  [
+   11.69,
+   0.43897823326174923
+  ],
+  [
+   11.69,
+   0.43897823326736374
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.3128434055615448,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.57,
+   "score": 0.3794462082124446,
+   "model": "glm-4.7-flash:latest",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Expand the basis to include quadratic and interaction terms to capture the non-linear structure and periodic components revealed by the extrapolation errors."
+  },
+  {
+   "minutes": 2.12,
+   "score": 0.3742959780026664,
+   "model": "glm-4.7-flash:latest",
+   "mode": "best/rewrite/bold",
+   "status": "ok",
+   "idea": "The current model fails extrapolation because it uses polynomials, which grow unboundedly, while the target function likely involves bounded or oscillatory components like sine/cosine."
+  },
+  {
+   "minutes": 5.04,
+   "score": 0.4389782332616986,
+   "model": "glm-4.7-flash:latest",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Add higher-order interactions (x1*x2*x3, x1*x2*x3^2) to the basis to capture complex 3D surface features that are currently missing, directly addressing large extrapolation errors where inputs exceed training ranges."
+  },
+  {
+   "minutes": 11.69,
+   "score": 0.43897823326174923,
+   "model": "glm-4.7-flash:latest",
+   "mode": "explore/diff/tune",
+   "status": "ok",
+   "idea": "Introduce variable decay factors for the higher-order basis terms to mitigate their aggressive influence during extrapolation, which currently causes diverging predictions."
+  },
+  {
+   "minutes": 11.69,
+   "score": 0.43897823326736374,
+   "model": "glm-4.7-flash:latest",
+   "mode": "sweep/explore/diff/tune",
+   "status": "ok",
+   "idea": "tuned DECAY=0.01 on top of: Introduce variable decay factors for the higher-order basis terms to mitigate their aggressive influence during extrapolation, which currently causes diverging predictions."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -33,26 +33,20 @@\n \n \n # OMEGA-BLOCK-START\n+DECAY = 0.010000000000000005\n+\n def basis(x1, x2, x3):\n-    \"\"\"Basis functions of the model; the prediction is a weighted sum of them.\"\"\"\n-    return [1.0, x1, x2, x3]\n-\n+    \"\"\"Basis functions: linear terms, squares, interactions, and sines/cosines.\"\"\"\n+    return [1.0, x1, x2, x3, x1*x1, x2*x2, x3*x3,\n+            x1*x2, x1*x3, x2*x3, DECAY * x1*x2*x3,\n+            math.sin(x1), math.cos(x1), math.sin(x2), math.cos(x2),\n+            math.sin(x3), math.cos(x3), math.sin(x1*x2), math.cos(x1*x2),\n+            math.sin(x2*x3), math.cos(x2*x3), math.sin(x3*x1), math.cos(x3*x1)]\n \n def fit(rows):\n-    \"\"\"Fit the model on the training rows and return its parameters.\n-\n-    The parameters must be plain data (numbers, strings, lists, dicts), not functions\n-    or class instances. predict() receives them as JSON would carry them: tuples become\n-    lists and dict keys become strings.\n-    rows: list of [x1, x2, x3, y] float lists, x1 in [-3, 3], x2 in [-2, 2],\n-    x3 in [0, 3]. Only the Python standard library may be used (math, statistics,\n-    random, ...; no numpy). fit plus all predictions must take at most 10 CPU seconds.\n-\n-    Current method: linear regression on the raw inputs.\n-    \"\"\"\n+    \"\"\"Fit the model on the training rows and return its parameters.\"\"\"\n     cols = list(zip(*[basis(x1, x2, x3) for x1, x2, x3, _ in rows]))\n     return least_squares([list(c) for c in cols], [y for *_, y in rows])\n-\n \n def predict(params, x1, x2, x3):\n     \"\"\"Return the predicted y (a finite float) for one input.\"\"\"\n",
+ "error": "",
+ "model_memory_gb": 20.8,
+ "model_gpu_memory_gb": 20.8,
+ "context_length": 32768,
+ "load_seconds": 56.7,
+ "median_call_seconds": 35.0,
+ "p90_call_seconds": 55.6,
+ "prompt_tokens_per_s": 406.8,
+ "gen_tokens_per_s": 23.4,
+ "mean_prompt_tokens": 3993,
+ "mean_gen_tokens": 522,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

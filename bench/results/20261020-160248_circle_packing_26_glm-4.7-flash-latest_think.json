@@ -1,0 +1,369 @@
+{
+ "schema": 3,
+ "example": "circle_packing_26",
+ "model": "glm-4.7-flash:latest",
+ "variant": "think",
+ "model_size_gb": 19.0,
+ "model_params": "29.9B",
+ "started": "2026-10-20T16:02:48",
+ "minutes_budget": 15.0,
+ "wall_minutes": 22.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 1.7338970263838498,
+ "improvement": 1.163609637178196,
+ "llm_calls": 5,
+ "mean_llm_seconds": 264.2,
+ "attempts": 5,
+ "ok": 4,
+ "statuses": {
+  "ok": 4,
+  "invalid": 1
+ },
+ "sweeps": 3,
+ "sweep_variants": 17,
+ "improvements": 3,
+ "minutes_to_best": 13.86,
+ "best_idea": "Implement a repulsive force optimization to spread initial grid centers apart, allowing max_radii to assign larger radii by increasing inter-circle distances.",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   6.01,
+   1.6650777776624426
+  ],
+  [
+   6.01,
+   1.6897385647177818
+  ],
+  [
+   13.86,
+   1.7338970263838498
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 13.86,
+   "score": 1.7338970263838498,
+   "model": "glm-4.7-flash:latest",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "Implement a repulsive force optimization to spread initial grid centers apart, allowing max_radii to assign larger radii by increasing inter-circle distances."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -7,6 +7,31 @@\n import math\n \n # OMEGA-BLOCK-START\n+REPULSION_DIST = 0.22\n+REPULSION_STEPS = 20\n+\n+def optimize_centers(centers):\n+    \"\"\"Push centers apart to reduce overlap and increase potential radii.\"\"\"\n+    for _ in range(REPULSION_STEPS):\n+        for i in range(len(centers)):\n+            for j in range(i + 1, len(centers)):\n+                dx = centers[j][0] - centers[i][0]\n+                dy = centers[j][1] - centers[i][1]\n+                dist = math.hypot(dx, dy)\n+                if dist < REPULSION_DIST and dist > 0:\n+                    move = (REPULSION_DIST - dist) / 2.0\n+                    nx, ny = dx / dist, dy / dist\n+                    centers[i] = (centers[i][0] - nx * move, centers[i][1] - ny * move)\n+                    centers[j] = (centers[j][0] + nx * move, centers[j][1] + ny * move)\n+            margin = REPULSION_DIST / 2.0\n+            for i, c in enumerate(centers):\n+                x, y = c\n+                if x < margin: x = margin\n+                if x > 1 - margin: x = 1 - margin\n+                if y < margin: y = margin\n+                if y > 1 - margin: y = 1 - margin\n+                centers[i] = (x, y)\n+\n def construct_packing(n=26):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n     cols = math.ceil(math.sqrt(n))\n@@ -15,6 +40,7 @@\n     for k in range(n):\n         i, j = k % cols, k // cols\n         centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n+    optimize_centers(centers)\n     radii = max_radii(centers)\n     return [(x, y, r) for (x, y), r in zip(centers, radii)]\n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.083333,
+    0.1,
+    0.060545
+   ],
+   [
+    0.25,
+    0.1,
+    0.039234
+   ],
+   [
+    0.416667,
+    0.1,
+    0.034262
+   ],
+   [
+    0.583333,
+    0.1,
+    0.040566
+   ],
+   [
+    0.75,
+    0.1,
+    0.05694
+   ],
+   [
+    0.916667,
+    0.1,
+    0.080973
+   ],
+   [
+    0.083333,
+    0.3,
+    0.047978
+   ],
+   [
+    0.25,
+    0.3,
+    0.032893
+   ],
+   [
+    0.416667,
+    0.3,
+    0.029299
+   ],
+   [
+    0.583333,
+    0.3,
+    0.040366
+   ],
+   [
+    0.75,
+    0.3,
+    0.058083
+   ],
+   [
+    0.916667,
+    0.3,
+    0.076636
+   ],
+   [
+    0.083333,
+    0.5,
+    0.05004
+   ],
+   [
+    0.25,
+    0.5,
+    0.036525
+   ],
+   [
+    0.416667,
+    0.5,
+    0.03396
+   ],
+   [
+    0.583333,
+    0.5,
+    0.041209
+   ],
+   [
+    0.75,
+    0.5,
+    0.058085
+   ],
+   [
+    0.916667,
+    0.5,
+    0.076976
+   ],
+   [
+    0.083333,
+    0.7,
+    0.059259
+   ],
+   [
+    0.25,
+    0.7,
+    0.06822
+   ],
+   [
+    0.416667,
+    0.7,
+    0.065257
+   ],
+   [
+    0.583333,
+    0.7,
+    0.069461
+   ],
+   [
+    0.75,
+    0.7,
+    0.089736
+   ],
+   [
+    0.916667,
+    0.7,
+    0.07693
+   ],
+   [
+    0.083333,
+    0.9,
+    0.075758
+   ],
+   [
+    0.25,
+    0.9,
+    0.090909
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.11,
+    0.11,
+    0.045785
+   ],
+   [
+    0.209913,
+    0.11,
+    0.032897
+   ],
+   [
+    0.363464,
+    0.11,
+    0.031325
+   ],
+   [
+    0.540778,
+    0.11,
+    0.041319
+   ],
+   [
+    0.698312,
+    0.11,
+    0.052788
+   ],
+   [
+    0.89,
+    0.11,
+    0.070385
+   ],
+   [
+    0.11,
+    0.276068,
+    0.066487
+   ],
+   [
+    0.270907,
+    0.358089,
+    0.030923
+   ],
+   [
+    0.436679,
+    0.26323,
+    0.050227
+   ],
+   [
+    0.614098,
+    0.334577,
+    0.036723
+   ],
+   [
+    0.818741,
+    0.249421,
+    0.081116
+   ],
+   [
+    0.89,
+    0.419755,
+    0.063683
+   ],
+   [
+    0.11,
+    0.47779,
+    0.075511
+   ],
+   [
+    0.27246,
+    0.577433,
+    0.038672
+   ],
+   [
+    0.453707,
+    0.468974,
+    0.06573
+   ],
+   [
+    0.605701,
+    0.613023,
+    0.04978
+   ],
+   [
+    0.74164,
+    0.480488,
+    0.077226
+   ],
+   [
+    0.89,
+    0.616325,
+    0.071256
+   ],
+   [
+    0.11,
+    0.681968,
+    0.077706
+   ],
+   [
+    0.264442,
+    0.808169,
+    0.086365
+   ],
+   [
+    0.436953,
+    0.686216,
+    0.094399
+   ],
+   [
+    0.66262,
+    0.89,
+    0.101955
+   ],
+   [
+    0.766389,
+    0.729415,
+    0.08924
+   ],
+   [
+    0.89,
+    0.89,
+    0.11
+   ],
+   [
+    0.11,
+    0.89,
+    0.086183
+   ],
+   [
+    0.444947,
+    0.886672,
+    0.106216
+   ]
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 20.8,
+ "model_gpu_memory_gb": 20.8,
+ "context_length": 32768,
+ "load_seconds": 49.2,
+ "median_call_seconds": 206.3,
+ "p90_call_seconds": 490.3,
+ "prompt_tokens_per_s": 437.7,
+ "gen_tokens_per_s": 23.7,
+ "mean_prompt_tokens": 2235,
+ "mean_gen_tokens": 5902,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

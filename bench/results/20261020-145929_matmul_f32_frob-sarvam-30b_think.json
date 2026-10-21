@@ -1,0 +1,86 @@
+{
+ "schema": 3,
+ "example": "matmul_f32",
+ "model": "frob/sarvam:30b",
+ "variant": "think",
+ "model_size_gb": 19.6,
+ "model_params": "32.2B",
+ "started": "2026-10-20T14:59:29",
+ "minutes_budget": 15.0,
+ "wall_minutes": 18.7,
+ "omega_version": "0.1.0",
+ "omega_commit": "",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.66888,
+ "best_score": 1.66888,
+ "improvement": 1.0,
+ "llm_calls": 3,
+ "mean_llm_seconds": 366.5,
+ "attempts": 3,
+ "ok": 0,
+ "statuses": {
+  "llm_error": 3
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 0,
+ "minutes_to_best": null,
+ "best_idea": "initial program",
+ "progress": [
+  [
+   0.0,
+   1.66888
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.66888,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  }
+ ],
+ "best_diff": "",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "error": "all 3 model requests failed: frob/sarvam:30b: answer stopped: reasoning exceeded 41000 characters",
+ "model_memory_gb": 18.9,
+ "model_gpu_memory_gb": 18.9,
+ "context_length": 32768,
+ "load_seconds": 0,
+ "median_call_seconds": 364.1,
+ "p90_call_seconds": 377.9,
+ "prompt_tokens_per_s": null,
+ "gen_tokens_per_s": null,
+ "mean_prompt_tokens": 0,
+ "mean_gen_tokens": 0,
+ "stopped_calls": 3,
+ "provider": "ollama",
+ "cost_usd": 0
+}

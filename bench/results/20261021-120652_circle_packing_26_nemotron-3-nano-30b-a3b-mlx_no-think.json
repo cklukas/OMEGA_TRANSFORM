@@ -1,0 +1,388 @@
+{
+ "schema": 3,
+ "example": "circle_packing_26",
+ "model": "nemotron-3-nano:30b-a3b-mlx",
+ "variant": "no-think",
+ "model_size_gb": 18.3,
+ "model_params": "",
+ "started": "2026-10-21T12:06:52",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 1.80889963491295,
+ "improvement": 1.213943513279235,
+ "llm_calls": 44,
+ "mean_llm_seconds": 20.0,
+ "attempts": 44,
+ "ok": 16,
+ "statuses": {
+  "edit_error": 14,
+  "ok": 16,
+  "invalid": 10,
+  "llm_error": 3,
+  "duplicate": 1
+ },
+ "sweeps": 8,
+ "sweep_variants": 119,
+ "improvements": 5,
+ "minutes_to_best": 13.29,
+ "best_idea": "tuned H_SPACING=1, V_SPACING=1.2, JITTER=0.001, COLS=5 on top of: Use a finer staggered hexagonal lattice with adjustable horizontal and vertical spacings, add a small jitter, and recompute radii to e",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   10.81,
+   1.6110091062352745
+  ],
+  [
+   11.74,
+   1.7113109736657306
+  ],
+  [
+   11.74,
+   1.7754686523428886
+  ],
+  [
+   13.29,
+   1.7790557111845358
+  ],
+  [
+   13.29,
+   1.80889963491295
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 13.29,
+   "score": 1.7790557111845358,
+   "model": "nemotron-3-nano:30b-a3b-mlx",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Use a finer staggered hexagonal lattice with adjustable horizontal and vertical spacings, add a small jitter, and recompute radii to ensure strict non\u2011overlap while keeping circles within the unit square."
+  },
+  {
+   "minutes": 13.29,
+   "score": 1.80889963491295,
+   "model": "nemotron-3-nano:30b-a3b-mlx",
+   "mode": "sweep/exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "tuned H_SPACING=1, V_SPACING=1.2, JITTER=0.001, COLS=5 on top of: Use a finer staggered hexagonal lattice with adjustable horizontal and vertical spacings, add a small jitter, and recompute radii to ensure strict non\u2011overlap while keeping circles within the unit square."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -9,27 +9,40 @@\n # OMEGA-BLOCK-START\n def construct_packing(n=26):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n-    cols = math.ceil(math.sqrt(n))\n-    rows = math.ceil(n / cols)\n+    H_SPACING = 1.0          # horizontal lattice spacing factor\n+    V_SPACING = 1.2           # vertical lattice spacing factor\n+    JITTER = 0.001            # small stochastic shift to break symmetry\n+    COLS = 5                  # number of columns\n+    ROWS = math.ceil(n / COLS)  # derived number of rows\n+\n     centers = []\n     for k in range(n):\n-        i, j = k % cols, k // cols\n-        centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n+        i = k % COLS\n+        j = k // COLS\n+        x_base = (i + 0.5) * H_SPACING / COLS\n+        y_base = (j + 0.5) * V_SPACING / ROWS\n+        if j % 2 == 1:\n+            x_base += H_SPACING / (4 * COLS)  # offset odd rows\n+        # add jitter\n+        x = x_base + JITTER * (math.sin(k) + 1)\n+        y = y_base + JITTER * (math.cos(k) + 1)\n+        # clamp to [0,1] square\n+        x = max(min(x, 1.0), 0.0)\n+        y = max(min(y, 1.0), 0.0)\n+        centers.append((x, y))\n+    # compute maximal feasible radii respecting walls and overlaps\n+    def max_radii(centers):\n+        radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n+        for a in range(len(centers)):\n+            for b in range(a + 1, len(centers)):\n+                d = math.dist(centers[a], centers[b])\n+                if radii[a] + radii[b] > d:\n+                    s = d / (radii[a] + radii[b])\n+                    radii[a] *= s\n+                    radii[b] *= s\n+        return radii\n     radii = max_radii(centers)\n     return [(x, y, r) for (x, y), r in zip(centers, radii)]\n-\n-\n-def max_radii(centers):\n-    \"\"\"Largest radii for fixed centers: limit by walls, then shrink overlapping pairs.\"\"\"\n-    radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n-    for a in range(len(centers)):\n-        for b in range(a + 1, len(centers)):\n-            d = math.dist(centers[a], centers[b])\n-            if radii[a] + radii[b] > d:\n-                s = d / (radii[a] + radii[b])\n-                radii[a] *= s\n-                radii[b] *= s\n-    return radii\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.083333,
+    0.1,
+    0.060545
+   ],
+   [
+    0.25,
+    0.1,
+    0.039234
+   ],
+   [
+    0.416667,
+    0.1,
+    0.034262
+   ],
+   [
+    0.583333,
+    0.1,
+    0.040566
+   ],
+   [
+    0.75,
+    0.1,
+    0.05694
+   ],
+   [
+    0.916667,
+    0.1,
+    0.080973
+   ],
+   [
+    0.083333,
+    0.3,
+    0.047978
+   ],
+   [
+    0.25,
+    0.3,
+    0.032893
+   ],
+   [
+    0.416667,
+    0.3,
+    0.029299
+   ],
+   [
+    0.583333,
+    0.3,
+    0.040366
+   ],
+   [
+    0.75,
+    0.3,
+    0.058083
+   ],
+   [
+    0.916667,
+    0.3,
+    0.076636
+   ],
+   [
+    0.083333,
+    0.5,
+    0.05004
+   ],
+   [
+    0.25,
+    0.5,
+    0.036525
+   ],
+   [
+    0.416667,
+    0.5,
+    0.03396
+   ],
+   [
+    0.583333,
+    0.5,
+    0.041209
+   ],
+   [
+    0.75,
+    0.5,
+    0.058085
+   ],
+   [
+    0.916667,
+    0.5,
+    0.076976
+   ],
+   [
+    0.083333,
+    0.7,
+    0.059259
+   ],
+   [
+    0.25,
+    0.7,
+    0.06822
+   ],
+   [
+    0.416667,
+    0.7,
+    0.065257
+   ],
+   [
+    0.583333,
+    0.7,
+    0.069461
+   ],
+   [
+    0.75,
+    0.7,
+    0.089736
+   ],
+   [
+    0.916667,
+    0.7,
+    0.07693
+   ],
+   [
+    0.083333,
+    0.9,
+    0.075758
+   ],
+   [
+    0.25,
+    0.9,
+    0.090909
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.101,
+    0.102,
+    0.068255
+   ],
+   [
+    0.301841,
+    0.10154,
+    0.042446
+   ],
+   [
+    0.501909,
+    0.100584,
+    0.04892
+   ],
+   [
+    0.701141,
+    0.10001,
+    0.059315
+   ],
+   [
+    0.900243,
+    0.100346,
+    0.099615
+   ],
+   [
+    0.150041,
+    0.301284,
+    0.057284
+   ],
+   [
+    0.350721,
+    0.30196,
+    0.038341
+   ],
+   [
+    0.551657,
+    0.301754,
+    0.042319
+   ],
+   [
+    0.751989,
+    0.300854,
+    0.072653
+   ],
+   [
+    0.951412,
+    0.300089,
+    0.048588
+   ],
+   [
+    0.100456,
+    0.500161,
+    0.062522
+   ],
+   [
+    0.3,
+    0.501004,
+    0.048034
+   ],
+   [
+    0.500463,
+    0.501844,
+    0.05133
+   ],
+   [
+    0.70142,
+    0.501907,
+    0.059663
+   ],
+   [
+    0.901991,
+    0.501137,
+    0.094465
+   ],
+   [
+    0.15165,
+    0.70024,
+    0.093005
+   ],
+   [
+    0.350712,
+    0.700042,
+    0.083273
+   ],
+   [
+    0.550039,
+    0.700725,
+    0.088677
+   ],
+   [
+    0.750249,
+    0.70166,
+    0.10834
+   ],
+   [
+    0.95115,
+    0.701989,
+    0.04885
+   ],
+   [
+    0.101913,
+    0.901408,
+    0.098592
+   ],
+   [
+    0.301837,
+    0.900452,
+    0.099352
+   ],
+   [
+    0.500991,
+    0.9,
+    0.099803
+   ],
+   [
+    0.700154,
+    0.900467,
+    0.096681
+   ],
+   [
+    0.900094,
+    0.901424,
+    0.098576
+   ],
+   [
+    0.150868,
+    1.0,
+    0.0
+   ]
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 25.6,
+ "model_gpu_memory_gb": 25.6,
+ "context_length": 32768,
+ "load_seconds": 111.4,
+ "median_call_seconds": 16.8,
+ "p90_call_seconds": 23.5,
+ "prompt_tokens_per_s": 580.1,
+ "gen_tokens_per_s": 56.8,
+ "mean_prompt_tokens": 2975,
+ "mean_gen_tokens": 653,
+ "stopped_calls": 3,
+ "provider": "ollama",
+ "cost_usd": 0
+}

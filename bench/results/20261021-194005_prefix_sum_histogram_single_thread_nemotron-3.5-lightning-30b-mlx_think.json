@@ -1,0 +1,100 @@
+{
+ "schema": 3,
+ "example": "prefix_sum_histogram_single_thread",
+ "model": "nemotron-3.5-lightning:30b-mlx",
+ "variant": "think",
+ "model_size_gb": 19.1,
+ "model_params": "",
+ "started": "2026-10-21T19:40:05",
+ "minutes_budget": 15.0,
+ "wall_minutes": 19.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 4.83939,
+ "best_score": 4.83939,
+ "improvement": 1.0,
+ "llm_calls": 4,
+ "mean_llm_seconds": 284.8,
+ "attempts": 4,
+ "ok": 0,
+ "statuses": {
+  "llm_error": 4
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 0,
+ "minutes_to_best": null,
+ "best_idea": "initial program",
+ "progress": [
+  [
+   0.0,
+   4.83939
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 4.83939,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  }
+ ],
+ "best_diff": "",
+ "initial_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "best_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "error": "all 4 model requests failed: nemotron-3.5-lightning:30b-mlx: answer stopped: reasoning exceeded 43952 characters",
+ "model_memory_gb": 20.1,
+ "model_gpu_memory_gb": 20.1,
+ "context_length": 32768,
+ "load_seconds": 0,
+ "median_call_seconds": 257.8,
+ "p90_call_seconds": 380.8,
+ "prompt_tokens_per_s": null,
+ "gen_tokens_per_s": null,
+ "mean_prompt_tokens": 0,
+ "mean_gen_tokens": 0,
+ "stopped_calls": 4,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -1,0 +1,110 @@
+{
+ "schema": 2,
+ "example": "symbolic_regression",
+ "model": "richardyoung/frognano-4b-2609:latest",
+ "variant": "no-think",
+ "model_size_gb": 3.5,
+ "model_params": "4.3B",
+ "started": "2026-10-19T15:21:38",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "502fbf9",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.3128434055615448,
+ "best_score": 0.8675470273387376,
+ "improvement": 2.7731031305630878,
+ "llm_calls": 31,
+ "mean_llm_seconds": 28.8,
+ "attempts": 31,
+ "ok": 24,
+ "statuses": {
+  "ok": 24,
+  "edit_error": 6,
+  "invalid": 1
+ },
+ "sweeps": 2,
+ "sweep_variants": 17,
+ "improvements": 4,
+ "minutes_to_best": 6.0,
+ "best_idea": "Replace the polynomial basis with a trigonometric basis (sin, cos, sin*cos products) which captures periodic behavior and avoids the unbounded growth of polynomials at large |x|, allowing correct extr",
+ "progress": [
+  [
+   0.0,
+   0.3128434055615448
+  ],
+  [
+   0.62,
+   0.3794462082124446
+  ],
+  [
+   1.09,
+   0.3794462082124487
+  ],
+  [
+   1.47,
+   0.8509738576499145
+  ],
+  [
+   6.0,
+   0.8675470273387376
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.3128434055615448,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 0.62,
+   "score": 0.3794462082124446,
+   "model": "richardyoung/frognano-4b-2609:latest",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Switch from a simple linear basis to a polynomial basis up to degree 2 (including cross-terms x1*x2, x2*x3, x1*x3 and squares) which is necessary to capture the curvature and interactions seen in the extrapolation errors. I will add a comprehensive basis generation function and update fit/predict to use it."
+  },
+  {
+   "minutes": 6.0,
+   "score": 0.8675470273387376,
+   "model": "richardyoung/frognano-4b-2609:latest",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the polynomial basis with a trigonometric basis (sin, cos, sin*cos products) which captures periodic behavior and avoids the unbounded growth of polynomials at large |x|, allowing correct extrapolation."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -34,9 +34,15 @@\n \n # OMEGA-BLOCK-START\n def basis(x1, x2, x3):\n-    \"\"\"Basis functions of the model; the prediction is a weighted sum of them.\"\"\"\n-    return [1.0, x1, x2, x3]\n-\n+    \"\"\"Basis functions of the model: trigonometric terms to capture periodicity and bounded behavior.\"\"\"\n+    return [\n+        1.0,\n+        x1, x2, x3,\n+        math.sin(x1), math.sin(x2), math.sin(x3),\n+        math.cos(x1), math.cos(x2), math.cos(x3),\n+        math.sin(x1)*math.sin(x2), math.sin(x1)*math.sin(x3), math.sin(x2)*math.sin(x3),\n+        math.cos(x1)*math.cos(x2), math.cos(x1)*math.cos(x3), math.cos(x2)*math.cos(x3)\n+    ]\n \n def fit(rows):\n     \"\"\"Fit the model on the training rows and return its parameters.\n@@ -47,12 +53,9 @@\n     rows: list of [x1, x2, x3, y] float lists, x1 in [-3, 3], x2 in [-2, 2],\n     x3 in [0, 3]. Only the Python standard library may be used (math, statistics,\n     random, ...; no numpy). fit plus all predictions must take at most 10 CPU seconds.\n-\n-    Current method: linear regression on the raw inputs.\n     \"\"\"\n     cols = list(zip(*[basis(x1, x2, x3) for x1, x2, x3, _ in rows]))\n     return least_squares([list(c) for c in cols], [y for *_, y in rows])\n-\n \n def predict(params, x1, x2, x3):\n     \"\"\"Return the predicted y (a finite float) for one input.\"\"\"\n",
+ "error": "",
+ "model_memory_gb": 4.4,
+ "model_gpu_memory_gb": 4.4,
+ "context_length": 32768,
+ "load_seconds": 13.5,
+ "median_call_seconds": 27.4,
+ "p90_call_seconds": 45.8,
+ "prompt_tokens_per_s": 646.7,
+ "gen_tokens_per_s": 36.4,
+ "mean_prompt_tokens": 4542,
+ "mean_gen_tokens": 772,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

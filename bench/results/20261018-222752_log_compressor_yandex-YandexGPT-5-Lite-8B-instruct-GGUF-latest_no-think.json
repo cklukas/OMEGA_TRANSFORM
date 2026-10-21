@@ -1,0 +1,91 @@
+{
+ "schema": 2,
+ "example": "log_compressor",
+ "model": "yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest",
+ "variant": "no-think",
+ "model_size_gb": 4.9,
+ "model_params": "8.0B",
+ "started": "2026-10-18T22:27:52",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "502fbf9",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 11.28605206956168,
+ "best_score": 17.631990784874482,
+ "improvement": 1.5622815379726722,
+ "llm_calls": 37,
+ "mean_llm_seconds": 24.4,
+ "attempts": 37,
+ "ok": 16,
+ "statuses": {
+  "invalid": 11,
+  "ok": 16,
+  "duplicate": 8,
+  "edit_error": 2
+ },
+ "sweeps": 6,
+ "sweep_variants": 17,
+ "improvements": 1,
+ "minutes_to_best": 1.22,
+ "best_idea": "Use a more optimized compression level for zlib to improve the compression ratio.",
+ "progress": [
+  [
+   0.0,
+   11.28605206956168
+  ],
+  [
+   1.22,
+   17.631990784874482
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 11.28605206956168,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.22,
+   "score": 17.631990784874482,
+   "model": "yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Use a more optimized compression level for zlib to improve the compression ratio."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,9 +19,9 @@\n     Only the Python standard library may be used (zlib, lzma, bz2, struct, re, ...).\n     Compress plus decompress of the main input must stay within 20 CPU seconds.\n \n-    Current method: plain zlib at level 1.\n+    Current method: plain zlib at level 1. We will try a higher compression level.\n     \"\"\"\n-    return zlib.compress(data, 1)\n+    return zlib.compress(data, 9)\n \n \n def decompress(blob: bytes) -> bytes:\n",
+ "error": "",
+ "model_memory_gb": 8.8,
+ "model_gpu_memory_gb": 8.8,
+ "context_length": 32768,
+ "load_seconds": 14.9,
+ "median_call_seconds": 21.5,
+ "p90_call_seconds": 41.5,
+ "prompt_tokens_per_s": 502.0,
+ "gen_tokens_per_s": 33.0,
+ "mean_prompt_tokens": 3062,
+ "mean_gen_tokens": 587,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

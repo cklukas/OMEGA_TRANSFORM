@@ -149,16 +149,35 @@ The latest run per model and reasoning mode; the [model benchmarks](../benchmark
 | gpt-oss:20b (no-think) | local | 334.3880 | ×1.04 | 3.7 | 1 |
 | qwen3.8:27b-mtp-q4_K_M (no-think) | local | 330.6950 | ×1.05 | 8.7 | 1 |
 | qwen3.5:latest (think) | local | 328.9980 | ×1.05 | 14.3 | 1 |
+| nemotron-3-nano:30b-a3b-mlx (think) | local | 325.8480 | ×1.02 | 15.1 | 1 |
 | gemma4:e2b (think) | local | 322.6780 | ×1.02 | 6.2 | 1 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 320.9740 | ×1.00 | - | 0 |
 | qwen3.5:latest (no-think) | local | 320.7090 | ×1.00 | - | 0 |
+| nemotron-3.5-lightning:30b-mlx (think) | local | | | | failed: all 4 model requests failed … |
+| nemotron-3-nano:4b (think) | local | 320.1020 | ×1.00 | - | 0 |
 | gemma4:e2b (no-think) | local | 319.9610 | ×1.00 | - | 0 |
+| muse-glimmer:30b (no-think) | local | 319.5570 | ×1.00 | - | 0 |
+| nemotron-3.5-lightning:30b-mlx (no-think) | local | 319.5110 | ×1.00 | - | 0 |
+| nemotron-3-nano:30b-a3b-mlx (no-think) | local | 319.3310 | ×1.00 | - | 0 |
+| frob/sarvam:30b (no-think) | local | 318.5390 | ×1.00 | - | 0 |
+| devstral-small-2:24b (no-think) | local | 318.4750 | ×1.00 | - | 0 |
+| nemotron-3-nano:4b (no-think) | local | 318.2460 | ×1.00 | - | 0 |
 | qwen3.5:27b (no-think) | local | 317.8080 | ×1.00 | - | 0 |
 | gemma4:12b-it-qat (no-think) | local | 317.6940 | ×1.00 | - | 0 |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | local | 317.5730 | ×1.00 | - | 0 |
+| glm-4.7-flash:latest (think) | local | 316.9600 | ×1.00 | - | 0 |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | 316.8500 | ×1.00 | - | 0 |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | 316.6740 | ×1.02 | 11.2 | 5 |
 | gemma4:e4b-it-qat (no-think) | local | 315.1790 | ×1.00 | 8.8 | 1 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 313.9800 | ×1.00 | - | 0 |
+| richardyoung/frognano-4b-2609:latest (think) | local | 313.2800 | ×1.00 | - | 0 |
+| frob/sarvam:30b (think) | local | | | | failed: all 4 model requests failed: frob/sarvam:30b: answer … |
+| muse-glimmer:30b (think) | local | 313.1350 | ×1.00 | - | 0 |
 | gemma4:12b-it-qat (think) | local | 311.7360 | ×1.00 | - | 0 |
+| glm-4.7-flash:latest (no-think) | local | 311.2300 | ×1.00 | - | 0 |
+| ingu627/exaone4.0:32b (no-think) | local | 311.1860 | ×1.00 | - | 0 |
 | qwen3.5:27b (think) | local | 311.0700 | ×1.00 | - | 0 |
+| richardyoung/frognano-4b-2609:latest (no-think) | local | 309.2800 | ×1.00 | - | 0 |
 | qwen3.6:27b-coding-mtp-q4_K_M (think) | local | 307.5350 | ×1.00 | - | 0 |
 | gemma4:26b-a4b-it-qat (think) | local | | | | failed: all 2 model requests failed: gemma4:26b-a4b-it-qat: answer … |
 | qwen3.8:27b-mtp-q4_K_M (think) | local | 301.9280 | ×1.00 | - | 0 |

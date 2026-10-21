@@ -1,0 +1,140 @@
+{
+ "schema": 3,
+ "example": "log_compressor",
+ "model": "nemotron-3-nano:4b",
+ "variant": "no-think",
+ "model_size_gb": 2.9,
+ "model_params": "",
+ "started": "2026-10-21T03:15:46",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 11.28605206956168,
+ "best_score": 19.662606307583275,
+ "improvement": 1.7422041105598864,
+ "llm_calls": 61,
+ "mean_llm_seconds": 14.6,
+ "attempts": 61,
+ "ok": 3,
+ "statuses": {
+  "edit_error": 28,
+  "invalid": 25,
+  "llm_error": 4,
+  "ok": 3,
+  "duplicate": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 2,
+ "minutes_to_best": 10.29,
+ "best_idea": "Replace plain zlib with field-aware column compression using lzma with preset 9 for better ratio",
+ "progress": [
+  [
+   0.0,
+   11.28605206956168
+  ],
+  [
+   4.63,
+   17.631990784874482
+  ],
+  [
+   10.29,
+   19.662606307583275
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 11.28605206956168,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 4.63,
+   "score": 17.631990784874482,
+   "model": "nemotron-3-nano:4b",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Use lzma with preset 9 to achieve better compression ratio on the main log while maintaining fast decompression."
+  },
+  {
+   "minutes": 10.29,
+   "score": 19.662606307583275,
+   "model": "nemotron-3-nano:4b",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Replace plain zlib with field-aware column compression using lzma with preset 9 for better ratio"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -10,23 +10,11 @@\n import zlib\n \n # OMEGA-BLOCK-START\n-def compress(data: bytes) -> bytes:\n-    \"\"\"Compress arbitrary bytes losslessly and return the compressed blob.\n+from collections import deque\n+from lzma import compress, decompress\n+import struct\n+import re\n \n-    decompress(compress(data)) must equal data exactly for EVERY input, including\n-    b\"\" and non-text bytes. The main input is an access log, one request per line:\n-      IP - - [DD/Mon/YYYY:HH:MM:SS +0000] \"METHOD PATH HTTP/1.1\" STATUS SIZE \"REFERER\" \"USER-AGENT\"\n-    Only the Python standard library may be used (zlib, lzma, bz2, struct, re, ...).\n-    Compress plus decompress of the main input must stay within 20 CPU seconds.\n-\n-    Current method: plain zlib at level 1.\n-    \"\"\"\n-    return zlib.compress(data, 1)\n-\n-\n-def decompress(blob: bytes) -> bytes:\n-    \"\"\"Invert compress() exactly.\"\"\"\n-    return zlib.decompress(blob)\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "compression",
+  "input": "web server access log",
+  "head": [
+   "203.242.94.172 - - [04/Oct/2024:09:52:35 +0000] \"GET /search?q=novel&page=1 HTTP/1.1\" 200 13481 \"https://search.example.net/?q=shop\" \"Mozilla/5.0 (compatible; ExampleBot/2.1; +http://bot.example.org/info)\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/155 HTTP/1.1\" 200 23584 \"https://www.example.com/\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/books/203?ref=search HTTP/1.1\" 200 25206 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/106 HTTP/1.1\" 404 24868 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\""
+  ],
+  "lines": 2000,
+  "original_bytes": 443903,
+  "compressed_bytes": 39332,
+  "references": {
+   "zlib -9": 25176,
+   "bz2 -9": 16530,
+   "lzma -9e": 20656
+  }
+ },
+ "best_solution": {
+  "kind": "compression",
+  "input": "web server access log",
+  "head": [
+   "203.242.94.172 - - [04/Oct/2024:09:52:35 +0000] \"GET /search?q=novel&page=1 HTTP/1.1\" 200 13481 \"https://search.example.net/?q=shop\" \"Mozilla/5.0 (compatible; ExampleBot/2.1; +http://bot.example.org/info)\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/155 HTTP/1.1\" 200 23584 \"https://www.example.com/\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/books/203?ref=search HTTP/1.1\" 200 25206 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/106 HTTP/1.1\" 404 24868 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\""
+  ],
+  "lines": 2000,
+  "original_bytes": 443903,
+  "compressed_bytes": 22576,
+  "references": {
+   "zlib -9": 25176,
+   "bz2 -9": 16530,
+   "lzma -9e": 20656
+  }
+ },
+ "error": "",
+ "model_memory_gb": 11.6,
+ "model_gpu_memory_gb": 11.6,
+ "context_length": 32768,
+ "load_seconds": 7.6,
+ "median_call_seconds": 10.6,
+ "p90_call_seconds": 32.4,
+ "prompt_tokens_per_s": 824.3,
+ "gen_tokens_per_s": 63.1,
+ "mean_prompt_tokens": 2986,
+ "mean_gen_tokens": 685,
+ "stopped_calls": 4,
+ "provider": "ollama",
+ "cost_usd": 0
+}

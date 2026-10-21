@@ -1,0 +1,113 @@
+{
+ "schema": 2,
+ "example": "circles_in_circle_21",
+ "model": "muse-glimmer:30b",
+ "variant": "no-think",
+ "model_size_gb": 18.2,
+ "model_params": "27.9B",
+ "started": "2026-10-18T21:04:22",
+ "minutes_budget": 15.0,
+ "wall_minutes": 19.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "502fbf9",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 3.1890454825108625,
+ "best_score": 3.944253180696589,
+ "improvement": 1.2368130847701555,
+ "llm_calls": 5,
+ "mean_llm_seconds": 227.2,
+ "attempts": 5,
+ "ok": 4,
+ "statuses": {
+  "ok": 4,
+  "invalid": 1
+ },
+ "sweeps": 2,
+ "sweep_variants": 25,
+ "improvements": 3,
+ "minutes_to_best": 10.22,
+ "best_idea": "tuned INNER_RING_R=0.45, OUTER_RING_R=0.8 on top of: keep the fixed ring layout but make the ring radii tunable and replace the single outside-in greedy radius assignment with a few iterative passes t",
+ "progress": [
+  [
+   0.0,
+   3.1890454825108625
+  ],
+  [
+   3.65,
+   3.389316765649939
+  ],
+  [
+   10.22,
+   3.389316765654043
+  ],
+  [
+   10.22,
+   3.944253180696589
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.1890454825108625,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.65,
+   "score": 3.389316765649939,
+   "model": "muse-glimmer:30b",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "keep the same ring centers but compute per-circle radii greedily from outside-in so outer circles are limited by the wall and inner circles can grow into remaining gaps, increasing total sum of radii."
+  },
+  {
+   "minutes": 10.22,
+   "score": 3.389316765654043,
+   "model": "muse-glimmer:30b",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "keep the fixed ring layout but make the ring radii tunable and replace the single outside-in greedy radius assignment with a few iterative passes that repeatedly raise each circle to its current feasible limit, allowing inner circles to grow after outer circles have been fixed and then re-evaluate."
+  },
+  {
+   "minutes": 10.22,
+   "score": 3.944253180696589,
+   "model": "muse-glimmer:30b",
+   "mode": "sweep/best/diff/refine",
+   "status": "ok",
+   "idea": "tuned INNER_RING_R=0.45, OUTER_RING_R=0.8 on top of: keep the fixed ring layout but make the ring radii tunable and replace the single outside-in greedy radius assignment with a few iterative passes that repeatedly raise each circle to its current feasible limit, allowing inner circles to grow after"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -8,20 +8,54 @@\n     \"\"\"Return a list of n circles (x, y, r) inside the unit circle (center (0,0),\n     radius 1) without overlaps.\n \n-    This start places one circle at the center and two concentric rings of 7 and\n-    13 circles, all with the same radius: the largest one that keeps every pair\n-    apart and every circle inside the container.\n+    Place one circle at the center and two concentric rings of 7 and 13 circles.\n+    Radii are computed individually by assigning outer circles first, allowing\n+    inner circles to grow into the remaining gaps.\n     \"\"\"\n+    INNER_RING_R = 0.45\n+    OUTER_RING_R = 0.8\n     centers = [(0.0, 0.0)]\n-    for count, ring in ((7, 0.35), (n - 8, 0.75)):\n+    for count, ring in ((7, INNER_RING_R), (n - 8, OUTER_RING_R)):\n         centers += [(ring * math.cos(2 * math.pi * k / count),\n                      ring * math.sin(2 * math.pi * k / count)) for k in range(count)]\n-    r = min(1.0 - math.hypot(x, y) for x, y in centers)\n-    for a in range(n):\n-        for b in range(a + 1, n):\n-            r = min(r, math.dist(centers[a], centers[b]) / 2)\n-    r *= 1 - 1e-12  # stay strictly feasible despite rounding\n-    return [(x, y, r) for x, y in centers]\n+    # order indices by distance from origin descending (outside-in)\n+    idx = list(range(n))\n+    idx.sort(key=lambda i: math.hypot(centers[i][0], centers[i][1]), reverse=True)\n+    radii = [0.0] * n\n+    # initial outside-in greedy pass\n+    for i in idx:\n+        x, y = centers[i]\n+        max_r = 1.0 - math.hypot(x, y)\n+        for j in idx:\n+            if radii[j] == 0.0:\n+                continue\n+            if j == i:\n+                continue\n+            if idx.index(j) >= idx.index(i):\n+                continue\n+            dx = x - centers[j][0]\n+            dy = y - centers[j][1]\n+            d = math.hypot(dx, dy)\n+            max_r = min(max_r, d - radii[j])\n+        if max_r < 0:\n+            max_r = 0.0\n+        radii[i] = max_r * (1 - 1e-12)\n+    # iterative refinement to grow circles where space allows\n+    for _ in range(10):\n+        for i in idx:\n+            x, y = centers[i]\n+            max_r = 1.0 - math.hypot(x, y)\n+            for j in range(n):\n+                if j == i:\n+                    continue\n+                dx = x - centers[j][0]\n+                dy = y - centers[j][1]\n+                d = math.hypot(dx, dy)\n+                max_r = min(max_r, d - radii[j])\n+            if max_r < 0:\n+                max_r = 0.0\n+            radii[i] = max_r * (1 - 1e-12)\n+    return [(centers[i][0], centers[i][1], radii[i]) for i in range(n)]\n # OMEGA-BLOCK-END\n \n \n",
+ "error": "",
+ "model_memory_gb": 15.6,
+ "model_gpu_memory_gb": 15.6,
+ "context_length": 32768,
+ "load_seconds": 64.6,
+ "median_call_seconds": 218.7,
+ "p90_call_seconds": 285.6,
+ "prompt_tokens_per_s": 100.8,
+ "gen_tokens_per_s": 9.7,
+ "mean_prompt_tokens": 2049,
+ "mean_gen_tokens": 1880,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

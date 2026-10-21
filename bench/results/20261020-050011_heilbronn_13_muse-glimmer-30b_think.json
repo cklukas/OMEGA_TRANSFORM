@@ -1,0 +1,210 @@
+{
+ "schema": 3,
+ "example": "heilbronn_13",
+ "model": "muse-glimmer:30b",
+ "variant": "think",
+ "model_size_gb": 18.2,
+ "model_params": "27.9B",
+ "started": "2026-10-20T05:00:11",
+ "minutes_budget": 15.0,
+ "wall_minutes": 25.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.004790811518724618,
+ "best_score": 0.01858442429379985,
+ "improvement": 3.879180848831909,
+ "llm_calls": 2,
+ "mean_llm_seconds": 757.8,
+ "attempts": 2,
+ "ok": 2,
+ "statuses": {
+  "ok": 2
+ },
+ "sweeps": 1,
+ "sweep_variants": 9,
+ "improvements": 3,
+ "minutes_to_best": 25.28,
+ "best_idea": "Replace the central regular polygon with a simulated-annealing local search that starts from the four corners plus random edge points and moves the interior points to maximise the minimal triangle are",
+ "progress": [
+  [
+   0.0,
+   0.004790811518724618
+  ],
+  [
+   11.28,
+   0.016545424339913774
+  ],
+  [
+   11.28,
+   0.017974127903968178
+  ],
+  [
+   25.28,
+   0.01858442429379985
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.004790811518724618,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 25.28,
+   "score": 0.01858442429379985,
+   "model": "muse-glimmer:30b",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Replace the central regular polygon with a simulated-annealing local search that starts from the four corners plus random edge points and moves the interior points to maximise the minimal triangle area, using temperature cooling and multiple restarts."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -7,15 +7,109 @@\n # OMEGA-BLOCK-START\n def construct(n=13):\n     \"\"\"Return a list of n points (x, y) inside the closed unit square [0,1]^2.\n+    Uses corners + edge start and simulated annealing to maximise the minimum triangle area.\n+    \"\"\"\n+    import math, random\n+    STEP0 = 0.12\n+    ITER = 10000\n \n-    The score is the smallest area among all triangles with corners at three of\n-    the points, so no three points may be (nearly) collinear. This start puts\n-    the points on a regular polygon on a small circle around the center, which\n-    avoids collinear triples but wastes most of the square.\n-    \"\"\"\n-    radius = 0.3\n-    return [(0.5 + radius * math.cos(2 * math.pi * k / n),\n-             0.5 + radius * math.sin(2 * math.pi * k / n)) for k in range(n)]\n+    def min_area(pts):\n+        m = 1.0\n+        nn = len(pts)\n+        for i in range(nn-2):\n+            x1, y1 = pts[i]\n+            for j in range(i+1, nn-1):\n+                x2, y2 = pts[j]\n+                dx21 = x2 - x1\n+                dy21 = y2 - y1\n+                for k in range(j+1, nn):\n+                    x3, y3 = pts[k]\n+                    a = abs(dx21*(y3-y1) - (x3-x1)*dy21) * 0.5\n+                    if a < m:\n+                        m = a\n+                        if m < 1e-12:\n+                            return m\n+        return m\n+\n+    def init_points(seed):\n+        random.seed(seed)\n+        pts = [(0.0,0.0),(1.0,0.0),(1.0,1.0),(0.0,1.0)]\n+        for _ in range(n-4):\n+            side = random.randrange(4)\n+            if side == 0:\n+                x = random.random(); y = 0.0\n+            elif side == 1:\n+                x = 1.0; y = random.random()\n+            elif side == 2:\n+                x = 1-random.random(); y = 1.0\n+            else:\n+                x = 0.0; y = 1-random.random()\n+            pts.append((x, y))\n+        return pts\n+\n+    best_overall_pts = None\n+    best_overall_min = 0.0\n+    for restart in range(4):\n+        seed = 1234 + restart*997\n+        pts = init_points(seed)\n+        cur_min = min_area(pts)\n+        best_local_pts = [p for p in pts]\n+        best_local_min = cur_min\n+        step = STEP0\n+        temp = 1.0\n+        for it in range(ITER):\n+            idx = random.randrange(4, n)\n+            x, y = pts[idx]\n+            dx = random.gauss(0, step)\n+            dy = random.gauss(0, step)\n+            nx = x + dx\n+            ny = y + dy\n+            if nx < 0.0: nx = 0.0\n+            elif nx > 1.0: nx = 1.0\n+            if ny < 0.0: ny = 0.0\n+            elif ny > 1.0: ny = 1.0\n+            too_close = False\n+            for j, p in enumerate(pts):\n+                if j == idx: continue\n+                if abs(p[0]-nx) < 0.02 and abs(p[1]-ny) < 0.02:\n+                    too_close = True\n+                    break\n+            if too_close:\n+                continue\n+            old = pts[idx]\n+            pts[idx] = (nx, ny)\n+            new_min = min_area(pts)\n+            delta = new_min - cur_min\n+            if delta > 0 or random.random() < math.exp(delta/temp if temp>1e-12 else 0):\n+                cur_min = new_min\n+                if new_min > best_local_min:\n+                    best_local_min = new_min\n+                    best_local_pts = [p for p in pts]\n+            else:\n+                pts[idx] = old\n+            temp *= 0.999\n+            if it % 500 == 0:\n+                step *= 0.97\n+        step = 0.02\n+        for _ in range(2000):\n+            idx = random.randrange(4, n)\n+            x, y = pts[idx]\n+            nx = max(0.0, min(1.0, x + random.gauss(0, step)))\n+            ny = max(0.0, min(1.0, y + random.gauss(0, step)))\n+            old = pts[idx]\n+            pts[idx] = (nx, ny)\n+            new_min = min_area(pts)\n+            if new_min > cur_min:\n+                cur_min = new_min\n+                if new_min > best_local_min:\n+                    best_local_min = new_min\n+                    best_local_pts = [p for p in pts]\n+            else:\n+                pts[idx] = old\n+        if best_local_min > best_overall_min:\n+            best_overall_min = best_local_min\n+            best_overall_pts = best_local_pts\n+    return best_overall_pts\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "heilbronn",
+  "points": [
+   [
+    0.8,
+    0.5
+   ],
+   [
+    0.765636807695963,
+    0.6394169516131305
+   ],
+   [
+    0.6704194240193467,
+    0.7468951597680968
+   ],
+   [
+    0.536161004076597,
+    0.7978126622294162
+   ],
+   [
+    0.3936185338872394,
+    0.7805048728056244
+   ],
+   [
+    0.27544677554866964,
+    0.6989367974722386
+   ],
+   [
+    0.2087174547721844,
+    0.5717946992862672
+   ],
+   [
+    0.2087174547721844,
+    0.42820530071373275
+   ],
+   [
+    0.2754467755486696,
+    0.30106320252776153
+   ],
+   [
+    0.3936185338872392,
+    0.21949512719437558
+   ],
+   [
+    0.536161004076597,
+    0.20218733777058384
+   ],
+   [
+    0.6704194240193464,
+    0.25310484023190294
+   ],
+   [
+    0.765636807695963,
+    0.3605830483868695
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "heilbronn",
+  "points": [
+   [
+    0.0,
+    0.0
+   ],
+   [
+    1.0,
+    0.0
+   ],
+   [
+    1.0,
+    1.0
+   ],
+   [
+    0.0,
+    1.0
+   ],
+   [
+    0.7880725246306264,
+    0.3546597089778086
+   ],
+   [
+    0.0371688485875997,
+    0.5328752186814149
+   ],
+   [
+    0.9288135881069581,
+    0.5707877368208017
+   ],
+   [
+    0.21165220688024194,
+    0.1724471433046287
+   ],
+   [
+    0.5866209567539307,
+    0.9556570797999302
+   ],
+   [
+    0.41953295802381435,
+    0.7583642011533508
+   ],
+   [
+    0.8132954328970047,
+    0.8562181430892126
+   ],
+   [
+    0.4212493895793728,
+    0.05839362408738223
+   ],
+   [
+    0.14634270467137386,
+    0.7858079617234683
+   ]
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 15.6,
+ "model_gpu_memory_gb": 15.6,
+ "context_length": 32768,
+ "load_seconds": 56.9,
+ "median_call_seconds": 840.8,
+ "p90_call_seconds": 840.8,
+ "prompt_tokens_per_s": 143.0,
+ "gen_tokens_per_s": 10.7,
+ "mean_prompt_tokens": 1403,
+ "mean_gen_tokens": 7718,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

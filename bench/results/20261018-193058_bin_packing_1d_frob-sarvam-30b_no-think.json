@@ -1,0 +1,89 @@
+{
+ "schema": 2,
+ "example": "bin_packing_1d",
+ "model": "frob/sarvam:30b",
+ "variant": "no-think",
+ "model_size_gb": 19.6,
+ "model_params": "32.2B",
+ "started": "2026-10-18T19:30:58",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "d42083e",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.7942635036246238,
+ "best_score": 0.9486349206349206,
+ "improvement": 1.1943579382734097,
+ "llm_calls": 6,
+ "mean_llm_seconds": 155.4,
+ "attempts": 6,
+ "ok": 2,
+ "statuses": {
+  "edit_error": 4,
+  "ok": 2
+ },
+ "sweeps": 2,
+ "sweep_variants": 32,
+ "improvements": 1,
+ "minutes_to_best": 11.25,
+ "best_idea": "Sort items in decreasing order and use best\u2011fit decreasing to pack, then perform a limited local search of bin merging to reduce the number of bins.",
+ "progress": [
+  [
+   0.0,
+   0.7942635036246238
+  ],
+  [
+   11.25,
+   0.9486349206349206
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.7942635036246238,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 11.25,
+   "score": 0.9486349206349206,
+   "model": "frob/sarvam:30b",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "Sort items in decreasing order and use best\u2011fit decreasing to pack, then perform a limited local search of bin merging to reduce the number of bins."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -10,26 +10,66 @@\n import time\n \n # OMEGA-BLOCK-START\n+SORT_DECREASING = True\n+LOCAL_SEARCH_MAX_ITER = 10\n+MERGE_MAX_ATTEMPTS = 5\n+USE_TRIPLE_FILL = True\n+\n def pack(sizes, capacity):\n-    \"\"\"Return a list of bins; each bin is a list of item indices into sizes.\n+    \"\"\"Pack items into bins using decreasing size order and best\u2011fit, then local search merging.\"\"\"\n+    import time\n+    start_time = time.process_time()\n+    # Sort items by decreasing size if enabled\n+    if SORT_DECREASING:\n+        items = sorted(((sizes[i], i) for i in range(len(sizes))), key=lambda x: -x[0])\n+    else:\n+        items = ((sizes[i], i) for i in range(len(sizes)))\n \n-    sizes: list of ints, each between 1 and capacity; capacity: int bin capacity.\n-    Every item index must appear in exactly one bin and the sizes in a bin must sum\n-    to at most capacity. Fewer bins is better. The call has a CPU time limit of 2.0 s\n-    (time.process_time(); more than 1.5 x the limit makes the program invalid).\n-    Only the Python standard library may be used.\n+    # Pack using best\u2011fit decreasing\n+    bins = []\n+    bin_loads = []\n+    bin_items = []\n+    for size, idx in items:\n+        # Find the bin with the smallest load that can accommodate the item\n+        best_bin = None\n+        best_load = None\n+        for i, load in enumerate(bin_loads):\n+            if load + size <= capacity:\n+                if best_load is None or load < best_load:\n+                    best_bin = i\n+                    best_load = load\n+        if best_bin is not None:\n+            bin_items[best_bin].append(idx)\n+            bin_loads[best_bin] += size\n+        else:\n+            # Open a new bin\n+            bin_items.append([idx])\n+            bin_loads.append(size)\n+            bins.append(bin_items[-1])\n \n-    Current method: next fit (open a new bin whenever the next item does not fit).\n-    \"\"\"\n-    bins = []\n-    current, load = [], 0\n-    for i, s in enumerate(sizes):\n-        if load + s > capacity:\n-            bins.append(current)\n-            current, load = [], 0\n-        current.append(i)\n-        load += s\n-    if current:\n-        bins.append(current)\n+    # Local search: try to merge bins if possible\n+    if LOCAL_SEARCH_MAX_ITER > 0:\n+        # Compute current bin loads\n+        bin_loads_computed = [sum(sizes[i] for i in bin_i) for bin_i in bins]\n+        for attempt in range(MERGE_MAX_ATTEMPTS):\n+            if time.process_time() - start_time > 1.5:\n+                break\n+            merged = False\n+            # Try to merge any pair of bins that can be merged\n+            for i in range(len(bins)):\n+                for j in range(i + 1, len(bins)):\n+                    if bin_loads_computed[i] + bin_loads_computed[j] <= capacity:\n+                        # Merge j into i\n+                        bins[i].extend(bins[j])\n+                        del bins[j]\n+                        bin_loads_computed = [sum(sizes[k] for k in bin_i) for bin_i in bins]\n+                        merged = True\n+                        break\n+                if merged:\n+                    break\n+            if not merged:\n+                break\n+\n+    # Return the bins\n     return bins\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 18.9,
+ "model_gpu_memory_gb": 18.9,
+ "context_length": 32768,
+ "load_seconds": 91.0,
+ "median_call_seconds": 149.3,
+ "p90_call_seconds": 242.5,
+ "prompt_tokens_per_s": 1119.7,
+ "gen_tokens_per_s": 56.7,
+ "mean_prompt_tokens": 1990,
+ "mean_gen_tokens": 7845,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

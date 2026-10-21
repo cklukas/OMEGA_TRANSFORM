@@ -1,0 +1,115 @@
+{
+ "schema": 2,
+ "example": "max_cut",
+ "model": "richardyoung/frognano-4b-2609:latest",
+ "variant": "no-think",
+ "model_size_gb": 3.5,
+ "model_params": "4.3B",
+ "started": "2026-10-19T07:51:11",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "502fbf9",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.5121828962692699,
+ "best_score": 0.7377064630316138,
+ "improvement": 1.440318426103357,
+ "llm_calls": 31,
+ "mean_llm_seconds": 29.5,
+ "attempts": 31,
+ "ok": 16,
+ "statuses": {
+  "llm_error": 6,
+  "invalid": 4,
+  "ok": 16,
+  "edit_error": 5
+ },
+ "sweeps": 1,
+ "sweep_variants": 5,
+ "improvements": 3,
+ "minutes_to_best": 8.06,
+ "best_idea": "Fix the greedy initialization logic to correctly compute the optimal side for each unplaced node based on already-placed neighbors, rather than re-scanning all neighbors including unplaced ones, and s",
+ "progress": [
+  [
+   0.0,
+   0.5121828962692699
+  ],
+  [
+   2.86,
+   0.7223173733575122
+  ],
+  [
+   6.11,
+   0.7283707357953659
+  ],
+  [
+   8.06,
+   0.7377064630316138
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.5121828962692699,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 5.28,
+   "score": 0.7190674641686204,
+   "model": "richardyoung/frognano-4b-2609:latest",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the alternating split with a greedy initialization that assigns each node to the side maximizing cut weight with already placed nodes, followed by one-flip local search with incremental gain updates to leverage edge weights efficiently."
+  },
+  {
+   "minutes": 6.11,
+   "score": 0.7283707357953659,
+   "model": "richardyoung/frognano-4b-2609:latest",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the O(E) contribution recalculation inside the local search loop with an O(degree) incremental update that subtracts the flipped node's contribution and adds the flipped neighbors' contributions, drastically reducing the per-iteration cost for larger graphs like g400."
+  },
+  {
+   "minutes": 8.06,
+   "score": 0.7377064630316138,
+   "model": "richardyoung/frognano-4b-2609:latest",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Fix the greedy initialization logic to correctly compute the optimal side for each unplaced node based on already-placed neighbors, rather than re-scanning all neighbors including unplaced ones, and simplify the gain calculation to avoid redundant work during the greedy phase."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -10,6 +10,8 @@\n import time\n \n # OMEGA-BLOCK-START\n+import time\n+\n def cut(n, edges):\n     \"\"\"Return a list of n values, side[i] in {0, 1} for node i.\n \n@@ -19,7 +21,77 @@\n     time limit of 2.0 s (time.process_time(); more than 1.5 x the limit makes the program\n     invalid). Only the Python standard library may be used.\n \n-    Current method: alternate the sides by node index (ignores the edges entirely).\n+    Method: Greedy construction followed by one-flip local search with incremental gains.\n     \"\"\"\n-    return [i % 2 for i in range(n)]\n+    if n == 0:\n+        return []\n+\n+    # Build adjacency list with weights for O(E) access\n+    adj = [[] for _ in range(n)]\n+    for u, v, w in edges:\n+        adj[u].append((v, w))\n+        adj[v].append((u, w))\n+\n+    # Time limit check\n+    start_time = time.process_time()\n+    limit = 2.0\n+\n+    # Initialize sides to all 0\n+    side = [0] * n\n+    # Calculate initial cut weight\n+    cut_weight = 0\n+    for u, v, w in edges:\n+        if side[u] != side[v]:\n+            cut_weight += w\n+\n+    # Greedy construction: place nodes one by one. Only consider already placed neighbors.\n+    for i in range(1, n):\n+        # Only look at neighbors already placed (index < i)\n+        current_gain = 0\n+        for neighbor, w in adj[i]:\n+            if neighbor < i:\n+                if side[neighbor] != side[i]:\n+                    current_gain += w\n+        \n+        flip_gain = current_gain\n+        for neighbor, w in adj[i]:\n+            if neighbor < i:\n+                if side[neighbor] == side[i]:\n+                    flip_gain -= w\n+                else:\n+                    flip_gain += w\n+        \n+        if flip_gain > current_gain:\n+            side[i] ^= 1\n+            cut_weight += flip_gain - current_gain\n+\n+    # Local search with incremental updates\n+    improved = True\n+    while improved and (time.process_time() - start_time) < limit - 0.1:\n+        improved = False\n+        best_i = -1\n+        best_delta = -float('inf')\n+        \n+        for i in range(n):\n+            # Delta = (weight to same side) - (weight to diff side)\n+            # This is exactly the change in cut if we flip i\n+            sum_same = 0\n+            sum_diff = 0\n+            for neighbor, w in adj[i]:\n+                if side[neighbor] == side[i]:\n+                    sum_same += w\n+                else:\n+                    sum_diff += w\n+            \n+            delta = sum_same - sum_diff\n+            if delta > best_delta:\n+                best_delta = delta\n+                best_i = i\n+        \n+        if best_i >= 0 and best_delta > 0:\n+            side[best_i] ^= 1\n+            cut_weight += best_delta\n+            improved = True\n+\n+    return side\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 4.4,
+ "model_gpu_memory_gb": 4.4,
+ "context_length": 32768,
+ "load_seconds": 0.0,
+ "median_call_seconds": 27.8,
+ "p90_call_seconds": 46.0,
+ "prompt_tokens_per_s": 695.9,
+ "gen_tokens_per_s": 54.9,
+ "mean_prompt_tokens": 4235,
+ "mean_gen_tokens": 1057,
+ "stopped_calls": 6,
+ "provider": "ollama",
+ "cost_usd": 0
+}

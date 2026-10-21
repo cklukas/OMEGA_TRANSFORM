@@ -1,0 +1,364 @@
+{
+ "schema": 3,
+ "example": "circle_packing_26",
+ "model": "nemotron-3-nano:4b",
+ "variant": "no-think",
+ "model_size_gb": 2.9,
+ "model_params": "",
+ "started": "2026-10-21T11:51:33",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 1.6040642515667702,
+ "improvement": 1.0764795102445246,
+ "llm_calls": 79,
+ "mean_llm_seconds": 10.9,
+ "attempts": 79,
+ "ok": 23,
+ "statuses": {
+  "edit_error": 26,
+  "ok": 23,
+  "invalid": 24,
+  "duplicate": 5,
+  "llm_error": 1
+ },
+ "sweeps": 14,
+ "sweep_variants": 140,
+ "improvements": 1,
+ "minutes_to_best": 1.65,
+ "best_idea": "Reduce column spacing by 10% to allow larger circles near edges, increasing total radius sum.",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   1.65,
+   1.6040642515667702
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.65,
+   "score": 1.6040642515667702,
+   "model": "nemotron-3-nano:4b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Reduce column spacing by 10% to allow larger circles near edges, increasing total radius sum."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -9,7 +9,7 @@\n # OMEGA-BLOCK-START\n def construct_packing(n=26):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n-    cols = math.ceil(math.sqrt(n))\n+    cols = int(math.ceil(math.sqrt(n) * 0.9))\n     rows = math.ceil(n / cols)\n     centers = []\n     for k in range(n):\n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.083333,
+    0.1,
+    0.060545
+   ],
+   [
+    0.25,
+    0.1,
+    0.039234
+   ],
+   [
+    0.416667,
+    0.1,
+    0.034262
+   ],
+   [
+    0.583333,
+    0.1,
+    0.040566
+   ],
+   [
+    0.75,
+    0.1,
+    0.05694
+   ],
+   [
+    0.916667,
+    0.1,
+    0.080973
+   ],
+   [
+    0.083333,
+    0.3,
+    0.047978
+   ],
+   [
+    0.25,
+    0.3,
+    0.032893
+   ],
+   [
+    0.416667,
+    0.3,
+    0.029299
+   ],
+   [
+    0.583333,
+    0.3,
+    0.040366
+   ],
+   [
+    0.75,
+    0.3,
+    0.058083
+   ],
+   [
+    0.916667,
+    0.3,
+    0.076636
+   ],
+   [
+    0.083333,
+    0.5,
+    0.05004
+   ],
+   [
+    0.25,
+    0.5,
+    0.036525
+   ],
+   [
+    0.416667,
+    0.5,
+    0.03396
+   ],
+   [
+    0.583333,
+    0.5,
+    0.041209
+   ],
+   [
+    0.75,
+    0.5,
+    0.058085
+   ],
+   [
+    0.916667,
+    0.5,
+    0.076976
+   ],
+   [
+    0.083333,
+    0.7,
+    0.059259
+   ],
+   [
+    0.25,
+    0.7,
+    0.06822
+   ],
+   [
+    0.416667,
+    0.7,
+    0.065257
+   ],
+   [
+    0.583333,
+    0.7,
+    0.069461
+   ],
+   [
+    0.75,
+    0.7,
+    0.089736
+   ],
+   [
+    0.916667,
+    0.7,
+    0.07693
+   ],
+   [
+    0.083333,
+    0.9,
+    0.075758
+   ],
+   [
+    0.25,
+    0.9,
+    0.090909
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.1,
+    0.083333,
+    0.060545
+   ],
+   [
+    0.3,
+    0.083333,
+    0.035239
+   ],
+   [
+    0.5,
+    0.083333,
+    0.034316
+   ],
+   [
+    0.7,
+    0.083333,
+    0.044167
+   ],
+   [
+    0.9,
+    0.083333,
+    0.075758
+   ],
+   [
+    0.1,
+    0.25,
+    0.054709
+   ],
+   [
+    0.3,
+    0.25,
+    0.033026
+   ],
+   [
+    0.5,
+    0.25,
+    0.031992
+   ],
+   [
+    0.7,
+    0.25,
+    0.051159
+   ],
+   [
+    0.9,
+    0.25,
+    0.079365
+   ],
+   [
+    0.1,
+    0.416667,
+    0.054496
+   ],
+   [
+    0.3,
+    0.416667,
+    0.039311
+   ],
+   [
+    0.5,
+    0.416667,
+    0.039356
+   ],
+   [
+    0.7,
+    0.416667,
+    0.053539
+   ],
+   [
+    0.9,
+    0.416667,
+    0.077684
+   ],
+   [
+    0.1,
+    0.583333,
+    0.06189
+   ],
+   [
+    0.3,
+    0.583333,
+    0.047044
+   ],
+   [
+    0.5,
+    0.583333,
+    0.044306
+   ],
+   [
+    0.7,
+    0.583333,
+    0.054591
+   ],
+   [
+    0.9,
+    0.583333,
+    0.078475
+   ],
+   [
+    0.1,
+    0.75,
+    0.085885
+   ],
+   [
+    0.3,
+    0.75,
+    0.098239
+   ],
+   [
+    0.5,
+    0.75,
+    0.095176
+   ],
+   [
+    0.7,
+    0.75,
+    0.104824
+   ],
+   [
+    0.9,
+    0.75,
+    0.088191
+   ],
+   [
+    0.1,
+    0.916667,
+    0.080781
+   ]
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 11.6,
+ "model_gpu_memory_gb": 11.6,
+ "context_length": 32768,
+ "load_seconds": 9.2,
+ "median_call_seconds": 10.9,
+ "p90_call_seconds": 15.9,
+ "prompt_tokens_per_s": 683.6,
+ "gen_tokens_per_s": 62.7,
+ "mean_prompt_tokens": 3480,
+ "mean_gen_tokens": 352,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

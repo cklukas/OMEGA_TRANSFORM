@@ -1,0 +1,109 @@
+{
+ "schema": 2,
+ "example": "max_cut",
+ "model": "muse-glimmer:30b",
+ "variant": "no-think",
+ "model_size_gb": 18.2,
+ "model_params": "27.9B",
+ "started": "2026-10-19T09:10:38",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "502fbf9",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.5121828962692699,
+ "best_score": 0.758581853591047,
+ "improvement": 1.4810761138580422,
+ "llm_calls": 5,
+ "mean_llm_seconds": 196.3,
+ "attempts": 5,
+ "ok": 4,
+ "statuses": {
+  "timeout": 1,
+  "ok": 4
+ },
+ "sweeps": 1,
+ "sweep_variants": 16,
+ "improvements": 4,
+ "minutes_to_best": 16.46,
+ "best_idea": "start from a greedy construction that places nodes in random order to maximize immediate cut, then run improving one-flip passes with incremental time checks, and repeat the whole process with several",
+ "progress": [
+  [
+   0.0,
+   0.5121828962692699
+  ],
+  [
+   6.48,
+   0.7278394445626373
+  ],
+  [
+   13.07,
+   0.7411775762241133
+  ],
+  [
+   13.07,
+   0.7433978271565224
+  ],
+  [
+   16.46,
+   0.758581853591047
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.5121828962692699,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 6.48,
+   "score": 0.7278394445626373,
+   "model": "muse-glimmer:30b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "replace the trivial alternating split with a fast random-start greedy local search that repeatedly flips any node whose own-side weight exceeds its opposite-side weight, using adjacency lists and a process_time guard to stay within the limit."
+  },
+  {
+   "minutes": 16.46,
+   "score": 0.758581853591047,
+   "model": "muse-glimmer:30b",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "start from a greedy construction that places nodes in random order to maximize immediate cut, then run improving one-flip passes with incremental time checks, and repeat the whole process with several random restarts keeping the best cut found; this gives a better initial solution and escapes local optima that hurt the 200-node graph."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,7 +19,94 @@\n     time limit of 2.0 s (time.process_time(); more than 1.5 x the limit makes the program\n     invalid). Only the Python standard library may be used.\n \n-    Current method: alternate the sides by node index (ignores the edges entirely).\n+    Method: greedy construction + improving one-flip local search with multiple\n+    random restarts, keeping the best cut found within time.\n     \"\"\"\n-    return [i % 2 for i in range(n)]\n+    # build adjacency lists once\n+    adj = [[] for _ in range(n)]\n+    total_weight = 0\n+    for u, v, w in edges:\n+        adj[u].append((v, w))\n+        adj[v].append((u, w))\n+        total_weight += w\n+\n+    start = time.process_time()\n+    time_limit = 1.9\n+\n+    def cut_weight(side):\n+        c = 0\n+        for i in range(n):\n+            si = side[i]\n+            for nb, w in adj[i]:\n+                if nb > i and side[nb] != si:\n+                    c += w\n+        return c\n+\n+    def greedy_construct(rng):\n+        side = [None] * n\n+        order = list(range(n))\n+        rng.shuffle(order)\n+        for i in order:\n+            sum0 = 0  # weight to neighbors on side 0\n+            sum1 = 0  # weight to neighbors on side 1\n+            for nb, w in adj[i]:\n+                s = side[nb]\n+                if s is None:\n+                    continue\n+                if s == 0:\n+                    sum1 += w\n+                else:\n+                    sum0 += w\n+            # choose side giving larger immediate cut\n+            if sum0 > sum1:\n+                side[i] = 0\n+            elif sum1 > sum0:\n+                side[i] = 1\n+            else:\n+                side[i] = rng.randint(0, 1)\n+        return side\n+\n+    def improve(side, rng):\n+        nodes = list(range(n))\n+        improved = True\n+        while improved and time.process_time() - start < time_limit:\n+            improved = False\n+            rng.shuffle(nodes)\n+            for i in nodes:\n+                s = side[i]\n+                w_same = 0\n+                w_opp = 0\n+                for nb, w in adj[i]:\n+                    if side[nb] == s:\n+                        w_same += w\n+                    else:\n+                        w_opp += w\n+                if w_same > w_opp:\n+                    side[i] ^= 1\n+                    improved = True\n+        return side\n+\n+    best_side = None\n+    best_val = -1\n+    rng = random.Random(0)\n+    restart = 0\n+    # allow a few restarts within time budget\n+    while time.process_time() - start < time_limit:\n+        # vary seed per restart\n+        rng.seed(12345 + restart)\n+        side = greedy_construct(rng)\n+        side = improve(side, rng)\n+        val = cut_weight(side)\n+        if val > best_val:\n+            best_val = val\n+            best_side = side[:]\n+            # early exit if optimal\n+            if best_val == total_weight:\n+                break\n+        restart += 1\n+        # stop if little time left for another restart\n+        if time.process_time() - start > time_limit - 0.05:\n+            break\n+\n+    return best_side if best_side is not None else [0] * n\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 15.6,
+ "model_gpu_memory_gb": 15.6,
+ "context_length": 32768,
+ "load_seconds": 58.7,
+ "median_call_seconds": 199.0,
+ "p90_call_seconds": 227.0,
+ "prompt_tokens_per_s": 105.6,
+ "gen_tokens_per_s": 10.7,
+ "mean_prompt_tokens": 1757,
+ "mean_gen_tokens": 1803,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

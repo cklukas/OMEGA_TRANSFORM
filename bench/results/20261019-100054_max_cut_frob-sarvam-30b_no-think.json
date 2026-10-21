@@ -1,0 +1,101 @@
+{
+ "schema": 2,
+ "example": "max_cut",
+ "model": "frob/sarvam:30b",
+ "variant": "no-think",
+ "model_size_gb": 19.6,
+ "model_params": "32.2B",
+ "started": "2026-10-19T10:00:54",
+ "minutes_budget": 15.0,
+ "wall_minutes": 18.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "502fbf9",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.5121828962692699,
+ "best_score": 0.7407519357202818,
+ "improvement": 1.4462644908994504,
+ "llm_calls": 6,
+ "mean_llm_seconds": 185.3,
+ "attempts": 6,
+ "ok": 1,
+ "statuses": {
+  "edit_error": 5,
+  "ok": 1
+ },
+ "sweeps": 1,
+ "sweep_variants": 16,
+ "improvements": 2,
+ "minutes_to_best": 11.34,
+ "best_idea": "tuned GREEDY_RESTARTS=10, LOCAL_SEARCH_MAX_ITER=100, TIME_CHECK_INTERVAL=0.1, GREEDY_ORDER=random on top of: Use greedy construction with random ordering and one\u2011flip local search, with multiple rando",
+ "progress": [
+  [
+   0.0,
+   0.5121828962692699
+  ],
+  [
+   11.34,
+   0.7372206029846801
+  ],
+  [
+   11.34,
+   0.7407519357202818
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.5121828962692699,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 11.34,
+   "score": 0.7372206029846801,
+   "model": "frob/sarvam:30b",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "Use greedy construction with random ordering and one\u2011flip local search, with multiple random restarts, to improve the cut weight."
+  },
+  {
+   "minutes": 11.34,
+   "score": 0.7407519357202818,
+   "model": "frob/sarvam:30b",
+   "mode": "sweep/exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "tuned GREEDY_RESTARTS=10, LOCAL_SEARCH_MAX_ITER=100, TIME_CHECK_INTERVAL=0.1, GREEDY_ORDER=random on top of: Use greedy construction with random ordering and one\u2011flip local search, with multiple random restarts, to improve the cut weight."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -11,15 +11,90 @@\n \n # OMEGA-BLOCK-START\n def cut(n, edges):\n-    \"\"\"Return a list of n values, side[i] in {0, 1} for node i.\n+    # constants\n+    GREEDY_RESTARTS = 10\n+    LOCAL_SEARCH_MAX_ITER = 100\n+    TIME_CHECK_INTERVAL = 0.1\n+    GREEDY_ORDER = 'random'\n \n-    n: number of nodes (0..n-1); edges: list of (u, v, w) with 0 <= u < v < n, no\n-    duplicate pairs, integer weight 1 <= w <= 10. The cut weight is the sum of w over\n-    edges whose endpoints are on different sides; larger is better. The call has a CPU\n-    time limit of 2.0 s (time.process_time(); more than 1.5 x the limit makes the program\n-    invalid). Only the Python standard library may be used.\n+    # adjacency list\n+    adj = [[] for _ in range(n)]\n+    for u, v, w in edges:\n+        adj[u].append((v, w))\n+        adj[v].append((u, w))\n \n-    Current method: alternate the sides by node index (ignores the edges entirely).\n-    \"\"\"\n-    return [i % 2 for i in range(n)]\n+    best_assignment = None\n+    best_cut_weight = 0\n+    start_time = time.process_time()\n+\n+    # compute cut weight for a given assignment\n+    def compute_cut_weight(assign):\n+        total = 0\n+        for u, v, w in edges:\n+            if assign[u] != assign[v]:\n+                total += w\n+        return total\n+\n+    # main loop with restarts\n+    for restart in range(GREEDY_RESTARTS):\n+        # check time limit\n+        if time.process_time() - start_time > 1.5:\n+            break\n+\n+        assignment = [-1] * n\n+        unassigned = list(range(n))\n+        if GREEDY_ORDER == \"random\":\n+            random.shuffle(unassigned)\n+\n+        # greedy assignment\n+        for node in unassigned:\n+            gain0 = 0\n+            gain1 = 0\n+            for neighbor, w in adj[node]:\n+                if assignment[neighbor] == 1:\n+                    gain0 += w\n+                else:\n+                    gain1 += w\n+            assign_side = 0 if gain0 >= gain1 else 1\n+            assignment[node] = assign_side\n+\n+        # one\u2011flip local search\n+        for _ in range(LOCAL_SEARCH_MAX_ITER):\n+            if time.process_time() - start_time > 1.5:\n+                break\n+            cut_weight = compute_cut_weight(assignment)\n+            best_delta = 0\n+            best_node = -1\n+            for i in range(n):\n+                if assignment[i] == -1:\n+                    continue\n+                delta = 0\n+                for neighbor, w in adj[i]:\n+                    if assignment[neighbor] == assignment[i]:\n+                        delta += w\n+                    else:\n+                        delta -= w\n+                if delta > best_delta:\n+                    best_delta = delta\n+                    best_node = i\n+            if best_delta > 0:\n+                assignment[best_node] = 1 - assignment[best_node]\n+            else:\n+                break\n+\n+        # after local search, evaluate cut\n+        final_cut = compute_cut_weight(assignment)\n+        if final_cut > best_cut_weight:\n+            best_cut_weight = final_cut\n+            best_assignment = assignment[:]\n+\n+    # fallback if no restart performed\n+    if best_assignment is None:\n+        best_assignment = [0] * n\n+        best_cut_weight = 0\n+        for u, v, w in edges:\n+            if best_assignment[u] != best_assignment[v]:\n+                best_cut_weight += w\n+\n+    return best_assignment\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 18.9,
+ "model_gpu_memory_gb": 18.9,
+ "context_length": 32768,
+ "load_seconds": 64.5,
+ "median_call_seconds": 163.5,
+ "p90_call_seconds": 277.3,
+ "prompt_tokens_per_s": 1276.9,
+ "gen_tokens_per_s": 43.1,
+ "mean_prompt_tokens": 1951,
+ "mean_gen_tokens": 7460,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

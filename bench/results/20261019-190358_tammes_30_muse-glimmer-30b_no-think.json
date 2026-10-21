@@ -1,0 +1,96 @@
+{
+ "schema": 2,
+ "example": "tammes_30",
+ "model": "muse-glimmer:30b",
+ "variant": "no-think",
+ "model_size_gb": 18.2,
+ "model_params": "27.9B",
+ "started": "2026-10-19T19:03:58",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "502fbf9",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 3.2013569883368893,
+ "best_score": 35.10613281606086,
+ "improvement": 10.966016268713147,
+ "llm_calls": 6,
+ "mean_llm_seconds": 160.9,
+ "attempts": 6,
+ "ok": 6,
+ "statuses": {
+  "ok": 6
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 3,
+ "minutes_to_best": 14.27,
+ "best_idea": "replace the random uniform start with a deterministic Fibonacci golden-spiral initialization followed by stochastic hill-climbing on the minimum angle, perturbing points on the tangent plane and keepi",
+ "progress": [
+  [
+   0.0,
+   3.2013569883368893
+  ],
+  [
+   3.08,
+   10.494478406359622
+  ],
+  [
+   4.4,
+   32.74023108183817
+  ],
+  [
+   14.27,
+   35.10613281606086
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.2013569883368893,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 14.27,
+   "score": 35.10613281606086,
+   "model": "muse-glimmer:30b",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "replace the random uniform start with a deterministic Fibonacci golden-spiral initialization followed by stochastic hill-climbing on the minimum angle, perturbing points on the tangent plane and keeping only moves that increase the smallest pairwise angle."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -10,18 +10,83 @@\n     \"\"\"Return a list of n points (x, y, z) on the unit sphere.\n \n     Vectors need not be normalized (the evaluator normalizes them), but none may be\n-    zero. The score is the minimum angle in degrees between any two points. This\n-    start draws uniformly random points with a fixed seed, so some pairs end up\n-    close together.\n+    zero. The score is the minimum angle in degrees between any two points. Start\n+    with a Fibonacci golden-spiral layout and improve it by stochastic hill climbing\n+    on the minimum angle.\n     \"\"\"\n-    rng = random.Random(1)\n+    # Fibonacci golden-spiral start\n+    golden_angle = math.pi * (3.0 - math.sqrt(5.0))\n     points = []\n-    for _ in range(n):\n-        z = rng.uniform(-1.0, 1.0)\n-        phi = rng.uniform(0.0, 2 * math.pi)\n-        s = math.sqrt(1.0 - z * z)\n-        points.append((s * math.cos(phi), s * math.sin(phi), z))\n-    return points\n+    for i in range(n):\n+        y = 1.0 - (2.0 * i + 1.0) / n\n+        radius = math.sqrt(max(0.0, 1.0 - y * y))\n+        theta = golden_angle * i\n+        x = radius * math.cos(theta)\n+        z = radius * math.sin(theta)\n+        points.append([x, y, z])\n+\n+    def min_angle_deg(pts):\n+        best = 180.0\n+        for i in range(n):\n+            xi, yi, zi = pts[i]\n+            for j in range(i + 1, n):\n+                xj, yj, zj = pts[j]\n+                dot = xi * xj + yi * yj + zi * zj\n+                if dot > 1.0:\n+                    dot = 1.0\n+                elif dot < -1.0:\n+                    dot = -1.0\n+                ang = math.degrees(math.acos(dot))\n+                if ang < best:\n+                    best = ang\n+                    if best < 1e-12:\n+                        return best\n+        return best\n+\n+    rng = random.Random(42)\n+    STEP_INIT = 0.4\n+    ITERATIONS = 4000\n+    step = STEP_INIT\n+    best_min = min_angle_deg(points)\n+\n+    def perturb_point(p, delta):\n+        # random tangent direction\n+        vx = rng.uniform(-1.0, 1.0)\n+        vy = rng.uniform(-1.0, 1.0)\n+        vz = rng.uniform(-1.0, 1.0)\n+        px, py, pz = p\n+        dot = vx * px + vy * py + vz * pz\n+        tx = vx - dot * px\n+        ty = vy - dot * py\n+        tz = vz - dot * pz\n+        norm = math.sqrt(tx * tx + ty * ty + tz * tz)\n+        if norm < 1e-12:\n+            return p\n+        tx /= norm\n+        ty /= norm\n+        tz /= norm\n+        c = math.cos(delta)\n+        s_ = math.sin(delta)\n+        nx = px * c + tx * s_\n+        ny = py * c + ty * s_\n+        nz = pz * c + tz * s_\n+        return [nx, ny, nz]\n+\n+    for it in range(ITERATIONS):\n+        i = rng.randrange(n)\n+        p_old = points[i][:]\n+        delta = step * rng.uniform(0.5, 1.5)\n+        p_new = perturb_point(p_old, delta)\n+        points[i] = p_new\n+        cur_min = min_angle_deg(points)\n+        if cur_min > best_min:\n+            best_min = cur_min\n+        else:\n+            points[i] = p_old\n+        # slowly shrink step\n+        step *= 0.9995\n+\n+    return [(p[0], p[1], p[2]) for p in points]\n # OMEGA-BLOCK-END\n \n \n",
+ "error": "",
+ "model_memory_gb": 15.9,
+ "model_gpu_memory_gb": 15.9,
+ "context_length": 32768,
+ "load_seconds": 55.9,
+ "median_call_seconds": 187.1,
+ "p90_call_seconds": 205.2,
+ "prompt_tokens_per_s": 105.0,
+ "gen_tokens_per_s": 10.9,
+ "mean_prompt_tokens": 1978,
+ "mean_gen_tokens": 1450,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

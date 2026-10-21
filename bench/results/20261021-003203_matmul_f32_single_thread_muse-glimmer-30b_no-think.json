@@ -1,0 +1,103 @@
+{
+ "schema": 3,
+ "example": "matmul_f32_single_thread",
+ "model": "muse-glimmer:30b",
+ "variant": "no-think",
+ "model_size_gb": 18.2,
+ "model_params": "27.9B",
+ "started": "2026-10-21T00:32:03",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.76412,
+ "best_score": 25.4887,
+ "improvement": 14.44839353331973,
+ "llm_calls": 6,
+ "mean_llm_seconds": 162.0,
+ "attempts": 6,
+ "ok": 5,
+ "statuses": {
+  "ok": 5,
+  "duplicate": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 2,
+ "minutes_to_best": 5.37,
+ "best_idea": "switch to i-k-j loop order and zero C first so the inner j loop streams contiguous C and B rows, improving cache reuse and enabling vectorization.",
+ "progress": [
+  [
+   0.0,
+   1.76412
+  ],
+  [
+   4.07,
+   21.3965
+  ],
+  [
+   5.37,
+   25.4887
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.76412,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 5.37,
+   "score": 25.4887,
+   "model": "muse-glimmer:30b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "switch to i-k-j loop order and zero C first so the inner j loop streams contiguous C and B rows, improving cache reuse and enabling vectorization."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -24,11 +24,17 @@\n // Computes C = A * B on the calling thread. C is NOT zeroed by the caller.\n // n is any size from 1 to 2048.\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+    std::memset(C, 0, sizeof(float) * (size_t)n * n);\n+    for (int i = 0; i < n; ++i) {\n+        float* C_row = C + i * n;\n+        const float* A_row = A + i * n;\n+        for (int k = 0; k < n; ++k) {\n+            float a = A_row[k];\n+            const float* B_row = B + k * n;\n+            for (int j = 0; j < n; ++j) {\n+                C_row[j] += a * B_row[j];\n+            }\n         }\n+    }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 768,
+  "cores": "one core, CPU time"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 768,
+  "cores": "one core, CPU time"
+ },
+ "error": "",
+ "model_memory_gb": 15.6,
+ "model_gpu_memory_gb": 15.6,
+ "context_length": 32768,
+ "load_seconds": 52.1,
+ "median_call_seconds": 131.6,
+ "p90_call_seconds": 294.6,
+ "prompt_tokens_per_s": 107.3,
+ "gen_tokens_per_s": 10.1,
+ "mean_prompt_tokens": 2877,
+ "mean_gen_tokens": 1279,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

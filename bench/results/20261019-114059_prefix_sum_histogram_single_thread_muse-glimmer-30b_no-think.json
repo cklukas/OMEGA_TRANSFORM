@@ -1,0 +1,104 @@
+{
+ "schema": 2,
+ "example": "prefix_sum_histogram_single_thread",
+ "model": "muse-glimmer:30b",
+ "variant": "no-think",
+ "model_size_gb": 18.2,
+ "model_params": "27.9B",
+ "started": "2026-10-19T11:40:59",
+ "minutes_budget": 15.0,
+ "wall_minutes": 18.7,
+ "omega_version": "0.1.0",
+ "omega_commit": "502fbf9",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 4.69098,
+ "best_score": 14.3807,
+ "improvement": 3.0656067602078885,
+ "llm_calls": 6,
+ "mean_llm_seconds": 180.6,
+ "attempts": 6,
+ "ok": 6,
+ "statuses": {
+  "ok": 6
+ },
+ "sweeps": 2,
+ "sweep_variants": 19,
+ "improvements": 3,
+ "minutes_to_best": 12.22,
+ "best_idea": "tuned K=16 on top of: break the hot histogram read-modify-write dependency by accumulating counts into K private uint32_t sub-histograms indexed by i%K and merging them after the scan, removing the se",
+ "progress": [
+  [
+   0.0,
+   4.69098
+  ],
+  [
+   4.18,
+   12.1988
+  ],
+  [
+   9.16,
+   13.9738
+  ],
+  [
+   12.22,
+   14.3807
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 4.69098,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 12.22,
+   "score": 12.4475,
+   "model": "muse-glimmer:30b",
+   "mode": "explore/diff/tune",
+   "status": "ok",
+   "idea": "break the hot histogram read-modify-write dependency by accumulating counts into K private uint32_t sub-histograms indexed by i%K and merging them after the scan, removing the serial store-load chain on hot bins while keeping the prefix sum in a register."
+  },
+  {
+   "minutes": 12.22,
+   "score": 14.3807,
+   "model": "muse-glimmer:30b",
+   "mode": "sweep/explore/diff/tune",
+   "status": "ok",
+   "idea": "tuned K=16 on top of: break the hot histogram read-modify-write dependency by accumulating counts into K private uint32_t sub-histograms indexed by i%K and merging them after the scan, removing the serial store-load chain on hot bins while keeping the prefix sum in a register."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -28,12 +28,36 @@\n // hist is zeroed by the caller. n is any size from 0 to 20'000'000; the sums\n // never overflow int64.\n extern \"C\" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, uint64_t* hist) {\n-    for (int b = 0; b < 256; ++b) hist[b] = 0;\n+    constexpr int K = 16;\n+    uint32_t sub[K][256];\n+    std::memset(sub, 0, sizeof(sub));\n     int64_t sum = 0;\n-    for (size_t i = 0; i < n; ++i) {\n-        sum += in[i];\n+    size_t i = 0;\n+    size_t nK = n & ~(size_t)(K - 1);\n+    for (; i < nK; i += K) {\n+        int64_t s = sum;\n+        // unrolled block of K\n+        for (int k = 0; k < K; ++k) {\n+            size_t idx = i + k;\n+            int64_t v = in[idx];\n+            s += v;\n+            out[idx] = s;\n+            uint8_t b = (uint8_t)(v & 255);\n+            sub[k][b] += 1u;\n+        }\n+        sum = s;\n+    }\n+    for (; i < n; ++i) {\n+        int64_t v = in[i];\n+        sum += v;\n         out[i] = sum;\n-        hist[in[i] & 255]++;\n+        uint8_t b = (uint8_t)(v & 255);\n+        sub[i & (K - 1)][b] += 1u;\n+    }\n+    for (int b = 0; b < 256; ++b) {\n+        uint64_t acc = 0;\n+        for (int k = 0; k < K; ++k) acc += sub[k][b];\n+        hist[b] = acc;\n     }\n }\n // OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 15.6,
+ "model_gpu_memory_gb": 15.6,
+ "context_length": 32768,
+ "load_seconds": 59.9,
+ "median_call_seconds": 183.6,
+ "p90_call_seconds": 244.6,
+ "prompt_tokens_per_s": 102.7,
+ "gen_tokens_per_s": 10.1,
+ "mean_prompt_tokens": 3871,
+ "mean_gen_tokens": 1333,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

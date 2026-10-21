@@ -1,0 +1,127 @@
+{
+ "schema": 3,
+ "example": "prefix_sum_histogram_single_thread",
+ "model": "nemotron-3-nano:30b-a3b-mlx",
+ "variant": "think",
+ "model_size_gb": 18.3,
+ "model_params": "",
+ "started": "2026-10-21T19:23:57",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 4.88938,
+ "best_score": 10.6298,
+ "improvement": 2.174058878630828,
+ "llm_calls": 7,
+ "mean_llm_seconds": 134.6,
+ "attempts": 7,
+ "ok": 4,
+ "statuses": {
+  "ok": 4,
+  "llm_error": 1,
+  "invalid": 1,
+  "compile_error": 1
+ },
+ "sweeps": 2,
+ "sweep_variants": 19,
+ "improvements": 2,
+ "minutes_to_best": 15.96,
+ "best_idea": "tuned BLOCK=39.32, SUB=8 on top of: Replace the single\u2011pass atomic histogram update with 8 sub\u2011histograms indexed by iteration modulo 8 and process the prefix sum in 32\u2011element blocks to break store\u2011t",
+ "progress": [
+  [
+   0.0,
+   4.88938
+  ],
+  [
+   10.7,
+   10.4548
+  ],
+  [
+   15.96,
+   10.6298
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 4.88938,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 15.96,
+   "score": 9.81234,
+   "model": "nemotron-3-nano:30b-a3b-mlx",
+   "mode": "explore/diff/refine",
+   "status": "ok",
+   "idea": "Replace the single\u2011pass atomic histogram update with 8 sub\u2011histograms indexed by iteration modulo 8 and process the prefix sum in 32\u2011element blocks to break store\u2011to\u2011load dependencies and reduce latency."
+  },
+  {
+   "minutes": 15.96,
+   "score": 10.6298,
+   "model": "nemotron-3-nano:30b-a3b-mlx",
+   "mode": "sweep/explore/diff/refine",
+   "status": "ok",
+   "idea": "tuned BLOCK=39.32, SUB=8 on top of: Replace the single\u2011pass atomic histogram update with 8 sub\u2011histograms indexed by iteration modulo 8 and process the prefix sum in 32\u2011element blocks to break store\u2011to\u2011load dependencies and reduce latency."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -28,12 +28,32 @@\n // hist is zeroed by the caller. n is any size from 0 to 20'000'000; the sums\n // never overflow int64.\n extern \"C\" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, uint64_t* hist) {\n-    for (int b = 0; b < 256; ++b) hist[b] = 0;\n-    int64_t sum = 0;\n-    for (size_t i = 0; i < n; ++i) {\n-        sum += in[i];\n-        out[i] = sum;\n-        hist[in[i] & 255]++;\n+    constexpr int SUB = 8;\n+    constexpr size_t BLOCK = 39.31777500274912;\n+    uint32_t sub_hist[SUB][256] = {};\n+    int64_t global_sum = 0;\n+    size_t i = 0;\n+    while (i < n) {\n+        size_t block_end = i + BLOCK;\n+        if (block_end > n) block_end = n;\n+        int64_t block_total = 0;\n+        int64_t partial = 0;\n+        for (size_t j = i; j < block_end; ++j) {\n+            int64_t v = in[j];\n+            block_total += v;\n+            partial += v;\n+            out[j] = global_sum + partial;\n+            uint8_t low = static_cast<uint8_t>(v & 255);\n+            int sub = static_cast<int>(j & (SUB-1));\n+            sub_hist[sub][low]++;\n+        }\n+        global_sum += block_total;\n+        i = block_end;\n+    }\n+    for (int b = 0; b < 256; ++b) {\n+        uint64_t total = 0;\n+        for (int s = 0; s < SUB; ++s) total += sub_hist[s][b];\n+        hist[b] = total;\n     }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "best_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 19.7,
+ "model_gpu_memory_gb": 19.7,
+ "context_length": 32768,
+ "load_seconds": 111.7,
+ "median_call_seconds": 86.2,
+ "p90_call_seconds": 340.9,
+ "prompt_tokens_per_s": 407.0,
+ "gen_tokens_per_s": 55.5,
+ "mean_prompt_tokens": 4129,
+ "mean_gen_tokens": 5136,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

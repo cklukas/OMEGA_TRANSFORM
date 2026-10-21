@@ -1,0 +1,104 @@
+{
+ "schema": 2,
+ "example": "tsp_heuristic",
+ "model": "richardyoung/frognano-4b-2609:latest",
+ "variant": "no-think",
+ "model_size_gb": 3.5,
+ "model_params": "4.3B",
+ "started": "2026-10-19T20:09:49",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "502fbf9",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.0,
+ "best_score": 1.001289967386633,
+ "improvement": 1.001289967386633,
+ "llm_calls": 26,
+ "mean_llm_seconds": 34.4,
+ "attempts": 26,
+ "ok": 8,
+ "statuses": {
+  "edit_error": 3,
+  "ok": 8,
+  "llm_error": 4,
+  "invalid": 10,
+  "timeout": 1
+ },
+ "sweeps": 4,
+ "sweep_variants": 64,
+ "improvements": 2,
+ "minutes_to_best": 5.47,
+ "best_idea": "tuned GRID_SIZE=114 on top of: Replace the naive nearest-neighbor construction with a fast grid-based spatial index to precompute the 16 nearest neighbors for each city, then build the initial tour gr",
+ "progress": [
+  [
+   0.0,
+   1.0
+  ],
+  [
+   1.94,
+   1.0005825915459299
+  ],
+  [
+   5.47,
+   1.001289967386633
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.0,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 5.47,
+   "score": 1.0005825915459299,
+   "model": "richardyoung/frognano-4b-2609:latest",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "Replace the naive nearest-neighbor construction with a fast grid-based spatial index to precompute the 16 nearest neighbors for each city, then build the initial tour greedily using these candidates to significantly improve the base tour quality before local search."
+  },
+  {
+   "minutes": 5.47,
+   "score": 1.001289967386633,
+   "model": "richardyoung/frognano-4b-2609:latest",
+   "mode": "sweep/exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "tuned GRID_SIZE=114 on top of: Replace the naive nearest-neighbor construction with a fast grid-based spatial index to precompute the 16 nearest neighbors for each city, then build the initial tour greedily using these candidates to significantly improve the base tour quality before local search."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -10,6 +10,8 @@\n import time\n \n # OMEGA-BLOCK-START\n+GRID_SIZE = 114\n+\n def solve(points, time_limit):\n     \"\"\"Return a closed tour through all cities as a permutation of range(len(points)).\n \n@@ -18,16 +20,71 @@\n     makes the program invalid). The tour returns from the last city to the first.\n     Only the Python standard library may be used.\n \n-    Current method: plain nearest-neighbour construction starting at city 0.\n+    Current method: uses a grid-based spatial index to find the 16 nearest neighbors\n+    for each city, then builds the initial tour greedily using these candidates.\n     \"\"\"\n     n = len(points)\n+    if n == 0:\n+        return []\n+    if n == 1:\n+        return [0]\n+\n+    # Precompute grid cells for fast nearest neighbor lookup\n+    # cells[c][g_x][g_y] = list of cities in that cell\n+    cells = [[[] for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]\n+    for i, (px, py) in enumerate(points):\n+        gx = int(px * GRID_SIZE)\n+        gy = int(py * GRID_SIZE)\n+        if 0 <= gx < GRID_SIZE and 0 <= gy < GRID_SIZE:\n+            cells[gx][gy].append(i)\n+\n+    def get_neighbors(idx):\n+        \"\"\"Return up to 16 closest cities to idx using grid lookup.\"\"\"\n+        px, py = points[idx]\n+        gx = int(px * GRID_SIZE)\n+        gy = int(py * GRID_SIZE)\n+        neighbors = []\n+        # Check surrounding 3x3 cells\n+        for dx in range(-1, 2):\n+            for dy in range(-1, 2):\n+                nx, ny = gx + dx, gy + dy\n+                if 0 <= nx < GRID_SIZE and 0 <= ny < GRID_SIZE:\n+                    for c in cells[nx][ny]:\n+                        if c == idx:\n+                            continue\n+                        neighbors.append(c)\n+        return neighbors[:16]  # Limit to avoid too many candidates\n+\n+    # Build initial tour using greedy selection from neighbor candidates\n     unvisited = set(range(1, n))\n     tour = [0]\n     x, y = points[0]\n+\n+    # Precompute squared distances to avoid sqrt in loop\n+    def dist_sq(a, b):\n+        return (points[a][0] - points[b][0])**2 + (points[a][1] - points[b][1])**2\n+\n     while unvisited:\n-        nxt = min(unvisited, key=lambda j: (points[j][0] - x) ** 2 + (points[j][1] - y) ** 2)\n-        unvisited.remove(nxt)\n-        tour.append(nxt)\n-        x, y = points[nxt]\n+        best_nxt = None\n+        best_d = float('inf')\n+        if not unvisited:\n+            # Should not happen inside loop but safety check\n+            break\n+        candidates = get_neighbors(tour[-1])\n+        # Filter candidates that are still unvisited\n+        for c in candidates:\n+            if c in unvisited:\n+                d = dist_sq(tour[-1], c)\n+                if d < best_d:\n+                    best_d = d\n+                    best_nxt = c\n+        if best_nxt is None:\n+            # Fallback if no neighbors (shouldn't happen with grid)\n+            best_nxt = min(unvisited, key=lambda j: dist_sq(tour[-1], j))\n+        \n+        unvisited.remove(best_nxt)\n+        tour.append(best_nxt)\n+        x, y = points[best_nxt]\n+\n     return tour\n # OMEGA-BLOCK-END\n",
+ "error": "",
+ "model_memory_gb": 4.4,
+ "model_gpu_memory_gb": 4.4,
+ "context_length": 32768,
+ "load_seconds": 11.0,
+ "median_call_seconds": 34.8,
+ "p90_call_seconds": 59.4,
+ "prompt_tokens_per_s": 703.0,
+ "gen_tokens_per_s": 50.9,
+ "mean_prompt_tokens": 3750,
+ "mean_gen_tokens": 1330,
+ "stopped_calls": 4,
+ "provider": "ollama",
+ "cost_usd": 0
+}
