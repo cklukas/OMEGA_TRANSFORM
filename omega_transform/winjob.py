@@ -36,23 +36,21 @@ import sys
 import time
 
 
-def _user32_free_ctypes() -> None:
-    """In the Windows sandbox, use the copy of ``_ctypes`` that does not need user32
-    (``winsandbox.user32_free_ctypes``): processes started with ``-I`` ignore the
-    PYTHONPATH that points other processes to it."""
-    path = os.environ.get("OMEGA_CTYPES")
-    if path and "_ctypes" not in sys.modules:
+def _setup_container() -> None:
+    """In the Windows sandbox, load the ``_ctypes`` that does not need user32 before
+    ctypes (``wincontainer.py``, loaded by path like this file)."""
+    if os.environ.get("OMEGA_APPCONTAINER") and "omega_wincontainer" not in sys.modules:
         import importlib.util
-        from importlib.machinery import ExtensionFileLoader
-        file = os.path.join(path, "_ctypes.pyd")
-        spec = importlib.util.spec_from_file_location("_ctypes", file,
-                                                      loader=ExtensionFileLoader("_ctypes", file))
+        spec = importlib.util.spec_from_file_location(
+            "omega_wincontainer", os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                               "wincontainer.py"))
         module = importlib.util.module_from_spec(spec)
+        sys.modules["omega_wincontainer"] = module
         spec.loader.exec_module(module)
-        sys.modules["_ctypes"] = module
+        module.setup()
 
 
-_user32_free_ctypes()
+_setup_container()
 
 import ctypes  # noqa: E402
 from ctypes import wintypes  # noqa: E402

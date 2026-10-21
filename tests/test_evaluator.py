@@ -46,6 +46,15 @@ class SandboxTest(unittest.TestCase):
             "import ctypes\nreturn ctypes.sizeof(ctypes.c_int32) + 1"), "c")
         self.assertEqual((r.status, r.score), ("ok", 5))
 
+    def test_candidate_can_use_multiprocessing(self):
+        # Workers import the candidate's own function by module name; on Windows their
+        # pipes must lie in the container's namespace.
+        code = ("def square(x):\n    return x * x\n\n\n" + program(
+            "import multiprocessing\nwith multiprocessing.Pool(2) as pool:\n"
+            "    return sum(pool.map(square, [1, 2, 3]))"))
+        r = self.ev.evaluate(code, "m")
+        self.assertEqual((r.status, r.score), ("ok", 14), r.feedback)
+
     def test_write_outside_job_dir_denied(self):
         r = self.ev.evaluate(program(f"open({str(self.outside)!r}, 'w').write('x')\nreturn 1"), "o")
         self.assertNotEqual(r.status, "ok")

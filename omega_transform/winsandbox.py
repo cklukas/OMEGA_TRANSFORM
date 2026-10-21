@@ -46,9 +46,15 @@ container has no access to a window station; we give it none). Python's
 ``_ctypes`` links it only indirectly: it imports one COM helper,
 ProgIDFromCLSID, from ole32.dll, and ole32 links user32. ``user32_free_ctypes``
 makes a copy of ``_ctypes`` that takes the same function from combase.dll, which
-does not link user32; containers load that copy (``OMEGA_CTYPES``, read by
-``winjob.py``, and PYTHONPATH). Python's ``_ssl`` and ``_hashlib`` (OpenSSL)
-still need user32 and do not load; hashlib falls back to its own algorithms.
+does not link user32. Python's ``_ssl`` and ``_hashlib`` (OpenSSL) still need
+user32 and do not load; hashlib falls back to its own algorithms.
+
+Python in a container sets itself up with ``wincontainer.py``: it loads that copy
+of ``_ctypes`` and moves multiprocessing's named pipes into the container's
+namespace. Processes find it through the ``sitecustomize.py`` in
+``winsandbox_site``, which this wrapper puts first on PYTHONPATH (with the copy
+of ``_ctypes``); those started with ``-I`` call it themselves (the candidate
+runner, and ``winjob.py``).
 
 A container creates named pipes only in its own namespace (``pipe_dir``); the
 runner creates its pipes there, with an access list that admits the evaluator
@@ -624,11 +630,16 @@ def run(argv: list[str], workdir: str, candidate: bool) -> int:
     # processes started inside the container keep theirs. So a stub starts the program
     # inside, with the values of this environment (the job directory) restored.
     os.environ[_KEEP] = json.dumps({k: os.environ[k] for k in _REDIRECTED if k in os.environ})
+    # Python in the container sets itself up (wincontainer.py): through the
+    # sitecustomize.py of winsandbox_site, or itself if started with -I.
+    os.environ["OMEGA_APPCONTAINER"] = "1"
+    first = [os.path.join(os.path.dirname(os.path.abspath(__file__)), "winsandbox_site")]
     ctypes_dir = user32_free_ctypes()
-    if ctypes_dir:  # found first by Python, also in processes run with -I (winjob.py)
+    if ctypes_dir:  # found first by Python
         os.environ[CTYPES_ENV] = ctypes_dir
-        os.environ["PYTHONPATH"] = os.pathsep.join(
-            [ctypes_dir] + [p for p in [os.environ.get("PYTHONPATH")] if p])
+        first.append(ctypes_dir)
+    os.environ["PYTHONPATH"] = os.pathsep.join(
+        first + [p for p in [os.environ.get("PYTHONPATH")] if p])
     exe = sys.executable
     cmdline = ctypes.create_unicode_buffer(subprocess.list2cmdline(
         [exe, "-I", "-S", os.path.abspath(__file__), "--inside", "--"] + argv))

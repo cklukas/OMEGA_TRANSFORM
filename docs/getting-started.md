@@ -53,11 +53,15 @@ connect an evaluator to its candidate's process. Notes:
   that takes that function from `combase.dll` instead. The copy is made once,
   under `%LOCALAPPDATA%\omega_transform\ctypes`. Python's OpenSSL modules
   (`ssl`, and the OpenSSL algorithms of `hashlib`) do not load in a container;
-  `hashlib` falls back to its own SHA-2, SHA-3, BLAKE2 and MD5. A Python
+  `hashlib` falls back to its own SHA-2, SHA-3, BLAKE2 and MD5.
+  `multiprocessing` works: a container may create named pipes only in its
+  own namespace, so the sandbox moves multiprocessing's pipes under
+  `\\.\pipe\LOCAL\` (`omega_transform/wincontainer.py`, applied through a
+  `sitecustomize.py` that the sandbox puts first on PYTHONPATH). A Python
   interpreter other than the one running the engine (`evaluator.python`)
-  must be readable by containers too. Containers cannot ask Visual Studio's setup service where the
-  C++ tools are, so the engine finds them with `vswhere` and passes them on in
-  `VCToolsInstallDir`.
+  must be readable by containers too. Containers cannot ask Visual Studio's
+  setup service where the C++ tools are, so the engine finds them with
+  `vswhere` and passes them on in `VCToolsInstallDir`.
 - Ollama for Windows splits a model that does not fit one GPU across several
   (two 11 GB cards hold a 16 GB model at a 32k context, with a little of it on
   the CPU). The memory guard checks system RAM, as on a Mac.

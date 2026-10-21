@@ -57,6 +57,35 @@ def decode(obj):
     return obj
 
 
+if sys.platform == "win32" and os.environ.get("OMEGA_APPCONTAINER"):
+    # Before anything else, here at the top: multiprocessing's child processes run
+    # this module again (as __mp_main__), and need the same set-up.
+    _spec = importlib.util.spec_from_file_location(
+        "omega_wincontainer", os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                           "wincontainer.py"))
+    _wincontainer = importlib.util.module_from_spec(_spec)
+    sys.modules["omega_wincontainer"] = _wincontainer
+    _spec.loader.exec_module(_wincontainer)
+    _wincontainer.setup()
+
+
+class _CandidateFinder:
+    """Imports the candidate under its name here, ``candidate``: multiprocessing's
+    child processes (spawn, on Windows and macOS) import the functions a candidate
+    hands them by module name."""
+
+    def __init__(self, path: str):
+        self.path = path
+
+    def find_spec(self, name, path=None, target=None):
+        if name == "candidate":
+            return importlib.util.spec_from_file_location("candidate", self.path)
+        return None
+
+
+if __name__ in ("__main__", "__mp_main__") and len(sys.argv) > 1:  # also in such children
+    sys.meta_path.insert(0, _CandidateFinder(os.path.abspath(sys.argv[1])))
+
 _winjob = None
 _children = [0.0, 0]  # Windows: CPU seconds and peak bytes of the programs run so far
 
@@ -190,8 +219,10 @@ def main(argv: list[str]) -> int:
                 try:
                     spec = importlib.util.spec_from_file_location("candidate", path)
                     module = importlib.util.module_from_spec(spec)
+                    sys.modules["candidate"] = module  # see _CandidateFinder
                     spec.loader.exec_module(module)
                 except BaseException as e:  # noqa: BLE001 - reported to the evaluator
+                    sys.modules.pop("candidate", None)
                     load_error = (f"{type(e).__name__}: {e}", _tail(traceback.format_exc()))
                 load_cpu = cpu_clock() - t_load
             if load_error is not None:
