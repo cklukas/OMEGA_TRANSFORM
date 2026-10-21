@@ -74,13 +74,19 @@ runs the tests, regenerates the benchmark page from the committed results,
 builds the site with `ckdocs --strict`, and publishes it as the project's
 Pages site.
 
+On GitHub, `.github/workflows/ci.yml` runs the tests on Linux (x64 and ARM),
+macOS and Windows. The Windows runner has LLVM and the Visual Studio Build
+Tools; the workflow puts LLVM first on `PATH` and checks out the files with
+their committed line endings.
+
 The test step first prints `omega sandbox`, which says whether jobs run
 confined there. A CI step is itself a sandbox, so the sandbox tests need two
 things from it: the mount API that bubblewrap uses (the ck-git-hosting CI
 runner allows it from commit 350c60c on; its unit used to set
 `RestrictSUIDSGID=yes`, whose seccomp filter refused it), and either netlink
 sockets or an empty network namespace, which a CI step has. Where a sandbox
-cannot be built, the sandbox tests are skipped and the reason is printed.
+cannot be built, `omega sandbox` prints the reason and fails, and so do the
+tests: the engine never runs jobs unconfined unless `evaluator.sandbox = false`.
 
 ## Publishing to GitHub
 

@@ -1,10 +1,11 @@
 # Copyright (c) 2026 by C. Klukas
 # SPDX-License-Identifier: GPL-3.0-only
 #
-# The GitHub lane: the complete test suite, examples included, on Linux and
-# macOS. Jobs must run sandboxed, so Linux installs bubblewrap and lifts
-# Ubuntu's AppArmor limit on unprivileged user namespaces, which bubblewrap
-# needs; macOS has sandbox-exec. `omega sandbox` prints what the tests get.
+# The GitHub lane: the complete test suite, examples included, on Linux,
+# macOS and Windows. Jobs must run sandboxed, so Linux installs bubblewrap and
+# lifts Ubuntu's AppArmor limit on unprivileged user namespaces, which
+# bubblewrap needs; macOS has sandbox-exec, Windows AppContainers. `omega
+# sandbox` prints what the tests get, and fails the run if there is none.
 # The private ck-git server runs the same tests (.ckgit/ci.yml).
 
 name: CI
@@ -30,7 +31,11 @@ jobs:
           - { os: ubuntu-24.04, python: "3.13" }
           - { os: ubuntu-24.04-arm, python: "3.13" }
           - { os: macos-15, python: "3.13" }
+          - { os: windows-2025, python: "3.13" }
     steps:
+      - name: Keep line endings as committed
+        if: runner.os == 'Windows'
+        run: git config --global core.autocrlf false
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
         with:
@@ -41,6 +46,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends bubblewrap clang g++
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      - name: Put LLVM first on PATH
+        # The image has LLVM and the Visual Studio Build Tools; other toolchains
+        # on PATH bring older clang builds.
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Add-Content $env:GITHUB_PATH "C:\Program Files\LLVM\bin"
       - name: Sandbox
         run: python -m omega_transform sandbox
       - name: Tests
