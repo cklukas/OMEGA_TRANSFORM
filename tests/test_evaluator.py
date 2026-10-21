@@ -40,6 +40,12 @@ class SandboxTest(unittest.TestCase):
             "os.path.realpath(os.environ['OMEGA_WORKDIR']) else 0"), "t")
         self.assertEqual((r.status, r.score), ("ok", 3))
 
+    def test_candidate_can_use_ctypes(self):
+        # On Windows only through a copy of _ctypes that does not need user32.dll.
+        r = self.ev.evaluate(program(
+            "import ctypes\nreturn ctypes.sizeof(ctypes.c_int32) + 1"), "c")
+        self.assertEqual((r.status, r.score), ("ok", 5))
+
     def test_write_outside_job_dir_denied(self):
         r = self.ev.evaluate(program(f"open({str(self.outside)!r}, 'w').write('x')\nreturn 1"), "o")
         self.assertNotEqual(r.status, "ok")

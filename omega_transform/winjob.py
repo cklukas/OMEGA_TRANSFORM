@@ -30,11 +30,32 @@ without the package on its path and loads this file next to it.
 """
 from __future__ import annotations
 
-import ctypes
 import os
 import subprocess
+import sys
 import time
-from ctypes import wintypes
+
+
+def _user32_free_ctypes() -> None:
+    """In the Windows sandbox, use the copy of ``_ctypes`` that does not need user32
+    (``winsandbox.user32_free_ctypes``): processes started with ``-I`` ignore the
+    PYTHONPATH that points other processes to it."""
+    path = os.environ.get("OMEGA_CTYPES")
+    if path and "_ctypes" not in sys.modules:
+        import importlib.util
+        from importlib.machinery import ExtensionFileLoader
+        file = os.path.join(path, "_ctypes.pyd")
+        spec = importlib.util.spec_from_file_location("_ctypes", file,
+                                                      loader=ExtensionFileLoader("_ctypes", file))
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        sys.modules["_ctypes"] = module
+
+
+_user32_free_ctypes()
+
+import ctypes  # noqa: E402
+from ctypes import wintypes  # noqa: E402
 
 _k32 = ctypes.WinDLL("kernel32", use_last_error=True)
 _adv = ctypes.WinDLL("advapi32", use_last_error=True)

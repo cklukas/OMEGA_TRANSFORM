@@ -37,10 +37,18 @@ another job's directory. The access entries stay in place.
 Windows points TEMP, TMP and LOCALAPPDATA of a process started in a container to
 the profile folder; a stub (``--inside``) therefore starts the program inside
 the container with the values of this process restored: the job directory.
-Each process gets a window station and desktop of its own, which admit
-containers (``_Desktop``), and a job object that ends it with this wrapper; it is
-also in the job objects of the wrapper, so the evaluator's limits and
-accounting cover it.
+Each process gets a job object that ends it with this wrapper; it is also in
+the job objects of the wrapper, so the evaluator's limits and accounting cover
+it.
+
+Nothing in a container may need user32.dll, which cannot initialize there (a
+container has no access to a window station; we give it none). Python's
+``_ctypes`` links it only indirectly: it imports one COM helper,
+ProgIDFromCLSID, from ole32.dll, and ole32 links user32. ``user32_free_ctypes``
+makes a copy of ``_ctypes`` that takes the same function from combase.dll, which
+does not link user32; containers load that copy (``OMEGA_CTYPES``, read by
+``winjob.py``, and PYTHONPATH). Python's ``_ssl`` and ``_hashlib`` (OpenSSL)
+still need user32 and do not load; hashlib falls back to its own algorithms.
 
 A container creates named pipes only in its own namespace (``pipe_dir``); the
 runner creates its pipes there, with an access list that admits the evaluator
@@ -50,20 +58,41 @@ Standard library only, and runnable by path (no package on sys.path).
 """
 from __future__ import annotations
 
-import ctypes
-import hashlib
 import json
 import os
 import subprocess
 import sys
-from ctypes import wintypes
+
+_KEEP = "OMEGA_SANDBOX_ENV"
+_REDIRECTED = ("TEMP", "TMP", "LOCALAPPDATA")
+
+
+def inside(argv: list[str]) -> int:
+    """The stub in the container: run ``argv`` with the environment restored. It runs
+    before ctypes is imported below, which it does not need."""
+    env = dict(os.environ)
+    env.update(json.loads(env.pop(_KEEP, "{}")))
+    try:
+        return subprocess.run(argv, env=env).returncode
+    except OSError as e:
+        print(f"winsandbox: cannot run {argv[0]}: {e}", file=sys.stderr)
+        return 127
+
+
+if __name__ == "__main__" and sys.argv[1:3] == ["--inside", "--"]:
+    sys.exit(inside(sys.argv[3:]))
+
+import ctypes  # noqa: E402
+import hashlib  # noqa: E402
+import shutil  # noqa: E402
+import struct  # noqa: E402
+from ctypes import wintypes  # noqa: E402
 
 _k32 = ctypes.WinDLL("kernel32", use_last_error=True)
 _adv = ctypes.WinDLL("advapi32", use_last_error=True)
 _ue = ctypes.WinDLL("userenv", use_last_error=True)
 _kb = ctypes.WinDLL("kernelbase", use_last_error=True)
-_ole = ctypes.WinDLL("ole32", use_last_error=True)
-_u32 = ctypes.WinDLL("user32", use_last_error=True)
+_combase = ctypes.WinDLL("combase", use_last_error=True)  # not ole32, which needs user32
 
 RUNTIME, EVALUATOR = "omega_transform.runtime", "omega_transform.evaluator"
 
@@ -90,8 +119,6 @@ _HANDLE_FLAG_INHERIT = 0x1
 _INFINITE = 0xFFFFFFFF
 _JobObjectExtendedLimitInformation = 9
 _JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x2000
-_WINSTA_ALL_ACCESS = 0x37F
-_DESKTOP_ALL_ACCESS = 0xF01FF
 
 
 class _SidAndAttributes(ctypes.Structure):
@@ -154,7 +181,7 @@ _ue.CreateAppContainerProfile.argtypes = [wintypes.LPCWSTR, wintypes.LPCWSTR, wi
 _ue.CreateAppContainerProfile.restype = ctypes.c_long
 _ue.GetAppContainerFolderPath.argtypes = [wintypes.LPCWSTR, ctypes.POINTER(ctypes.c_wchar_p)]
 _ue.GetAppContainerFolderPath.restype = ctypes.c_long
-_ole.CoTaskMemFree.argtypes = [ctypes.c_void_p]
+_combase.CoTaskMemFree.argtypes = [ctypes.c_void_p]
 _kb.DeriveCapabilitySidsFromName.argtypes = [
     wintypes.LPCWSTR, ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(wintypes.DWORD),
     ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(wintypes.DWORD)]
@@ -213,16 +240,7 @@ _k32.CreateJobObjectW.argtypes = [wintypes.LPVOID, wintypes.LPCWSTR]
 _k32.SetInformationJobObject.argtypes = [wintypes.HANDLE, ctypes.c_int, wintypes.LPVOID,
                                          wintypes.DWORD]
 _k32.AssignProcessToJobObject.argtypes = [wintypes.HANDLE, wintypes.HANDLE]
-_u32.CreateWindowStationW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD,
-                                      ctypes.c_void_p]
-_u32.CreateWindowStationW.restype = wintypes.HANDLE
-_u32.GetProcessWindowStation.restype = wintypes.HANDLE
-_u32.SetProcessWindowStation.argtypes = [wintypes.HANDLE]
-_u32.CreateDesktopW.argtypes = [wintypes.LPCWSTR, wintypes.LPCWSTR, ctypes.c_void_p,
-                                wintypes.DWORD, wintypes.DWORD, ctypes.c_void_p]
-_u32.CreateDesktopW.restype = wintypes.HANDLE
-_u32.CloseDesktop.argtypes = [wintypes.HANDLE]
-_u32.CloseWindowStation.argtypes = [wintypes.HANDLE]
+
 
 
 def _check(ok) -> None:
@@ -282,7 +300,7 @@ def create_profiles() -> None:
             try:
                 revoke(folder.value, _SE_FILE_OBJECT, sid)
             finally:
-                _ole.CoTaskMemFree(folder)
+                _combase.CoTaskMemFree(folder)
         revoke(r"CURRENT_USER\Software\Classes\Local Settings\Software\Microsoft\Windows"
                rf"\CurrentVersion\AppContainer\Storage\{name}", _SE_REGISTRY_KEY, sid)
 
@@ -445,52 +463,6 @@ def pipe_security() -> str:
             "S:(ML;;NW;;;LW)")
 
 
-class _SecurityAttributes(ctypes.Structure):
-    _fields_ = [("nLength", wintypes.DWORD), ("lpSecurityDescriptor", ctypes.c_void_p),
-                ("bInheritHandle", wintypes.BOOL)]
-
-
-class _Desktop:
-    """A window station and desktop of their own for the program. Without access to
-    one, user32.dll (and every DLL that loads it, ole32 and the OpenSSL of Python's
-    ``_ssl`` among them) fails to initialize in a container; this one admits
-    containers, and keeps the program away from the user's desktop and clipboard."""
-
-    def __init__(self):
-        sd = ctypes.c_void_p()
-        _check(_adv.ConvertStringSecurityDescriptorToSecurityDescriptorW(
-            f"D:P(A;;GA;;;SY)(A;;GA;;;{_user_sid()})(A;;GA;;;AC)S:(ML;;NW;;;LW)", 1,
-            ctypes.byref(sd), None))
-        self.winsta = self.desktop = None
-        try:
-            sa = _SecurityAttributes(ctypes.sizeof(_SecurityAttributes), sd, False)
-            name = f"omega-{os.getpid()}"
-            self.winsta = _u32.CreateWindowStationW(name, 0, _WINSTA_ALL_ACCESS, ctypes.byref(sa))
-            _check(self.winsta)
-            # A desktop is created in the window station of the calling process.
-            mine = _u32.GetProcessWindowStation()
-            _check(_u32.SetProcessWindowStation(self.winsta))
-            try:
-                self.desktop = _u32.CreateDesktopW("default", None, None, 0,
-                                                   _DESKTOP_ALL_ACCESS, ctypes.byref(sa))
-                _check(self.desktop)
-            finally:
-                _u32.SetProcessWindowStation(mine)
-            self.name = name + "\\default"
-        except BaseException:
-            self.close()
-            raise
-        finally:
-            _k32.LocalFree(sd)
-
-    def close(self) -> None:
-        if self.desktop:
-            _u32.CloseDesktop(self.desktop)
-        if self.winsta:
-            _u32.CloseWindowStation(self.winsta)
-        self.desktop = self.winsta = None
-
-
 def pipe_dir() -> str:
     """The namespace in which a process in the candidate's container may create named
     pipes (its own); the evaluator opens them there by this full name."""
@@ -528,9 +500,97 @@ def msvc_env() -> dict[str, str]:
     return _msvc[0]
 
 
+CTYPES_ENV = "OMEGA_CTYPES"
+_CTYPES_PATCH = "1"  # bump when the patch changes
+
+
+def _ctypes_cache() -> str:
+    return os.path.join(os.environ.get("LOCALAPPDATA") or os.path.expanduser("~"),
+                        "omega_transform", "ctypes")
+
+
+def _patch_ole32_import(data: bytearray) -> bool:
+    """Make the PE image ``data`` import from combase.dll what it imports from
+    ole32.dll; False if it imports nothing from ole32. The new name goes into the
+    unused end of the section that holds the old one, and the Authenticode
+    signature, which no longer matches, is removed."""
+    u16 = lambda o: struct.unpack_from("<H", data, o)[0]  # noqa: E731
+    u32 = lambda o: struct.unpack_from("<I", data, o)[0]  # noqa: E731
+    pe = u32(0x3C)
+    if data[pe:pe + 4] != b"PE\0\0" or u16(pe + 24) != 0x20B:  # PE32+
+        raise ValueError("not a 64-bit PE image")
+    opt = pe + 24
+    ddir = opt + 112
+    sections = [opt + u16(pe + 20) + 40 * i for i in range(u16(pe + 6))]
+
+    def section(rva):  # header offset, virtual size, address, raw size, raw offset
+        for h in sections:
+            vs, va, rs, rp = struct.unpack_from("<IIII", data, h + 8)
+            if va <= rva < va + max(vs, rs):
+                return h, vs, va, rs, rp
+        raise ValueError(f"RVA {rva:#x} outside every section")
+
+    def offset(rva):
+        _, _, va, _, rp = section(rva)
+        return rp + rva - va
+
+    desc = offset(u32(ddir + 8))  # the import directory: 20-byte descriptors
+    while u32(desc + 12):
+        name = offset(u32(desc + 12))
+        if data[name:data.index(b"\0", name)].lower() == b"ole32.dll":
+            break
+        desc += 20
+    else:
+        return False
+    h, vs, va, rs, rp = section(u32(desc + 12))
+    new = b"combase.dll\0"
+    at = (vs + 7) & ~7
+    following = min([u32(o + 12) for o in sections if u32(o + 12) > va] or [1 << 32])
+    if at + len(new) > rs or va + at + len(new) > following:  # in the file, and in memory
+        raise ValueError("no room for the new DLL name")
+    data[rp + at:rp + at + len(new)] = new
+    struct.pack_into("<I", data, h + 8, at + len(new))  # the section's virtual size
+    struct.pack_into("<I", data, desc + 12, va + at)
+    cert, size = struct.unpack_from("<II", data, ddir + 4 * 8)  # file offset, not RVA
+    if cert:
+        struct.pack_into("<II", data, ddir + 4 * 8, 0, 0)
+        del data[cert:cert + size]
+    return True
+
+
+def user32_free_ctypes() -> str | None:
+    """A directory with a copy of this Python's ``_ctypes`` that does not need
+    user32 (see the module docstring) and the libffi it needs; made once per
+    ``_ctypes`` build. None if ``_ctypes`` does not need ole32 in the first place."""
+    src_dir = os.path.join(sys.base_prefix, "DLLs")
+    src = os.path.join(src_dir, "_ctypes.pyd")
+    with open(src, "rb") as f:
+        data = bytearray(f.read())
+    key = hashlib.sha256(bytes(data) + _CTYPES_PATCH.encode()).hexdigest()[:16]
+    out = os.path.join(_ctypes_cache(), key)
+    if os.path.exists(os.path.join(out, "_ctypes.pyd")):
+        return out
+    if not _patch_ole32_import(data):
+        return None
+    os.makedirs(out, exist_ok=True)
+    for name in os.listdir(src_dir):  # the DLLs _ctypes loads from its own directory
+        if name.lower().startswith("libffi") and name.lower().endswith(".dll"):
+            shutil.copy2(os.path.join(src_dir, name), out)
+    tmp = os.path.join(out, f"_ctypes.{os.getpid()}.tmp")
+    with open(tmp, "wb") as f:
+        f.write(data)
+    try:
+        os.replace(tmp, os.path.join(out, "_ctypes.pyd"))
+    except OSError:  # another engine made it meanwhile, and it is in use
+        os.unlink(tmp)
+    return out
+
+
 def runtime_dirs() -> list[str]:
-    """What every container may read: the Python installation and this package."""
-    dirs = {os.path.dirname(os.path.abspath(__file__))}
+    """What every container may read: the Python installation, this package and the
+    copies of ``_ctypes``."""
+    os.makedirs(_ctypes_cache(), exist_ok=True)
+    dirs = {os.path.dirname(os.path.abspath(__file__)), _ctypes_cache()}
     for d in (sys.prefix, sys.base_prefix):
         dirs.add(os.path.abspath(d))
     return sorted(dirs)
@@ -564,6 +624,11 @@ def run(argv: list[str], workdir: str, candidate: bool) -> int:
     # processes started inside the container keep theirs. So a stub starts the program
     # inside, with the values of this environment (the job directory) restored.
     os.environ[_KEEP] = json.dumps({k: os.environ[k] for k in _REDIRECTED if k in os.environ})
+    ctypes_dir = user32_free_ctypes()
+    if ctypes_dir:  # found first by Python, also in processes run with -I (winjob.py)
+        os.environ[CTYPES_ENV] = ctypes_dir
+        os.environ["PYTHONPATH"] = os.pathsep.join(
+            [ctypes_dir] + [p for p in [os.environ.get("PYTHONPATH")] if p])
     exe = sys.executable
     cmdline = ctypes.create_unicode_buffer(subprocess.list2cmdline(
         [exe, "-I", "-S", os.path.abspath(__file__), "--inside", "--"] + argv))
@@ -580,7 +645,7 @@ def run(argv: list[str], workdir: str, candidate: bool) -> int:
     _k32.InitializeProcThreadAttributeList(None, 2, 0, ctypes.byref(size))
     alist = ctypes.create_string_buffer(size.value)
     _check(_k32.InitializeProcThreadAttributeList(alist, 2, 0, ctypes.byref(size)))
-    desktop = job = None
+    job = None
     pi = _ProcessInformation()
     try:
         _check(_k32.UpdateProcThreadAttribute(alist, 0, _PROC_THREAD_ATTRIBUTE_SECURITY_CAPABILITIES,
@@ -589,11 +654,8 @@ def run(argv: list[str], workdir: str, candidate: bool) -> int:
             _check(_k32.UpdateProcThreadAttribute(alist, 0, _PROC_THREAD_ATTRIBUTE_HANDLE_LIST,
                                                   hlist, ctypes.sizeof(wintypes.HANDLE) *
                                                   len(handles), None, None))
-        desktop = _Desktop()
-        desktop_name = ctypes.create_unicode_buffer(desktop.name)
         si = _StartupInfoEx()
         si.StartupInfo.cb = ctypes.sizeof(si)
-        si.StartupInfo.lpDesktop = ctypes.cast(desktop_name, wintypes.LPWSTR)
         si.StartupInfo.dwFlags = _STARTF_USESTDHANDLES
         si.StartupInfo.hStdInput, si.StartupInfo.hStdOutput, si.StartupInfo.hStdError = std
         si.lpAttributeList = ctypes.cast(alist, ctypes.c_void_p)
@@ -620,30 +682,11 @@ def run(argv: list[str], workdir: str, candidate: bool) -> int:
         for h in (pi.hThread, pi.hProcess, job):
             if h:
                 _k32.CloseHandle(h)
-        if desktop is not None:
-            desktop.close()
         _k32.DeleteProcThreadAttributeList(alist)
-
-
-_KEEP = "OMEGA_SANDBOX_ENV"
-_REDIRECTED = ("TEMP", "TMP", "LOCALAPPDATA")
-
-
-def inside(argv: list[str]) -> int:
-    """The stub in the container: run ``argv`` with the environment restored."""
-    env = dict(os.environ)
-    env.update(json.loads(env.pop(_KEEP, "{}")))
-    try:
-        return subprocess.run(argv, env=env).returncode
-    except OSError as e:
-        print(f"winsandbox: cannot run {argv[0]}: {e}", file=sys.stderr)
-        return 127
 
 
 def main(argv: list[str]) -> int:
     candidate, grants = False, []
-    if argv[:2] == ["--inside", "--"]:
-        return inside(argv[2:])
     while argv and argv[0].startswith("--"):
         opt = argv.pop(0)
         if opt == "--candidate":

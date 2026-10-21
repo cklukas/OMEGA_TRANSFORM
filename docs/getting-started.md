@@ -46,9 +46,16 @@ connect an evaluator to its candidate's process. Notes:
   installation that runs the engine and to the `omega_transform` package, and
   evaluators also to each problem directory. These grants stay in place. Each
   job directory gets the low integrity label and is open to that job's
-  processes alone; TEMP and TMP point into it. A Python interpreter other than
-  the one running the engine (`evaluator.python`) must be readable by
-  containers too. Containers cannot ask Visual Studio's setup service where the
+  processes alone; TEMP and TMP point into it. Containers get no window
+  station, so nothing in them can use `user32.dll` (windows, the clipboard,
+  the screen). Python's `ctypes` links it only through one unused COM
+  function from `ole32.dll`; containers therefore load a copy of `_ctypes`
+  that takes that function from `combase.dll` instead. The copy is made once,
+  under `%LOCALAPPDATA%\omega_transform\ctypes`. Python's OpenSSL modules
+  (`ssl`, and the OpenSSL algorithms of `hashlib`) do not load in a container;
+  `hashlib` falls back to its own SHA-2, SHA-3, BLAKE2 and MD5. A Python
+  interpreter other than the one running the engine (`evaluator.python`)
+  must be readable by containers too. Containers cannot ask Visual Studio's setup service where the
   C++ tools are, so the engine finds them with `vswhere` and passes them on in
   `VCToolsInstallDir`.
 - Ollama for Windows splits a model that does not fit one GPU across several

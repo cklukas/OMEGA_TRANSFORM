@@ -360,11 +360,14 @@ def sandbox_backend() -> str | None:
             _problem.append("bubblewrap (bwrap) is not installed")
         elif WINDOWS:
             try:
-                from .winsandbox import create_profiles
+                from .winsandbox import create_profiles, user32_free_ctypes
                 create_profiles()
+                user32_free_ctypes()  # made now, before jobs run in parallel
                 found = "appcontainer"
             except OSError as e:
                 _problem.append(f"no AppContainer: {e}")
+            except ValueError as e:  # a _ctypes this sandbox cannot adapt
+                _problem.append(f"cannot prepare ctypes for AppContainers: {e}")
         elif sys.platform != "darwin":
             _problem.append(f"no sandbox implementation for {sys.platform}")
         _backend.append(found)
