@@ -309,9 +309,9 @@ def cmd_models(a) -> int:
 
 
 def cmd_sandbox(a) -> int:
-    from .evaluator import sandbox_status
+    from .evaluator import sandbox_available, sandbox_status
     print(sandbox_status())
-    return 0
+    return 0 if sandbox_available() else 1
 
 
 def cmd_bench_details(a) -> int:

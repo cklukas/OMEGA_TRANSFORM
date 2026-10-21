@@ -14,7 +14,8 @@
 
 Jobs run sandboxed automatically: `sandbox-exec` on macOS, bubblewrap (`bwrap`)
 on Linux, AppContainers on Windows (see [Robustness and safety](robustness.md)).
-`omega sandbox` reports which one this machine uses.
+`omega sandbox` reports which one this machine uses. Without one the engine
+refuses to run jobs; only `evaluator.sandbox = false` runs them unconfined.
 
 ### Windows
 

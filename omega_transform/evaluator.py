@@ -379,15 +379,22 @@ def sandbox_available() -> bool:
 
 
 def sandbox_status() -> str:
-    """One line for humans: which sandbox jobs run in, or why they run unconfined."""
+    """One line for humans: which sandbox jobs run in, or why there is none."""
     backend = sandbox_backend()
     if backend and _net_by_environment:
         return (f"sandbox: {backend} (filesystem only; the environment itself provides "
                 "no network beyond loopback)")
     if backend:
         return f"sandbox: {backend}"
-    return "sandbox: none (" + (_problem[0] if _problem else "unavailable") + \
-        "); jobs run unconfined"
+    return f"sandbox: none ({sandbox_problem()}); jobs do not run unless " \
+        "evaluator.sandbox = false"
+
+
+def sandbox_problem() -> str:
+    """Why no sandbox is available (empty if one is)."""
+    if sandbox_available():
+        return ""
+    return _problem[0] if _problem else "unavailable"
 
 
 def sandbox_prefix(workdir: Path, hide: Path | None = None,
@@ -467,15 +474,19 @@ class Evaluator:
         self.jobs_dir = jobs_dir
         self.jobs_dir.mkdir(parents=True, exist_ok=True)
         self.gate = RWLock()
-        self.sandboxed = self.ev.sandbox if self.ev.sandbox is not None else sandbox_available()
+        # Only an explicit evaluator.sandbox = false runs jobs unconfined: never a
+        # sandbox that is missing or cannot be set up here.
+        self.sandboxed = self.ev.sandbox is not False
         # Python candidates run in their own process (candidate_runner.py), stricter
         # sandboxed than the evaluator, when the evaluator uses omega_transform.harness.
         self.isolate = self.ev.isolate if self.ev.isolate is not None else \
             cfg.lang_tag in ("python", "c", "cpp")
         if self.sandboxed and not sandbox_available():
-            raise RuntimeError("evaluator.sandbox = true, but no sandbox is available "
-                               "(macOS sandbox-exec, Linux bwrap with user namespaces, or "
-                               "Windows AppContainers)")
+            raise RuntimeError(
+                f"no sandbox for the jobs: {sandbox_problem()}. The engine runs LLM-written "
+                "code only sandboxed (macOS sandbox-exec, Linux bwrap with user namespaces, "
+                "Windows AppContainers); set evaluator.sandbox = false to run it unconfined "
+                "anyway")
 
     def _candidate_prefix(self, wd: Path) -> list[str]:
         """Command prefix for code that must not read the problem directory."""

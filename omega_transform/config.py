@@ -74,8 +74,9 @@ class EvaluatorConfig:
     launcher: list[str] = field(default_factory=list)  # prefix for every job, e.g. ["srun", "-n1"]
     concurrency: int = 4  # evaluation jobs in parallel
     #: confine jobs: no network, writes only in the job dir (macOS sandbox-exec, Linux
-    #: bubblewrap, Windows AppContainers); None = on where available
-    sandbox: bool | None = None
+    #: bubblewrap, Windows AppContainers). Without a sandbox the engine refuses to run;
+    #: false runs LLM-written code unconfined
+    sandbox: bool = True
     #: run the candidate (Python module, or compiled program) in its own process that cannot
     #: read the problem directory; the evaluator reaches it through omega_transform.harness.
     #: None = on for Python, C and C++

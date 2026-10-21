@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 
 from omega_transform.config import load_config
-from omega_transform.evaluator import Evaluator, sandbox_available
+from omega_transform.evaluator import Evaluator
 
 ROOT = Path(__file__).resolve().parent.parent
 SORT = ROOT / "examples" / "sort_u32_cpp"
@@ -90,7 +90,6 @@ class SeparateCompilationTest(unittest.TestCase):
                           at_end="static const double USED = cpu_seconds();")
         self.assertEqual(r.status, "compile_error")
 
-    @unittest.skipUnless(sandbox_available(), "read protection needs a sandbox (sandbox-exec, bwrap or an AppContainer)")
     def test_compiled_program_cannot_read_the_problem_directory(self):
         # If the harness source were readable, the program would corrupt its output.
         r = self.evaluate(

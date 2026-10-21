@@ -45,9 +45,6 @@ class ExamplesTest(unittest.TestCase):
     @unittest.skipUnless(os.environ.get("OMEGA_EXAMPLE_TESTS"),
                          "set OMEGA_EXAMPLE_TESTS=1 to evaluate every example (slow; CI does)")
     def test_no_python_candidate_can_read_its_evaluator(self):
-        from omega_transform.evaluator import sandbox_available
-        if not sandbox_available():
-            self.skipTest("read protection needs a sandbox (sandbox-exec, bwrap or an AppContainer)")
         probe = ('import os as _os\n'
                  '_os.read(_os.open(_os.environ["OMEGA_PROBLEM_DIR"] + "/evaluate.py", 0), 9)\n')
         for ex in EXAMPLES:

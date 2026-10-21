@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 
 from omega_transform.config import load_config
-from omega_transform.evaluator import Evaluator, sandbox_available
+from omega_transform.evaluator import Evaluator
 
 TOY = Path(__file__).resolve().parent.parent / "examples" / "toy"
 
@@ -16,7 +16,6 @@ def program(body: str) -> str:
         "\n# OMEGA-BLOCK-END\n"
 
 
-@unittest.skipUnless(sandbox_available(), "no sandbox here (macOS sandbox-exec, Linux bwrap or Windows AppContainers)")
 class SandboxTest(unittest.TestCase):
     def setUp(self):
         self.cfg = load_config(TOY)
@@ -71,6 +70,19 @@ class SandboxTest(unittest.TestCase):
                                                        "WinError 10013")), r.feedback)
 
 
+class RequiredSandboxTest(unittest.TestCase):
+    def test_no_sandbox_means_no_jobs_unless_turned_off(self):
+        from unittest import mock
+        import omega_transform.evaluator as evaluator
+        cfg = load_config(TOY)
+        with tempfile.TemporaryDirectory() as tmp, \
+                mock.patch.object(evaluator, "sandbox_available", return_value=False):
+            with self.assertRaisesRegex(RuntimeError, "evaluator.sandbox = false"):
+                Evaluator(cfg, Path(tmp))
+            cfg.evaluator.sandbox = False  # only explicitly
+            self.assertFalse(Evaluator(cfg, Path(tmp)).sandboxed)
+
+
 class UsageTest(unittest.TestCase):
     def test_cpu_time_and_peak_memory_are_recorded(self):
         cfg = load_config(TOY)
@@ -121,7 +133,6 @@ class IsolationTest(unittest.TestCase):
         r = self.evaluate("return 7")
         self.assertEqual((r.status, r.score), ("ok", 7))
 
-    @unittest.skipUnless(sandbox_available(), "no sandbox here (macOS sandbox-exec, Linux bwrap or Windows AppContainers)")
     def test_candidate_cannot_read_the_evaluator(self):
         evaluator = str(TOY / "evaluate.py")
         r = self.evaluate(f"open({evaluator!r}).read()\nreturn 1")
