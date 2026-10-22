@@ -66,7 +66,7 @@ EOF
 check_public() {
     local root roots
     root=$(git config omega.githubRoot) || die "not initialized (run: $0 init URL)"
-    roots=$(git rev-list --max-parents=0 "$BRANCH")
+    roots=$(git rev-list --max-parents=0 "refs/heads/$BRANCH")
     [ "$roots" = "$root" ] || die "branch $BRANCH does not start at the snapshot $root; not pushing"
 }
 
@@ -101,7 +101,7 @@ guard)
     check_public
     src=$(git rev-parse "$SOURCE_REF") || die "$SOURCE_REF is missing"
     git merge-base --is-ancestor "$src" main || die "main no longer contains $src (rewritten?)"
-    tip=$(git rev-parse "$BRANCH")
+    tip=$(git rev-parse "refs/heads/$BRANCH")
     count=0
     for c in $(git rev-list --reverse --first-parent "$src..main"); do
         if [ "$(git rev-parse "$c^{tree}")" = "$(git rev-parse "$tip^{tree}")" ]; then
@@ -121,7 +121,7 @@ guard)
               git commit-tree "$c^{tree}" -p "$tip" -F <(git log -1 --format=%B "$c"))
     done
     if [ -n "$dry" ]; then
-        echo "$count commit(s) to publish; github is $(git rev-list --count "$BRANCH") commit(s) long"
+        echo "$count commit(s) to publish; github is $(git rev-list --count "refs/heads/$BRANCH") commit(s) long"
         exit 0
     fi
     git update-ref "refs/heads/$BRANCH" "$tip"
