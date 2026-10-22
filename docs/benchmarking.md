@@ -29,7 +29,9 @@ tokens per second), `broken` (no sensible answer), `failed to load`,
 `not enough RAM` or `too large`. The last two are decided before loading: a
 model is never loaded when its estimated size plus a reserve (`--reserve-gb`,
 default 6 GB) exceeds the memory free at that moment, other applications
-included, or when its weights exceed `--max-size-gb`. The benchmark repeats
+included, or when its weights exceed `--max-size-gb`. With discrete NVIDIA
+GPUs, the part of the model that fits into their free memory does not count
+against the RAM. The benchmark repeats
 the memory check before every run and unloads each model when its run ends. The result goes to
 `bench/model-check.json`; `bench --feasible bench/model-check.json` then runs
 only the models marked ok, and the benchmark page shows the check as its

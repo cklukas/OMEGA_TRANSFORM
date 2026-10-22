@@ -5,8 +5,41 @@ from unittest import mock
 
 from omega_transform import memory
 
+REAL_GPU_FREE_GB = memory.gpu_free_gb
+
 
 class MemoryGuardTest(unittest.TestCase):
+    def setUp(self):
+        # The real GPUs of the test machine must not change these figures.
+        patcher = mock.patch.object(memory, "gpu_free_gb", return_value=None)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_only_the_part_beyond_the_gpus_needs_ram(self):
+        # 2x 11 GB GPUs, 21.6 GB RAM free: a 17 GB model fits on the GPUs (the case
+        # that was refused on the Windows workstation).
+        with mock.patch.object(memory, "available_gb", return_value=21.6), \
+                mock.patch.object(memory, "gpu_free_gb", return_value=19.2):
+            ok, why = memory.fits(int(15.6e9), reserve_gb=6, measured_gb=16.5)
+            self.assertTrue(ok, why)
+            self.assertIn("on the GPUs", why)
+        # Too little GPU memory: the rest has to fit into RAM.
+        with mock.patch.object(memory, "available_gb", return_value=10.0), \
+                mock.patch.object(memory, "gpu_free_gb", return_value=4.0):
+            ok, why = memory.fits(int(15.6e9), reserve_gb=6, measured_gb=16.5)
+            self.assertFalse(ok)
+            self.assertIn("14.0 GB of RAM", why)
+
+    def test_gpu_memory_is_read_from_nvidia_smi(self):
+        done = mock.Mock(stdout="10422\n10422\n")  # MiB free on each of two GPUs
+        with mock.patch.object(memory.sys, "platform", "win32"), \
+                mock.patch.object(memory.shutil, "which", return_value="nvidia-smi"), \
+                mock.patch.object(memory.subprocess, "run", return_value=done):
+            gb = REAL_GPU_FREE_GB()
+        self.assertAlmostEqual(gb, 2 * (10422 * 2**20 / 1e9 - memory.GPU_OVERHEAD_GB), places=6)
+        with mock.patch.object(memory.sys, "platform", "darwin"):
+            self.assertIsNone(REAL_GPU_FREE_GB())  # Apple GPUs share the RAM
+
     def test_refuses_model_that_does_not_fit(self):
         with mock.patch.object(memory, "available_gb", return_value=20.0):
             ok, why = memory.fits(int(18.6e9), reserve_gb=6)

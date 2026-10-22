@@ -65,7 +65,9 @@ connect an evaluator to its candidate's process. Notes:
   `vswhere` and passes them on in `VCToolsInstallDir`.
 - Ollama for Windows splits a model that does not fit one GPU across several
   (two 11 GB cards hold a 16 GB model at a 32k context, with a little of it on
-  the CPU). The memory guard checks system RAM, as on a Mac.
+  the CPU). The memory guard counts only the part of a model that does not fit
+  into the GPUs' free memory against the free RAM (see
+  [Robustness and safety](robustness.md)).
 
 ## Install
 

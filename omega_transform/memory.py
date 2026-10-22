@@ -5,11 +5,16 @@
 The check runs before a model is loaded, against the memory that is free
 right now (other applications included), and keeps a reserve for the system
 and for the evaluation jobs that run next to the model.
+
+On a machine with discrete NVIDIA GPUs, Ollama puts as much of a model as fits
+into their memory and only the rest into RAM, so only that rest has to fit
+into the free RAM. Apple GPUs share the RAM, where the whole model counts.
 """
 from __future__ import annotations
 
 import os
 import re
+import shutil
 import subprocess
 import sys
 
@@ -20,6 +25,10 @@ LOAD_OVERHEAD_GB = 1.0
 DEFAULT_RESERVE_GB = 6.0
 # Added to a measured loaded size: the context cache grows a little with use.
 MEASURED_MARGIN_GB = 0.5
+# Of each GPU's free memory, what Ollama cannot use for the model (CUDA context, compute
+# buffers); and the RAM a model offloaded to GPUs still takes (runner, host buffers).
+GPU_OVERHEAD_GB = 0.8
+GPU_HOST_RAM_GB = 1.0
 
 
 def guard_disabled() -> bool:
@@ -54,13 +63,33 @@ def available_gb() -> float | None:
         return None
 
 
+def gpu_free_gb() -> float | None:
+    """Memory of the discrete NVIDIA GPUs that a model can use now (free memory less
+    ``GPU_OVERHEAD_GB`` per GPU, summed), or None on a machine without any. Never on
+    macOS: Apple GPUs share the RAM, which ``available_gb`` counts already."""
+    smi = None if sys.platform == "darwin" else shutil.which("nvidia-smi")
+    if not smi:
+        return None
+    try:
+        out = subprocess.run([smi, "--query-gpu=memory.free", "--format=csv,noheader,nounits"],
+                             capture_output=True, text=True, encoding="utf-8",
+                             timeout=10).stdout
+        free_mib = [float(x) for x in out.split()]
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        return None
+    if not free_mib:
+        return None
+    return sum(max(0.0, mib * 2**20 / 1e9 - GPU_OVERHEAD_GB) for mib in free_mib)
+
+
 def fits(size_bytes: int, reserve_gb: float = DEFAULT_RESERVE_GB,
          already_loaded_gb: float = 0.0, measured_gb: float | None = None) -> tuple[bool, str]:
     """Whether a model of this size can be loaded now; and a reason when not.
 
     ``measured_gb``: the model's loaded size as measured before (``omega models``);
     used instead of the conservative estimate. ``already_loaded_gb``: memory of a
-    model that will be unloaded first and so counts as available.
+    model that will be unloaded first and so counts as available. With discrete GPUs,
+    the part of the model that fits into their free memory does not need RAM.
     """
     need = measured_gb + MEASURED_MARGIN_GB if measured_gb else estimate_model_gb(size_bytes)
     if guard_disabled():
@@ -69,10 +98,14 @@ def fits(size_bytes: int, reserve_gb: float = DEFAULT_RESERVE_GB,
     if avail is None:
         return True, "free memory unknown"
     avail += already_loaded_gb
-    if need + reserve_gb > avail:
-        return False, (f"needs about {need:.1f} GB plus a {reserve_gb:g} GB reserve, "
-                       f"but only {avail:.1f} GB are free")
-    return True, f"needs about {need:.1f} GB of {avail:.1f} GB free"
+    gpu = gpu_free_gb()
+    on_gpu = min(need, gpu) if gpu else 0.0
+    ram = need - on_gpu + (GPU_HOST_RAM_GB if on_gpu else 0.0)
+    where = f" ({on_gpu:.1f} GB of it on the GPUs)" if on_gpu else ""
+    if ram + reserve_gb > avail:
+        return False, (f"needs about {need:.1f} GB{where}, {ram:.1f} GB of RAM plus a "
+                       f"{reserve_gb:g} GB reserve, but only {avail:.1f} GB are free")
+    return True, f"needs about {need:.1f} GB{where}, {ram:.1f} GB of {avail:.1f} GB RAM free"
 
 
 def wait_until_fits(size_bytes: int, reserve_gb: float = DEFAULT_RESERVE_GB,
