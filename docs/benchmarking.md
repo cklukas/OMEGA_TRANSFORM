@@ -32,7 +32,9 @@ default 6 GB) exceeds the memory free at that moment, other applications
 included, or when its weights exceed `--max-size-gb`. With discrete NVIDIA
 GPUs, the part of the model that fits into their free memory does not count
 against the RAM. The benchmark repeats
-the memory check before every run and unloads each model when its run ends. The result goes to
+the memory check before every run and unloads each model when its run ends.
+`--skip-existing` resumes an interrupted benchmark: it leaves out every
+example and model that already has a result (not an error) in `--out`. The result goes to
 `bench/model-check.json`; `bench --feasible bench/model-check.json` then runs
 only the models marked ok, and the benchmark page shows the check as its
 first table.

@@ -116,6 +116,11 @@ _k32.CreateNamedPipeW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWO
                                   wintypes.DWORD, wintypes.LPVOID]
 _k32.ConnectNamedPipe.argtypes = [wintypes.HANDLE, wintypes.LPVOID]
 _k32.GetCurrentProcess.restype = wintypes.HANDLE
+_k32.SetSystemFileCacheSize.argtypes = [ctypes.c_size_t, ctypes.c_size_t, wintypes.DWORD]
+_adv.OpenProcessToken.argtypes = [wintypes.HANDLE, wintypes.DWORD, ctypes.POINTER(wintypes.HANDLE)]
+_adv.LookupPrivilegeValueW.argtypes = [wintypes.LPCWSTR, wintypes.LPCWSTR, ctypes.c_void_p]
+_adv.AdjustTokenPrivileges.argtypes = [wintypes.HANDLE, wintypes.BOOL, ctypes.c_void_p,
+                                       wintypes.DWORD, ctypes.c_void_p, ctypes.c_void_p]
 _k32.GetCurrentThread.restype = wintypes.HANDLE
 _k32.QueryProcessCycleTime.argtypes = [wintypes.HANDLE, ctypes.POINTER(ctypes.c_uint64)]
 _k32.QueryThreadCycleTime.argtypes = [wintypes.HANDLE, ctypes.POINTER(ctypes.c_uint64)]
@@ -284,6 +289,39 @@ def open_pipe(name: str, mode: str, wait: float = 30.0):
             if time.monotonic() > deadline:
                 raise
             time.sleep(0.01)
+
+
+class _Luid(ctypes.Structure):
+    _fields_ = [("LowPart", wintypes.DWORD), ("HighPart", wintypes.LONG)]
+
+
+class _TokenPrivileges(ctypes.Structure):
+    _fields_ = [("PrivilegeCount", wintypes.DWORD), ("Luid", _Luid), ("Attributes", wintypes.DWORD)]
+
+
+def release_file_cache() -> bool:
+    """Move the system file cache's working set to the standby list, where it counts as
+    available memory. Reading a model without mmap (Ollama on Windows with CUDA) leaves
+    it there, in use, until the reading process exits; available memory then looks far
+    smaller than what loading the next model can use. Needs SeIncreaseQuotaPrivilege,
+    which only an elevated process holds; False when it could not be done."""
+    TOKEN_ADJUST_PRIVILEGES, TOKEN_QUERY, SE_PRIVILEGE_ENABLED = 0x20, 0x8, 0x2
+    token = wintypes.HANDLE()
+    if not _adv.OpenProcessToken(_k32.GetCurrentProcess(),
+                                 TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, ctypes.byref(token)):
+        return False
+    try:
+        tp = _TokenPrivileges(1, _Luid(), SE_PRIVILEGE_ENABLED)
+        if not _adv.LookupPrivilegeValueW(None, "SeIncreaseQuotaPrivilege", ctypes.byref(tp.Luid)):
+            return False
+        _adv.AdjustTokenPrivileges(token, False, ctypes.byref(tp), 0, None, None)
+        if ctypes.get_last_error() != 0:  # ERROR_NOT_ALL_ASSIGNED: not elevated
+            return False
+    finally:
+        _k32.CloseHandle(token)
+    unlimited = ctypes.c_size_t(-1).value
+    return bool(_k32.SetSystemFileCacheSize(ctypes.c_size_t(unlimited),
+                                            ctypes.c_size_t(unlimited), 0))
 
 
 def available_bytes() -> int:

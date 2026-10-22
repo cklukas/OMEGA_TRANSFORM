@@ -178,12 +178,35 @@ def _posix_machine_info() -> dict:
     }
 
 
+def finished_runs(out_dir: Path) -> set[tuple[str, str, str]]:
+    """(example, model, variant) of every result file in ``out_dir`` that recorded a
+    search, not an error: what ``bench --skip-existing`` does not run again."""
+    done = set()
+    for p in Path(out_dir).glob("*.json"):
+        try:
+            d = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if isinstance(d, dict) and not d.get("error") and d.get("llm_calls"):
+            done.add((d.get("example"), d.get("model"), d.get("variant")))
+    return done
+
+
+_commits: dict[str, str] = {}
+
+
 def git_commit(path: Path) -> str:
-    try:
-        return subprocess.run(["git", "-C", str(path), "rev-parse", "--short", "HEAD"],
-                              capture_output=True, text=True, timeout=5).stdout.strip()
-    except OSError:
-        return ""
+    """The commit of the code at ``path``, asked once per process: on a busy machine git
+    can take longer than its timeout, and that must not stop a benchmark."""
+    key = str(path)
+    if key not in _commits:
+        try:
+            _commits[key] = subprocess.run(
+                ["git", "-C", key, "rev-parse", "--short", "HEAD"],
+                capture_output=True, text=True, timeout=30).stdout.strip()
+        except (OSError, subprocess.TimeoutExpired):
+            return ""
+    return _commits[key]
 
 
 @dataclass

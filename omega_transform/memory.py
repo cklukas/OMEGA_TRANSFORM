@@ -82,6 +82,19 @@ def gpu_free_gb() -> float | None:
     return sum(max(0.0, mib * 2**20 / 1e9 - GPU_OVERHEAD_GB) for mib in free_mib)
 
 
+def release_file_cache() -> bool:
+    """Windows: hand the file cache Windows holds in use back as available memory before
+    a model is refused (``winjob.release_file_cache``; needs an elevated process).
+    Elsewhere nothing to do: macOS and Linux count reclaimable cache as available."""
+    if sys.platform != "win32":
+        return False
+    try:
+        from .winjob import release_file_cache as release
+        return release()
+    except OSError:
+        return False
+
+
 def fits(size_bytes: int, reserve_gb: float = DEFAULT_RESERVE_GB,
          already_loaded_gb: float = 0.0, measured_gb: float | None = None) -> tuple[bool, str]:
     """Whether a model of this size can be loaded now; and a reason when not.
@@ -97,11 +110,13 @@ def fits(size_bytes: int, reserve_gb: float = DEFAULT_RESERVE_GB,
     avail = available_gb()
     if avail is None:
         return True, "free memory unknown"
-    avail += already_loaded_gb
     gpu = gpu_free_gb()
     on_gpu = min(need, gpu) if gpu else 0.0
     ram = need - on_gpu + (GPU_HOST_RAM_GB if on_gpu else 0.0)
     where = f" ({on_gpu:.1f} GB of it on the GPUs)" if on_gpu else ""
+    if ram + reserve_gb > avail + already_loaded_gb and release_file_cache():
+        avail = available_gb() or avail  # the cache Windows held in use counts now
+    avail += already_loaded_gb
     if ram + reserve_gb > avail:
         return False, (f"needs about {need:.1f} GB{where}, {ram:.1f} GB of RAM plus a "
                        f"{reserve_gb:g} GB reserve, but only {avail:.1f} GB are free")

@@ -30,6 +30,20 @@ class MemoryGuardTest(unittest.TestCase):
             self.assertFalse(ok)
             self.assertIn("14.0 GB of RAM", why)
 
+    def test_file_cache_is_released_before_a_model_is_refused(self):
+        # Windows holds the file cache of a just-read model in use; once released it is
+        # available again, and the model fits.
+        free = iter([4.5, 40.0])
+        with mock.patch.object(memory, "available_gb", side_effect=lambda: next(free)), \
+                mock.patch.object(memory, "release_file_cache", return_value=True) as rel:
+            ok, why = memory.fits(int(6.6e9), reserve_gb=6, measured_gb=6.7)
+        self.assertTrue(ok, why)
+        rel.assert_called_once()
+        # Nothing released (not elevated, or not Windows): refused as before.
+        with mock.patch.object(memory, "available_gb", return_value=4.5), \
+                mock.patch.object(memory, "release_file_cache", return_value=False):
+            self.assertFalse(memory.fits(int(6.6e9), reserve_gb=6, measured_gb=6.7)[0])
+
     def test_gpu_memory_is_read_from_nvidia_smi(self):
         done = mock.Mock(stdout="10422\n10422\n")  # MiB free on each of two GPUs
         with mock.patch.object(memory.sys, "platform", "win32"), \

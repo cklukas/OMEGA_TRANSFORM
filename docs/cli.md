@@ -90,7 +90,7 @@ omega replay [-h] [-n N] [--ids IDS [IDS ...]] [-m MODEL] [--think | --no-think]
 Compare Ollama models on the examples (long-running).
 
 ```text
-omega bench [-h] [--examples EXAMPLES [EXAMPLES ...]] [--models MODELS [MODELS ...]] [--exclude EXCLUDE [EXCLUDE ...]] [--max-size-gb MAX_SIZE_GB] [--minutes MINUTES] [--think | --no-think] [--out OUT] [--runs RUNS] [--report REPORT] [--base-url BASE_URL] [--wait-ram-minutes WAIT_RAM_MINUTES] [--reserve-gb RESERVE_GB] [--openrouter MODEL [MODEL ...]] [--no-local] [--max-cost-usd MAX_COST_USD] [--feasible FILE] [--dry-run]
+omega bench [-h] [--examples EXAMPLES [EXAMPLES ...]] [--models MODELS [MODELS ...]] [--exclude EXCLUDE [EXCLUDE ...]] [--max-size-gb MAX_SIZE_GB] [--minutes MINUTES] [--think | --no-think] [--out OUT] [--runs RUNS] [--report REPORT] [--base-url BASE_URL] [--wait-ram-minutes WAIT_RAM_MINUTES] [--reserve-gb RESERVE_GB] [--openrouter MODEL [MODEL ...]] [--no-local] [--max-cost-usd MAX_COST_USD] [--feasible FILE] [--skip-existing] [--dry-run]
 ```
 
 | Argument | Meaning |
@@ -111,6 +111,7 @@ omega bench [-h] [--examples EXAMPLES [EXAMPLES ...]] [--models MODELS [MODELS .
 | `--no-local` | no local models: only the --openrouter models |
 | `--max-cost-usd` | stop an OpenRouter run once its requests cost this much Default: `1.0`. |
 | `--feasible` | only models marked ok in this `omega models` result file |
+| `--skip-existing` | do not run an example with a model again when --out already holds a result of it (in the same reasoning mode) that is not an error |
 | `--dry-run` | only list what would run |
 
 ## `bench-details`

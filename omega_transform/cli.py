@@ -256,8 +256,18 @@ def cmd_bench(a) -> int:
     def log(line: str) -> None:
         print(line, flush=True)
 
+    done = set()
+    if a.skip_existing:
+        from .bench import finished_runs
+        from .config import load_config
+        done = finished_runs(out)
+        variant = {True: "think", False: "no-think"}.get(a.think, "default")
     for ex in examples:
+        name = load_config(ex).name if done else ""
         for m in models:
+            if (name, m["name"], variant if done else "") in done:
+                log(f"=== skipping {m['name']} on {name}: a result exists in {out}")
+                continue
             run_bench([ex], [m], a.minutes, out, Path(a.runs), log=log, think=a.think,
                       reserve_gb=a.reserve_gb, measured=measured, max_cost_usd=a.max_cost_usd,
                       wait_ram_minutes=a.wait_ram_minutes)
@@ -530,6 +540,9 @@ def build_parser() -> argparse.ArgumentParser:
                     help="stop an OpenRouter run once its requests cost this much")
     bn.add_argument("--feasible", metavar="FILE",
                     help="only models marked ok in this `omega models` result file")
+    bn.add_argument("--skip-existing", action="store_true",
+                    help="do not run an example with a model again when --out already holds "
+                         "a result of it (in the same reasoning mode) that is not an error")
     bn.add_argument("--dry-run", action="store_true", help="only list what would run")
     bn.set_defaults(fn=cmd_bench)
 

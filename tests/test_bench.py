@@ -1,5 +1,6 @@
 # Copyright (c) 2026 by C. Klukas
 # SPDX-License-Identifier: GPL-3.0-only
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -14,6 +15,17 @@ from test_engine import TOY, incrementer
 
 
 class BenchTest(unittest.TestCase):
+    def test_finished_runs_leave_out_errors(self):
+        from omega_transform.bench import finished_runs
+        tmp = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        for i, (err, calls) in enumerate([(None, 12), ("RuntimeError: timed out", 0),
+                                          (None, 0)]):
+            (tmp / f"{i}.json").write_text(json.dumps(
+                {"example": f"ex{i}", "model": "m", "variant": "no-think", "error": err,
+                 "llm_calls": calls}), encoding="utf-8", newline="\n")
+        (tmp / "broken.json").write_text("{", encoding="utf-8")
+        self.assertEqual(finished_runs(tmp), {("ex0", "m", "no-think")})
+
     def test_summarize_run(self):
         cfg = load_config(TOY)
         cfg.search.iterations = 10
