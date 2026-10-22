@@ -35,9 +35,10 @@ MAX_DIFF_LINES = 400
 
 
 def installed_models(base_url: str) -> list[dict]:
-    """Chat-capable models known to the Ollama server, smallest first."""
-    with urllib.request.urlopen(f"{base_url.rstrip('/')}/api/tags", timeout=10) as r:
-        models = json.loads(r.read()).get("models", [])
+    """Chat-capable models known to the Ollama server, smallest first (a busy server
+    gets time: llm.ollama_get)."""
+    from .llm import ollama_get
+    models = ollama_get(base_url, "/api/tags").get("models", [])
     chat = [m for m in models if "embed" not in m["name"]
             and "completion" in (m.get("capabilities") or ["completion"])]
     unique: dict[str, dict] = {}  # several tags can name the same weights

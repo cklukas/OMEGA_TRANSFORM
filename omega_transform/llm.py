@@ -105,6 +105,34 @@ def urlopen(url_or_request, timeout: float):
     return urllib.request.urlopen(url_or_request, timeout=timeout)
 
 
+OLLAMA_WAIT = 300.0  # seconds a busy Ollama server gets before a run counts it unreachable
+OLLAMA_DOWN_WAIT = 15.0  # ... and one that refuses connections (not running)
+
+
+def ollama_get(base: str, path: str, timeout: float = 10.0, wait: float | None = None) -> dict:
+    """GET an Ollama API endpoint (``/api/tags``, ``/api/ps``) as JSON, trying again
+    with growing pauses: a busy server is not a server that is down. Ollama on
+    Windows can stall for more than a minute after unloading a large model, and a
+    single 10-second attempt cost whole benchmark runs. Timeouts and server errors
+    are retried for ``wait`` seconds (OLLAMA_WAIT), refused connections only for
+    OLLAMA_DOWN_WAIT, so a server that is not running is still reported quickly.
+    The last error is raised."""
+    wait = OLLAMA_WAIT if wait is None else wait
+    start = time.monotonic()
+    delay = 1.0
+    while True:
+        try:
+            with urllib.request.urlopen(f"{base.rstrip('/')}{path}", timeout=timeout) as resp:
+                return json.loads(resp.read())
+        except (OSError, ValueError) as e:
+            refused = isinstance(getattr(e, "reason", e), ConnectionRefusedError)
+            limit = min(wait, OLLAMA_DOWN_WAIT) if refused else wait
+            if time.monotonic() - start + delay > limit:
+                raise
+            time.sleep(delay)
+            delay = min(delay * 2, 30.0)
+
+
 def _stream_lines(url: str, body: dict, timeout: float, headers: dict | None = None):
     req = urllib.request.Request(
         url, data=json.dumps(body).encode(), method="POST",
@@ -372,9 +400,7 @@ class Ensemble:
         remote = [s for s in specs if provider_of(s, self.cfg) == "openrouter"]
         if local:
             try:
-                req = urllib.request.Request(f"{self.base}/api/tags")
-                with urllib.request.urlopen(req, timeout=10) as resp:
-                    have = {m["name"] for m in json.loads(resp.read()).get("models", [])}
+                have = {m["name"] for m in ollama_get(self.base, "/api/tags").get("models", [])}
             except Exception as e:  # noqa: BLE001 - report any connection problem
                 return [f"cannot reach ollama at {self.base}: {e}"]
             problems += [f"model {n!r} is not installed (ollama pull {n})"
@@ -404,11 +430,10 @@ class Ensemble:
         """Models that would not fit in the memory free right now (not loaded yet)."""
         from .memory import fits
         try:
-            with urllib.request.urlopen(f"{self.base}/api/tags", timeout=10) as resp:
-                sizes = {m["name"]: m.get("size", 0) for m in json.loads(resp.read())["models"]}
-            with urllib.request.urlopen(f"{self.base}/api/ps", timeout=10) as resp:
-                loaded = {m["name"]: m.get("size", 0) / 1e9
-                          for m in json.loads(resp.read()).get("models", [])}
+            sizes = {m["name"]: m.get("size", 0)
+                     for m in ollama_get(self.base, "/api/tags")["models"]}
+            loaded = {m["name"]: m.get("size", 0) / 1e9
+                      for m in ollama_get(self.base, "/api/ps").get("models", [])}
         except (OSError, ValueError, KeyError):
             return []
         out = []
