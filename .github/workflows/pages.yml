@@ -28,6 +28,7 @@ jobs:
   build:
     name: Build the site
     runs-on: ubuntu-24.04
+    timeout-minutes: 30  # usually 3-5 min; never the 6-hour default
     steps:
       - uses: actions/checkout@v5
       - name: Find the pinned ck-git-hosting commit

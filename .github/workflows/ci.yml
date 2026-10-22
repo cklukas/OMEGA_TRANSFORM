@@ -23,6 +23,9 @@ jobs:
   test:
     name: ${{ matrix.os }}, Python ${{ matrix.python }}
     runs-on: ${{ matrix.os }}
+    # A full run takes 1-4 min; a stalled package mirror once held a job for the
+    # 6-hour default.
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
