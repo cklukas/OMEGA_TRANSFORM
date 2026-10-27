@@ -42,7 +42,7 @@ Machine: Apple M1 Max (Mac13,1), 10 cores, 32 GB.
 
 ## Overall ranking
 
-Scores of different examples cannot be added up (a matrix multiply gains ×80, a route heuristic ×1.1), so every example is weighted equally: per example, each run's gain over the starting program is divided by the best **mean** gain of any model of its group there, so that one lucky run does not set the bar. A model's **share** is the mean over its runs and then over the examples (100% = the best model on every example, 0% = no gain; a run whose model never answered counts as 0%). Where models were run more than once, ± is the standard error of the share from the spread between repeated runs. Ties: going down the table, a model whose range (share ± standard error) reaches the range of the first model of the current tie group gets that model's rank, marked =; without repeated runs only equal shares tie. The geometric mean of the improvement factors, the examples won, the examples without any gain and the number of runs (failed ones in brackets) are shown alongside. Only models with results on at least three quarters of the examples are ranked; the others follow without a rank. The same ranking is grouped [by developer](benchmarks/developers.md) and [by country](benchmarks/countries.md) on pages of their own. Released is the model's original publication on Hugging Face, or OpenRouter's listing date.
+Scores of different examples cannot be added up (a matrix multiply gains ×80, a route heuristic ×1.1), so every example is weighted equally: per example, each run's gain over the starting program is divided by the best **mean** gain of any model of its group there, so that one lucky run does not set the bar. A model's **share** is the mean over its runs and then over the examples (100% = the best model on every example, 0% = no gain; a run whose model never answered counts as 0%). Where models were run more than once, ± is the standard error of the share from the spread between repeated runs; in the table of all machines, a model's results on several machines count as such repeats. Ties: going down the table, a model whose range (share ± standard error) reaches the range of the first model of the current tie group gets that model's rank, marked =; without repeated runs only equal shares tie. The geometric mean of the improvement factors, the examples won, the examples without any gain and the number of runs (failed ones in brackets) are shown alongside. Only models with results on at least three quarters of the examples are ranked; the others follow without a rank. The same ranking is grouped [by developer](benchmarks/developers.md) and [by country](benchmarks/countries.md) on pages of their own. Released is the model's original publication on Hugging Face, or OpenRouter's listing date.
 
 ### Local models
 
@@ -57,7 +57,7 @@ Scores of different examples cannot be added up (a matrix multiply gains ×80, a
 | 7 | gemma4:e4b-it-qat (no-think) | 2026-03-02 | **65%** | ×3.05 | 0 | 1 | 15 | 15 |
 | 8 | gemma4:12b-it-qat (no-think) | 2026-05-23 | **65%** | ×3.10 | 0 | 1 | 15 | 15 |
 | 9 | muse-glimmer:30b (think) | 2026-08-09 | **63%** | ×2.64 | 0 | 2 | 15 (1 failed) | 15 |
-| 10 | gemma4:latest (think) | 2026-03-02 | **61%** | ×2.85 | 2 | 1 | 15 | 15 |
+| 10 | gemma4:latest (think) | 2026-03-02 | **61%** | ×2.85 | 3 | 1 | 15 | 15 |
 | 11 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | 2025-07-28 | **60%** | ×2.71 | 0 | 1 | 15 | 15 |
 | 12 | qwen3.8:27b-mtp-q4_K_M (no-think) | 2026-08-05 | **57%** | ×2.79 | 0 | 1 | 15 | 15 |
 | 13 | qwen3:30b-a3b-instruct-2507-q4_K_M (think) | 2025-07-28 | **56%** | ×2.48 | 2 | 2 | 15 | 15 |
@@ -81,7 +81,7 @@ Scores of different examples cannot be added up (a matrix multiply gains ×80, a
 | 31 | nemotron-3-nano:4b (no-think) | 2026-03-07 | **28%** | ×1.32 | 0 | 3 | 15 | 15 |
 | 32 | nemotron-3-nano:4b (think) | 2026-03-07 | **26%** | ×1.44 | 0 | 6 | 15 | 15 |
 | 33 | qwen3.6:27b-coding-mtp-q4_K_M (think) | 2026-04-21 | **26%** | ×1.68 | 0 | 9 | 15 (3 failed) | 15 |
-| 34 | richardyoung/frognano-4b-2609:latest (think) | 2026-09-17 | **24%** | ×1.22 | 0 | 6 | 15 | 15 |
+| 34 | richardyoung/frognano-4b-2609:latest (think) | 2026-09-17 | **24%** | ×1.22 | 1 | 6 | 15 | 15 |
 | 35 | frob/sarvam:30b (no-think) | 2026-03-03 | **21%** | ×1.14 | 0 | 10 | 15 | 15 |
 | 36 | qwen2.5-coder:7b (no-think) | 2024-09-17 | **20%** | ×1.63 | 0 | 6 | 15 | 15 |
 | 37 | gemma4:e2b (think) | 2026-03-02 | **19%** | ×1.21 | 0 | 8 | 15 | 15 |

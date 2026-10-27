@@ -526,19 +526,20 @@ def _cells(rows_by_example: dict[str, list[dict]], where: str = "") -> dict[str,
             share, sd = mean_sd(shares)
             e["cells"][(where, example)] = {
                 "share": float(share), "var": None if sd is None else sd * sd, "n": len(rs),
-                "failed": sum(map(failed, rs)), "no_gain": mean_gain[k] == 0,
+                "runs": len(rs), "failed": sum(map(failed, rs)), "no_gain": mean_gain[k] == 0,
                 "log_gain": sum(math.log(max(run_improvement(r) or 1.0, 1e-9))
                                 for r in rs) / len(rs)}
     return per
 
 
 def _summary(name: str, e: dict) -> dict:
-    """A model's mean share over its cells (examples, or machine and example), with
-    its standard error from the spread between repeated runs.
+    """A model's mean share over its cells (one per example), with its standard
+    error from the spread between repeated runs.
 
-    Per cell, the run-to-run variance of the shares is used; a cell with a single
-    run takes the model's pooled variance from its cells with repeats. A model
-    without any repeated cell has no deviation (None).
+    Per cell, the variance between its ``n`` repeats is used: runs on one machine,
+    or the machines' shares of a cell merged by ``_merge_machines``. A cell with a
+    single run takes the model's pooled variance from its cells with repeats. A
+    model without any repeated cell has no deviation (None).
     """
     cells = e["cells"].values()
     k = len(cells)
@@ -553,13 +554,14 @@ def _summary(name: str, e: dict) -> dict:
     by_machine: dict[str, list[float]] = defaultdict(list)
     for (where, example), c in e["cells"].items():
         by_example[example].append(c["share"])
-        by_machine[where].append(c["share"])
+        for m, share in c.get("machines", {where: c["share"]}).items():
+            by_machine[m].append(share)
     return {"label": name, "model": e["model"],
             "by_example": {x: sum(v) / len(v) for x, v in by_example.items()},
             "by_machine": {m: sum(v) / len(v) for m, v in by_machine.items()},
             "examples": len(by_example), "cells": k,
             "share": sum(c["share"] for c in cells) / k, "sd": sd,
-            "runs": sum(c["n"] for c in cells), "failed": sum(c["failed"] for c in cells),
+            "runs": sum(c["runs"] for c in cells), "failed": sum(c["failed"] for c in cells),
             "geo_gain": math.exp(sum(c["log_gain"] for c in cells) / k),
             "wins": e["wins"], "no_gain": sum(c["no_gain"] for c in cells)}
 
@@ -607,16 +609,50 @@ def ranking(rows_by_example: dict[str, list[dict]]) -> list[dict]:
     return _ranked(_cells(rows_by_example))
 
 
+def _merge_machines(cells: dict[tuple[str, str], dict]) -> dict[tuple[str, str], dict]:
+    """A model's cells of one example on several machines become one cell: its
+    share is the mean of the machines' shares (each machine weighted equally) and
+    its spread the one between them, so the machines count as repeats. That spread
+    holds chance and the machine's effect (a faster machine gets more model calls
+    into the same minutes), hence it is wider than that of repeats on one machine."""
+    by_example: dict[str, dict[str, dict]] = defaultdict(dict)
+    for (where, example), c in cells.items():
+        by_example[example][where] = c
+    out = {}
+    for example, parts in by_example.items():
+        if len(parts) == 1:
+            ((where, c),) = parts.items()
+            out[(where, example)] = c
+            continue
+        share, sd = mean_sd(c["share"] for c in parts.values())
+        out[("", example)] = {
+            "share": float(share), "var": sd * sd, "n": len(parts),
+            "runs": sum(c["runs"] for c in parts.values()),
+            "failed": sum(c["failed"] for c in parts.values()),
+            "no_gain": all(c["no_gain"] for c in parts.values()),
+            "log_gain": sum(c["log_gain"] for c in parts.values()) / len(parts),
+            "machines": {w: c["share"] for w, c in parts.items()}}
+    return out
+
+
 def combined_ranking(by_machine: dict[str, dict[str, list[dict]]]) -> list[dict]:
     """Rank models over several machines without pooling their raw scores: shares
-    are computed per machine (``ranking``) and each (machine, example) cell then
-    counts once, so a machine's timings or speed never set another's reference."""
+    are computed per machine (``ranking``), so a machine's timings or speed never
+    set another's reference, and a model's shares of one example on several
+    machines then count as repeats (``_merge_machines``). An example is won by the
+    model with the highest merged share there."""
     per: dict[str, dict] = {}
     for where, rows_by_example in by_machine.items():
         for k, e in _cells(rows_by_example, where).items():
             mine = per.setdefault(k, {"model": e["model"], "cells": {}, "wins": 0})
             mine["cells"].update(e["cells"])
-            mine["wins"] += e["wins"]
+    best: dict[str, float] = {}
+    for e in per.values():
+        e["cells"] = _merge_machines(e["cells"])
+        for (_, example), c in e["cells"].items():
+            best[example] = max(best.get(example, 0.0), c["share"])
+    for e in per.values():
+        e["wins"] = sum(c["share"] == best[x] for (_, x), c in e["cells"].items())
     return _ranked(per)
 
 
@@ -818,7 +854,8 @@ def ranking_section(results: list[dict], releases: dict[str, dict] | None = None
              "the examples (100% = the best model on every example, 0% = no gain; a run "
              "whose model never answered counts as 0%). Where models were run more than "
              "once, ± is the standard error of the share from the spread between repeated "
-             "runs. Ties: going down the table, a model whose range (share ± standard "
+             "runs; in the table of all machines, a model's results on several machines "
+             "count as such repeats. Ties: going down the table, a model whose range (share ± standard "
              "error) reaches the range of the first model of the current tie group gets "
              "that model's rank, marked =; without repeated runs only equal shares tie. "
              "The geometric "

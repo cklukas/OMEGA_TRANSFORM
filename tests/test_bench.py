@@ -356,8 +356,17 @@ class BenchTest(unittest.TestCase):
         self.assertAlmostEqual(both["a"]["by_machine"]["W"], 1.0)
         self.assertAlmostEqual(both["a"]["share"], 1.0)
         self.assertAlmostEqual(both["b"]["share"], (0.75 + 0.5) / 2)
-        self.assertEqual((both["b"]["runs"], both["b"]["failed"], both["b"]["cells"]), (4, 1, 2))
+        self.assertEqual((both["b"]["runs"], both["b"]["failed"], both["b"]["cells"]), (4, 1, 1))
         self.assertEqual(both["a"]["examples"], 1)
+        # the machines count as repeats of the example: its share's spread between them
+        self.assertAlmostEqual(both["a"]["sd"], 0.0)
+        self.assertAlmostEqual(both["b"]["sd"], 0.125)  # sd(75%, 50%) / sqrt(2)
+        self.assertEqual((both["a"]["wins"], both["b"]["wins"]), (1, 0))
+        # a model on one machine only keeps its own repeats' deviation
+        only = {e["label"]: e for e in combined_ranking(
+            {"M": mac, "W": {"x": [run("a", 0.2, "W"), run("c", 0.1, "W")]}})}
+        self.assertAlmostEqual(only["b"]["sd"], ranked["b"]["sd"])
+        self.assertIsNone(only["c"]["sd"])
         self.assertEqual(both["b"]["by_example"], {"x": (0.75 + 0.5) / 2})
         # a model run only once has no deviation
         self.assertIsNone(ranking({"x": [run("a", 1.0, "M"), run("b", 2.0, "M")]})[0]["sd"])

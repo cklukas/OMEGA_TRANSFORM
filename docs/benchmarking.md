@@ -198,9 +198,14 @@ macOS's), and a faster machine gets more model calls into the same 15 minutes
 (about 1.4 times more on an M1 Max than on an i7-8700K with two GTX 1080 Ti).
 So each example page has one section per machine, shares are computed per
 machine against that machine's own best mean gain, and with results from more
-than one machine the overall ranking comes in two forms: a combined table
-that averages the per-machine shares over every (machine, example) pair, with
-each machine's share in a column of its own, and one table per machine.
+than one machine the overall ranking comes in two forms: a combined table,
+with each machine's share in a column of its own, and one table per machine.
+In the combined table a model's shares of one example on several machines
+count as repeats: the example's share is their mean (each machine weighted
+equally), and the spread between them goes into the standard error, the ±
+and the error bars of the ranking chart. That spread holds chance and the
+machine's effect, so it is wider than that of repeats on one machine; a model
+run on one machine only keeps the deviation of its own repeats, if any.
 
 To merge another machine's results, copy its result files into
 `bench/results/` and regenerate the pages; file names carry the start time,
