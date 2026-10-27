@@ -219,7 +219,7 @@ What changed compared with the starting program:
 
 ### All models
 
-The latest run per model and reasoning mode; the [model benchmarks](../benchmarks/circle_packing_26.md) page has speed, memory and progress over time.
+One run per model and reasoning mode; the [model benchmarks](../benchmarks/circle_packing_26.md) page has speed, memory and progress over time.
 
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|
@@ -254,8 +254,6 @@ The latest run per model and reasoning mode; the [model benchmarks](../benchmark
 | richardyoung/frognano-4b-2609:latest (think) | local | 1.56387 | ×1.05 | 10.6 | 2 |
 | glm-4.7-flash:latest (no-think) | local | 1.54556 | ×1.04 | 8.7 | 1 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 1.49537 | ×1.00 | 8.6 | 1 |
-| qwen3.5:latest (think) | local | 1.4901 | ×1.00 | - | 0 |
-| gemma4:e2b (think) | local | 1.4901 | ×1.00 | - | 0 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | | | | failed: all 3 model requests failed … |
 | cohere/north-mini-code:free (think) | cloud | 1.4901 | ×1.00 | - | 0 |
 | poolside/laguna-s-2.1:free (think) | cloud | 1.4901 | ×1.00 | - | 0 |
@@ -263,7 +261,9 @@ The latest run per model and reasoning mode; the [model benchmarks](../benchmark
 | gemma4:e4b-it-qat (no-think) | local | 1.4901 | ×1.00 | - | 0 |
 | gpt-oss:20b (no-think) | local | 1.4901 | ×1.00 | - | 0 |
 | qwen3.5:27b (no-think) | local | 1.4901 | ×1.00 | - | 0 |
+| qwen3.5:latest (think) | local | 1.4901 | ×1.00 | - | 0 |
 | gemma4:12b-it-qat (think) | local | 1.4901 | ×1.00 | - | 0 |
+| gemma4:e2b (think) | local | 1.4901 | ×1.00 | - | 0 |
 | qwen3.5:27b (think) | local | 1.4901 | ×1.00 | - | 0 |
 | qwen3.8:27b-mtp-q4_K_M (think) | local | 1.4901 | ×1.00 | - | 0 |
 | qwen3.6:27b-coding-mtp-q4_K_M (think) | local | 1.4901 | ×1.00 | - | 0 |

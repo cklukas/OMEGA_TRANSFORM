@@ -9,9 +9,11 @@ budget and the same settings, with only the Ollama model changed. The numbers
 come from the committed result files in `bench/results/`; rerun
 `omega bench` to add new ones (see [Benchmarking models](benchmarking.md)).
 
-Read the results with care: one run per model is a single sample of a
-stochastic search, and timing-based scores (the C++ example) depend on what
-else the machine was doing.
+Read the results with care: one run is a single sample of a stochastic
+search. Repeated runs, from one machine or several, are all kept: the pages
+show their mean and spread, and the ranking ties models whose ranges overlap.
+Timing-based scores (the C++ examples) depend on the machine and on what else
+it was doing, so machines are compared through their own shares only.
 
 ## Pages
 
@@ -40,55 +42,55 @@ Machine: Apple M1 Max (Mac13,1), 10 cores, 32 GB.
 
 ## Overall ranking
 
-Scores of different examples cannot be added up (a matrix multiply gains ×80, a route heuristic ×1.1), so every example is weighted equally: per example, a model's **share** is its gain over the starting program as a fraction of the largest gain any model of its group reached there (100% = the best model, 0% = no gain). The ranking is the mean share over the examples; the geometric mean of the improvement factors, the examples won and the examples without any gain are shown alongside. Only models with results on at least three quarters of the examples are ranked; the others follow without a rank. The same ranking is grouped [by developer](benchmarks/developers.md) and [by country](benchmarks/countries.md) on pages of their own. Released is the model's original publication on Hugging Face, or OpenRouter's listing date.
+Scores of different examples cannot be added up (a matrix multiply gains ×80, a route heuristic ×1.1), so every example is weighted equally: per example, each run's gain over the starting program is divided by the best **mean** gain of any model of its group there, so that one lucky run does not set the bar. A model's **share** is the mean over its runs and then over the examples (100% = the best model on every example, 0% = no gain; a run whose model never answered counts as 0%). Where models were run more than once, ± is the standard error of the share from the spread between repeated runs. Ties: going down the table, a model whose range (share ± standard error) reaches the range of the first model of the current tie group gets that model's rank, marked =; without repeated runs only equal shares tie. The geometric mean of the improvement factors, the examples won, the examples without any gain and the number of runs (failed ones in brackets) are shown alongside. Only models with results on at least three quarters of the examples are ranked; the others follow without a rank. The same ranking is grouped [by developer](benchmarks/developers.md) and [by country](benchmarks/countries.md) on pages of their own. Released is the model's original publication on Hugging Face, or OpenRouter's listing date.
 
 ### Local models
 
-| # | Model | Released | Share of best gain | Geometric-mean gain | Wins | No gain | Examples |
-|--:|---|---|--:|--:|--:|--:|--:|
-| 1 | gemma4:26b-a4b-it-qat (no-think) | 2026-03-11 | **79%** | ×3.45 | 0 | 0 | 15 |
-| 2 | gpt-oss:20b (think) | 2025-08-04 | **79%** | ×3.30 | 2 | 0 | 15 |
-| 3 | gemma4:e4b-it-qat (think) | 2026-03-02 | **76%** | ×3.29 | 2 | 0 | 15 |
-| 4 | gemma4:latest (no-think) | 2026-03-02 | **72%** | ×3.10 | 0 | 0 | 15 |
-| 5 | muse-glimmer:30b (no-think) | 2026-08-09 | **68%** | ×3.08 | 1 | 1 | 15 |
-| 6 | gpt-oss:20b (no-think) | 2025-08-04 | **66%** | ×3.06 | 2 | 1 | 15 |
-| 7 | gemma4:e4b-it-qat (no-think) | 2026-03-02 | **65%** | ×3.05 | 0 | 1 | 15 |
-| 8 | gemma4:12b-it-qat (no-think) | 2026-05-23 | **65%** | ×3.10 | 0 | 1 | 15 |
-| 9 | muse-glimmer:30b (think) | 2026-08-09 | **63%** | ×2.64 | 0 | 2 | 15 |
-| 10 | gemma4:latest (think) | 2026-03-02 | **61%** | ×2.85 | 2 | 1 | 15 |
-| 11 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | 2025-07-28 | **60%** | ×2.71 | 0 | 1 | 15 |
-| 12 | qwen3.8:27b-mtp-q4_K_M (no-think) | 2026-08-05 | **57%** | ×2.79 | 0 | 1 | 15 |
-| 13 | qwen3:30b-a3b-instruct-2507-q4_K_M (think) | 2025-07-28 | **56%** | ×2.48 | 2 | 2 | 15 |
-| 14 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 2026-04-21 | **52%** | ×2.99 | 1 | 3 | 15 |
-| 15 | nemotron-3-nano:30b-a3b-mlx (think) | 2025-12-04 | **45%** | ×2.28 | 0 | 1 | 15 |
-| 16 | qwen3.5:27b (no-think) | 2026-02-24 | **43%** | ×2.41 | 1 | 5 | 15 |
-| 17 | qwen3-coder:30b (no-think) | 2025-07-31 | **43%** | ×1.81 | 0 | 2 | 15 |
-| 18 | qwen3.5:latest (think) | 2026-02-27 | **42%** | ×2.02 | 0 | 5 | 15 |
-| 19 | gemma4:26b-a4b-it-qat (think) | 2026-03-11 | **41%** | ×2.32 | 0 | 5 | 15 |
-| 20 | qwen3.8:27b-mtp-q4_K_M (think) | 2026-08-05 | **40%** | ×2.20 | 1 | 8 | 15 |
-| 21 | qwen3.5:27b (think) | 2026-02-24 | **40%** | ×2.13 | 0 | 5 | 15 |
-| 22 | ingu627/exaone4.0:32b (no-think) | 2025-07-11 | **39%** | ×1.82 | 0 | 5 | 15 |
-| 23 | devstral-small-2:24b (no-think) | 2025-11-28 | **37%** | ×1.78 | 0 | 4 | 15 |
-| 24 | richardyoung/frognano-4b-2609:latest (no-think) | 2026-09-17 | **35%** | ×1.41 | 0 | 5 | 15 |
-| 25 | glm-4.7-flash:latest (no-think) | 2026-01-19 | **34%** | ×1.90 | 0 | 3 | 15 |
-| 26 | gemma4:e2b (no-think) | 2026-03-02 | **34%** | ×1.55 | 0 | 2 | 15 |
-| 27 | qwen3.5:latest (no-think) | 2026-02-27 | **33%** | ×1.39 | 1 | 6 | 15 |
-| 28 | nemotron-3-nano:30b-a3b-mlx (no-think) | 2025-12-04 | **32%** | ×1.37 | 0 | 7 | 15 |
-| 29 | nemotron-3.5-lightning:30b-mlx (no-think) | 2026-08-01 | **31%** | ×1.54 | 0 | 9 | 15 |
-| 30 | gemma4:12b-it-qat (think) | 2026-05-23 | **30%** | ×2.26 | 0 | 6 | 15 |
-| 31 | nemotron-3-nano:4b (no-think) | 2026-03-07 | **28%** | ×1.32 | 0 | 3 | 15 |
-| 32 | nemotron-3-nano:4b (think) | 2026-03-07 | **26%** | ×1.44 | 0 | 6 | 15 |
-| 33 | qwen3.6:27b-coding-mtp-q4_K_M (think) | 2026-04-21 | **26%** | ×1.68 | 0 | 9 | 15 |
-| 34 | richardyoung/frognano-4b-2609:latest (think) | 2026-09-17 | **24%** | ×1.22 | 0 | 6 | 15 |
-| 35 | frob/sarvam:30b (no-think) | 2026-03-03 | **21%** | ×1.14 | 0 | 10 | 15 |
-| 36 | qwen2.5-coder:7b (no-think) | 2024-09-17 | **20%** | ×1.63 | 0 | 6 | 15 |
-| 37 | gemma4:e2b (think) | 2026-03-02 | **19%** | ×1.21 | 0 | 8 | 15 |
-| 38 | glm-4.7-flash:latest (think) | 2026-01-19 | **19%** | ×1.35 | 0 | 10 | 15 |
-| 39 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 2025-03-28 | **18%** | ×1.27 | 0 | 5 | 15 |
-| 40 | nemotron-3.5-lightning:30b-mlx (think) | 2026-08-01 | **15%** | ×1.26 | 0 | 11 | 15 |
-| 41 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 2025-08-13 | **13%** | ×1.25 | 0 | 9 | 15 |
-| 42 | frob/sarvam:30b (think) | 2026-03-03 | **9%** | ×1.03 | 0 | 12 | 15 |
-| 43 | llm-jp-4-8b-omega:q4_k_m (no-think) | 2026-03-16 | **4%** | ×1.03 | 0 | 13 | 15 |
+| # | Model | Released | Share of best gain | Geometric-mean gain | Wins | No gain | Runs | Examples |
+|--:|---|---|--:|--:|--:|--:|--:|--:|
+| 1 | gemma4:26b-a4b-it-qat (no-think) | 2026-03-11 | **79%** | ×3.45 | 0 | 0 | 15 | 15 |
+| 2 | gpt-oss:20b (think) | 2025-08-04 | **79%** | ×3.30 | 2 | 0 | 15 | 15 |
+| 3 | gemma4:e4b-it-qat (think) | 2026-03-02 | **76%** | ×3.29 | 2 | 0 | 15 | 15 |
+| 4 | gemma4:latest (no-think) | 2026-03-02 | **72%** | ×3.10 | 0 | 0 | 15 | 15 |
+| 5 | muse-glimmer:30b (no-think) | 2026-08-09 | **68%** | ×3.08 | 1 | 1 | 15 | 15 |
+| 6 | gpt-oss:20b (no-think) | 2025-08-04 | **66%** | ×3.06 | 2 | 1 | 15 | 15 |
+| 7 | gemma4:e4b-it-qat (no-think) | 2026-03-02 | **65%** | ×3.05 | 0 | 1 | 15 | 15 |
+| 8 | gemma4:12b-it-qat (no-think) | 2026-05-23 | **65%** | ×3.10 | 0 | 1 | 15 | 15 |
+| 9 | muse-glimmer:30b (think) | 2026-08-09 | **63%** | ×2.64 | 0 | 2 | 15 (1 failed) | 15 |
+| 10 | gemma4:latest (think) | 2026-03-02 | **61%** | ×2.85 | 2 | 1 | 15 | 15 |
+| 11 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | 2025-07-28 | **60%** | ×2.71 | 0 | 1 | 15 | 15 |
+| 12 | qwen3.8:27b-mtp-q4_K_M (no-think) | 2026-08-05 | **57%** | ×2.79 | 0 | 1 | 15 | 15 |
+| 13 | qwen3:30b-a3b-instruct-2507-q4_K_M (think) | 2025-07-28 | **56%** | ×2.48 | 2 | 2 | 15 | 15 |
+| 14 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 2026-04-21 | **52%** | ×2.99 | 1 | 3 | 15 | 15 |
+| 15 | nemotron-3-nano:30b-a3b-mlx (think) | 2025-12-04 | **45%** | ×2.28 | 0 | 1 | 15 | 15 |
+| 16 | qwen3.5:27b (no-think) | 2026-02-24 | **43%** | ×2.41 | 1 | 5 | 15 | 15 |
+| 17 | qwen3-coder:30b (no-think) | 2025-07-31 | **43%** | ×1.81 | 0 | 2 | 15 | 15 |
+| 18 | qwen3.5:latest (think) | 2026-02-27 | **42%** | ×2.02 | 0 | 5 | 15 | 15 |
+| 19 | gemma4:26b-a4b-it-qat (think) | 2026-03-11 | **41%** | ×2.32 | 0 | 5 | 15 (3 failed) | 15 |
+| 20 | qwen3.8:27b-mtp-q4_K_M (think) | 2026-08-05 | **40%** | ×2.20 | 1 | 8 | 15 (2 failed) | 15 |
+| 21 | qwen3.5:27b (think) | 2026-02-24 | **40%** | ×2.13 | 0 | 5 | 15 (1 failed) | 15 |
+| 22 | ingu627/exaone4.0:32b (no-think) | 2025-07-11 | **39%** | ×1.82 | 0 | 5 | 15 | 15 |
+| 23 | devstral-small-2:24b (no-think) | 2025-11-28 | **37%** | ×1.78 | 0 | 4 | 15 | 15 |
+| 24 | richardyoung/frognano-4b-2609:latest (no-think) | 2026-09-17 | **35%** | ×1.41 | 0 | 5 | 15 | 15 |
+| 25 | glm-4.7-flash:latest (no-think) | 2026-01-19 | **34%** | ×1.90 | 0 | 3 | 15 | 15 |
+| 26 | gemma4:e2b (no-think) | 2026-03-02 | **34%** | ×1.55 | 0 | 2 | 15 | 15 |
+| 27 | qwen3.5:latest (no-think) | 2026-02-27 | **33%** | ×1.39 | 1 | 6 | 15 | 15 |
+| 28 | nemotron-3-nano:30b-a3b-mlx (no-think) | 2025-12-04 | **32%** | ×1.37 | 0 | 7 | 15 | 15 |
+| 29 | nemotron-3.5-lightning:30b-mlx (no-think) | 2026-08-01 | **31%** | ×1.54 | 0 | 9 | 15 | 15 |
+| 30 | gemma4:12b-it-qat (think) | 2026-05-23 | **30%** | ×2.26 | 0 | 6 | 15 (3 failed) | 15 |
+| 31 | nemotron-3-nano:4b (no-think) | 2026-03-07 | **28%** | ×1.32 | 0 | 3 | 15 | 15 |
+| 32 | nemotron-3-nano:4b (think) | 2026-03-07 | **26%** | ×1.44 | 0 | 6 | 15 | 15 |
+| 33 | qwen3.6:27b-coding-mtp-q4_K_M (think) | 2026-04-21 | **26%** | ×1.68 | 0 | 9 | 15 (3 failed) | 15 |
+| 34 | richardyoung/frognano-4b-2609:latest (think) | 2026-09-17 | **24%** | ×1.22 | 0 | 6 | 15 | 15 |
+| 35 | frob/sarvam:30b (no-think) | 2026-03-03 | **21%** | ×1.14 | 0 | 10 | 15 | 15 |
+| 36 | qwen2.5-coder:7b (no-think) | 2024-09-17 | **20%** | ×1.63 | 0 | 6 | 15 | 15 |
+| 37 | gemma4:e2b (think) | 2026-03-02 | **19%** | ×1.21 | 0 | 8 | 15 | 15 |
+| 38 | glm-4.7-flash:latest (think) | 2026-01-19 | **19%** | ×1.35 | 0 | 10 | 15 | 15 |
+| 39 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 2025-03-28 | **18%** | ×1.27 | 0 | 5 | 15 | 15 |
+| 40 | nemotron-3.5-lightning:30b-mlx (think) | 2026-08-01 | **15%** | ×1.26 | 0 | 11 | 15 (11 failed) | 15 |
+| 41 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 2025-08-13 | **13%** | ×1.25 | 0 | 9 | 15 | 15 |
+| 42 | frob/sarvam:30b (think) | 2026-03-03 | **9%** | ×1.03 | 0 | 12 | 15 (7 failed) | 15 |
+| 43 | llm-jp-4-8b-omega:q4_k_m (no-think) | 2026-03-16 | **4%** | ×1.03 | 0 | 13 | 15 | 15 |
 
 ```mermaid
 xychart-beta
@@ -100,16 +102,16 @@ xychart-beta
 
 ### Cloud models (OpenRouter)
 
-| # | Model | Released | Share of best gain | Geometric-mean gain | Wins | No gain | Examples |
-|--:|---|---|--:|--:|--:|--:|--:|
-| 1 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | 2026-06-04 | **85%** | ×6.11 | 0 | 0 | 2 |
-| 2 | nvidia/nemotron-3-super-120b-a12b:free (think) | 2026-03-11 | **84%** | ×5.77 | 1 | 0 | 2 |
-| 3 | nvidia/nemotron-3-super-120b-a12b:free (no-think) | 2026-03-11 | **76%** | ×6.25 | 1 | 0 | 2 |
-| 4 | cohere/north-mini-code:free (no-think) | 2026-06-17 | **40%** | ×4.33 | 0 | 0 | 2 |
-| 5 | poolside/laguna-s-2.1:free (no-think) | 2026-07-21 | **36%** | ×4.30 | 0 | 0 | 2 |
-| 6 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | 2026-06-04 | **25%** | ×3.90 | 0 | 1 | 2 |
-| 7 | cohere/north-mini-code:free (think) | 2026-06-17 | **0%** | ×1.00 | 0 | 2 | 2 |
-| 8 | poolside/laguna-s-2.1:free (think) | 2026-07-21 | **0%** | ×1.00 | 0 | 2 | 2 |
+| # | Model | Released | Share of best gain | Geometric-mean gain | Wins | No gain | Runs | Examples |
+|--:|---|---|--:|--:|--:|--:|--:|--:|
+| 1 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | 2026-06-04 | **85%** | ×6.11 | 0 | 0 | 2 | 2 |
+| 2 | nvidia/nemotron-3-super-120b-a12b:free (think) | 2026-03-11 | **84%** | ×5.77 | 1 | 0 | 2 | 2 |
+| 3 | nvidia/nemotron-3-super-120b-a12b:free (no-think) | 2026-03-11 | **76%** | ×6.25 | 1 | 0 | 2 | 2 |
+| 4 | cohere/north-mini-code:free (no-think) | 2026-06-17 | **40%** | ×4.33 | 0 | 0 | 2 | 2 |
+| 5 | poolside/laguna-s-2.1:free (no-think) | 2026-07-21 | **36%** | ×4.30 | 0 | 0 | 2 | 2 |
+| 6 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | 2026-06-04 | **25%** | ×3.90 | 0 | 1 | 2 (1 failed) | 2 |
+| 7= | cohere/north-mini-code:free (think) | 2026-06-17 | **0%** | ×1.00 | 0 | 2 | 2 | 2 |
+| 7= | poolside/laguna-s-2.1:free (think) | 2026-07-21 | **0%** | ×1.00 | 0 | 2 | 2 | 2 |
 
 ```mermaid
 xychart-beta

@@ -211,7 +211,7 @@ def example_page(name: str, category: str, cfg, results: list[dict]) -> str:
     """One example: the problem, its starting program, and the best benchmark result
     with the path that led there."""
     from .prompt import fmt_score
-    from .report import best_run, label, latest_per_model, shorten
+    from .report import aggregate, best_run, fmt_count, fmt_runs, label, run_groups, shorten
     lang = "cpp" if cfg.language in ("cpp", "c++", "c") else cfg.language
     code = cfg.initial_path.read_text(encoding="utf-8")
     stages = ", ".join(s.name + (" (timed alone)" if s.exclusive else "")
@@ -274,24 +274,37 @@ def example_page(name: str, category: str, cfg, results: list[dict]) -> str:
             out.append("\nNo model improved on the starting program.\n")
         elif not steps:
             out.append("\nThe path to this result was not recorded (its run predates it).\n")
-    rows = sorted(latest_per_model(mine).get(cfg.name, {}).values(),
+    rows = sorted((aggregate(rs) for rs in run_groups(mine).get(cfg.name, {}).values()),
                   key=lambda r: -(r.get("best_score") if r.get("best_score") is not None
                                   else float("-inf")))
-    out.append("\n### All models\n\nThe latest run per model and reasoning mode; the "
-               f"[model benchmarks](../benchmarks/{cfg.name}.md) page has speed, memory and "
-               "progress over time.\n\n"
-               "| Model | Where | Best | Gain | Minutes to best | New bests |\n"
-               "|---|---|--:|--:|--:|--:|\n")
+    machines = len({r["machine_key"] for r in rows}) > 1
+    repeated = any(r["runs"] > 1 for r in rows)
+    extra = (" | Machine" if machines else "") + (" | Runs" if repeated else "")
+    out.append("\n### All models\n\n"
+               + ("All runs per model and reasoning mode: best score and gain are means "
+                  "± standard deviation; " if repeated else
+                  "One run per model and reasoning mode; ")
+               + f"the [model benchmarks](../benchmarks/{cfg.name}.md) page has speed, memory "
+               "and progress over time.\n\n"
+               f"| Model | Where{extra} | Best | Gain | Minutes to best | New bests |\n"
+               "|---|---|" + "---|" * machines + "--:|" * repeated + "--:|--:|--:|--:|\n")
     for r in rows:
         where = "local" if r.get("provider", "ollama") == "ollama" else "cloud"
+        where += (f" | {r['machine_key']}" if machines else "") \
+            + (f" | {fmt_runs(r)}" if repeated else "")
         if r.get("error"):
             out.append(f"| {label(r)} | {where} | | | | failed: "
                        f"{shorten(r['error'], 60).replace('|', '/')} |\n")
             continue
+        best = fmt_score(r.get("best_score")) + (
+            f" ± {fmt_score(r['best_score_sd'])}" if r.get("best_score_sd") is not None else "")
         gain = f"×{r['improvement']:.2f}" if r.get("improvement") else "-"
+        if r.get("improvement_sd") is not None:
+            gain += f" ± {r['improvement_sd']:.2f}"
         mtb = r.get("minutes_to_best")
-        out.append(f"| {label(r)} | {where} | {fmt_score(r.get('best_score'))} | {gain} | "
-                   f"{'-' if mtb is None else f'{mtb:.1f}'} | {r.get('improvements', 0)} |\n")
+        out.append(f"| {label(r)} | {where} | {best} | {gain} | "
+                   f"{'-' if mtb is None else f'{mtb:.1f}'} | "
+                   f"{fmt_count(r.get('improvements', 0))} |\n")
     return "".join(out)
 
 

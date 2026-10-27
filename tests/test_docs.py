@@ -52,6 +52,24 @@ class DocsTest(unittest.TestCase):
         self.assertIn("| 2 | 2.0 | 5 | parameter sweep | tuned K=5 |", page)
         self.assertIn("````diff\n", page)  # a fence longer than the backticks inside
 
+    def test_example_page_with_repeated_runs(self):
+        from omega_transform.config import load_config
+        from omega_transform.docgen import example_page
+        cfg = load_config(ROOT / "examples" / "toy")
+
+        def run(best, started, cpu, **kw):
+            return dict(example=cfg.name, model="m", variant="think", best_score=best,
+                        initial_score=1, improvement=best, minutes_to_best=1, improvements=1,
+                        minutes_budget=15, started=started, machine={"cpu": cpu}, **kw)
+        results = [run(2, "1", "Apple M1 Max"), run(4, "2", "Apple M1 Max"),
+                   run(1, "3", "Apple M1 Max", error="answer stopped: reasoning exceeded"),
+                   run(5, "4", "Other")]
+        page = example_page("toy", "Testing", cfg, results)
+        self.assertIn("| Model | Where | Machine | Runs | Best | Gain |", page)
+        self.assertIn("| m (think) | local | Apple M1 Max | 3 (1 failed) | 2.33333 ± 1.52753 "
+                      "| ×2.33 ± 1.53 | 1.0 | 1 |", page)
+        self.assertIn("| m (think) | local | Other | 1 | 5 | ×5.00 | 1.0 | 1 |", page)
+
     def test_every_setting_is_described(self):
         page = pages()["docs/configuration.md"]
         for line in page.splitlines():

@@ -359,13 +359,14 @@ def cmd_model_releases(a) -> int:
 
 def cmd_report(a) -> int:
     from .report import write_report
-    path = write_report(Path(a.results), Path(a.output))
+    dirs = [Path(d) for d in a.results or ["bench/results"]]
+    path = write_report(dirs, Path(a.output))
     print(f"wrote {path}")
     from .landscape import latest_snapshot, render
     snap = latest_snapshot(Path(a.openrouter_snapshots))
     if snap is not None:
         from .report import load_results
-        benchmarked = {r["model"] for r in load_results(Path(a.results))}
+        benchmarked = {r["model"] for r in load_results(dirs)}
         page = Path(a.output).parent / "openrouter-models.md"
         page.write_text(render(snap, benchmarked), encoding="utf-8", newline="\n")
         print(f"wrote {page}")
@@ -586,7 +587,9 @@ def build_parser() -> argparse.ArgumentParser:
     sb.set_defaults(fn=cmd_sandbox)
 
     rpt = sub.add_parser("report", help="render bench results into the docs page")
-    rpt.add_argument("--results", default="bench/results", help="result JSON directory")
+    rpt.add_argument("--results", action="append", metavar="DIR",
+                     help="result JSON directory (default: bench/results); repeat it to "
+                          "combine the runs of several directories, e.g. another machine's")
     rpt.add_argument("-o", "--output", default="docs/benchmarks.md",
                      help="overview page to write; its sub-pages go to the directory "
                           "of the same name")

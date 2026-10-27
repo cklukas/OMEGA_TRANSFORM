@@ -1,6 +1,7 @@
 # Copyright (c) 2026 by C. Klukas
 # SPDX-License-Identifier: GPL-3.0-only
 import json
+import math
 import tempfile
 import unittest
 from pathlib import Path
@@ -220,6 +221,163 @@ class BenchTest(unittest.TestCase):
         self.assertIn("| 1 | b | – | **83%** |", page)  # release date unknown
         dated = ranking_section(all_runs, {"b": {"released": "2026-01-02"}})
         self.assertIn("| 1 | b | 2026-01-02 | **83%** |", dated)
+
+    def test_machine_key(self):
+        from omega_transform.report import machine_key
+        self.assertEqual(machine_key({"cpu": "Apple M1 Max", "model": "Mac13,1"}), "Apple M1 Max")
+        self.assertEqual(machine_key({"cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+                                      "gpus": ["NVIDIA GeForce GTX 1080 Ti, 11264 MiB"] * 2}),
+                         "i7-8700K + 2x GTX 1080 Ti")
+        self.assertEqual(machine_key({"cpu": "AMD Ryzen 9 5950X 16-Core Processor",
+                                      "gpus": ["NVIDIA GeForce RTX 4090, 24564 MiB"]}),
+                         "AMD Ryzen 9 5950X + RTX 4090")
+        self.assertEqual(machine_key(None), "unknown machine")
+
+    def test_load_results_from_several_directories(self):
+        import json
+        from omega_transform.report import current, load_results
+        with tempfile.TemporaryDirectory() as tmp:
+            mac, win = Path(tmp) / "bench" / "results", Path(tmp) / "win" / "results"
+            for d in (mac, win):
+                d.mkdir(parents=True)
+            run = {"example": "toy", "model": "m", "best_score": 2.0, "initial_score": 1.0}
+            for d, name in ((mac, "1_old.json"), (mac, "2_new.json"), (win, "3_win.json"),
+                            (win, "2_new.json")):  # the same file copied twice
+                (d / name).write_text(json.dumps(run), encoding="utf-8", newline="\n")
+            (mac / "notes.json").write_text("[]", encoding="utf-8", newline="\n")
+            (mac.parent / "superseded.txt").write_text(
+                "# spoiled\n1_old.json  server stalled\n", encoding="utf-8", newline="\n")
+            results = load_results([mac, win])
+        self.assertEqual([r["_file"] for r in results], ["1_old.json", "2_new.json", "3_win.json"])
+        self.assertEqual(results[0]["_superseded"], "server stalled")
+        self.assertEqual([r["_file"] for r in current(results)], ["2_new.json", "3_win.json"])
+
+    def test_repeated_runs_mean_and_deviation(self):
+        from omega_transform.report import aggregate, mean_sd, run_groups
+        self.assertEqual(mean_sd([3]), (3, None))
+        m, sd = mean_sd([1.0, 2.0, 3.0])
+        self.assertEqual((m, sd), (2.0, 1.0))
+        self.assertEqual(mean_sd([]), (None, None))
+        mac, win = {"cpu": "Apple M1 Max"}, {"cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz"}
+
+        def run(best, started, where=mac, **kw):
+            return dict(dict(example="toy", model="a", variant="think", initial_score=1.0,
+                             best_score=best, improvement=best, started=started, machine=where,
+                             llm_calls=10, attempts=10, ok=5, statuses={"ok": 5}), **kw)
+        runs = [run(2.0, "1"), run(4.0, "2", llm_calls=20),
+                dict(run(1.0, "3"), error="answer stopped: reasoning exceeded"),
+                run(9.0, "4", where=win), dict(run(5.0, "0"), _superseded="pilot")]
+        groups = run_groups(runs)["toy"]
+        self.assertEqual(sorted(groups), [("a (think)", "Apple M1 Max"), ("a (think)", "i7-8700K")])
+        row = aggregate(groups[("a (think)", "Apple M1 Max")])
+        self.assertEqual((row["runs"], row["failed_runs"]), (3, 1))
+        # the failed run counts with its starting program (score 1, gain ×1)
+        self.assertAlmostEqual(row["best_score"], (2 + 4 + 1) / 3)
+        self.assertAlmostEqual(row["best_score_sd"], mean_sd([2.0, 4.0, 1.0])[1])
+        self.assertAlmostEqual(row["improvement"], (2 + 4 + 1) / 3)
+        self.assertEqual(row["llm_calls"], 15)  # speed and calls: completed runs only
+        self.assertNotIn("error", row)
+        single = aggregate(groups[("a (think)", "i7-8700K")])
+        self.assertEqual((single["best_score"], single["best_score_sd"], single["llm_calls"]),
+                         (9.0, None, 10))
+        all_failed = aggregate([dict(run(1.0, "1"), error="boom")])
+        self.assertEqual((all_failed["error"], all_failed["failed_runs"]), ("boom", 1))
+
+    def test_example_page_with_repeats_and_machines(self):
+        mac = {"cpu": "Apple M1 Max", "model": "Mac13,1", "cores": "10", "memory_gb": 32}
+        win = {"cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz", "cores": "12",
+               "memory_gb": 64, "gpus": ["NVIDIA GeForce GTX 1080 Ti, 11264 MiB"] * 2}
+
+        def run(model, best, started, where, **kw):
+            return dict(example="toy", model=model, minutes_budget=5, initial_score=1.0,
+                        best_score=best, improvement=best, started=started, machine=where,
+                        attempts=4, ok=2, llm_calls=4, progress=[[0, 1.0], [2, best]], **kw)
+        results = [run("a:1", 2.0, "1", mac), run("a:1", 4.0, "2", mac),
+                   run("b:1", 3.0, "3", mac), run("a:1", 1.5, "4", win),
+                   run("b:1", 1.0, "5", win, error="answer stopped: reasoning exceeded"),
+                   run("b:1", 2.0, "6", win)]
+        pages = render(results)
+        self.assertIn("| [toy](benchmarks/toy.md) | 2 models in 6 runs", pages["benchmarks.md"])
+        page = pages["benchmarks/toy.md"]
+        self.assertIn("all runs per model", page)
+        self.assertIn("**Apple M1 Max**: Apple M1 Max (Mac13,1), 10 cores, 32 GB, 3 runs", page)
+        self.assertIn("Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz, 12 cores", page)
+        self.assertIn("2x NVIDIA GeForce GTX 1080 Ti, 11264 MiB", page)
+        self.assertLess(page.index("\n## Local models on Apple M1 Max\n"),
+                        page.index("\n## Local models on i7-8700K + 2x GTX 1080 Ti\n"))
+        self.assertIn("| a:1 | 2 |  | 1 | **3** ± 1.41421 | ×3.00 ± 1.41 | 4 |", page)
+        # the failed run counts with its starting program: (1 + 2) / 2
+        self.assertIn("| b:1 | 2 (1 failed) |  | 1 | **1.5** ± ", page)
+        self.assertIn('title "toy, local, Apple M1 Max: best score (mean; line: + 1 sd)"', page)
+        self.assertIn("    bar [3, 3]\n    line [4.414, 3]\n", page)
+        # the best score over time is the mean over the runs
+        self.assertIn("| a:1 | 1 | 3 | 3 | 3 |", page)
+        overview = pages["benchmarks.md"]
+        self.assertIn("#### All machines", overview)
+        self.assertIn("| On Apple M1 Max | On i7-8700K + 2x GTX 1080 Ti |", overview)
+        self.assertIn("#### On i7-8700K + 2x GTX 1080 Ti", overview)
+
+    def test_shares_are_normalised_per_machine(self):
+        from omega_transform.report import combined_ranking, ranking
+
+        def run(model, gain, where, example="x", **kw):
+            return dict(example=example, model=model, initial_score=10.0,
+                        best_score=10.0 * (1 + gain), improvement=1 + gain, started="1",
+                        machine={"cpu": where}, **kw)
+        # one lucky run of a does not set the bar: the reference is the best mean gain
+        mac = {"x": [run("a", 1.0, "M"), run("a", 3.0, "M"), run("b", 1.5, "M"),
+                     run("b", 1.5, "M")]}
+        ranked = {e["label"]: e for e in ranking(mac)}
+        self.assertAlmostEqual(ranked["a"]["share"], 1.0)  # runs at 50% and 150%
+        self.assertAlmostEqual(ranked["b"]["share"], 0.75)
+        self.assertEqual((ranked["a"]["runs"], ranked["a"]["wins"]), (2, 1))
+        self.assertAlmostEqual(ranked["a"]["sd"], math.sqrt(0.5) / math.sqrt(2))
+        self.assertAlmostEqual(ranked["b"]["sd"], 0.0)
+        # a slow machine's small raw gains are compared with its own best only
+        win = {"x": [run("a", 0.2, "W"), run("b", 0.2, "W"),
+                     dict(run("b", 0.0, "W"), error="answer stopped: reasoning exceeded")]}
+        both = {e["label"]: e for e in combined_ranking({"M": mac, "W": win})}
+        self.assertAlmostEqual(both["b"]["by_machine"]["W"], 0.5)  # (100% + 0%) / 2
+        self.assertAlmostEqual(both["a"]["by_machine"]["W"], 1.0)
+        self.assertAlmostEqual(both["a"]["share"], 1.0)
+        self.assertAlmostEqual(both["b"]["share"], (0.75 + 0.5) / 2)
+        self.assertEqual((both["b"]["runs"], both["b"]["failed"], both["b"]["cells"]), (4, 1, 2))
+        self.assertEqual(both["a"]["examples"], 1)
+        self.assertEqual(both["b"]["by_example"], {"x": (0.75 + 0.5) / 2})
+        # a model run only once has no deviation
+        self.assertIsNone(ranking({"x": [run("a", 1.0, "M"), run("b", 2.0, "M")]})[0]["sd"])
+
+    def test_ties_from_overlapping_ranges(self):
+        from omega_transform.report import assign_ranks
+
+        def e(share, sd=None):
+            return {"share": share, "sd": sd}
+        ranked = assign_ranks([e(0.8, 0.05), e(0.74, 0.02), e(0.7, 0.01), e(0.5), e(0.5),
+                               e(0.4)])
+        self.assertEqual([(x["rank"], x["tied"]) for x in ranked],
+                         [(1, True), (1, True), (3, False), (4, True), (4, True), (6, False)])
+        # overlapping only the previous model, not the group's first, starts a new group
+        chain = assign_ranks([e(0.8, 0.03), e(0.74, 0.03), e(0.68, 0.03)])
+        self.assertEqual([x["rank"] for x in chain], [1, 1, 3])
+        from omega_transform.report import ranking_section
+        tied = ranking_section([dict(example="x", model=m, initial_score=1.0, best_score=b,
+                                     improvement=b, started="1")
+                                for m, b in (("a", 3.0), ("b", 2.0), ("c", 2.0))])
+        self.assertIn("| 2= | b |", tied)
+        self.assertIn("| 2= | c |", tied)
+
+    def test_failed_runs_count_as_no_gain_and_are_shown(self):
+        from omega_transform.report import ranking_section
+        base = dict(example="x", initial_score=1.0, started="1")
+        results = [dict(base, model="a", best_score=3.0, improvement=3.0),
+                   dict(base, model="a", best_score=2.0, improvement=2.0),
+                   dict(base, model="b", best_score=1.0, improvement=1.0,
+                        error="answer stopped: reasoning exceeded"),
+                   dict(base, model="b", best_score=3.0, improvement=3.0)]
+        page = ranking_section(results)
+        # a: runs at 133% and 67% of the best mean gain; b: 0% (failed) and 133%
+        self.assertIn("| 1= | a | – | **100%** ± 33% | ×2.45 | 1 | 0 | 2 | 1 |", page)
+        self.assertIn("| 1= | b | – | **67%** ± 67% | ×1.73 | 0 | 0 | 2 (1 failed) | 1 |", page)
 
     def test_timeline_by_developer_and_size(self):
         from omega_transform.releases import params_b

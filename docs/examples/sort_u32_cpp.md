@@ -196,7 +196,7 @@ What changed compared with the starting program:
 
 ### All models
 
-The latest run per model and reasoning mode; the [model benchmarks](../benchmarks/sort_u32_single_thread.md) page has speed, memory and progress over time.
+One run per model and reasoning mode; the [model benchmarks](../benchmarks/sort_u32_single_thread.md) page has speed, memory and progress over time.
 
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|

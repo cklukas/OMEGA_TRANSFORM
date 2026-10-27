@@ -174,12 +174,12 @@ omega sandbox [-h]
 Render bench results into the docs page.
 
 ```text
-omega report [-h] [--results RESULTS] [-o OUTPUT] [--openrouter-snapshots OPENROUTER_SNAPSHOTS]
+omega report [-h] [--results DIR] [-o OUTPUT] [--openrouter-snapshots OPENROUTER_SNAPSHOTS]
 ```
 
 | Argument | Meaning |
 |---|---|
-| `--results` | result JSON directory Default: `bench/results`. |
+| `--results` | result JSON directory (default: bench/results); repeat it to combine the runs of several directories, e.g. another machine's |
 | `-o, --output` | overview page to write; its sub-pages go to the directory of the same name Default: `docs/benchmarks.md`. |
 | `--openrouter-snapshots` | OpenRouter snapshots; the newest becomes docs/openrouter-models.md Default: `bench/openrouter`. |
 

@@ -133,13 +133,31 @@ by step (for example LLM-jp-4 8B, whose upload needed a custom Modelfile).
 Scores of different examples are not comparable: a matrix multiply can gain
 ×80 while a route heuristic gains ×1.1, so adding up improvement factors would
 only rank the C++ kernels. The benchmark page therefore weights every example
-equally. Per example, each model's gain over the starting program is divided
-by the largest gain any model reached there, giving its share (100% for the
-best model, 0% for no gain or a failed run); the ranking is the mean share
-over the examples. The geometric mean of the improvement factors, the number
-of examples won and the number without any gain are shown alongside, local
-and cloud models in separate tables. Models with results on fewer than three
-quarters of the examples are listed without a rank.
+equally. Per example and machine, each run's gain over its starting program is
+divided by the best **mean** gain any model reached there, giving the run's
+share; the reference is a mean so that one lucky run does not set the bar for
+everyone (that run may then show more than 100%). A model's share on an
+example is the mean over its runs, and its overall share the mean over the
+examples: 100% means the best model on every example, 0% no gain. A run whose
+model never answered (its result has an `error`, for example "reasoning
+exceeded" in think mode) counts as 0%, never as missing; the tables show the
+number of runs with the failed ones in brackets. The geometric mean of the
+improvement factors, the number of examples won and the number without any
+gain are shown alongside, local and cloud models in separate tables. Models
+with results on fewer than three quarters of the examples are listed without
+a rank.
+
+Where a model was run more than once, its share gets a deviation: the
+standard error of the mean share, from the spread between its repeated runs.
+On an example with a single run, the model's pooled run-to-run variance from
+its repeated examples stands in; a model without any repeated run has no
+deviation. Ties follow one simple rule: going down the table in order of
+share, a model whose range (share ± standard error) reaches the range of the
+first model of the current tie group shares that model's rank, and both are
+marked `=`; otherwise it starts a new group, ranked by its position. Comparing
+with the group's first model rather than the previous one keeps a chain of
+small overlaps from tying the whole table. Without repeated runs the ranges are
+single points, so only equal shares tie.
 
 Below each ranking, the models are grouped by their developer (Google for
 Gemma, OpenAI for gpt-oss, Alibaba for Qwen, and so on): the developer's best
@@ -151,6 +169,59 @@ A country leaderboard follows: each country is represented by its best
 ranked model (the country of a model is that of its developer's
 headquarters), and every other country's lag behind the leader is given as
 the relative shortfall of its share, 1 − share / leader's share.
+
+## Repeated runs and several machines
+
+All runs are kept: a second or third run of the same example, model and
+reasoning mode adds to the statistics instead of replacing the earlier one.
+Runs are grouped by example, model, reasoning mode and machine. The machine is
+a short label from the `machine` record of each result file: the CPU without
+brand words, plus the NVIDIA GPUs, such as "Apple M1 Max" or
+"i7-8700K + 2x GTX 1080 Ti". Each example's benchmark page then shows the
+number of runs, the mean best score and gain ± their standard deviation (a
+failed run counts with its starting program), means of the call statistics,
+speed and memory over the completed runs, and a line over the score bars at
+mean + 1 standard deviation. A single run shows no deviation, and pages made
+only of single runs look as before.
+
+Machines are never pooled blindly. Raw scores of the timing examples
+(`sort_u32`, `prefix_sum`, `float_parse`, the matrix multiplies) depend on the
+CPU and its C library (Windows' `strtod` is about 3.9 times slower than
+macOS's), and a faster machine gets more model calls into the same 15 minutes
+(about 1.4 times more on an M1 Max than on an i7-8700K with two GTX 1080 Ti).
+So each example page has one section per machine, shares are computed per
+machine against that machine's own best mean gain, and with results from more
+than one machine the overall ranking comes in two forms: a combined table
+that averages the per-machine shares over every (machine, example) pair, with
+each machine's share in a column of its own, and one table per machine.
+
+To merge another machine's results, copy its result files into
+`bench/results/` and regenerate the pages; file names carry the start time,
+example and model, so they do not collide:
+
+```bash
+scp 'workstation:V:/omega_transform/bench-win-20261021/results/*.json' bench/results/
+python3 -m omega_transform report
+python3 -m omega_transform docs
+```
+
+Commit the copied files with the pages, as with any new results. To look at
+a combination without copying, point the report at several directories; a
+file present in more than one of them is read once, and the model check and
+release dates come from next to the first:
+
+```bash
+python3 -m omega_transform report --results bench/results --results ../win/results \
+  -o /Volumes/S8T/tmp/omega_transform/preview/benchmarks.md
+```
+
+A run that a later run replaces, because it was spoiled (the Ollama server
+stalled, the model could not be loaded) or made with an earlier engine
+before a full benchmark pass, belongs in `bench/superseded.txt`: one result
+file name per line, optionally followed by the reason. Such runs stay in
+`bench/results/` and still count for the best program found per example, but
+not for the means, deviations and rankings. Valid repetitions must not be
+listed there.
 
 ## Progress over time
 
@@ -230,7 +301,9 @@ waiting in the server's queue, and the C++ example's timings suffer from any
 other work.
 
 One run is one sample of a random search. Differences of a few percent
-between models mean little; a model that never produces a valid answer, or
-whose answers run away, is a clear signal. The C++ example measures speed,
-so its scores also depend on what else the machine was doing. Compare runs
-from the same machine only.
+between models mean little unless repeated runs back them; ties in the
+ranking mark where they do not. A model that never produces a valid answer,
+or whose answers run away, is a clear signal. The C++ examples measure speed,
+so their scores also depend on the machine and on what else it was doing:
+compare raw scores from the same machine only, and machines through their
+shares.

@@ -2,7 +2,11 @@
 # SPDX-License-Identifier: GPL-3.0-only
 """Render committed benchmark results into documentation pages.
 
-Input: ``bench/results/*.json`` written by ``omega bench``. Output: an overview
+Input: ``bench/results/*.json`` written by ``omega bench``, optionally with the
+result directories of other machines. All runs are kept: repeated runs of an
+example, model and reasoning mode are grouped per machine into means and
+deviations, and the rankings normalise shares per machine before they combine
+machines (see ``ranking`` and ``combined_ranking``). Output: an overview
 page with the overall ranking, and sub-pages by developer, by country, for the
 model check and for each example, with tables and Mermaid ``xychart-beta``
 charts, which ckdocs renders to SVG. The pages are regenerated in CI before
@@ -12,7 +16,8 @@ from __future__ import annotations
 
 import json
 import math
-from collections import defaultdict
+import re
+from collections import Counter, defaultdict
 from pathlib import Path
 
 from .prompt import fmt_score
@@ -28,9 +33,11 @@ budget and the same settings, with only the Ollama model changed. The numbers
 come from the committed result files in `bench/results/`; rerun
 `omega bench` to add new ones (see [Benchmarking models](benchmarking.md)).
 
-Read the results with care: one run per model is a single sample of a
-stochastic search, and timing-based scores (the C++ example) depend on what
-else the machine was doing.
+Read the results with care: one run is a single sample of a stochastic
+search. Repeated runs, from one machine or several, are all kept: the pages
+show their mean and spread, and the ranking ties models whose ranges overlap.
+Timing-based scores (the C++ examples) depend on the machine and on what else
+it was doing, so machines are compared through their own shares only.
 """
 
 PAGE_HEADER = """<!-- Copyright (c) 2026 by C. Klukas -->
@@ -39,22 +46,83 @@ PAGE_HEADER = """<!-- Copyright (c) 2026 by C. Klukas -->
 """
 
 
-def load_results(results_dir: Path) -> list[dict]:
-    out = []
-    for p in sorted(results_dir.glob("*.json")):
-        try:
-            d = json.loads(p.read_text(encoding="utf-8"))
-        except json.JSONDecodeError:
-            continue
-        d["_file"] = p.name
-        out.append(d)
+def load_results(results_dirs) -> list[dict]:
+    """All result files of one or more directories (``bench/results`` and, say, a
+    copy of another machine's). A file name seen twice is read once. Runs listed in
+    a ``superseded.txt`` next to a directory are kept but marked ``_superseded``:
+    they still count for the best program found, not for the statistics."""
+    dirs = [results_dirs] if isinstance(results_dirs, (str, Path)) else list(results_dirs)
+    out, seen, gone = [], set(), {}
+    for d in map(Path, dirs):
+        gone.update(superseded(d.parent / "superseded.txt"))
+        for p in sorted(d.glob("*.json")):
+            if p.name in seen:
+                continue
+            try:
+                r = json.loads(p.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(r, dict) or "example" not in r or "model" not in r:
+                continue
+            seen.add(p.name)
+            r["_file"] = p.name
+            out.append(r)
+    for r in out:
+        if r["_file"] in gone:
+            r["_superseded"] = gone[r["_file"]]
     return out
+
+
+def superseded(path: Path) -> dict[str, str]:
+    """{result file name: reason} from a list of runs that later runs replace: one
+    file name per line, optionally followed by the reason; ``#`` starts a comment."""
+    if not path.exists():
+        return {}
+    out = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.split("#", 1)[0].strip()
+        if line:
+            name, _, why = line.partition(" ")
+            out[name] = why.strip() or "superseded"
+    return out
+
+
+def current(results: list[dict]) -> list[dict]:
+    """The runs the statistics are made of: all but the superseded ones."""
+    return [r for r in results if not r.get("_superseded")]
 
 
 def label(r: dict) -> str:
     """Model name plus its reasoning mode when that was set explicitly."""
     v = r.get("variant", "default")
     return r["model"] if v == "default" else f"{r['model']} ({v})"
+
+
+def _gpu_name(gpu: str) -> str:
+    name = gpu.split(",")[0].strip()
+    for noise in ("NVIDIA ", "GeForce ", "(R)", "(TM)"):
+        name = name.replace(noise, "")
+    return " ".join(name.split())
+
+
+def machine_key(m: dict | None) -> str:
+    """A short, stable name for the machine a run was made on: its CPU without the
+    brand noise, plus its NVIDIA GPUs ("Apple M1 Max", "i7-8700K + 2x GTX 1080 Ti")."""
+    m = m or {}
+    cpu = m.get("cpu") or ""
+    for noise in ("(R)", "(TM)", "(tm)", " CPU", "Processor"):
+        cpu = cpu.replace(noise, "")
+    cpu = re.sub(r"@.*$|\b\d+-Core\b|^Intel\s+Core\s+|^Intel\s+", "", cpu)
+    cpu = " ".join(cpu.split()) or m.get("model") or "unknown machine"
+    gpus = [_gpu_name(g) for g in m.get("gpus") or []]
+    if gpus:
+        counts = {g: gpus.count(g) for g in dict.fromkeys(gpus)}
+        cpu += " + " + " + ".join(f"{n}x {g}" if n > 1 else g for g, n in counts.items())
+    return cpu
+
+
+def machine(r: dict) -> str:
+    return machine_key(r.get("machine"))
 
 
 def chart_label(r: dict) -> str:
@@ -82,24 +150,127 @@ def best_run(results: list[dict], problem: str) -> dict | None:
                default=None)
 
 
-def latest_per_model(results: list[dict]) -> dict[str, dict[str, dict]]:
-    """{example: {model and variant: newest result}}"""
-    table: dict[str, dict[str, dict]] = defaultdict(dict)
-    for r in sorted(results, key=lambda r: r.get("started", "")):
-        table[r["example"]][label(r)] = r
+def failed(r: dict) -> bool:
+    """The run's model never produced a usable answer (``error`` is set)."""
+    return bool(r.get("error"))
+
+
+def run_gain(r: dict) -> float:
+    """A run's gain over its starting program, relative to the starting score; 0 for
+    a failed run or no gain."""
+    init = r.get("initial_score")
+    if failed(r) or r.get("best_score") is None or not init:
+        return 0.0
+    return max(0.0, (r["best_score"] - init) / abs(init))
+
+
+def run_score(r: dict) -> float | None:
+    """The score a run ended with; a failed run keeps its starting program."""
+    return r.get("initial_score") if failed(r) else r.get("best_score")
+
+
+def run_improvement(r: dict) -> float | None:
+    return 1.0 if failed(r) else r.get("improvement")
+
+
+def mean_sd(values) -> tuple[float | None, float | None]:
+    """Mean and sample standard deviation; the deviation is None below two values,
+    and a single value is returned as it is (an int stays an int)."""
+    vals = [v for v in values if v is not None]
+    if not vals:
+        return None, None
+    if len(vals) == 1:
+        return vals[0], None
+    m = sum(vals) / len(vals)
+    return m, math.sqrt(sum((v - m) ** 2 for v in vals) / (len(vals) - 1))
+
+
+def run_groups(results: list[dict]) -> dict[str, dict[tuple[str, str], list[dict]]]:
+    """{example: {(model and variant, machine): its current runs, oldest first}}"""
+    table: dict[str, dict[tuple[str, str], list[dict]]] = defaultdict(lambda: defaultdict(list))
+    for r in sorted(current(results), key=lambda r: r.get("started", "")):
+        table[r["example"]][(label(r), machine(r))].append(r)
     return table
+
+
+# Per-run numbers that a group of repeated runs shows as their mean.
+MEAN_FIELDS = ("llm_calls", "mean_llm_seconds", "attempts", "ok", "improvements",
+               "minutes_to_best", "model_memory_gb", "load_seconds", "prompt_tokens_per_s",
+               "gen_tokens_per_s", "median_call_seconds", "p90_call_seconds",
+               "mean_gen_tokens", "stopped_calls", "cost_usd")
+
+
+def aggregate(runs: list[dict]) -> dict:
+    """One row for a group of repeated runs (same example, model, mode and machine).
+
+    Score and gain are the mean over all runs, a failed run counting with its
+    starting program (gain ×1); their sample deviations go to ``best_score_sd`` and
+    ``improvement_sd``. Call statistics, speed and memory are means over the runs
+    that completed. A group whose runs all failed keeps the newest run's error.
+    """
+    done = [r for r in runs if not failed(r)]
+    row = dict((done or runs)[-1])
+    row.update(runs=len(runs), failed_runs=len(runs) - len(done), machine_key=machine(runs[-1]),
+               _runs=runs)
+    if not done:
+        return row
+    row.pop("error", None)
+    row["best_score"], row["best_score_sd"] = mean_sd(run_score(r) for r in runs)
+    row["improvement"], row["improvement_sd"] = mean_sd(run_improvement(r) for r in runs)
+    row["initial_score"] = mean_sd(r.get("initial_score") for r in runs)[0]
+    for k in MEAN_FIELDS:
+        if any(r.get(k) is not None for r in done):
+            row[k] = mean_sd(r.get(k) for r in done)[0]
+    statuses = sorted({s for r in done for s in r.get("statuses", {})})
+    row["statuses"] = {s: mean_sd(r.get("statuses", {}).get(s, 0) for r in done)[0]
+                       for s in statuses}
+    best = max(done, key=lambda r: r.get("best_score") or float("-inf"))
+    row["best_idea"] = best.get("best_idea")
+    return row
+
+
+def score_over_time(row: dict, minute: float) -> float | None:
+    """Mean best score at a minute over a group's runs (failed runs: the start)."""
+    runs = row.get("_runs") or [row]
+    return mean_sd(run_score(r) if failed(r) else score_at(r.get("progress"), minute)
+                   for r in runs)[0]
 
 
 def _q(label: str) -> str:
     return '"' + label.replace('"', "'") + '"'
 
 
-def bar_chart(title: str, labels: list[str], values: list[float], y_label: str) -> str:
-    top = max([v for v in values if v is not None] or [1.0])
+def bar_chart(title: str, labels: list[str], values: list[float], y_label: str,
+              upper: list[float | None] | None = None) -> str:
+    """A bar chart; ``upper`` (one value per bar, or None) adds a line over the bars
+    that marks the upper end of each bar's range, e.g. mean + 1 sd."""
+    if upper is not None and all(u is None for u in upper):
+        upper = None
+    top = max([v for v in values + (upper or []) if v is not None] or [1.0])
     vals = ", ".join(f"{(v or 0):.4g}" for v in values)
+    line = ""
+    if upper is not None:
+        line = "    line [" + ", ".join(f"{(u if u is not None else v or 0):.4g}"
+                                         for u, v in zip(upper, values)) + "]\n"
     return (f"```mermaid\nxychart-beta\n    title {_q(title)}\n"
             f"    x-axis [{', '.join(_q(lbl) for lbl in labels)}]\n"
-            f"    y-axis {_q(y_label)} 0 --> {top * 1.1:.4g}\n    bar [{vals}]\n```\n")
+            f"    y-axis {_q(y_label)} 0 --> {top * 1.1:.4g}\n    bar [{vals}]\n{line}```\n")
+
+
+def _upper(mean: float | None, sd: float | None) -> float | None:
+    return None if mean is None or sd is None else mean + sd
+
+
+def fmt_count(v) -> str:
+    """A count, or the mean of counts over repeated runs."""
+    if v is None:
+        return "0"
+    return str(v) if isinstance(v, int) else f"{v:.0f}" if float(v).is_integer() else f"{v:.1f}"
+
+
+def fmt_runs(row: dict) -> str:
+    n, bad = row.get("runs", 1), row.get("failed_runs", 0)
+    return f"{n}" + (f" ({bad} failed)" if bad else "")
 
 
 def score_at(progress: list, minute: float) -> float | None:
@@ -142,7 +313,7 @@ def inference_section(example: str, rows: list[dict], level: str = "###",
             f"| {_num(r.get('load_seconds'), '{:.0f}')} | {_num(r.get('prompt_tokens_per_s'), '{:.0f}')} "
             f"| {_num(r.get('gen_tokens_per_s'))} | {_num(r.get('median_call_seconds'), '{:.0f}')} "
             f"| {_num(r.get('p90_call_seconds'), '{:.0f}')} | {_num(r.get('mean_gen_tokens'), '{:.0f}')} "
-            f"| {r.get('stopped_calls', 0)} |\n")
+            f"| {fmt_count(r.get('stopped_calls', 0))} |\n")
     labels = [chart_label(r) for r in rows]
     if any(r.get("gen_tokens_per_s") for r in rows):
         out.append("\n" + bar_chart(f"{example}: generation speed (tokens/s)", labels,
@@ -189,7 +360,8 @@ def cloud_inference_section(example: str, rows: list[dict], level: str) -> str:
         out.append(f"| {label(r)} | {_num(r.get('gen_tokens_per_s'))} "
                    f"| {_num(r.get('median_call_seconds'), '{:.0f}')} "
                    f"| {_num(r.get('p90_call_seconds'), '{:.0f}')} "
-                   f"| {_num(r.get('mean_gen_tokens'), '{:.0f}')} | {r.get('stopped_calls', 0)} "
+                   f"| {_num(r.get('mean_gen_tokens'), '{:.0f}')} "
+                   f"| {fmt_count(r.get('stopped_calls', 0))} "
                    f"| {r.get('cost_usd') or 0:.3f} |\n")
     if any(r.get("gen_tokens_per_s") for r in rows):
         out.append("\n" + bar_chart(f"{example}: generation speed (tokens/s)",
@@ -318,43 +490,118 @@ def developer(model: str) -> str:
     return "other"
 
 
-def ranking(rows_by_example: dict[str, list[dict]]) -> list[dict]:
-    """Rank models across examples whose scores are not comparable with each other.
-
-    Per example, a run's gain is its improvement over the initial program relative
-    to the initial score; its share is that gain over the largest gain any model
-    reached on that example (1 = the best model, 0 = no gain or a failed run).
-    Examples where no model gained anything carry no information and are left out.
-    A model's rank comes from its mean share; the geometric mean of its
-    improvement factors is shown alongside, each example weighted equally.
-    """
-    per: dict[str, dict] = defaultdict(lambda: {"shares": [], "logs": [], "wins": 0,
-                                                "no_gain": 0})
-    for rows in rows_by_example.values():
-        def gain(r):
-            init = r.get("initial_score")
-            if r.get("error") or r.get("best_score") is None or not init:
-                return 0.0
-            return max(0.0, (r["best_score"] - init) / abs(init))
-        gains = {label(r): gain(r) for r in rows}
-        top = max(gains.values(), default=0.0)
+def _cells(rows_by_example: dict[str, list[dict]], where: str = "") -> dict[str, dict]:
+    """{model and variant: its cells} for the runs of one machine: per example the
+    shares of its runs, each run's gain over the best mean gain of any model there."""
+    per: dict[str, dict] = {}
+    for example, rows in rows_by_example.items():
+        runs: dict[str, list[dict]] = defaultdict(list)
+        for r in rows:
+            runs[label(r)].append(r)
+        mean_gain = {k: sum(map(run_gain, rs)) / len(rs) for k, rs in runs.items()}
+        top = max(mean_gain.values(), default=0.0)
         if top <= 0:
             continue
-        winner = max(rows, key=lambda r: gains[label(r)])
-        per[label(winner)]["wins"] += 1
-        for r in rows:
-            e = per[label(r)]
-            e["shares"].append(gains[label(r)] / top)
-            e["model"] = r["model"]
-            e.setdefault("by_example", {})[r["example"]] = gains[label(r)] / top
-            e["logs"].append(math.log(max(r.get("improvement") or 1.0, 1e-9)))
-            e["no_gain"] += gains[label(r)] == 0
-    out = [{"label": k, "model": v["model"], "by_example": v["by_example"],
-            "examples": len(v["shares"]),
-            "share": sum(v["shares"]) / len(v["shares"]),
-            "geo_gain": math.exp(sum(v["logs"]) / len(v["logs"])),
-            "wins": v["wins"], "no_gain": v["no_gain"]} for k, v in per.items()]
-    return sorted(out, key=lambda e: -e["share"])
+        winner = max(mean_gain, key=lambda k: mean_gain[k])
+        for k, rs in runs.items():
+            e = per.setdefault(k, {"model": rs[0]["model"], "cells": {}, "wins": 0})
+            e["wins"] += k == winner
+            shares = [run_gain(r) / top for r in rs]
+            share, sd = mean_sd(shares)
+            e["cells"][(where, example)] = {
+                "share": float(share), "var": None if sd is None else sd * sd, "n": len(rs),
+                "failed": sum(map(failed, rs)), "no_gain": mean_gain[k] == 0,
+                "log_gain": sum(math.log(max(run_improvement(r) or 1.0, 1e-9))
+                                for r in rs) / len(rs)}
+    return per
+
+
+def _summary(name: str, e: dict) -> dict:
+    """A model's mean share over its cells (examples, or machine and example), with
+    its standard error from the spread between repeated runs.
+
+    Per cell, the run-to-run variance of the shares is used; a cell with a single
+    run takes the model's pooled variance from its cells with repeats. A model
+    without any repeated cell has no deviation (None).
+    """
+    cells = e["cells"].values()
+    k = len(cells)
+    known = [c for c in cells if c["var"] is not None]
+    dof = sum(c["n"] - 1 for c in known)
+    sd = None
+    if dof:
+        pooled = sum(c["var"] * (c["n"] - 1) for c in known) / dof
+        sd = math.sqrt(sum((pooled if c["var"] is None else c["var"]) / c["n"]
+                           for c in cells)) / k
+    by_example: dict[str, list[float]] = defaultdict(list)
+    by_machine: dict[str, list[float]] = defaultdict(list)
+    for (where, example), c in e["cells"].items():
+        by_example[example].append(c["share"])
+        by_machine[where].append(c["share"])
+    return {"label": name, "model": e["model"],
+            "by_example": {x: sum(v) / len(v) for x, v in by_example.items()},
+            "by_machine": {m: sum(v) / len(v) for m, v in by_machine.items()},
+            "examples": len(by_example), "cells": k,
+            "share": sum(c["share"] for c in cells) / k, "sd": sd,
+            "runs": sum(c["n"] for c in cells), "failed": sum(c["failed"] for c in cells),
+            "geo_gain": math.exp(sum(c["log_gain"] for c in cells) / k),
+            "wins": e["wins"], "no_gain": sum(c["no_gain"] for c in cells)}
+
+
+def _ranked(per: dict[str, dict]) -> list[dict]:
+    out = sorted((_summary(k, e) for k, e in per.items()), key=lambda e: -e["share"])
+    return assign_ranks(out)
+
+
+def assign_ranks(entries: list[dict]) -> list[dict]:
+    """Ranks that respect the uncertainty, for entries sorted by share (best first).
+
+    A model's range is its share ± its standard error (just the share when it has
+    no deviation). Going down the list, a model whose range reaches the range of
+    the first model of the current tie group shares that model's rank and both are
+    marked ``tied``; otherwise it starts a new group, ranked by its position.
+    Comparing with the group's first model, not the previous one, keeps a long
+    chain of small overlaps from tying the whole table.
+    """
+    eps = 1e-9
+    lead_lo = None
+    for i, e in enumerate(entries, 1):
+        d = e.get("sd") or 0.0
+        e["tied"] = False
+        if lead_lo is not None and e["share"] + d + eps >= lead_lo:
+            e["rank"] = lead["rank"]
+            e["tied"] = lead["tied"] = True
+        else:
+            lead, lead_lo = e, e["share"] - d
+            e["rank"] = i
+    return entries
+
+
+def ranking(rows_by_example: dict[str, list[dict]]) -> list[dict]:
+    """Rank models of one machine across examples whose scores are not comparable.
+
+    Per example, a run's gain is its improvement over the initial program relative
+    to the initial score; its share is that gain over the best mean gain of any
+    model on that example (so one lucky run does not set the bar: the best model
+    has a mean share of 1, a failed run 0). Repeated runs of a model are all kept.
+    Examples where no model gained anything carry no information and are left out.
+    A model's rank comes from its mean share over the examples, each weighted
+    equally; the geometric mean of its improvement factors is shown alongside.
+    """
+    return _ranked(_cells(rows_by_example))
+
+
+def combined_ranking(by_machine: dict[str, dict[str, list[dict]]]) -> list[dict]:
+    """Rank models over several machines without pooling their raw scores: shares
+    are computed per machine (``ranking``) and each (machine, example) cell then
+    counts once, so a machine's timings or speed never set another's reference."""
+    per: dict[str, dict] = {}
+    for where, rows_by_example in by_machine.items():
+        for k, e in _cells(rows_by_example, where).items():
+            mine = per.setdefault(k, {"model": e["model"], "cells": {}, "wins": 0})
+            mine["cells"].update(e["cells"])
+            mine["wins"] += e["wins"]
+    return _ranked(per)
 
 
 def developer_ranking(ranked: list[dict]) -> list[dict]:
@@ -474,55 +721,118 @@ def _promote(text: str) -> str:
                    for line in text.splitlines(keepends=True))
 
 
+def _split(ranked: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Models with results on at least three quarters of the cells are ranked (among
+    themselves); the others follow without a rank."""
+    if not ranked:
+        return [], []
+    most = max(e["cells"] for e in ranked)
+    full = [e for e in ranked if 4 * e["cells"] >= 3 * most]
+    return assign_ranks(full), [e for e in ranked if e not in full]
+
+
+def _is_local(r: dict) -> bool:
+    return r.get("provider", "ollama") == "ollama"
+
+
 def _groups(results: list[dict]):
-    """(title, tag, ranked models with enough examples) for local, then cloud models."""
-    latest = latest_per_model(results)
+    """For local, then cloud models: (title, tag, ranked models, unranked models,
+    {machine: (ranked, unranked)}). The first ranking combines all machines from
+    their per-machine shares; with a single machine it is that machine's ranking."""
     for title, local in (("Local models", True), ("Cloud models (OpenRouter)", False)):
-        by_example = {}
-        for example, by_model in latest.items():
-            rows = [r for r in by_model.values()
-                    if (r.get("provider", "ollama") == "ollama") == local]
-            if len(rows) > 1:
-                by_example[example] = rows
-        ranked = ranking(by_example)
-        if not ranked:
+        by_machine: dict[str, dict[str, list[dict]]] = defaultdict(lambda: defaultdict(list))
+        for r in sorted(current(results), key=lambda r: r.get("started", "")):
+            if _is_local(r) == local:
+                by_machine[machine(r)][r["example"]].append(r)
+        by_machine = {m: {x: rows for x, rows in by_x.items() if len({label(r) for r in rows}) > 1}
+                      for m, by_x in sorted(by_machine.items())}
+        full, rest = _split(combined_ranking(by_machine))
+        if not full and not rest:
             continue
-        most = max(e["examples"] for e in ranked)
-        full = [e for e in ranked if 4 * e["examples"] >= 3 * most]
-        yield title, "local" if local else "cloud", full, [e for e in ranked if e not in full]
+        per = {m: _split(ranking(by_x)) for m, by_x in by_machine.items() if len(by_machine) > 1}
+        yield (title, "local" if local else "cloud", full, rest,
+               {m: fr for m, fr in per.items() if fr[0] or fr[1]})
+
+
+def _rank_cell(e: dict | None) -> str:
+    if e is None:
+        return "–"
+    return f"{e['rank']}=" if e.get("tied") else str(e["rank"])
+
+
+def _share_cell(e: dict) -> str:
+    return f"**{e['share']:.0%}**" + (f" ± {e['sd']:.0%}" if e.get("sd") is not None else "")
+
+
+def _ranking_table(full: list[dict], rest: list[dict], releases, machines: list[str],
+                   chart_title: str) -> str:
+    """One ranking table; with several machines, each machine's share is a column."""
+    cols = "".join(f" | On {m}" for m in machines)
+    out = ["| # | Model | Released | Share of best gain" + cols + " | Geometric-mean gain "
+           "| Wins | No gain | Runs | Examples |\n"
+           "|--:|---|---|--:|" + "--:|" * len(machines) + "--:|--:|--:|--:|--:|\n"]
+    for e in full + rest:
+        per = "".join(" | " + (f"{e['by_machine'][m]:.0%}" if m in e["by_machine"] else "–")
+                      for m in machines)
+        cells = e["examples"] if not machines else f"{e['examples']} ({e['cells']} cells)"
+        out.append(f"| {_rank_cell(e if e in full else None)} | {e['label']} | "
+                   f"{released(releases, e['model'])} | {_share_cell(e)}{per} | "
+                   f"×{e['geo_gain']:.2f} | {e['wins']} | {e['no_gain']} | "
+                   f"{fmt_runs({'runs': e['runs'], 'failed_runs': e['failed']})} | {cells} |\n")
+    if len(full) > 1:
+        out.append("\n" + bar_chart(
+            chart_title + (" (line: + 1 standard error)" if any(e["sd"] is not None for e in full)
+                           else ""),
+            [chart_label({"model": e["label"]}) for e in full],
+            [100 * e["share"] for e in full], "% of the best gain",
+            [None if e["sd"] is None else 100 * (e["share"] + e["sd"]) for e in full]))
+    return "".join(out)
 
 
 def ranking_section(results: list[dict], releases: dict[str, dict] | None = None) -> str:
-    """The overall ranking, one table per group (local and cloud models)."""
+    """The overall ranking, one table per group (local and cloud models); with
+    results from several machines, a combined table and one table per machine."""
     parts = ["\n## Overall ranking\n\n"
              "Scores of different examples cannot be added up (a matrix multiply gains "
              "×80, a route heuristic ×1.1), so every example is weighted equally: per "
-             "example, a model's **share** is its gain over the starting program as a "
-             "fraction of the largest gain any model of its group reached there (100% "
-             "= the best model, 0% = no gain). The ranking is the mean share over the "
-             "examples; the geometric mean of the improvement factors, the examples "
-             "won and the examples without any gain are shown alongside. Only models with "
-             "results on at least three quarters of the examples are ranked; the others "
-             "follow without a rank. The same ranking is grouped "
+             "example, each run's gain over the starting program is divided by the best "
+             "**mean** gain of any model of its group there, so that one lucky run does "
+             "not set the bar. A model's **share** is the mean over its runs and then over "
+             "the examples (100% = the best model on every example, 0% = no gain; a run "
+             "whose model never answered counts as 0%). Where models were run more than "
+             "once, ± is the standard error of the share from the spread between repeated "
+             "runs. Ties: going down the table, a model whose range (share ± standard "
+             "error) reaches the range of the first model of the current tie group gets "
+             "that model's rank, marked =; without repeated runs only equal shares tie. "
+             "The geometric "
+             "mean of the improvement factors, the examples won, the examples without any "
+             "gain and the number of runs (failed ones in brackets) are shown alongside. "
+             "Only models with results on at least three quarters of the examples are "
+             "ranked; the others follow without a rank. The same ranking is grouped "
              "[by developer](benchmarks/developers.md) and "
              "[by country](benchmarks/countries.md) on pages of their own. Released is "
              "the model's original publication on Hugging Face, or OpenRouter's listing "
              "date.\n"]
-    for title, tag, full, rest in _groups(results):
-        parts.append(f"\n### {title}\n\n"
-                     "| # | Model | Released | Share of best gain | Geometric-mean gain "
-                     "| Wins | No gain | Examples |\n|--:|---|---|--:|--:|--:|--:|--:|\n")
-        for i, e in enumerate(full + rest, 1):
-            rank = str(i) if i <= len(full) else "–"
-            parts.append(f"| {rank} | {e['label']} | {released(releases, e['model'])} | "
-                         f"**{e['share']:.0%}** | "
-                         f"×{e['geo_gain']:.2f} | {e['wins']} | {e['no_gain']} | "
-                         f"{e['examples']} |\n")
-        if len(full) > 1:
-            parts.append("\n" + bar_chart(
-                f"Overall, {tag}: mean share of the best gain (%)",
-                [chart_label({"model": e["label"]}) for e in full],
-                [100 * e["share"] for e in full], "% of the best gain"))
+    for title, tag, full, rest, per_machine in _groups(results):
+        parts.append(f"\n### {title}\n\n")
+        if not per_machine:
+            parts.append(_ranking_table(full, rest, releases, [],
+                                        f"Overall, {tag}: mean share of the best gain (%)"))
+            continue
+        machines = list(per_machine)
+        parts.append("Results come from several machines. Raw scores are not pooled: "
+                     "timing examples depend on the CPU and its C library, and a faster "
+                     "machine gets more model calls into the same minutes. Shares are "
+                     "computed per machine, against that machine's best mean gain; the "
+                     "combined ranking averages them over every (machine, example) cell, "
+                     "and each machine's own share is shown in a column. Each machine's "
+                     "own ranking follows.\n\n#### All machines\n\n")
+        parts.append(_ranking_table(full, rest, releases, machines,
+                                    f"Overall, {tag}, all machines: mean share (%)"))
+        for m, (mfull, mrest) in per_machine.items():
+            parts.append(f"\n#### On {m}\n\n")
+            parts.append(_ranking_table(mfull, mrest, releases, [],
+                                        f"Overall, {tag}, {m}: mean share (%)"))
     return "".join(parts)
 
 
@@ -552,7 +862,7 @@ def developers_page(results: list[dict], releases: dict[str, dict] | None = None
         for who in known:
             founded, where, about = DEVELOPER_INFO[who]
             parts.append(f"- **{who}** (founded {founded}, {where}): {about}\n")
-    for title, tag, full, _ in _groups(results):
+    for title, tag, full, _, _ in _groups(results):
         devs = developer_ranking(full)
         timeline_text = timeline_section(full, releases, tag) if releases else ""
         if len(devs) < 2 and not timeline_text:
@@ -585,7 +895,7 @@ def countries_page(results: list[dict], releases: dict[str, dict] | None = None)
              "to that share. Released is the model's original publication on Hugging Face, "
              "or OpenRouter's listing date.\n"]
     found = False
-    for title, _, full, _ in _groups(results):
+    for title, _, full, _, _ in _groups(results):
         countries = country_ranking(full)
         if len(countries) < 2:
             continue
@@ -608,13 +918,24 @@ def model_check_page(check: dict | None) -> str:
     return PAGE_HEADER + (body or "\n# Model check\n\nNo model check has been recorded.\n")
 
 
-def _machine(results: list[dict]) -> str:
-    machines = {json.dumps(r.get("machine", {}), sort_keys=True) for r in results}
-    m = results[-1].get("machine", {})
-    return (f"\nMachine: {m.get('cpu', '?')} ({m.get('model', '')}), {m.get('cores', '?')} "
-            f"cores, {m.get('memory_gb', '?')} GB"
-            + (f" — results come from {len(machines)} different machines" if len(machines) > 1
-               else "") + ".\n")
+def _machine_text(m: dict) -> str:
+    model = f" ({m['model']})" if m.get("model") else ""
+    return (f"{m.get('cpu', '?')}{model}, {m.get('cores', '?')} cores, "
+            f"{m.get('memory_gb', '?')} GB" + "".join(
+                f", {n}x {g}" if n > 1 else f", {g}"
+                for g, n in Counter(m.get("gpus") or []).items()))
+
+
+def _machine(runs: list[dict]) -> str:
+    """Which machine the runs come from, or each machine with its number of runs."""
+    by: dict[str, list[dict]] = defaultdict(list)
+    for r in runs:
+        by[machine(r)].append(r)
+    if len(by) <= 1:
+        return f"\nMachine: {_machine_text(runs[-1].get('machine', {}))}.\n"
+    return ("\nMachines: " + "; ".join(
+        f"**{k}**: {_machine_text(rs[-1].get('machine', {}))}, {len(rs)} runs"
+        for k, rs in sorted(by.items())) + ".\n")
 
 
 def render(results: list[dict], check: dict | None = None,
@@ -622,85 +943,113 @@ def render(results: list[dict], check: dict | None = None,
     """All benchmark pages: ``benchmarks.md`` (the overview and overall ranking) and the
     sub-pages under ``benchmarks/``, keyed by their path relative to the docs directory."""
     pages = {"benchmarks/model-check.md": model_check_page(check)}
-    if not results:
+    runs = current(results)
+    if not runs:
         pages["benchmarks.md"] = HEADER + "\nNo benchmark results have been committed yet.\n"
         return pages
-    latest = sorted(latest_per_model(results).items())
+    groups = sorted(run_groups(results).items())
     parts = [HEADER, "\n## Pages\n\n| Page | What it shows |\n|---|---|\n"]
     for name, title, what in SUBPAGES:
         parts.append(f"| [{title}](benchmarks/{name}.md) | {what} |\n")
-    for example, by_model in latest:
-        parts.append(f"| [{example}](benchmarks/{example}.md) | {len(by_model)} models on "
-                     f"this example: scores, speed, memory and progress over time |\n")
-    parts.append(_machine(results))
+    for example, by_group in groups:
+        models = len({lbl for lbl, _ in by_group})
+        n = sum(len(rs) for rs in by_group.values())
+        parts.append(f"| [{example}](benchmarks/{example}.md) | {models} models"
+                     + (f" in {n} runs" if n > models else "") + " on this example: "
+                     "scores, speed, memory and progress over time |\n")
+    parts.append(_machine(runs))
     parts.append(ranking_section(results, releases))
     pages["benchmarks.md"] = "".join(parts)
     pages["benchmarks/developers.md"] = developers_page(results, releases)
     pages["benchmarks/countries.md"] = countries_page(results, releases)
-    for example, by_model in latest:
-        rows = list(by_model.values())
-        budget = max(r.get("minutes_budget", 0) for r in rows)
-        local = [r for r in rows if r.get("provider", "ollama") == "ollama"]
-        cloud = [r for r in rows if r.get("provider", "ollama") != "ollama"]
-        page = [PAGE_HEADER, f"\n# {example}\n\n{len(rows)} models, {budget:g} minutes each, "
-                f"latest run per model. The [overall ranking](../benchmarks.md#overall-ranking) "
-                f"compares the models over all examples.\n", _machine(rows)]
-        for title, group, intro in (
-                ("Local models", local, "Ollama on this machine."),
-                ("Cloud models (OpenRouter)", cloud,
+    for example, by_group in groups:
+        rows = [aggregate(rs) for rs in by_group.values()]
+        mine = [r for rs in by_group.values() for r in rs]
+        budget = max(r.get("minutes_budget", 0) for r in mine)
+        models = len({lbl for lbl, _ in by_group})
+        repeated = any(r["runs"] > 1 for r in rows)
+        page = [PAGE_HEADER, f"\n# {example}\n\n{models} models, {budget:g} minutes each, "
+                + ("all runs per model: numbers are means over a model's runs, ± their "
+                   "standard deviation, and a run whose model never answered counts with "
+                   "its starting program; the line in the charts marks mean + 1 sd. "
+                   if repeated else "one run per model. ")
+                + "The [overall ranking](../benchmarks.md#overall-ranking) "
+                "compares the models over all examples.\n", _machine(mine)]
+        machines = sorted({r["machine_key"] for r in rows})
+        for title, local, intro in (
+                ("Local models", True, "Ollama on this machine."),
+                ("Cloud models (OpenRouter)", False,
                  "Free OpenRouter models; times include the network and the provider's queue.")):
-            if group:
-                page.append(_promote(group_section(example, title, intro, group, budget)))
+            for m in machines:
+                group = [r for r in rows if _is_local(r) == local and r["machine_key"] == m]
+                if group:
+                    where = m if len(machines) > 1 else None
+                    page.append(_promote(group_section(
+                        example, f"{title} on {m}" if where else title, intro, group, budget,
+                        where)))
         pages[f"benchmarks/{example}.md"] = "".join(page)
     return pages
 
 
-def group_section(example: str, title: str, intro: str, rows: list[dict], budget: float) -> str:
-    """Tables and charts of one group of models (local or cloud) on one example."""
+def group_section(example: str, title: str, intro: str, rows: list[dict], budget: float,
+                  where: str | None = None) -> str:
+    """Tables and charts of one group of models (local or cloud) on one example and
+    machine. ``rows`` come from ``aggregate`` (or are single runs)."""
     rows = sorted(rows, key=lambda r: -(r.get("best_score") or float("-inf")))
     ok_rows = [r for r in rows if not r.get("error")]
-    tag = "local" if title.startswith("Local") else "cloud"
+    tag = ("local" if title.startswith("Local") else "cloud") + (f", {where}" if where else "")
+    repeated = any(r.get("runs", 1) > 1 for r in rows)
+    runs_col = " | Runs" if repeated else ""
     parts = [f"\n### {title}\n\n{intro}\n\n",
-             "| Model | Params | Initial | Best | Gain | LLM calls | s/call | Valid "
-             "| New bests | Min to best |\n|---|---|--:|--:|--:|--:|--:|--:|--:|--:|\n"]
+             f"| Model{runs_col} | Params | Initial | Best | Gain | LLM calls | s/call | Valid "
+             "| New bests | Min to best |\n|---|" + "--:|" * repeated
+             + "---|--:|--:|--:|--:|--:|--:|--:|--:|\n"]
     for r in rows:
+        runs = f" | {fmt_runs(r)}" if repeated else ""
         if r.get("error"):
-            parts.append(f"| {label(r)} | {r.get('model_params', '')} | | | | | | | | "
+            parts.append(f"| {label(r)}{runs} | {r.get('model_params', '')} | | | | | | | | "
                          f"failed: {r['error'][:60]} |\n")
             continue
         gain = f"×{r['improvement']:.2f}" if r.get("improvement") else "-"
+        if r.get("improvement") and r.get("improvement_sd") is not None:
+            gain += f" ± {r['improvement_sd']:.2f}"
         mtb = f"{r['minutes_to_best']:.1f}" if r.get("minutes_to_best") is not None else "-"
         parts.append(
-            f"| {label(r)} | {r.get('model_params', '')} | {fmt_score(r.get('initial_score'))} "
-            f"| **{fmt_score(r.get('best_score'))}** | {gain} | {r.get('llm_calls', 0)} "
+            f"| {label(r)}{runs} | {r.get('model_params', '')} | {fmt_score(r.get('initial_score'))} "
+            f"| **{fmt_score(r.get('best_score'))}**"
+            + (f" ± {fmt_score(r['best_score_sd'])}" if r.get("best_score_sd") is not None else "")
+            + f" | {gain} | {fmt_count(r.get('llm_calls', 0))} "
             f"| {r.get('mean_llm_seconds', 0):.0f} | {_pct(r.get('ok', 0), r.get('attempts', 0))} "
-            f"| {r.get('improvements', 0)} | {mtb} |\n")
+            f"| {fmt_count(r.get('improvements', 0))} | {mtb} |\n")
     if not ok_rows:
         return "".join(parts)
     labels = [chart_label(r) for r in ok_rows]
-    parts.append("\n" + bar_chart(f"{example}, {tag}: best score", labels,
-                                  [r.get("best_score") for r in ok_rows], "score"))
+    parts.append("\n" + bar_chart(
+        f"{example}, {tag}: best score" + (" (mean; line: + 1 sd)" if repeated else ""), labels,
+        [r.get("best_score") for r in ok_rows], "score",
+        [_upper(r.get("best_score"), r.get("best_score_sd")) for r in ok_rows]))
     parts.append("\n" + bar_chart(f"{example}, {tag}: valid answers (%)", labels,
                                   [100 * r.get("ok", 0) / max(1, r.get("attempts", 0))
                                    for r in ok_rows], "% of answers"))
     parts.append("\n" + bar_chart(f"{example}, {tag}: seconds per LLM call", labels,
                                   [r.get("mean_llm_seconds") for r in ok_rows], "seconds"))
     parts.append(inference_section(f"{example}, {tag}", ok_rows, level="####",
-                                   local=tag == "local"))
+                                   local=tag.startswith("local")))
     marks = [budget * f for f in (0.25, 0.5, 0.75, 1.0)]
     parts.append("\n#### Best score over time\n\n| Model | "
                  + " | ".join(f"{t:g} min" for t in marks) + " |\n|---|"
                  + "--:|" * len(marks) + "\n")
     for r in ok_rows:
         parts.append(f"| {label(r)} | " + " | ".join(
-            fmt_score(score_at(r.get("progress"), t)) for t in marks) + " |\n")
+            fmt_score(score_over_time(r, t)) for t in marks) + " |\n")
     statuses = sorted({s for r in ok_rows for s in r.get("statuses", {})})
-    parts.append("\n#### Outcome of the LLM answers\n\n| Model | "
+    parts.append("\n#### Outcome of the LLM answers\n\n"
+                 + ("Mean per completed run.\n\n" if repeated else "") + "| Model | "
                  + " | ".join(s.replace("_", " ") for s in statuses)
                  + " |\n|---|" + "--:|" * len(statuses) + "\n")
     for r in ok_rows:
         st = r.get("statuses", {})
-        parts.append(f"| {label(r)} | " + " | ".join(str(st.get(s, 0)) for s in statuses)
+        parts.append(f"| {label(r)} | " + " | ".join(fmt_count(st.get(s, 0)) for s in statuses)
                      + " |\n")
     parts.append("\n#### Best idea per model\n\n")
     for r in ok_rows:
@@ -709,14 +1058,18 @@ def group_section(example: str, title: str, intro: str, rows: list[dict], budget
     return "".join(parts)
 
 
-def write_report(results_dir: Path, out: Path) -> Path:
+def write_report(results_dirs, out: Path) -> Path:
     """Write the overview page ``out`` and its sub-pages in the directory of the same
-    name (``docs/benchmarks.md`` and ``docs/benchmarks/``); stale sub-pages are removed."""
-    check_file = results_dir.parent / "model-check.json"
+    name (``docs/benchmarks.md`` and ``docs/benchmarks/``); stale sub-pages are removed.
+    ``results_dirs`` is one result directory or several (their runs are combined);
+    the model check and release dates are taken from next to the first."""
+    dirs = [Path(results_dirs)] if isinstance(results_dirs, (str, Path)) \
+        else [Path(d) for d in results_dirs]
+    check_file = dirs[0].parent / "model-check.json"
     check = json.loads(check_file.read_text(encoding="utf-8")) if check_file.exists() else None
     from .releases import load
-    releases = load(results_dir.parent / "model-releases.json")
-    pages = render(load_results(results_dir), check, releases)
+    releases = load(dirs[0].parent / "model-releases.json")
+    pages = render(load_results(dirs), check, releases)
     sub = out.with_suffix("")
     sub.mkdir(parents=True, exist_ok=True)
     written = set()
