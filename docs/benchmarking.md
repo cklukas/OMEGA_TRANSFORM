@@ -180,9 +180,16 @@ brand words, plus the NVIDIA GPUs, such as "Apple M1 Max" or
 "i7-8700K + 2x GTX 1080 Ti". Each example's benchmark page then shows the
 number of runs, the mean best score and gain ± their standard deviation (a
 failed run counts with its starting program), means of the call statistics,
-speed and memory over the completed runs, and a line over the score bars at
-mean + 1 standard deviation. A single run shows no deviation, and pages made
-only of single runs look as before.
+speed and memory over the completed runs, and error bars of ± 1 standard
+deviation on the score, valid-answer, call-time and speed charts (the ranking
+chart shows ± the standard error of the share). An error bar is cut off where
+the chart's range ends: at 0, and at 100 for percentages. Memory has no error
+bars, and a single run shows no deviation, so pages made only of single runs
+look as before.
+
+The error bars use the `error` line of ckdocs' XY charts (ckdocs 0.9.0 and
+later), an extension of Mermaid's `xychart-beta`: GitHub's own Markdown
+preview cannot render a chart that uses it, the published site can.
 
 Machines are never pooled blindly. Raw scores of the timing examples
 (`sort_u32`, `prefix_sum`, `float_parse`, the matrix multiplies) depend on the

@@ -283,6 +283,19 @@ class BenchTest(unittest.TestCase):
         all_failed = aggregate([dict(run(1.0, "1"), error="boom")])
         self.assertEqual((all_failed["error"], all_failed["failed_runs"]), ("boom", 1))
 
+    def test_error_bars(self):
+        from omega_transform.report import bar_chart, error_bar
+        self.assertIsNone(error_bar(3, None))
+        self.assertEqual(error_bar(3, 1), (1, 1))
+        self.assertEqual(error_bar(0.5, 2), (0.5, 2))  # the axis starts at 0
+        self.assertEqual(error_bar(95, 10, 0, 100), (10, 5))  # a percentage ends at 100
+        chart = bar_chart("t", ["a", "b"], [3, 0.5], "y", [(1, 1), None])
+        self.assertIn("    bar [3, 0.5]\n    error [1, ]\n", chart)
+        self.assertIn("y-axis \"y\" 0 --> 4.4\n", chart)
+        chart = bar_chart("t", ["a", "b"], [3, 0.5], "y", [(1, 1), (0.5, 2)])
+        self.assertIn("    error [1, 0.5] [1, 2]\n", chart)
+        self.assertNotIn("error", bar_chart("t", ["a"], [3], "y", [None]))
+
     def test_example_page_with_repeats_and_machines(self):
         mac = {"cpu": "Apple M1 Max", "model": "Mac13,1", "cores": "10", "memory_gb": 32}
         win = {"cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz", "cores": "12",
@@ -308,8 +321,10 @@ class BenchTest(unittest.TestCase):
         self.assertIn("| a:1 | 2 |  | 1 | **3** ± 1.41421 | ×3.00 ± 1.41 | 4 |", page)
         # the failed run counts with its starting program: (1 + 2) / 2
         self.assertIn("| b:1 | 2 (1 failed) |  | 1 | **1.5** ± ", page)
-        self.assertIn('title "toy, local, Apple M1 Max: best score (mean; line: + 1 sd)"', page)
-        self.assertIn("    bar [3, 3]\n    line [4.414, 3]\n", page)
+        self.assertIn('title "toy, local, Apple M1 Max: best score (mean ± sd)"', page)
+        # error bars only where there are repeats; the single run has an empty entry
+        self.assertIn("    bar [3, 3]\n    error [1.414, ]\n", page)
+        self.assertIn("    bar [1.5, 1.5]\n    error [, 0.7071]\n", page)
         # the best score over time is the mean over the runs
         self.assertIn("| a:1 | 1 | 3 | 3 | 3 |", page)
         overview = pages["benchmarks.md"]

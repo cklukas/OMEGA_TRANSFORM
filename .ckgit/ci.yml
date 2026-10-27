@@ -21,9 +21,9 @@ version: 1
 on:
   branches: [main]
 sisters:
-  # v0.8.1
+  # v0.9.0
   - name: ck-git-hosting
-    ref: ad6dc1de73cedef8eb64d53ab607043ae09845ee
+    ref: 05d5c029c7535411531c4d5a5cb6867bfd641385
 jobs:
   - name: docs
     steps:

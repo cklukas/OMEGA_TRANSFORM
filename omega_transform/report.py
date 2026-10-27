@@ -206,7 +206,9 @@ def aggregate(runs: list[dict]) -> dict:
     Score and gain are the mean over all runs, a failed run counting with its
     starting program (gain ×1); their sample deviations go to ``best_score_sd`` and
     ``improvement_sd``. Call statistics, speed and memory are means over the runs
-    that completed. A group whose runs all failed keeps the newest run's error.
+    that completed, with their deviations in ``<field>_sd`` (``valid_pct_sd`` for
+    the share of valid answers). A group whose runs all failed keeps the newest
+    run's error.
     """
     done = [r for r in runs if not failed(r)]
     row = dict((done or runs)[-1])
@@ -220,7 +222,9 @@ def aggregate(runs: list[dict]) -> dict:
     row["initial_score"] = mean_sd(r.get("initial_score") for r in runs)[0]
     for k in MEAN_FIELDS:
         if any(r.get(k) is not None for r in done):
-            row[k] = mean_sd(r.get(k) for r in done)[0]
+            row[k], row[f"{k}_sd"] = mean_sd(r.get(k) for r in done)
+    row["valid_pct_sd"] = mean_sd(100 * r.get("ok", 0) / r["attempts"]
+                                  for r in done if r.get("attempts"))[1]
     statuses = sorted({s for r in done for s in r.get("statuses", {})})
     row["statuses"] = {s: mean_sd(r.get("statuses", {}).get(s, 0) for r in done)[0]
                        for s in statuses}
@@ -241,24 +245,34 @@ def _q(label: str) -> str:
 
 
 def bar_chart(title: str, labels: list[str], values: list[float], y_label: str,
-              upper: list[float | None] | None = None) -> str:
-    """A bar chart; ``upper`` (one value per bar, or None) adds a line over the bars
-    that marks the upper end of each bar's range, e.g. mean + 1 sd."""
-    if upper is not None and all(u is None for u in upper):
-        upper = None
-    top = max([v for v in values + (upper or []) if v is not None] or [1.0])
+              errors: list[tuple[float, float] | None] | None = None) -> str:
+    """A bar chart; ``errors`` (per bar a (below, above) pair of amounts, or None)
+    draws error bars with ckdocs' ``error`` line, an extension of Mermaid's xychart."""
+    if errors is not None and all(e is None for e in errors):
+        errors = None
+    top = max([v for v in values if v is not None] or [1.0])
+    if errors is not None:
+        top = max([top] + [(v or 0) + e[1] for v, e in zip(values, errors) if e is not None])
     vals = ", ".join(f"{(v or 0):.4g}" for v in values)
     line = ""
-    if upper is not None:
-        line = "    line [" + ", ".join(f"{(u if u is not None else v or 0):.4g}"
-                                         for u, v in zip(upper, values)) + "]\n"
+    if errors is not None:
+        def amounts(i):
+            return "[" + ", ".join("" if e is None else f"{e[i]:.4g}" for e in errors) + "]"
+        line = "    error " + (amounts(1) if all(e is None or e[0] == e[1] for e in errors)
+                               else amounts(0) + " " + amounts(1)) + "\n"
     return (f"```mermaid\nxychart-beta\n    title {_q(title)}\n"
             f"    x-axis [{', '.join(_q(lbl) for lbl in labels)}]\n"
             f"    y-axis {_q(y_label)} 0 --> {top * 1.1:.4g}\n    bar [{vals}]\n{line}```\n")
 
 
-def _upper(mean: float | None, sd: float | None) -> float | None:
-    return None if mean is None or sd is None else mean + sd
+def error_bar(mean: float | None, sd: float | None, low: float = 0.0,
+              high: float | None = None) -> tuple[float, float] | None:
+    """The (below, above) amounts of a ± sd error bar, cut off at the range the
+    chart shows (its axis starts at 0, a percentage ends at 100); None without a
+    deviation."""
+    if mean is None or sd is None:
+        return None
+    return max(0.0, min(sd, mean - low)), sd if high is None else max(0.0, min(sd, high - mean))
 
 
 def fmt_count(v) -> str:
@@ -317,7 +331,9 @@ def inference_section(example: str, rows: list[dict], level: str = "###",
     labels = [chart_label(r) for r in rows]
     if any(r.get("gen_tokens_per_s") for r in rows):
         out.append("\n" + bar_chart(f"{example}: generation speed (tokens/s)", labels,
-                                     [r.get("gen_tokens_per_s") for r in rows], "tokens/s"))
+                                     [r.get("gen_tokens_per_s") for r in rows], "tokens/s",
+                                     [error_bar(r.get("gen_tokens_per_s"),
+                                                r.get("gen_tokens_per_s_sd")) for r in rows]))
     if any(r.get("model_memory_gb") for r in rows):
         out.append("\n" + bar_chart(f"{example}: model memory (GB)", labels,
                                      [r.get("model_memory_gb") for r in rows], "GB"))
@@ -781,11 +797,12 @@ def _ranking_table(full: list[dict], rest: list[dict], releases, machines: list[
                    f"{fmt_runs({'runs': e['runs'], 'failed_runs': e['failed']})} | {cells} |\n")
     if len(full) > 1:
         out.append("\n" + bar_chart(
-            chart_title + (" (line: + 1 standard error)" if any(e["sd"] is not None for e in full)
+            chart_title + (" (± standard error)" if any(e["sd"] is not None for e in full)
                            else ""),
             [chart_label({"model": e["label"]}) for e in full],
             [100 * e["share"] for e in full], "% of the best gain",
-            [None if e["sd"] is None else 100 * (e["share"] + e["sd"]) for e in full]))
+            [error_bar(100 * e["share"], None if e["sd"] is None else 100 * e["sd"])
+             for e in full]))
     return "".join(out)
 
 
@@ -971,7 +988,7 @@ def render(results: list[dict], check: dict | None = None,
         page = [PAGE_HEADER, f"\n# {example}\n\n{models} models, {budget:g} minutes each, "
                 + ("all runs per model: numbers are means over a model's runs, ± their "
                    "standard deviation, and a run whose model never answered counts with "
-                   "its starting program; the line in the charts marks mean + 1 sd. "
+                   "its starting program; error bars in the charts mark ± 1 sd. "
                    if repeated else "one run per model. ")
                 + "The [overall ranking](../benchmarks.md#overall-ranking) "
                 "compares the models over all examples.\n", _machine(mine)]
@@ -1025,14 +1042,18 @@ def group_section(example: str, title: str, intro: str, rows: list[dict], budget
         return "".join(parts)
     labels = [chart_label(r) for r in ok_rows]
     parts.append("\n" + bar_chart(
-        f"{example}, {tag}: best score" + (" (mean; line: + 1 sd)" if repeated else ""), labels,
+        f"{example}, {tag}: best score" + (" (mean ± sd)" if repeated else ""), labels,
         [r.get("best_score") for r in ok_rows], "score",
-        [_upper(r.get("best_score"), r.get("best_score_sd")) for r in ok_rows]))
-    parts.append("\n" + bar_chart(f"{example}, {tag}: valid answers (%)", labels,
-                                  [100 * r.get("ok", 0) / max(1, r.get("attempts", 0))
-                                   for r in ok_rows], "% of answers"))
+        [error_bar(r.get("best_score"), r.get("best_score_sd")) for r in ok_rows]))
+    valid = [100 * r.get("ok", 0) / max(1, r.get("attempts", 0)) for r in ok_rows]
+    parts.append("\n" + bar_chart(f"{example}, {tag}: valid answers (%)", labels, valid,
+                                  "% of answers",
+                                  [error_bar(v, r.get("valid_pct_sd"), 0, 100)
+                                   for v, r in zip(valid, ok_rows)]))
     parts.append("\n" + bar_chart(f"{example}, {tag}: seconds per LLM call", labels,
-                                  [r.get("mean_llm_seconds") for r in ok_rows], "seconds"))
+                                  [r.get("mean_llm_seconds") for r in ok_rows], "seconds",
+                                  [error_bar(r.get("mean_llm_seconds"),
+                                             r.get("mean_llm_seconds_sd")) for r in ok_rows]))
     parts.append(inference_section(f"{example}, {tag}", ok_rows, level="####",
                                    local=tag.startswith("local")))
     marks = [budget * f for f in (0.25, 0.5, 0.75, 1.0)]
