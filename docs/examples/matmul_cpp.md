@@ -191,6 +191,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/matmu
 | gemma4:12b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | 14.7889 | ×10.56 | 23.1 | 2 |
 | qwen2.5-coder:7b (no-think) | local | Apple M1 Max | 12.1382 | ×7.25 | 15.4 | 2 |
 | qwen2.5-coder:7b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 11.0637 | ×9.02 | 17.2 | 3 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | Apple M1 Max | 10.6256 | ×6.25 | 17.3 | 1 |
 | qwen3-coder:30b (no-think) | local | Apple M1 Max | 8.45239 | ×5.08 | 16.7 | 2 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.71206 | ×5.15 | 17.3 | 1 |
 | gemma4:e2b (think) | local | i7-8700K + 2x GTX 1080 Ti | 3.78053 | ×2.70 | 12.1 | 1 |

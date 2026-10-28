@@ -14,6 +14,7 @@ Every benchmarked model and the company that develops it, which the comparisons 
 |---|---|---|
 | Alibaba (Qwen) | qwen2.5-coder:7b, qwen3-coder:30b, qwen3.5:27b, qwen3.5:latest, qwen3.6:27b-coding-mtp-q4_K_M, qwen3.8:27b-mtp-q4_K_M, qwen3:30b-a3b-instruct-2507-q4_K_M | – |
 | Cohere | – | cohere/north-mini-code:free |
+| Conway | underdog-saluki-27b:iq2-mix | – |
 | Google | gemma4:12b-it-qat, gemma4:26b-a4b-it-qat, gemma4:e2b, gemma4:e4b-it-qat, gemma4:latest | – |
 | LG | ingu627/exaone4.0:32b | – |
 | Meta | muse-glimmer:30b | – |
@@ -33,6 +34,7 @@ Every benchmarked model and the company that develops it, which the comparisons 
 
 - **Alibaba (Qwen)** (founded 1999, Hangzhou, China): China's largest e-commerce and cloud group. Its Qwen team has released open-weight models since 2023, in many sizes and mostly under Apache 2.0; Qwen is among the most widely used open model families.
 - **Cohere** (founded 2019, Toronto, Canada): Builds language models for enterprise use (the Command family); some are published as open weights.
+- **Conway** (founded 2026, USA): AI lab (Conway Research) behind Underdog, an assistant that runs on the user's own devices; its open-weight Saluki 27B (October 2026, Apache 2.0) is a 2-bit build of Alibaba's Qwen3.8-27B that is tuned to keep tool calling intact.
 - **Google** (founded 1998, Mountain View, USA): Publishes the Gemma family as open-weight models since 2024, built from the research behind its larger proprietary models, from phone-sized to mid-sized models.
 - **LG** (founded 2020, Seoul, South Korea): LG AI Research, the AI lab of the LG group, develops the EXAONE models.
 - **Meta** (founded 2004, Menlo Park, USA): Opened up large models with Llama (2023–2025); its newer Muse family is mostly proprietary, with Muse Glimmer (30B, Apache 2.0, August 2026) and a large Muse Spark released as open weights.
@@ -61,6 +63,7 @@ The developer's best single model, the mean share over all its models, and the m
 | Meta | 2 | muse-glimmer:30b (no-think) | 2026-08-09 | **68%** | 65% | 73% |
 | Alibaba (Qwen) | 12 | qwen3.8:27b-mtp-q4_K_M (no-think) | 2026-08-05 | **57%** | 41% | 78% |
 | NVIDIA | 6 | nemotron-3-nano:30b-a3b-mlx (think) | 2025-12-04 | **45%** | 29% | 60% |
+| Conway | 1 | underdog-saluki-27b:iq2-mix (no-think) | 2026-10-08 | **40%** | 40% | 40% |
 | LG | 1 | ingu627/exaone4.0:32b (no-think) | 2025-07-11 | **39%** | 39% | 39% |
 | Mistral AI | 1 | devstral-small-2:24b (no-think) | 2025-11-28 | **37%** | 37% | 37% |
 | Microsoft | 2 | richardyoung/frognano-4b-2609:latest (no-think) | 2026-09-17 | **35%** | 30% | 39% |
@@ -84,6 +87,7 @@ Each developer's ranked models by release date (the original publication on Hugg
 | Alibaba (Qwen) | 15B and up | 2026-02-24 | qwen3.5:27b (no-think) | 27.8B | 43% |
 | Alibaba (Qwen) | 15B and up | 2026-04-21 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 27.3B | 43% |
 | Alibaba (Qwen) | 15B and up | 2026-08-05 | qwen3.8:27b-mtp-q4_K_M (no-think) | 27.3B | 57% |
+| Conway | 15B and up | 2026-10-08 | underdog-saluki-27b:iq2-mix (no-think) | 26.9B | 40% |
 | Google | under 15B | 2026-03-02 | gemma4:e2b (no-think) | 5.1B | 37% |
 | Google | under 15B | 2026-03-02 | gemma4:e4b-it-qat (think) | 7.5B | 67% |
 | Google | under 15B | 2026-03-02 | gemma4:latest (no-think) | 8.1B | 63% |

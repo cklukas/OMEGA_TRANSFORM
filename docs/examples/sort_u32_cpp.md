@@ -248,6 +248,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/sort_
 | qwen2.5-coder:7b (no-think) | local | Apple M1 Max | 45.5448 | ×1.93 | 9.9 | 3 |
 | qwen3.5:latest (no-think) | local | Apple M1 Max | 31.0841 | ×1.30 | 16.1 | 1 |
 | richardyoung/frognano-4b-2609:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 30.6270 | ×1.34 | 11.8 | 2 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | Apple M1 Max | 29.2642 | ×1.31 | 10.7 | 2 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 27.4213 | ×1.22 | 10.8 | 3 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | Apple M1 Max | 25.8331 | ×1.15 | 5.4 | 4 |
 | nemotron-3.5-lightning:30b-mlx (think) | local | Apple M1 Max | | | | failed: all 4 model requests failed … |

@@ -172,6 +172,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/circl
 | glm-4.7-flash:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 3.57134 | ×1.12 | 8.1 | 1 |
 | richardyoung/frognano-4b-2609:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 3.57134 | ×1.12 | 6.3 | 1 |
 | gemma4:e2b (think) | local | i7-8700K + 2x GTX 1080 Ti | 3.57134 | ×1.12 | 2.5 | 1 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | Apple M1 Max | 3.55037 | ×1.11 | 6.5 | 1 |
 | nemotron-3-nano:30b-a3b-mlx (think) | local | Apple M1 Max | 3.54494 | ×1.11 | 10.6 | 2 |
 | qwen3.5:27b (think) | local | Apple M1 Max | 3.41478 | ×1.07 | 10.3 | 2 |
 | richardyoung/frognano-4b-2609:latest (think) | local | Apple M1 Max | 3.39955 | ×1.07 | 15.2 | 3 |
@@ -212,3 +213,4 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/circl
 | qwen3.6:27b-coding-mtp-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 3.18905 | ×1.00 | - | 0 |
 | glm-4.7-flash:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 3.18905 | ×1.00 | - | 0 |
 | frob/sarvam:30b (think) | local | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 3 model requests failed: frob/sarvam:30b: answer … |
+| underdog-saluki-27b:iq2-mix (think) | local | Apple M1 Max | | | | failed: all 1 model requests failed: underdog-saluki-27b:iq2-mix … |

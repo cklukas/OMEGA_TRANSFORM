@@ -1,0 +1,311 @@
+{
+ "schema": 3,
+ "example": "circles_in_circle_21",
+ "model": "underdog-saluki-27b:iq2-mix",
+ "variant": "no-think",
+ "model_size_gb": 7.9,
+ "model_params": "26.9B",
+ "started": "2026-10-27T23:11:16",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "b50947a",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 3.1890454825108625,
+ "best_score": 3.5503706133797577,
+ "improvement": 1.1133019685201886,
+ "llm_calls": 5,
+ "mean_llm_seconds": 195.8,
+ "attempts": 5,
+ "ok": 3,
+ "statuses": {
+  "invalid": 2,
+  "ok": 3
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 6.51,
+ "best_idea": "The current program uses a fixed uniform-radius layout with equal ring radii and ring counts (7, 13); the feedback shows all radii are identical, which is suboptimal. I'll add a simple local search th",
+ "progress": [
+  [
+   0.0,
+   3.1890454825108625
+  ],
+  [
+   6.51,
+   3.5503706133797577
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.1890454825108625,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 6.51,
+   "score": 3.5503706133797577,
+   "model": "underdog-saluki-27b:iq2-mix",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "The current program uses a fixed uniform-radius layout with equal ring radii and ring counts (7, 13); the feedback shows all radii are identical, which is suboptimal. I'll add a simple local search that perturbs centers and uses a feasible-radius recompute step to increase the sum of radii, keeping the overall structure but allowing radii to differ."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -4,24 +4,68 @@\n import math\n \n # OMEGA-BLOCK-START\n+import random\n+\n+def _feasible_radii(centers):\n+    \"\"\"Given fixed centers, compute the largest feasible radii by repeated\n+    passes that set each r_i to the largest value allowed by the wall and\n+    its neighbors.\"\"\"\n+    n = len(centers)\n+    r = [min(1.0 - math.hypot(x, y), 1.0) for x, y in centers]\n+    for _ in range(200):\n+        changed = False\n+        for i in range(n):\n+            ri = 1.0 - math.hypot(centers[i][0], centers[i][1])\n+            for j in range(n):\n+                if j != i:\n+                    d = math.hypot(centers[i][0] - centers[j][0],\n+                                   centers[i][1] - centers[j][1])\n+                    limit = d - r[j]\n+                    if limit < ri:\n+                        ri = limit\n+            if ri < r[i] - 1e-15 or ri > r[i] + 1e-15:\n+                r[i] = max(0.0, ri)\n+                changed = True\n+        if not changed:\n+            break\n+    return r\n+\n+def _local_search(centers, n, iters=300, step=0.01):\n+    \"\"\"Perturb centers and recompute feasible radii to maximize sum of radii.\"\"\"\n+    best = _feasible_radii(centers)\n+    best_sum = sum(best)\n+    best_centers = list(centers)\n+    for _ in range(iters):\n+        i = random.randrange(n)\n+        dx = random.uniform(-step, step)\n+        dy = random.uniform(-step, step)\n+        trial = list(centers)\n+        trial[i] = (trial[i][0] + dx, trial[i][1] + dy)\n+        # keep inside unit circle\n+        d = math.hypot(trial[i][0], trial[i][1])\n+        if d > 1.0:\n+            trial[i] = (trial[i][0] / d, trial[i][1] / d)\n+        trial_r = _feasible_radii(trial)\n+        s = sum(trial_r)\n+        if s > best_sum + 1e-12:\n+            best_sum = s\n+            best = trial_r\n+            best_centers = trial\n+    return best_centers, best, best_sum\n+\n def construct(n=21):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit circle (center (0,0),\n-    radius 1) without overlaps.\n-\n-    This start places one circle at the center and two concentric rings of 7 and\n-    13 circles, all with the same radius: the largest one that keeps every pair\n-    apart and every circle inside the container.\n-    \"\"\"\n+    radius 1) without overlaps, maximizing sum of radii.\"\"\"\n+    random.seed(42)\n     centers = [(0.0, 0.0)]\n     for count, ring in ((7, 0.35), (n - 8, 0.75)):\n         centers += [(ring * math.cos(2 * math.pi * k / count),\n                      ring * math.sin(2 * math.pi * k / count)) for k in range(count)]\n-    r = min(1.0 - math.hypot(x, y) for x, y in centers)\n-    for a in range(n):\n-        for b in range(a + 1, n):\n-            r = min(r, math.dist(centers[a], centers[b]) / 2)\n-    r *= 1 - 1e-12  # stay strictly feasible despite rounding\n-    return [(x, y, r) for x, y in centers]\n+    # Local search to improve the sum of radii\n+    centers, r, _ = _local_search(centers, n, iters=400, step=0.015)\n+    # Shrink slightly for safety\n+    r = [ri * (1 - 1e-10) for ri in r]\n+    return [(cx, cy, ri) for (cx, cy), ri in zip(centers, r)]\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.0,
+    0.0,
+    0.151859
+   ],
+   [
+    0.35,
+    0.0,
+    0.151859
+   ],
+   [
+    0.218221,
+    0.273641,
+    0.151859
+   ],
+   [
+    -0.077882,
+    0.341225,
+    0.151859
+   ],
+   [
+    -0.315339,
+    0.151859,
+    0.151859
+   ],
+   [
+    -0.315339,
+    -0.151859,
+    0.151859
+   ],
+   [
+    -0.077882,
+    -0.341225,
+    0.151859
+   ],
+   [
+    0.218221,
+    -0.273641,
+    0.151859
+   ],
+   [
+    0.75,
+    0.0,
+    0.151859
+   ],
+   [
+    0.664092,
+    0.348542,
+    0.151859
+   ],
+   [
+    0.426049,
+    0.617238,
+    0.151859
+   ],
+   [
+    0.090403,
+    0.744532,
+    0.151859
+   ],
+   [
+    -0.265954,
+    0.701262,
+    0.151859
+   ],
+   [
+    -0.561383,
+    0.497342,
+    0.151859
+   ],
+   [
+    -0.728206,
+    0.179487,
+    0.151859
+   ],
+   [
+    -0.728206,
+    -0.179487,
+    0.151859
+   ],
+   [
+    -0.561383,
+    -0.497342,
+    0.151859
+   ],
+   [
+    -0.265954,
+    -0.701262,
+    0.151859
+   ],
+   [
+    0.090403,
+    -0.744532,
+    0.151859
+   ],
+   [
+    0.426049,
+    -0.617238,
+    0.151859
+   ],
+   [
+    0.664092,
+    -0.348542,
+    0.151859
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.0,
+    0.0,
+    0.198439
+   ],
+   [
+    0.35,
+    0.0,
+    0.151561
+   ],
+   [
+    0.218221,
+    0.273641,
+    0.151561
+   ],
+   [
+    -0.077882,
+    0.341225,
+    0.151561
+   ],
+   [
+    -0.315339,
+    0.151859,
+    0.151561
+   ],
+   [
+    -0.315339,
+    -0.151859,
+    0.151561
+   ],
+   [
+    -0.077882,
+    -0.341225,
+    0.151561
+   ],
+   [
+    0.218221,
+    -0.273641,
+    0.151561
+   ],
+   [
+    0.75,
+    0.0,
+    0.136057
+   ],
+   [
+    0.664092,
+    0.348542,
+    0.222916
+   ],
+   [
+    0.426049,
+    0.617238,
+    0.136057
+   ],
+   [
+    0.090403,
+    0.744532,
+    0.222916
+   ],
+   [
+    -0.265954,
+    0.701262,
+    0.136057
+   ],
+   [
+    -0.561383,
+    0.497342,
+    0.222916
+   ],
+   [
+    -0.728206,
+    0.179487,
+    0.136057
+   ],
+   [
+    -0.728206,
+    -0.179487,
+    0.222916
+   ],
+   [
+    -0.561383,
+    -0.497342,
+    0.136057
+   ],
+   [
+    -0.265954,
+    -0.701262,
+    0.222916
+   ],
+   [
+    0.090403,
+    -0.744532,
+    0.136057
+   ],
+   [
+    0.426049,
+    -0.617238,
+    0.128552
+   ],
+   [
+    0.678617,
+    -0.36059,
+    0.23153
+   ]
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 9.7,
+ "model_gpu_memory_gb": 9.7,
+ "context_length": 32768,
+ "load_seconds": 2.8,
+ "median_call_seconds": 150.1,
+ "p90_call_seconds": 298.8,
+ "prompt_tokens_per_s": 104.1,
+ "gen_tokens_per_s": 8.9,
+ "mean_prompt_tokens": 2202,
+ "mean_gen_tokens": 1545,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

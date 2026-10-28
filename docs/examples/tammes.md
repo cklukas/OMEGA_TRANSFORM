@@ -269,6 +269,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/tamme
 | glm-4.7-flash:latest (no-think) | local | Apple M1 Max | 21.4033 | ×6.69 | 2.5 | 2 |
 | nemotron-3-nano:30b-a3b-mlx (think) | local | Apple M1 Max | 21.4033 | ×6.69 | 4.7 | 2 |
 | glm-4.7-flash:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 21.4033 | ×6.69 | 12.1 | 1 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | Apple M1 Max | 21.4033 | ×6.69 | 6.8 | 1 |
 | nemotron-3-nano:4b (think) | local | i7-8700K + 2x GTX 1080 Ti | 21.0183 | ×6.57 | 11.6 | 3 |
 | glm-4.7-flash:latest (think) | local | Apple M1 Max | 20.2871 | ×6.34 | 11.8 | 3 |
 | nemotron-3-nano:4b (no-think) | local | Apple M1 Max | 14.6767 | ×4.58 | 7.2 | 3 |

@@ -178,6 +178,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/float
 | ingu627/exaone4.0:32b (no-think) | local | Apple M1 Max | 311.1860 | ×1.00 | - | 0 |
 | qwen3.5:27b (think) | local | Apple M1 Max | 311.0700 | ×1.00 | - | 0 |
 | richardyoung/frognano-4b-2609:latest (no-think) | local | Apple M1 Max | 309.2800 | ×1.00 | - | 0 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | Apple M1 Max | 308.0020 | ×1.00 | - | 0 |
 | qwen3.6:27b-coding-mtp-q4_K_M (think) | local | Apple M1 Max | 307.5350 | ×1.00 | - | 0 |
 | gemma4:26b-a4b-it-qat (think) | local | Apple M1 Max | | | | failed: all 2 model requests failed: gemma4:26b-a4b-it-qat: answer … |
 | qwen3.8:27b-mtp-q4_K_M (think) | local | Apple M1 Max | 301.9280 | ×1.00 | - | 0 |

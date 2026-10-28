@@ -228,6 +228,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/circl
 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | cloud | Apple M1 Max | 2.40507 | ×1.61 | 13.0 | 2 |
 | gemma4:26b-a4b-it-qat (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 2.38516 | ×1.60 | 17.0 | 6 |
 | gpt-oss:20b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 2.36418 | ×1.59 | 16.1 | 4 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | Apple M1 Max | 2.33171 | ×1.56 | 13.4 | 2 |
 | gemma4:26b-a4b-it-qat (no-think) | local | Apple M1 Max | 2.26342 | ×1.52 | 10.2 | 2 |
 | gemma4:26b-a4b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | 2.25597 | ×1.51 | 19.0 | 3 |
 | gpt-oss:20b (think) | local | i7-8700K + 2x GTX 1080 Ti | 2.23356 | ×1.50 | 15.1 | 5 |

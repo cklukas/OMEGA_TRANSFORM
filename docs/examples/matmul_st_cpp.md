@@ -208,6 +208,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/matmu
 | nemotron-3-nano:30b-a3b-mlx (think) | local | Apple M1 Max | 9.98314 | ×5.82 | 14.1 | 1 |
 | qwen2.5-coder:7b (no-think) | local | Apple M1 Max | 6.93427 | ×3.96 | 10.6 | 5 |
 | qwen3-coder:30b (no-think) | local | Apple M1 Max | 1.76048 | ×1.00 | - | 0 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | Apple M1 Max | 1.75933 | ×1.00 | - | 0 |
 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | Apple M1 Max | 1.74731 | ×1.00 | - | 0 |
 | richardyoung/frognano-4b-2609:latest (think) | local | Apple M1 Max | 1.74596 | ×1.00 | - | 0 |
 | nemotron-3-nano:4b (no-think) | local | Apple M1 Max | 1.7407 | ×1.00 | - | 0 |

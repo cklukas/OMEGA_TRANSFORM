@@ -153,6 +153,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/tsp_h
 | gemma4:26b-a4b-it-qat (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 1.14136 | ×1.14 | 15.5 | 6 |
 | gemma4:e4b-it-qat (no-think) | local | Apple M1 Max | 1.13768 | ×1.14 | 7.4 | 4 |
 | gpt-oss:20b (think) | local | Apple M1 Max | 1.12957 | ×1.13 | 13.8 | 3 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | Apple M1 Max | 1.12942 | ×1.13 | 6.9 | 1 |
 | gpt-oss:20b (no-think) | local | Apple M1 Max | 1.12373 | ×1.12 | 6.5 | 3 |
 | gemma4:26b-a4b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | 1.12211 | ×1.12 | 13.2 | 1 |
 | qwen3.5:27b (no-think) | local | Apple M1 Max | 1.11744 | ×1.12 | 7.6 | 1 |

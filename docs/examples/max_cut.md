@@ -282,6 +282,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/max_c
 | qwen3.5:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.72903 | ×1.42 | 6.7 | 2 |
 | nemotron-3-nano:4b (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.72862 | ×1.42 | 5.8 | 2 |
 | qwen2.5-coder:7b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.72736 | ×1.42 | 12.4 | 3 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | Apple M1 Max | 0.72595 | ×1.42 | 7.6 | 3 |
 | nemotron-3-nano:4b (think) | local | Apple M1 Max | 0.72498 | ×1.42 | 14.8 | 4 |
 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.72369 | ×1.41 | 6.3 | 4 |
 | glm-4.7-flash:latest (no-think) | local | Apple M1 Max | 0.72224 | ×1.41 | 2.9 | 1 |

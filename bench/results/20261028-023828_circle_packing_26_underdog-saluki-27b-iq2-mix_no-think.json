@@ -1,0 +1,374 @@
+{
+ "schema": 3,
+ "example": "circle_packing_26",
+ "model": "underdog-saluki-27b:iq2-mix",
+ "variant": "no-think",
+ "model_size_gb": 7.9,
+ "model_params": "26.9B",
+ "started": "2026-10-28T02:38:28",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "b50947a",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 2.3317065737410867,
+ "improvement": 1.5647966395878885,
+ "llm_calls": 9,
+ "mean_llm_seconds": 108.3,
+ "attempts": 9,
+ "ok": 4,
+ "statuses": {
+  "invalid": 4,
+  "ok": 4,
+  "edit_error": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 2,
+ "minutes_to_best": 13.43,
+ "best_idea": "Fix the bug where `best_centers` was stored as a flat list of floats instead of a list of (x, y) tuples, so the final zip/unpack works.",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   12.68,
+   1.7873680766471651
+  ],
+  [
+   13.43,
+   2.3317065737410867
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.0,
+   "score": null,
+   "model": "underdog-saluki-27b:iq2-mix",
+   "mode": "explore/diff/bold",
+   "status": "invalid",
+   "idea": "Replace the fixed grid with a simulated annealing optimization of centers and radii jointly using a penalty for overlap and boundary violations, starting from a 5x5 grid of 25 circles plus one center circle."
+  },
+  {
+   "minutes": 13.43,
+   "score": 2.3317065737410867,
+   "model": "underdog-saluki-27b:iq2-mix",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Fix the bug where `best_centers` was stored as a flat list of floats instead of a list of (x, y) tuples, so the final zip/unpack works."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -9,27 +9,113 @@\n # OMEGA-BLOCK-START\n def construct_packing(n=26):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n-    cols = math.ceil(math.sqrt(n))\n-    rows = math.ceil(n / cols)\n+    import random\n+    import time\n+\n+    # Start from a 5x5 grid plus a center circle\n     centers = []\n-    for k in range(n):\n-        i, j = k % cols, k // cols\n-        centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n-    radii = max_radii(centers)\n-    return [(x, y, r) for (x, y), r in zip(centers, radii)]\n+    for i in range(5):\n+        for j in range(5):\n+            centers.append((0.5 + i * 0.25, 0.5 + j * 0.25))\n+    # The 5x5 grid gives 25 circles; add a 26th in the center of the square\n+    # Actually 5x5 = 25, we need 26. Place the 26th at center of the square? No, that's already (0.5,0.5).\n+    # Let's use a 4x4 grid (16) + 10 more, or just start with 5x5 grid and let SA add.\n+    # Actually, let's use 5x5=25 and add one more. The 26th can be placed in a gap.\n+    # For simplicity, start with 5x5 grid (25 circles) and the 26th at (0.5, 0.5).\n+    # But (0.5,0.5) is already a center in the 5x5 grid.\n+    # Let's use a 5x5 grid but shift and add one.\n+    # Alternative: 4x4=16 + 10 extra.\n+    \n+    # Let's use a 5x5 grid of 25 circles, and the 26th at center of the square.\n+    # But we already have (0.5,0.5) in the grid.\n+    # So let's use 5x5 grid and place the 26th at (0.5, 0.5) but that's duplicate.\n+    \n+    # Better: use 5x5 grid (25 circles) and add a 26th at (0.5, 0.5) is not possible.\n+    # Let's use 4x4 grid (16) + 10 extra circles.\n+    \n+    # Actually, let's just use a 5x5 grid and let the optimizer add a 26th.\n+    # We'll use 5x5 grid for the first 25 and place the 26th at center.\n+    \n+    # Simpler: start with 26 random points and optimize.\n+    centers = [(random.random(), random.random()) for _ in range(n)]\n+    \n+    # Initialize radii\n+    radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n+    \n+    def objective(centers, radii):\n+        \"\"\"Negative of sum of radii plus penalty for violations.\"\"\"\n+        s = sum(radii)\n+        penalty = 0.0\n+        for i in range(n):\n+            x, y = centers[i]\n+            r = radii[i]\n+            # Boundary violations\n+            if x - r < -1e-9:\n+                penalty += (x - r + 1e-9) ** 2\n+            if y - r < -1e-9:\n+                penalty += (y - r + 1e-9) ** 2\n+            if x + r > 1 + 1e-9:\n+                penalty += (x + r - 1 - 1e-9) ** 2\n+            if y + r > 1 + 1e-9:\n+                penalty += (y + r - 1 - 1e-9) ** 2\n+            # Overlap violations\n+            for j in range(i + 1, n):\n+                xj, yj = centers[j]\n+                rj = radii[j]\n+                dx = x - xj\n+                dy = y - yj\n+                d = math.sqrt(dx * dx + dy * dy)\n+                if r + rj > d + 1e-9:\n+                    penalty += (r + rj - d - 1e-9) ** 2\n+        return s - penalty * 1e6\n+    \n+    best_centers = [c[0] for c in centers]\n+    best_radii = [r for r in radii]\n+    best_obj = objective(centers, radii)\n+    \n+    t0 = time.time()\n+    max_iter = 50000\n+    T0 = 1.0\n+    T1 = 0.001\n+    step_size = 0.01\n+    \n+    for it in range(max_iter):\n+        T = T0 * (T1 / T0) ** (it / max_iter)\n+        \n+        # Perturb centers\n+        new_centers = []\n+        for cx, cy in centers:\n+            nx = cx + (random.random() - 0.5) * step_size\n+            ny = cy + (random.random() - 0.5) * step_size\n+            new_centers.append((nx, ny))\n+        \n+        # Update radii for new centers\n+        new_radii = [min(x, y, 1 - x, 1 - y) for x, y in new_centers]\n+        for a in range(n):\n+            for b in range(a + 1, n):\n+                dx = new_centers[a][0] - new_centers[b][0]\n+                dy = new_centers[a][1] - new_centers[b][1]\n+                d = math.sqrt(dx * dx + dy * dy)\n+                if new_radii[a] + new_radii[b] > d:\n+                    s = d / (new_radii[a] + new_radii[b])\n+                    new_radii[a] *= s\n+                    new_radii[b] *= s\n+        \n+        new_obj = objective(new_centers, new_radii)\n+        \n+        # Accept if better or with probability exp((new_obj - best_obj) / T)\n+        if new_obj > best_obj or random.random() < math.exp((new_obj - best_obj) / T):\n+            best_obj = new_obj\n+            best_centers = list(new_centers)\n+            best_radii = list(new_radii)\n+            centers = new_centers\n+            radii = new_radii\n+        \n+        if time.time() - t0 > 10:\n+            break\n+    \n+    return [(x, y, r) for (x, y), r in zip(best_centers, best_radii)]\n \n-\n-def max_radii(centers):\n-    \"\"\"Largest radii for fixed centers: limit by walls, then shrink overlapping pairs.\"\"\"\n-    radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n-    for a in range(len(centers)):\n-        for b in range(a + 1, len(centers)):\n-            d = math.dist(centers[a], centers[b])\n-            if radii[a] + radii[b] > d:\n-                s = d / (radii[a] + radii[b])\n-                radii[a] *= s\n-                radii[b] *= s\n-    return radii\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.083333,
+    0.1,
+    0.060545
+   ],
+   [
+    0.25,
+    0.1,
+    0.039234
+   ],
+   [
+    0.416667,
+    0.1,
+    0.034262
+   ],
+   [
+    0.583333,
+    0.1,
+    0.040566
+   ],
+   [
+    0.75,
+    0.1,
+    0.05694
+   ],
+   [
+    0.916667,
+    0.1,
+    0.080973
+   ],
+   [
+    0.083333,
+    0.3,
+    0.047978
+   ],
+   [
+    0.25,
+    0.3,
+    0.032893
+   ],
+   [
+    0.416667,
+    0.3,
+    0.029299
+   ],
+   [
+    0.583333,
+    0.3,
+    0.040366
+   ],
+   [
+    0.75,
+    0.3,
+    0.058083
+   ],
+   [
+    0.916667,
+    0.3,
+    0.076636
+   ],
+   [
+    0.083333,
+    0.5,
+    0.05004
+   ],
+   [
+    0.25,
+    0.5,
+    0.036525
+   ],
+   [
+    0.416667,
+    0.5,
+    0.03396
+   ],
+   [
+    0.583333,
+    0.5,
+    0.041209
+   ],
+   [
+    0.75,
+    0.5,
+    0.058085
+   ],
+   [
+    0.916667,
+    0.5,
+    0.076976
+   ],
+   [
+    0.083333,
+    0.7,
+    0.059259
+   ],
+   [
+    0.25,
+    0.7,
+    0.06822
+   ],
+   [
+    0.416667,
+    0.7,
+    0.065257
+   ],
+   [
+    0.583333,
+    0.7,
+    0.069461
+   ],
+   [
+    0.75,
+    0.7,
+    0.089736
+   ],
+   [
+    0.916667,
+    0.7,
+    0.07693
+   ],
+   [
+    0.083333,
+    0.9,
+    0.075758
+   ],
+   [
+    0.25,
+    0.9,
+    0.090909
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.330522,
+    0.313826,
+    0.003016
+   ],
+   [
+    0.54002,
+    0.447111,
+    0.016137
+   ],
+   [
+    0.455055,
+    0.116987,
+    0.114797
+   ],
+   [
+    0.309251,
+    0.435631,
+    0.083307
+   ],
+   [
+    0.848058,
+    0.781908,
+    0.083216
+   ],
+   [
+    0.866224,
+    0.098114,
+    0.096259
+   ],
+   [
+    0.338851,
+    0.864855,
+    0.130994
+   ],
+   [
+    0.902014,
+    0.456057,
+    0.094505
+   ],
+   [
+    0.27185,
+    0.070042,
+    0.070042
+   ],
+   [
+    0.730126,
+    0.610652,
+    0.108138
+   ],
+   [
+    0.934896,
+    0.917966,
+    0.063463
+   ],
+   [
+    0.920306,
+    0.273075,
+    0.079694
+   ],
+   [
+    0.159633,
+    0.623506,
+    0.153435
+   ],
+   [
+    0.28964,
+    0.226283,
+    0.083465
+   ],
+   [
+    0.930984,
+    0.614499,
+    0.066564
+   ],
+   [
+    0.436922,
+    0.324113,
+    0.085232
+   ],
+   [
+    0.674649,
+    0.097155,
+    0.095318
+   ],
+   [
+    0.632446,
+    0.841338,
+    0.136139
+   ],
+   [
+    0.958578,
+    0.726429,
+    0.040446
+   ],
+   [
+    0.458847,
+    0.609817,
+    0.146091
+   ],
+   [
+    0.102486,
+    0.104489,
+    0.102486
+   ],
+   [
+    0.484185,
+    0.959543,
+    0.039963
+   ],
+   [
+    0.808287,
+    0.935393,
+    0.063276
+   ],
+   [
+    0.105369,
+    0.885451,
+    0.103395
+   ],
+   [
+    0.677872,
+    0.347849,
+    0.153735
+   ],
+   [
+    0.118594,
+    0.352275,
+    0.118594
+   ]
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 9.8,
+ "model_gpu_memory_gb": 9.8,
+ "context_length": 32768,
+ "load_seconds": 1.8,
+ "median_call_seconds": 110.9,
+ "p90_call_seconds": 175.5,
+ "prompt_tokens_per_s": 119.9,
+ "gen_tokens_per_s": 11.3,
+ "mean_prompt_tokens": 1719,
+ "mean_gen_tokens": 1058,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

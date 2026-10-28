@@ -19,6 +19,7 @@ Before benchmarking, `omega models` loads every installed model, greets it, asks
 | qwen3.5:latest | 9.7B | 6.6 | ok | 48 | 30.2 | 6.7 | yes | yes | yes |  |
 | gemma4:12b-it-qat | 11.9B | 7.2 | ok | 90 | 24.3 | 8.0 | yes | yes | yes |  |
 | gemma4:e2b | 5.1B | 7.2 | ok | 45 | 43.1 | 6.6 | yes | yes | yes |  |
+| underdog-saluki-27b:iq2-mix | 26.9B | 7.9 | ok | 28 | 9.8 | 10.2 | yes | yes | yes |  |
 | gemma4:latest |  | 9.5 | ok | 112 | 33.1 | 9.4 | yes | yes | yes |  |
 | gpt-oss:20b | 20.9B | 13.8 | ok | 68 | 35.1 | 12.8 | yes | yes | yes |  |
 | devstral-small-2:24b | 24.0B | 15.2 | ok | 42 | 11.7 | 19.7 | yes | yes | - |  |

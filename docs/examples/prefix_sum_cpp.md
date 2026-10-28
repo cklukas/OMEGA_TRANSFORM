@@ -240,6 +240,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/prefi
 | nemotron-3-nano:4b (think) | local | Apple M1 Max | 4.90707 | ×1.00 | - | 0 |
 | nemotron-3-nano:4b (no-think) | local | Apple M1 Max | 4.86648 | ×1.01 | 14.5 | 1 |
 | nemotron-3.5-lightning:30b-mlx (no-think) | local | Apple M1 Max | 4.85732 | ×1.00 | - | 0 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | Apple M1 Max | 4.84731 | ×1.00 | - | 0 |
 | ingu627/exaone4.0:32b (no-think) | local | Apple M1 Max | 4.84291 | ×1.00 | - | 0 |
 | nemotron-3.5-lightning:30b-mlx (think) | local | Apple M1 Max | | | | failed: all 4 model requests failed … |
 | gemma4:latest (think) | local | Apple M1 Max | 4.81957 | ×1.00 | - | 0 |

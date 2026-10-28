@@ -486,6 +486,24 @@
    "edit_detail": "applied",
    "think_ok": true,
    "seconds": 147.6
+  },
+  {
+   "model": "underdog-saluki-27b:iq2-mix",
+   "params": "26.9B",
+   "size_gb": 7.9,
+   "thinking_capable": true,
+   "verdict": "ok",
+   "reason": "",
+   "load_seconds": 28.3,
+   "gen_tokens_per_s": 9.8,
+   "prompt_tokens_per_s": 62.1,
+   "memory_gb": 10.2,
+   "hello": "hello",
+   "hello_ok": true,
+   "edit_ok": true,
+   "edit_detail": "applied",
+   "think_ok": true,
+   "seconds": 46.5
   }
  ]
 }
