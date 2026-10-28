@@ -164,6 +164,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/symbo
 | underdog-saluki-27b:iq2-mix (no-think) | local | Apple M1 Max | 0.99436 | ×3.18 | 2.2 | 1 |
 | gemma4:26b-a4b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.99139 | ×3.17 | 8.0 | 1 |
 | qwen3.8:27b-mtp-q4_K_M (no-think) | local | Apple M1 Max | 0.98968 | ×3.16 | 7.6 | 1 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.98453 | ×3.15 | 3.8 | 2 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.98173 | ×3.14 | 13.9 | 4 |
 | gemma4:e4b-it-qat (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.98129 | ×3.14 | 12.1 | 5 |
 | gemma4:12b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.97402 | ×3.11 | 8.5 | 1 |

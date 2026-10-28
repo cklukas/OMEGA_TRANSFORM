@@ -166,6 +166,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/circl
 | glm-4.7-flash:latest (no-think) | local | Apple M1 Max | 3.64462 | ×1.14 | 14.2 | 1 |
 | ingu627/exaone4.0:32b (no-think) | local | Apple M1 Max | 3.64462 | ×1.14 | 6.2 | 1 |
 | gemma4:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 3.64462 | ×1.14 | 3.7 | 1 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 3.62087 | ×1.14 | 19.6 | 2 |
 | gemma4:26b-a4b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | 3.61282 | ×1.13 | 6.5 | 1 |
 | gemma4:latest (think) | local | Apple M1 Max | 3.57552 | ×1.12 | 11.8 | 3 |
 | nemotron-3-nano:4b (no-think) | local | Apple M1 Max | 3.57134 | ×1.12 | 7.9 | 1 |

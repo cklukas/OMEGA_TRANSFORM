@@ -210,6 +210,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/prefi
 | gpt-oss:20b (think) | local | i7-8700K + 2x GTX 1080 Ti | 6.01735 | ×1.29 | 12.2 | 3 |
 | qwen3.5:latest (no-think) | local | Apple M1 Max | 6.00646 | ×1.22 | 6.5 | 1 |
 | gemma4:latest (no-think) | local | Apple M1 Max | 5.93032 | ×1.21 | 15.2 | 4 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.91 | ×1.00 | - | 0 |
 | gemma4:e2b (no-think) | local | Apple M1 Max | 5.88495 | ×1.18 | 1.2 | 1 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.86227 | ×1.00 | - | 0 |
 | qwen3-coder:30b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.81527 | ×1.00 | - | 0 |

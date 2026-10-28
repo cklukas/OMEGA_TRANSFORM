@@ -1,0 +1,209 @@
+{
+ "schema": 3,
+ "example": "heilbronn_13",
+ "model": "underdog-saluki-27b:iq2-mix",
+ "variant": "no-think",
+ "model_size_gb": 7.9,
+ "model_params": "26.9B",
+ "started": "2026-10-28T05:07:35",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.004790811518724618,
+ "best_score": 0.006132044348812673,
+ "improvement": 1.2799594233348404,
+ "llm_calls": 10,
+ "mean_llm_seconds": 95.4,
+ "attempts": 10,
+ "ok": 4,
+ "statuses": {
+  "llm_error": 1,
+  "edit_error": 2,
+  "ok": 4,
+  "invalid": 3
+ },
+ "sweeps": 1,
+ "sweep_variants": 16,
+ "improvements": 1,
+ "minutes_to_best": 6.39,
+ "best_idea": "Add a short simulated-annealing polish that maximizes the soft-min of triangle areas, which should lift the minimum area above the initial polygon circle's poor value.",
+ "progress": [
+  [
+   0.0,
+   0.004790811518724618
+  ],
+  [
+   6.39,
+   0.006132044348812673
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.004790811518724618,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 6.39,
+   "score": 0.006132044348812673,
+   "model": "underdog-saluki-27b:iq2-mix",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Add a short simulated-annealing polish that maximizes the soft-min of triangle areas, which should lift the minimum area above the initial polygon circle's poor value."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -5,17 +5,61 @@\n import math\n \n # OMEGA-BLOCK-START\n+import random\n+\n+def _area2(i, j, k, pts):\n+    x1, y1 = pts[i]\n+    x2, y2 = pts[j]\n+    x3, y3 = pts[k]\n+    return abs((x2 - x1) * (y3 - y1) - (x3 - x1) * (y2 - y1))\n+\n+def _softmin(pts, beta, tri_idx):\n+    total = 0.0\n+    for t in tri_idx:\n+        a = _area2(t[0], t[1], t[2], pts)\n+        total += math.exp(-beta * a)\n+    return -math.log(total) / beta\n+\n+def _triangles(n):\n+    return [(i, j, k) for i in range(n) for j in range(i + 1, n) for k in range(j + 1, n)]\n+\n+def _clamp(p):\n+    x, y = p\n+    if x < 0.0:\n+        x = 0.0\n+    elif x > 1.0:\n+        x = 1.0\n+    if y < 0.0:\n+        y = 0.0\n+    elif y > 1.0:\n+        y = 1.0\n+    return (x, y)\n+\n def construct(n=13):\n-    \"\"\"Return a list of n points (x, y) inside the closed unit square [0,1]^2.\n-\n-    The score is the smallest area among all triangles with corners at three of\n-    the points, so no three points may be (nearly) collinear. This start puts\n-    the points on a regular polygon on a small circle around the center, which\n-    avoids collinear triples but wastes most of the square.\n-    \"\"\"\n-    radius = 0.3\n-    return [(0.5 + radius * math.cos(2 * math.pi * k / n),\n-             0.5 + radius * math.sin(2 * math.pi * k / n)) for k in range(n)]\n+    random.seed(2024)\n+    tri = _triangles(n)\n+    pts = [(0.5 + 0.35 * math.cos(2 * math.pi * k / n),\n+            0.5 + 0.35 * math.sin(2 * math.pi * k / n)) for k in range(n)]\n+    start_score = _softmin(pts, 20.0, tri)\n+    best = pts[:]\n+    best_score = start_score\n+    T = 0.02\n+    for step in range(4000):\n+        scale = T * 0.03\n+        i = random.randrange(n)\n+        axis = random.randrange(2)\n+        delta = random.uniform(-1.0, 1.0) * scale\n+        old = pts[i][:]\n+        pts[i] = _clamp((old[0] + delta if axis == 0 else old[0],\n+                        old[1] + delta if axis == 1 else old[1]))\n+        s = _softmin(pts, 20.0, tri)\n+        if s > best_score or random.random() < math.exp((s - best_score) / T):\n+            best = pts[:]\n+            best_score = s\n+        else:\n+            pts[i] = old\n+        T *= 0.999\n+    return best\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "heilbronn",
+  "points": [
+   [
+    0.8,
+    0.5
+   ],
+   [
+    0.765636807695963,
+    0.6394169516131305
+   ],
+   [
+    0.6704194240193467,
+    0.7468951597680968
+   ],
+   [
+    0.536161004076597,
+    0.7978126622294162
+   ],
+   [
+    0.3936185338872394,
+    0.7805048728056244
+   ],
+   [
+    0.27544677554866964,
+    0.6989367974722386
+   ],
+   [
+    0.2087174547721844,
+    0.5717946992862672
+   ],
+   [
+    0.2087174547721844,
+    0.42820530071373275
+   ],
+   [
+    0.2754467755486696,
+    0.30106320252776153
+   ],
+   [
+    0.3936185338872392,
+    0.21949512719437558
+   ],
+   [
+    0.536161004076597,
+    0.20218733777058384
+   ],
+   [
+    0.6704194240193464,
+    0.25310484023190294
+   ],
+   [
+    0.765636807695963,
+    0.3605830483868695
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "heilbronn",
+  "points": [
+   [
+    0.8490563921362665,
+    0.501537680842632
+   ],
+   [
+    0.8095690083209652,
+    0.6607359605384114
+   ],
+   [
+    0.7005740556684618,
+    0.7891247991088792
+   ],
+   [
+    0.5418972946377524,
+    0.8476772959597211
+   ],
+   [
+    0.3781618312873551,
+    0.827413567321903
+   ],
+   [
+    0.2376410591829141,
+    0.7351210169952376
+   ],
+   [
+    0.16090224314933474,
+    0.5828596435288282
+   ],
+   [
+    0.16124589274402987,
+    0.4174230615999706
+   ],
+   [
+    0.23591839880855026,
+    0.2652718670771469
+   ],
+   [
+    0.37716401196389443,
+    0.17305682055642835
+   ],
+   [
+    0.5420223893580023,
+    0.15298953496006232
+   ],
+   [
+    0.6991276435850071,
+    0.21295380923620938
+   ],
+   [
+    0.8108210134444852,
+    0.33674639947556445
+   ]
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 11.3,
+ "model_gpu_memory_gb": 11.3,
+ "context_length": 32768,
+ "load_seconds": 0.0,
+ "median_call_seconds": 90.4,
+ "p90_call_seconds": 221.3,
+ "prompt_tokens_per_s": 384.1,
+ "gen_tokens_per_s": 15.3,
+ "mean_prompt_tokens": 2987,
+ "mean_gen_tokens": 1091,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

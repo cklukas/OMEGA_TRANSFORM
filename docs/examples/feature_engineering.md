@@ -189,6 +189,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/featu
 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | Apple M1 Max | 0.812 | ×1.30 | 1.2 | 2 |
 | muse-glimmer:30b (no-think) | local | Apple M1 Max | 0.809 | ×1.30 | 8.3 | 2 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | Apple M1 Max | 0.805 | ×1.29 | 15.0 | 6 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.802 | ×1.29 | 15.8 | 4 |
 | richardyoung/frognano-4b-2609:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.801 | ×1.29 | 3.2 | 2 |
 | richardyoung/frognano-4b-2609:latest (no-think) | local | Apple M1 Max | 0.8 | ×1.28 | 0.4 | 1 |
 | gemma4:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.8 | ×1.28 | 15.4 | 5 |

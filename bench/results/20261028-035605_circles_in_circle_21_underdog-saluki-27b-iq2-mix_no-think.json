@@ -1,0 +1,336 @@
+{
+ "schema": 3,
+ "example": "circles_in_circle_21",
+ "model": "underdog-saluki-27b:iq2-mix",
+ "variant": "no-think",
+ "model_size_gb": 7.9,
+ "model_params": "26.9B",
+ "started": "2026-10-28T03:56:05",
+ "minutes_budget": 15.0,
+ "wall_minutes": 20.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 3.1890454825108625,
+ "best_score": 3.6208726850038735,
+ "improvement": 1.1354095464806655,
+ "llm_calls": 14,
+ "mean_llm_seconds": 66.1,
+ "attempts": 14,
+ "ok": 4,
+ "statuses": {
+  "invalid": 7,
+  "edit_error": 3,
+  "ok": 4
+ },
+ "sweeps": 2,
+ "sweep_variants": 29,
+ "improvements": 2,
+ "minutes_to_best": 19.65,
+ "best_idea": "tuned STARTS=24, MOVES=800, SHRINK=1 on top of: The current program just recomputes one common radius for fixed positions; I will add a proper packing search (random starts + push-apart moves + greedy",
+ "progress": [
+  [
+   0.0,
+   3.1890454825108625
+  ],
+  [
+   19.65,
+   3.469841383915091
+  ],
+  [
+   19.65,
+   3.6208726850038735
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.1890454825108625,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 5.07,
+   "score": 3.1890454825108625,
+   "model": "underdog-saluki-27b:iq2-mix",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "The current fixed rings (7 and 13) are almost certainly not optimal; I will turn the ring radii and counts into named constants that the engine can sweep, while recomputing the common radius to stay feasible."
+  },
+  {
+   "minutes": 19.65,
+   "score": 3.469841383915091,
+   "model": "underdog-saluki-27b:iq2-mix",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "The current program just recomputes one common radius for fixed positions; I will add a proper packing search (random starts + push-apart moves + greedy radius assignment) so the final radii differ per circle, which should beat the uniform-radius limit and raise the score."
+  },
+  {
+   "minutes": 19.65,
+   "score": 3.6208726850038735,
+   "model": "underdog-saluki-27b:iq2-mix",
+   "mode": "sweep/exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "tuned STARTS=24, MOVES=800, SHRINK=1 on top of: The current program just recomputes one common radius for fixed positions; I will add a proper packing search (random starts + push-apart moves + greedy radius assignment) so the final radii differ per circle, which should beat the uniform-radius limit"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -4,24 +4,119 @@\n import math\n \n # OMEGA-BLOCK-START\n+import math\n+import random\n+\n+SEED = 20240715\n+N = 21\n+SHRINK = 0.99999999999\n+STARTS = 24\n+MOVES = 800\n+R_MIN = 1e-6\n+\n+\n+def _dist2(a, b):\n+    dx = a[0] - b[0]\n+    dy = a[1] - b[1]\n+    return dx * dx + dy * dy\n+\n+\n+def _feasible_radius(c):\n+    \"\"\"For fixed centers, compute the largest radii satisfying the constraints\n+    with a few passes (wall first, then neighbor constraints).\"\"\"\n+    n = len(c)\n+    r = [1.0 - math.hypot(x, y) for x, y in c]\n+    for _ in range(40):\n+        for i in range(n):\n+            ci = c[i]\n+            ri = 1.0 - math.hypot(ci[0], ci[1])\n+            for j in range(n):\n+                if i == j:\n+                    continue\n+                d = math.sqrt(_dist2(ci, c[j]))\n+                cand = d - r[j]\n+                if cand < ri:\n+                    ri = cand\n+            if ri < R_MIN:\n+                ri = R_MIN\n+            r[i] = ri\n+    return r\n+\n+\n+def _push_apart(centers, radii):\n+    \"\"\"Push apart overlapping pairs a little; keep inside the unit disk.\"\"\"\n+    n = len(centers)\n+    for _ in range(60):\n+        moved = False\n+        for i in range(n):\n+            for j in range(i + 1, n):\n+                d = math.sqrt(_dist2(centers[i], centers[j]))\n+                need = radii[i] + radii[j]\n+                if d < need:\n+                    if d > 1e-12:\n+                        fx = (centers[i][0] - centers[j][0]) / d\n+                        fy = (centers[i][1] - centers[j][1]) / d\n+                    else:\n+                        ang = math.pi * (i + j) % (2 * math.pi)\n+                        fx = math.cos(ang)\n+                        fy = math.sin(ang)\n+                    step = (need - d) * 0.5\n+                    centers[i] = (centers[i][0] + fx * step, centers[i][1] + fy * step)\n+                    centers[j] = (centers[j][0] - fx * step, centers[j][1] - fy * step)\n+                    moved = True\n+        for i in range(n):\n+            x, y = centers[i]\n+            d = math.hypot(x, y)\n+            limit = 1.0 - radii[i]\n+            if d > limit:\n+                s = limit / d if d > 0 else 1.0\n+                centers[i] = (x * s, y * s)\n+                moved = True\n+        if not moved:\n+            break\n+    return centers\n+\n+\n+def _random_initial():\n+    return [(random.uniform(-0.8, 0.8), random.uniform(-0.8, 0.8)) for _ in range(N)]\n+\n+\n+def _pack_one():\n+    rng = random.Random(SEED)\n+    best = None\n+    best_sum = 0.0\n+    for s in range(STARTS):\n+        centers = _random_initial()\n+        radii = _feasible_radius(centers)\n+        total = sum(radii)\n+        for _ in range(MOVES):\n+            i = rng.randrange(N)\n+            ang = rng.uniform(0, 2 * math.pi)\n+            dx = rng.uniform(-0.04, 0.04) * math.cos(ang)\n+            dy = rng.uniform(-0.04, 0.04) * math.sin(ang)\n+            new_c = list(centers)\n+            new_c[i] = (centers[i][0] + dx, centers[i][1] + dy)\n+            radii2 = _feasible_radius(new_c)\n+            total2 = sum(radii2)\n+            if total2 > best_sum:\n+                best_sum = total2\n+                best = (new_c, radii2)\n+            if total2 > total:\n+                centers = new_c\n+                radii = radii2\n+                total = total2\n+        radii3 = _feasible_radius(centers)\n+        total3 = sum(radii3)\n+        if total3 > best_sum:\n+            best_sum = total3\n+            best = (centers, radii3)\n+    return best[0], best[1]\n+\n+\n def construct(n=21):\n-    \"\"\"Return a list of n circles (x, y, r) inside the unit circle (center (0,0),\n-    radius 1) without overlaps.\n-\n-    This start places one circle at the center and two concentric rings of 7 and\n-    13 circles, all with the same radius: the largest one that keeps every pair\n-    apart and every circle inside the container.\n-    \"\"\"\n-    centers = [(0.0, 0.0)]\n-    for count, ring in ((7, 0.35), (n - 8, 0.75)):\n-        centers += [(ring * math.cos(2 * math.pi * k / count),\n-                     ring * math.sin(2 * math.pi * k / count)) for k in range(count)]\n-    r = min(1.0 - math.hypot(x, y) for x, y in centers)\n-    for a in range(n):\n-        for b in range(a + 1, n):\n-            r = min(r, math.dist(centers[a], centers[b]) / 2)\n-    r *= 1 - 1e-12  # stay strictly feasible despite rounding\n-    return [(x, y, r) for x, y in centers]\n+    centers, radii = _pack_one()\n+    radii = [max(R_MIN, r) * SHRINK for r in radii]\n+    return [(x, y, r) for (x, y), r in zip(centers, radii)]\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.0,
+    0.0,
+    0.151859
+   ],
+   [
+    0.35,
+    0.0,
+    0.151859
+   ],
+   [
+    0.218221,
+    0.273641,
+    0.151859
+   ],
+   [
+    -0.077882,
+    0.341225,
+    0.151859
+   ],
+   [
+    -0.315339,
+    0.151859,
+    0.151859
+   ],
+   [
+    -0.315339,
+    -0.151859,
+    0.151859
+   ],
+   [
+    -0.077882,
+    -0.341225,
+    0.151859
+   ],
+   [
+    0.218221,
+    -0.273641,
+    0.151859
+   ],
+   [
+    0.75,
+    0.0,
+    0.151859
+   ],
+   [
+    0.664092,
+    0.348542,
+    0.151859
+   ],
+   [
+    0.426049,
+    0.617238,
+    0.151859
+   ],
+   [
+    0.090403,
+    0.744532,
+    0.151859
+   ],
+   [
+    -0.265954,
+    0.701262,
+    0.151859
+   ],
+   [
+    -0.561383,
+    0.497342,
+    0.151859
+   ],
+   [
+    -0.728206,
+    0.179487,
+    0.151859
+   ],
+   [
+    -0.728206,
+    -0.179487,
+    0.151859
+   ],
+   [
+    -0.561383,
+    -0.497342,
+    0.151859
+   ],
+   [
+    -0.265954,
+    -0.701262,
+    0.151859
+   ],
+   [
+    0.090403,
+    -0.744532,
+    0.151859
+   ],
+   [
+    0.426049,
+    -0.617238,
+    0.151859
+   ],
+   [
+    0.664092,
+    -0.348542,
+    0.151859
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    -0.37647,
+    0.265047,
+    0.172141
+   ],
+   [
+    -0.500101,
+    -0.329758,
+    0.130987
+   ],
+   [
+    0.643736,
+    0.071537,
+    0.305086
+   ],
+   [
+    0.148198,
+    0.155593,
+    0.173261
+   ],
+   [
+    -0.350527,
+    0.043599,
+    0.050821
+   ],
+   [
+    -0.79649,
+    -0.084295,
+    0.199062
+   ],
+   [
+    -0.415311,
+    -0.102469,
+    0.108969
+   ],
+   [
+    -0.521638,
+    0.62898,
+    0.182857
+   ],
+   [
+    0.150853,
+    -0.218885,
+    0.201226
+   ],
+   [
+    -0.570879,
+    0.109046,
+    0.07712
+   ],
+   [
+    0.511886,
+    -0.311603,
+    0.100106
+   ],
+   [
+    -0.040569,
+    0.852296,
+    0.137646
+   ],
+   [
+    -0.746168,
+    0.335363,
+    0.181932
+   ],
+   [
+    -0.142561,
+    0.008077,
+    0.150433
+   ],
+   [
+    -0.160718,
+    0.549989,
+    0.185268
+   ],
+   [
+    0.758875,
+    -0.37667,
+    0.152787
+   ],
+   [
+    -0.224058,
+    -0.280487,
+    0.149418
+   ],
+   [
+    -0.680689,
+    -0.532711,
+    0.13564
+   ],
+   [
+    -0.031815,
+    -0.693304,
+    0.305966
+   ],
+   [
+    0.332684,
+    0.603347,
+    0.311011
+   ],
+   [
+    0.488685,
+    -0.621815,
+    0.209135
+   ]
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 11.3,
+ "model_gpu_memory_gb": 11.3,
+ "context_length": 32768,
+ "load_seconds": 6.2,
+ "median_call_seconds": 78.4,
+ "p90_call_seconds": 95.8,
+ "prompt_tokens_per_s": 340.6,
+ "gen_tokens_per_s": 15.4,
+ "mean_prompt_tokens": 2073,
+ "mean_gen_tokens": 882,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

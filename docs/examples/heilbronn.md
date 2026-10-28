@@ -205,6 +205,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/heilb
 | qwen3-coder:30b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.00852 | ×1.78 | 5.3 | 1 |
 | qwen3.8:27b-mtp-q4_K_M (no-think) | local | Apple M1 Max | 0.00834 | ×1.74 | 9.8 | 2 |
 | glm-4.7-flash:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.00657 | ×1.37 | 18.0 | 2 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.00613 | ×1.28 | 6.4 | 1 |
 | richardyoung/frognano-4b-2609:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.00607 | ×1.27 | 3.6 | 1 |
 | frob/sarvam:30b (think) | local | Apple M1 Max | 0.00573 | ×1.20 | 16.2 | 1 |
 | richardyoung/frognano-4b-2609:latest (think) | local | Apple M1 Max | 0.00555 | ×1.16 | 7.8 | 2 |

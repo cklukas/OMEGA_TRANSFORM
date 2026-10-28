@@ -63,7 +63,7 @@ The developer's best single model, the mean share over all its models, and the m
 | Meta | 2 | muse-glimmer:30b (no-think) | 2026-08-09 | **68%** | 65% | 73% |
 | Alibaba (Qwen) | 12 | qwen3.8:27b-mtp-q4_K_M (no-think) | 2026-08-05 | **57%** | 41% | 78% |
 | NVIDIA | 6 | nemotron-3-nano:30b-a3b-mlx (think) | 2025-12-04 | **45%** | 29% | 60% |
-| Conway | 1 | underdog-saluki-27b:iq2-mix (no-think) | 2026-10-08 | **40%** | 40% | 40% |
+| Conway | 1 | underdog-saluki-27b:iq2-mix (no-think) | 2026-10-08 | **41%** | 41% | 41% |
 | LG | 1 | ingu627/exaone4.0:32b (no-think) | 2025-07-11 | **39%** | 39% | 39% |
 | Mistral AI | 1 | devstral-small-2:24b (no-think) | 2025-11-28 | **37%** | 37% | 37% |
 | Microsoft | 2 | richardyoung/frognano-4b-2609:latest (no-think) | 2026-09-17 | **35%** | 30% | 39% |
@@ -87,7 +87,7 @@ Each developer's ranked models by release date (the original publication on Hugg
 | Alibaba (Qwen) | 15B and up | 2026-02-24 | qwen3.5:27b (no-think) | 27.8B | 43% |
 | Alibaba (Qwen) | 15B and up | 2026-04-21 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 27.3B | 43% |
 | Alibaba (Qwen) | 15B and up | 2026-08-05 | qwen3.8:27b-mtp-q4_K_M (no-think) | 27.3B | 57% |
-| Conway | 15B and up | 2026-10-08 | underdog-saluki-27b:iq2-mix (no-think) | 26.9B | 40% |
+| Conway | 15B and up | 2026-10-08 | underdog-saluki-27b:iq2-mix (no-think) | 26.9B | 41% |
 | Google | under 15B | 2026-03-02 | gemma4:e2b (no-think) | 5.1B | 37% |
 | Google | under 15B | 2026-03-02 | gemma4:e4b-it-qat (think) | 7.5B | 67% |
 | Google | under 15B | 2026-03-02 | gemma4:latest (no-think) | 8.1B | 63% |

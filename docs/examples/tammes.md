@@ -266,6 +266,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/tamme
 | qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 29.1042 | ×9.09 | 15.6 | 4 |
 | qwen3.5:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 28.2314 | ×8.82 | 10.4 | 3 |
 | gemma4:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 27.3605 | ×8.55 | 10.5 | 4 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 25.6685 | ×8.02 | 14.8 | 3 |
 | glm-4.7-flash:latest (no-think) | local | Apple M1 Max | 21.4033 | ×6.69 | 2.5 | 2 |
 | nemotron-3-nano:30b-a3b-mlx (think) | local | Apple M1 Max | 21.4033 | ×6.69 | 4.7 | 2 |
 | glm-4.7-flash:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 21.4033 | ×6.69 | 12.1 | 1 |

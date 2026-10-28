@@ -294,6 +294,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/max_c
 | qwen3.5:27b (no-think) | local | Apple M1 Max | 0.69385 | ×1.35 | 9.2 | 1 |
 | devstral-small-2:24b (no-think) | local | Apple M1 Max | 0.69368 | ×1.35 | 5.5 | 1 |
 | frob/sarvam:30b (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.69189 | ×1.35 | 13.6 | 1 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.69189 | ×1.35 | 7.5 | 3 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.68774 | ×1.34 | 14.0 | 2 |
 | richardyoung/frognano-4b-2609:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.63591 | ×1.24 | 15.5 | 6 |
 | nemotron-3-nano:4b (no-think) | local | Apple M1 Max | 0.61463 | ×1.20 | 4.3 | 1 |
