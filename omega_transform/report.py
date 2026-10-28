@@ -402,7 +402,8 @@ DEVELOPERS = [("gemma", "Google"), ("gpt-oss", "OpenAI"), ("qwen", "Alibaba (Qwe
               ("sakana/", "Sakana AI"), ("kolibri", "Aleph Alpha"),
               ("aleph-alpha/", "Aleph Alpha"), ("gigachat", "Sber"),
               ("yandex", "Yandex"), ("apertus", "Swiss AI Initiative"),
-              ("swiss-ai/", "Swiss AI Initiative"), ("sarvam", "Sarvam AI")]
+              ("swiss-ai/", "Swiss AI Initiative"), ("sarvam", "Sarvam AI"),
+              ("underdog", "Conway"), ("conwayresearch/", "Conway")]
 
 
 # Short profiles of the developers, as of October 2026: (founded, headquarters, about).
@@ -486,6 +487,10 @@ DEVELOPER_INFO = {
                   "Builds models for India's languages; released the Sarvam 30B and 105B "
                   "mixture-of-experts models (March 2026, Apache 2.0), trained in India under "
                   "the national IndiaAI mission."),
+    "Conway": ("2026", "USA",
+               "AI lab (Conway Research) behind Underdog, an assistant that runs on the user's "
+               "own devices; its open-weight Saluki 27B (October 2026, Apache 2.0) is a 2-bit "
+               "build of Alibaba's Qwen3.8-27B that is tuned to keep tool calling intact."),
     "Liquid AI": ("2023", "Cambridge, USA",
                   "A spin-off of MIT's computer science lab; its LFM models use a hybrid "
                   "architecture built for running on devices."),

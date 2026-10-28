@@ -1,0 +1,14 @@
+# Copyright (c) 2026 by C. Klukas
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# Underdog Saluki 27B 1.0 (Conway Research): a 2-bit GGUF build of Qwen3.8-27B that
+# Ollama's library does not offer. The path below is relative to this file, so put the
+# downloaded weights next to it, or copy this file to the folder that holds them
+# (docs/model-notes.md):
+#
+#   hf download ConwayResearch/Underdog-Saluki-27B-1.0 Underdog-Saluki-27B-1.0-IQ2-mix.gguf --local-dir .
+#   ollama create underdog-saluki-27b:iq2-mix -f underdog-saluki-27b-iq2-mix.Modelfile
+#
+# The model card asks for nothing but the weights: Ollama takes the chat template and
+# the reasoning mode from the GGUF.
+FROM ./Underdog-Saluki-27B-1.0-IQ2-mix.gguf

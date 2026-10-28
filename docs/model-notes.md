@@ -104,6 +104,48 @@ it:
 - The benchmark records it as `llm-jp-4-8b-omega:q4_k_m`, with the release
   date of the original Hugging Face repository.
 
+## Underdog Saluki 27B (Conway Research, USA)
+
+[ConwayResearch/Underdog-Saluki-27B-1.0](https://huggingface.co/ConwayResearch/Underdog-Saluki-27B-1.0)
+is a 2-bit build of Alibaba's Qwen3.8-27B (Apache 2.0, October 2026), made from
+ISTA-DASLab's Qwen3.8-27B-GSQ-RCO-GGUF and tuned, according to its model card, to
+keep tool calling intact. It is not in Ollama's library: the repository holds
+only a GGUF file (7.9 GB; Ollama reports the quantization as `IQ2_XS`) and an
+optional vision add-on, which the benchmark does not use.
+
+Nothing is wrong with the packaging. The model card's own recipe works, and
+Ollama takes the chat template and the reasoning mode from the GGUF
+(`template source gguf_chat_template`; capabilities `tools` and `thinking`), so
+no template, parser or system prompt needs replacing as it did for LLM-jp-4.
+The steps, to reproduce the benchmarked model:
+
+1. Download the weights and check them against the SHA-256 that Hugging Face
+   lists for the file (`4a673518b11b1c4445f9b9a9d3c40356f5ba39f6a6260dcb25f3fbfd475d9efb`):
+
+   ```bash
+   hf download ConwayResearch/Underdog-Saluki-27B-1.0 Underdog-Saluki-27B-1.0-IQ2-mix.gguf --local-dir .
+   shasum -a 256 Underdog-Saluki-27B-1.0-IQ2-mix.gguf
+   ```
+
+2. Create the model from the file. `bench/modelfiles/underdog-saluki-27b-iq2-mix.Modelfile`
+   holds a single line, `FROM ./Underdog-Saluki-27B-1.0-IQ2-mix.gguf`, which is
+   relative to the Modelfile: run the command with the Modelfile in the folder
+   of the download.
+
+   ```bash
+   ollama create underdog-saluki-27b:iq2-mix -f underdog-saluki-27b-iq2-mix.Modelfile
+   ```
+
+3. Check it, like any other model:
+
+   ```bash
+   python3 -m omega_transform models --models underdog-saluki-27b:iq2-mix
+   ```
+
+The benchmark records it as `underdog-saluki-27b:iq2-mix`, with the creation
+date of the Hugging Face repository as its release date. Its card warns that with
+thinking on, the model often reasons at length before answering.
+
 ## GigaChat 3.1 Lightning (Sber, Russia)
 
 The upload `Bored/GigaChat3.1-10B-A1.8B-q4_K_M` loads and runs fast (about 70

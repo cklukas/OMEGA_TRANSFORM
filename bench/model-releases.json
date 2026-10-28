@@ -184,6 +184,13 @@
    "source": "huggingface",
    "params_b": 4.3
   },
+  "underdog-saluki-27b:iq2-mix": {
+   "repo": "ConwayResearch/Underdog-Saluki-27B-1.0",
+   "note": "2-bit GGUF of Qwen3.8-27B, created locally from the Hugging Face file, see docs/model-notes.md",
+   "params_b": 26.9,
+   "released": "2026-10-08",
+   "source": "huggingface"
+  },
   "yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest": {
    "repo": "yandex/YandexGPT-5-Lite-8B-instruct",
    "released": "2025-03-28",
