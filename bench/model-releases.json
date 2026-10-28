@@ -79,6 +79,13 @@
    "source": "huggingface",
    "params_b": 29.3
   },
+  "hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M": {
+   "repo": "LiquidAI/LFM3-1.7B",
+   "released": "2026-10-23",
+   "source": "huggingface",
+   "params_b": 1.7,
+   "note": "Liquid AI's own GGUF, Q4_K_M, see docs/model-notes.md"
+  },
   "ingu627/exaone4.0:32b": {
    "repo": "LGAI-EXAONE/EXAONE-4.0-32B",
    "released": "2025-07-11",
@@ -95,7 +102,8 @@
    "repo": "LiquidAI/LFM3-1.7B",
    "released": "2026-10-23",
    "source": "huggingface",
-   "params_b": 1.7
+   "params_b": 1.7,
+   "note": "Ollama library build: MLX, NVFP4 (Apple Silicon only), see docs/model-notes.md"
   },
   "llm-jp-4-8b-omega:q4_k_m": {
    "repo": "llm-jp/llm-jp-4-8b-thinking",

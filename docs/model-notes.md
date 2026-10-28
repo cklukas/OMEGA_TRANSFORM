@@ -195,11 +195,23 @@ the meaningful ones. The same applies, less often, to Sarvam 30B.
 
 ## LFM3 1.7B (Liquid AI, USA)
 
-`lfm3:latest` is the text model of Liquid AI's LFM3 family (announced
+LFM3-1.7B is the text model of Liquid AI's LFM3 family (announced
 2026-10-27; Hugging Face repository
 [LiquidAI/LFM3-1.7B](https://huggingface.co/LiquidAI/LFM3-1.7B), LFM Open
-License v1.0), taken as it is from Ollama's library (1.7 GB, the same build as
-`lfm3:1.7b`). It needs Ollama 0.40.12 or newer: older versions refuse the pull
-with "requires a newer version of Ollama" (HTTP 412). It supports reasoning and
-is benchmarked in both passes; at 1.7B parameters it is the smallest model in
-the benchmark.
+License v1.0). At 1.7B parameters it is the smallest model in the benchmark.
+It supports reasoning and is benchmarked in both passes, in two builds:
+
+- `lfm3:latest` from Ollama's library is an MLX build (NVFP4, the same as
+  `lfm3:1.7b-nvfp4`; 1.7 GB). MLX runs only on Apple Silicon: elsewhere Ollama
+  refuses the pull with "this model requires MLX support, but the MLX runtime
+  is not available". It needs Ollama 0.40.12 or newer; older versions refuse
+  the pull with "requires a newer version of Ollama" (HTTP 412). Benchmarked
+  on the Mac only.
+- `hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M` is Liquid AI's own GGUF (1.1 GB),
+  pulled from Hugging Face. Ollama 0.40.12 downloads it but cannot load it
+  ("unknown model architecture: 'lfm3'"): its GGUF runner, llama.cpp, gained
+  LFM3 only after that release
+  ([ollama/ollama#19347](https://github.com/ollama/ollama/issues/19347),
+  [#19344](https://github.com/ollama/ollama/pull/19344)). This build runs on
+  both machines once a newer Ollama is installed, so it is the one that
+  compares the Mac and Windows.
