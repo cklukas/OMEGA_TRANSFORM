@@ -1,0 +1,239 @@
+{
+ "schema": 3,
+ "example": "feature_engineering",
+ "model": "gemma4:e2b",
+ "variant": "think",
+ "model_size_gb": 4.6,
+ "model_params": "4.6B",
+ "started": "2026-10-25T22:01:15",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.623,
+ "best_score": 0.738,
+ "improvement": 1.1845906902086678,
+ "llm_calls": 50,
+ "mean_llm_seconds": 17.4,
+ "attempts": 50,
+ "ok": 32,
+ "statuses": {
+  "ok": 32,
+  "invalid": 2,
+  "edit_error": 2,
+  "duplicate": 14
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 4,
+ "minutes_to_best": 15.15,
+ "best_idea": "Replace the linear inputs $x_1, x_2, x_6$ with the more informative non-linear features derived from the lessons learned to better capture the underlying decision boundary.",
+ "progress": [
+  [
+   0.0,
+   0.623
+  ],
+  [
+   0.65,
+   0.701
+  ],
+  [
+   2.74,
+   0.705
+  ],
+  [
+   6.41,
+   0.731
+  ],
+  [
+   15.15,
+   0.738
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.623,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 0.65,
+   "score": 0.701,
+   "model": "gemma4:e2b",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Transform the skewed variable $x_3$ using its logarithm to linearize its effect on the linear classifier and potentially improve separability."
+  },
+  {
+   "minutes": 2.74,
+   "score": 0.705,
+   "model": "gemma4:e2b",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Use the sign of $x_4$ and $x_5$ to explicitly capture quadrant structure, which is a common source of non-linear boundaries, combined with the log transformation of $x_3$, aiming to leverage insights from the leaderboard."
+  },
+  {
+   "minutes": 7.79,
+   "score": 0.731,
+   "model": "gemma4:e2b",
+   "mode": "explore/diff/tune",
+   "status": "ok",
+   "idea": "Replace the sign functions of $x_4$ and $x_5$ with their squares and include their interaction term to capture magnitude and cross-term effects from the uniform inputs, aligning with the best practices observed in the leaderboard."
+  },
+  {
+   "minutes": 15.15,
+   "score": 0.738,
+   "model": "gemma4:e2b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the linear inputs $x_1, x_2, x_6$ with the more informative non-linear features derived from the lessons learned to better capture the underlying decision boundary."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -21,5 +21,8 @@\n \n     Current method: the raw inputs.\n     \"\"\"\n-    return list(row)\n+    x1, x2, x3, x4, x5, x6 = row\n+    sign_x4 = math.copysign(1.0, x4)\n+    sign_x5 = math.copysign(1.0, x5)\n+    return [math.log(x3), sign_x4, sign_x5, x4*x4, x5*x5, x4*x5]\n # OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "classification",
+  "columns": [
+   "x1",
+   "x2",
+   "x3",
+   "x4",
+   "x5",
+   "x6"
+  ],
+  "head": [
+   [
+    0.14,
+    1.08,
+    1.79,
+    -0.66,
+    1.01,
+    -0.54
+   ],
+   [
+    -1.03,
+    -0.71,
+    0.47,
+    1.72,
+    0.77,
+    -0.69
+   ],
+   [
+    0.36,
+    -0.3,
+    0.1,
+    -2.0,
+    0.57,
+    -0.15
+   ],
+   [
+    1.13,
+    1.16,
+    1.34,
+    1.26,
+    1.29,
+    0.92
+   ]
+  ],
+  "head_labels": [
+   1,
+   1,
+   0,
+   1
+  ],
+  "train_rows": 1000,
+  "num_features": 6,
+  "test_correct": "1110101111000101011111011010101001101100111100110111111101011110101110011011001101101000011100011010111110110111011110000011111111011100100110111110101000001001110101111110101010111011101101000010010100000101110011000100110001010111011001101100110011110111111010101001011101111011110101110011100101100100011011010011101011000101100100110110111110100101101111110111101100011110111111110110111111101100010111110011111011001100001101010011101100101011010111110000111000010111111111100111110101010101111011001000111110111101110001011111011110011101010011011101111101001101110110101100001110001001101010001011011001111110111110101111110110110110101010111001011111101111111101101111001111001000101101001000000100100101111111111011011101110111110101111110001111001101111101111101011111111011111111111111111000111001001110010010010000110000101111110101001111101111000111011000111111101111101111000111011111010001001101100011000110110111000010111110110001111111111101001111101100011100101100101011101110111010"
+ },
+ "best_solution": {
+  "kind": "classification",
+  "columns": [
+   "x1",
+   "x2",
+   "x3",
+   "x4",
+   "x5",
+   "x6"
+  ],
+  "head": [
+   [
+    0.14,
+    1.08,
+    1.79,
+    -0.66,
+    1.01,
+    -0.54
+   ],
+   [
+    -1.03,
+    -0.71,
+    0.47,
+    1.72,
+    0.77,
+    -0.69
+   ],
+   [
+    0.36,
+    -0.3,
+    0.1,
+    -2.0,
+    0.57,
+    -0.15
+   ],
+   [
+    1.13,
+    1.16,
+    1.34,
+    1.26,
+    1.29,
+    0.92
+   ]
+  ],
+  "head_labels": [
+   1,
+   1,
+   0,
+   1
+  ],
+  "train_rows": 1000,
+  "num_features": 6,
+  "test_correct": "1111001111011101110101011111000101101111110110100101111011101111101100110011101111111011111101011011011111110111111111101110111110011001111111011100001001110111111101111111011101110111110101000011011001110000111111010100111011010011110001111100110111110110111110110111110111110011111011111111101011111110001111111111111011111101111111110110110111111111111011010111111111111011111111001111111100101101001111101111111010001111011101000111101111111011110011011001101100111111111011111100111011110100101111101010110111111001110111011101011111010100110111001110111101111111110100111101111111111001111010101111010110111010111110111111000110100110101110100111111111101110111101011111101111101101111111011110011111000111111111101111010110010011111110101111110011001101111110111111010011110111111111111001111111111110110000010110111110101100101110111111111011101011110011010011111111100110111110111111111111111011101101111110011111011101101101100111011111101111101101111111101110111111111110111010101111111010"
+ },
+ "error": "",
+ "model_memory_gb": 0.5,
+ "model_gpu_memory_gb": 0.5,
+ "context_length": 32768,
+ "load_seconds": 18.5,
+ "median_call_seconds": 16.9,
+ "p90_call_seconds": 23.5,
+ "prompt_tokens_per_s": 2214.7,
+ "gen_tokens_per_s": 113.1,
+ "mean_prompt_tokens": 3422,
+ "mean_gen_tokens": 1517,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

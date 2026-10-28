@@ -1,0 +1,133 @@
+{
+ "schema": 3,
+ "example": "sort_u32_single_thread",
+ "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-10-23T23:02:44",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 22.42874376948463,
+ "best_score": 27.4213356876202,
+ "improvement": 1.2225979292218867,
+ "llm_calls": 27,
+ "mean_llm_seconds": 32.4,
+ "attempts": 27,
+ "ok": 12,
+ "statuses": {
+  "compile_error": 5,
+  "ok": 12,
+  "edit_error": 4,
+  "duplicate": 6
+ },
+ "sweeps": 8,
+ "sweep_variants": 111,
+ "improvements": 3,
+ "minutes_to_best": 10.84,
+ "best_idea": "tuned INSERTION_SORT_THRESHOLD=20 on top of: Introduce a threshold to switch to insertion sort for small subarrays, reducing overhead in the merge sort's base case and improving performance on nearly-",
+ "progress": [
+  [
+   0.0,
+   22.42874376948463
+  ],
+  [
+   7.2,
+   23.971768504531717
+  ],
+  [
+   10.84,
+   26.41314663827686
+  ],
+  [
+   10.84,
+   27.4213356876202
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 22.42874376948463,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 10.84,
+   "score": 26.41314663827686,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Introduce a threshold to switch to insertion sort for small subarrays, reducing overhead in the merge sort's base case and improving performance on nearly-sorted and small inputs, which is known to significantly boost performance on the benchmark distributions."
+  },
+  {
+   "minutes": 10.84,
+   "score": 27.4213356876202,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "sweep/exploit/diff/tune",
+   "status": "ok",
+   "idea": "tuned INSERTION_SORT_THRESHOLD=20 on top of: Introduce a threshold to switch to insertion sort for small subarrays, reducing overhead in the merge sort's base case and improving performance on nearly-sorted and small inputs, which is known to significantly boost performance on the benchmark distribu"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -21,8 +21,27 @@\n // OMEGA-BLOCK-START\n // Sorts a[0..n) ascending, in place, on the calling thread. n is any size from\n // 0 to 2'000'000. Extra memory may be allocated freely.\n+static constexpr size_t INSERTION_SORT_THRESHOLD = 20.0;\n+\n+static void insertion_sort(uint32_t* a, size_t n) {\n+    for (size_t i = 1; i < n; ++i) {\n+        uint32_t key = a[i];\n+        size_t j = i;\n+        while (j > 0 && a[j - 1] > key) {\n+            a[j] = a[j - 1];\n+            --j;\n+        }\n+        a[j] = key;\n+    }\n+}\n+\n static void merge_sort_rec(uint32_t* a, uint32_t* tmp, size_t lo, size_t hi) {\n-    if (hi - lo < 2) return;\n+    size_t len = hi - lo;\n+    if (len < 2) return;\n+    if (len <= INSERTION_SORT_THRESHOLD) {\n+        insertion_sort(a + lo, len);\n+        return;\n+    }\n     size_t mid = lo + (hi - lo) / 2;\n     merge_sort_rec(a, tmp, lo, mid);\n     merge_sort_rec(a, tmp, mid, hi);\n",
+ "initial_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "best_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 22.2,
+ "model_gpu_memory_gb": 18.9,
+ "context_length": 32768,
+ "load_seconds": 54.5,
+ "median_call_seconds": 28.1,
+ "p90_call_seconds": 63.4,
+ "prompt_tokens_per_s": 916.0,
+ "gen_tokens_per_s": 29.8,
+ "mean_prompt_tokens": 5119,
+ "mean_gen_tokens": 671,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

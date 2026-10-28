@@ -71,9 +71,9 @@ def roundtrip(data: bytes) -> tuple[bytes, bytes]:
 
 ## Benchmark results
 
-The best result so far comes from **qwen3.5:latest (no-think)**, run locally with Ollama on 2026-10-14: a score of **26.8544** (×2.38 the starting program's 11.2861), reached after 7.63 of 15 minutes with 25 model requests.
+The best result so far comes from **gpt-oss:20b (think)**, run locally with Ollama on 2026-10-25: a score of **27.3727** (×2.43 the starting program's 11.2861), reached after 8.55 of 15 minutes with 15 model requests.
 
-What the starting program produces (left) and what the best program by qwen3.5:latest (no-think) produces (right):
+What the starting program produces (left) and what the best program by gpt-oss:20b (think) produces (right):
 
 ![compressor: the starting program's solution and the best one](../assets/examples/compressor.svg)
 
@@ -84,7 +84,9 @@ The best program's ancestry, from the starting program on. "Edit" and "rewrite" 
 | Step | Minute | Score | Kind | Idea |
 |--:|--:|--:|---|---|
 | 0 | 0.0 | 11.2861 | start | initial program |
-| 1 | 7.6 | 26.8544 | edit | Switch from generic `zlib.compress` (level 1) to a hybrid approach that first attempts high-compression `lzma` (raw format) with fallback to `bz2` or `zlib`, while adding explicit imports and robust exception handling for empty/random inputs to ensure the … |
+| 1 | 1.1 | 21.4903 | edit | Replace the trivial zlib level‑1 compressor with lzma in extreme mode to achieve a higher compression ratio while still handling all byte sequences. |
+| 2 | 2.6 | 21.5518 | edit | Switch to raw LZMA with a filter list to eliminate container headers and improve compression ratio for the log format. |
+| 3 | 8.6 | 27.3727 | edit | Replace the raw LZMA compressor with a lightweight log‑field aware format that parses the Apache log, stores each column separately (IP, request, status, size, referer, user‑agent, first timestamp, timestamp deltas), compresses each column with raw LZMA, and … |
 
 ### The best program
 
@@ -93,110 +95,146 @@ What changed compared with the starting program:
 ```diff
 --- initial
 +++ best
-@@ -19,14 +19,103 @@
+@@ -10,6 +10,24 @@
+ import zlib
+ 
+ # OMEGA-BLOCK-START
++import lzma
++import struct
++import re
++import datetime
++
++# LZMA2 preset and filter configuration for raw format
++FILTERS = [{"id": lzma.FILTER_LZMA2, "preset": 9 | lzma.PRESET_EXTREME}]
++
++# Constants for custom log format
++MAGIC = b'LOGC'          # 4‑byte magic
++NUM_COLS = 8             # number of columns
++
++# Regex to parse Apache combined log lines
++LOG_RE = re.compile(
++    r'^(?P<ip>\S+) \S+ \S+ \[(?P<ts>[^\]]+)\] "(?P<req>[^"]*)" '
++    r'(?P<status>\S+) (?P<size>\S+) "(?P<ref>[^"]*)" "(?P<ua>[^"]*)"'
++)
++
+ def compress(data: bytes) -> bytes:
+     """Compress arbitrary bytes losslessly and return the compressed blob.
+ 
+@@ -19,14 +37,114 @@
      Only the Python standard library may be used (zlib, lzma, bz2, struct, re, ...).
      Compress plus decompress of the main input must stay within 20 CPU seconds.
  
 -    Current method: plain zlib at level 1.
-+    Strategy: Try raw LZMA first for structured logs (best ratio), fallback to bz2/zlib if it fails or for random data.
++    This implementation parses the log, stores each column separately, compresses
++    each with raw LZMA, and prefixes a small header. Non‑log data falls back to
++    raw LZMA of the whole blob.
      """
 -    return zlib.compress(data, 1)
-+    if not data:
-+        return b""
-+    
-+    # Strategy 1: Raw LZMA with extreme settings (best for repetitive text like logs)
++    # Detect if input is likely a log; fall back otherwise
 +    try:
-+        compressed = lzma.compress(data, format=lzma.FORMAT_RAW, preset=lzma.BEST_COMPRESSION)
-+        if lzma.decompress(compressed, format=lzma.FORMAT_RAW) == data:
-+            return compressed
++        lines = data.splitlines()
++        if not lines:
++            return lzma.compress(data, format=lzma.FORMAT_RAW, filters=FILTERS)
++        decoded = [line.decode('utf-8') for line in lines]
 +    except Exception:
-+        pass
++        return lzma.compress(data, format=lzma.FORMAT_RAW, filters=FILTERS)
 +
-+    # Strategy 2: BZ2 (often good for mixed/random data where raw LZMA might struggle slightly or fail)
-+    try:
-+        compressed = zlib.compress(b"") # dummy to ensure import worked if we wanted, but bz2 is in stdlib via import? No, need import.
-+    except Exception:
-+        pass
-+    
-+    # Fallback 1: BZ2 if available and better than zlib9 (often yes for text)
-+    try:
-+        import bz2
-+        compressed = bz2.compress(data)
-+        if bz2.decompress(compressed) == data:
-+            return compressed
-+    except Exception:
-+        pass
++    ips = []
++    requests = []
++    statuses = []
++    sizes = []
++    referers = []
++    useragents = []
++    deltas = []
++    first_ts_str = None
 +
-+    # Fallback 2: Zlib level 1 (baseline from original, safe for random bytes)
-+    try:
-+        compressed = zlib.compress(data, level=1)
-+        if zlib.decompress(compressed) == data:
-+            return compressed
-+    except Exception:
-+        pass
++    prev_ts = None
++    for i, line in enumerate(decoded):
++        m = LOG_RE.match(line)
++        if not m:
++            return lzma.compress(data, format=lzma.FORMAT_RAW, filters=FILTERS)
++        ips.append(m.group('ip'))
++        requests.append(m.group('req'))
++        statuses.append(m.group('status'))
++        sizes.append(m.group('size'))
++        referers.append(m.group('ref'))
++        useragents.append(m.group('ua'))
 +
-+    # Fallback 3: Zlib level 9 (if above fails, this usually works but worse ratio)
-+    try:
-+        compressed = zlib.compress(data, level=9)
-+        if zlib.decompress(compressed) == data:
-+            return compressed
-+    except Exception:
-+        pass
++        ts_str = m.group('ts')
++        if i == 0:
++            first_ts_str = ts_str
++            prev_ts = datetime.datetime.strptime(ts_str, '%d/%b/%Y:%H:%M:%S %z')
++        else:
++            curr_ts = datetime.datetime.strptime(ts_str, '%d/%b/%Y:%H:%M:%S %z')
++            deltas.append(int((curr_ts - prev_ts).total_seconds()))
++            prev_ts = curr_ts
 +
-+    # Final fallback: Standard LZMA container (should never be reached if lzma is importable)
-+    try:
-+        compressed = lzma.compress(data)
-+        assert lzma.decompress(compressed) == data
-+        return compressed
-+    except Exception:
-+        # Last resort: just compress with whatever we have (zlib 1)
-+        return zlib.compress(data, level=1)
++    N = len(ips)
++
++    def join_strs(lst):
++        return '\n'.join(lst).encode('utf-8')
++
++    cols = [
++        join_strs(ips),                     # 0: IPs
++        join_strs(requests),                # 1: Requests
++        join_strs(statuses),                # 2: Statuses
++        join_strs(sizes),                   # 3: Sizes
++        join_strs(referers),                # 4: Referers
++        join_strs(useragents),              # 5: User‑Agents
++        first_ts_str.encode('utf-8'),       # 6: First timestamp string
++        b''.join(struct.pack('>I', d) for d in deltas)  # 7: Timestamp deltas
++    ]
++
++    comp_cols = [lzma.compress(c, format=lzma.FORMAT_RAW, filters=FILTERS) for c in cols]
++
++    # Header: magic, flag (1 if original ended with newline), number of lines
++    flag = 1 if data.endswith(b'\n') else 0
++    header = MAGIC + bytes([flag]) + struct.pack('>I', N)
++
++    lengths = b''.join(struct.pack('>I', len(c)) for c in comp_cols)
++    body = b''.join(comp_cols)
++    return header + lengths + body
  
  
  def decompress(blob: bytes) -> bytes:
      """Invert compress() exactly."""
 -    return zlib.decompress(blob)
-+    if not blob:
-+        return b""
-+    
-+    # Try the order of compression for decompression
-+    try:
-+        import bz2
-+        # Check if it looks like bz2 (starts with BZ header or just try)
-+        compressed = bz2.decompress(blob)
-+        return compressed
-+    except Exception:
-+        pass
++    # Try custom format first
++    if len(blob) >= 9 and blob[:4] == MAGIC:
++        try:
++            flag = blob[4]
++            N = struct.unpack('>I', blob[5:9])[0]
++            lengths = [struct.unpack('>I', blob[9 + i*4:13 + i*4])[0] for i in range(NUM_COLS)]
++            offset = 9 + NUM_COLS * 4
++            comp_cols = [blob[offset + sum(lengths[:i]): offset + sum(lengths[:i]) + lengths[i]] for i in range(NUM_COLS)]
++            cols = [lzma.decompress(c, format=lzma.FORMAT_RAW, filters=FILTERS) for c in comp_cols]
 +
-+    try:
-+        compressed = lzma.decompress(blob, format=lzma.FORMAT_RAW)
-+        return compressed
-+    except Exception:
-+        pass
++            # Decode string columns
++            strs = [c.decode('utf-8').split('\n') for c in cols[:6]]
++            first_ts_str = cols[6].decode('utf-8')
++            deltas_bytes = cols[7]
++            deltas = [struct.unpack('>I', deltas_bytes[i*4:(i+1)*4])[0] for i in range(len(deltas_bytes) // 4)]
 +
-+    try:
-+        import bz2
-+        # Retry bz2 with standard header if raw failed (some data might be ambiguous)
-+        compressed = bz2.decompress(blob)
-+        return compressed
-+    except Exception:
-+        pass
++            # Reconstruct timestamps
++            ts_list = [datetime.datetime.strptime(first_ts_str, '%d/%b/%Y:%H:%M:%S %z')]
++            for d in deltas:
++                ts_list.append(ts_list[-1] + datetime.timedelta(seconds=d))
 +
-+    try:
-+        compressed = lzma.decompress(blob)
-+        return compressed
-+    except Exception:
-+        pass
++            lines = []
++            for i in range(N):
++                ts_formatted = ts_list[i].strftime('%d/%b/%Y:%H:%M:%S %z')
++                line = f'{strs[0][i]} - - [{ts_formatted}] "{strs[1][i]}" {strs[2][i]} {strs[3][i]} "{strs[4][i]}" "{strs[5][i]}"'
++                lines.append(line)
 +
-+    try:
-+        compressed = zlib.decompress(blob)
-+        return compressed
-+    except Exception:
-+        pass
-+
-+    # If all else fails, return empty or the blob itself? Must be lossless.
-+    # Assuming one of the above MUST work for valid input.
-+    return b""
++            result = '\n'.join(lines).encode('utf-8')
++            if flag:
++                result += b'\n'
++            return result
++        except Exception:
++            # Fallback if anything goes wrong
++            return lzma.decompress(blob, format=lzma.FORMAT_RAW, filters=FILTERS)
++    else:
++        return lzma.decompress(blob, format=lzma.FORMAT_RAW, filters=FILTERS)
  # OMEGA-BLOCK-END
 ```
 
@@ -204,48 +242,82 @@ What changed compared with the starting program:
 
 One run per model and reasoning mode; the [model benchmarks](../benchmarks/log_compressor.md) page has speed, memory and progress over time.
 
-| Model | Where | Best | Gain | Minutes to best | New bests |
-|---|---|--:|--:|--:|--:|
-| qwen3.5:latest (no-think) | local | 26.8544 | ×2.38 | 7.6 | 2 |
-| gemma4:latest (think) | local | 26.8544 | ×2.38 | 10.7 | 3 |
-| richardyoung/frognano-4b-2609:latest (think) | local | 26.8544 | ×2.38 | 6.2 | 3 |
-| muse-glimmer:30b (think) | local | 24.9412 | ×2.21 | 18.2 | 1 |
-| muse-glimmer:30b (no-think) | local | 24.7493 | ×2.19 | 5.8 | 1 |
-| gemma4:26b-a4b-it-qat (no-think) | local | 21.7984 | ×1.93 | 8.9 | 3 |
-| gpt-oss:20b (think) | local | 21.5518 | ×1.91 | 14.5 | 5 |
-| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 21.5508 | ×1.91 | 11.4 | 1 |
-| gpt-oss:20b (no-think) | local | 21.5163 | ×1.91 | 13.3 | 3 |
-| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | 21.4903 | ×1.90 | 2.5 | 1 |
-| ingu627/exaone4.0:32b (no-think) | local | 21.4903 | ×1.90 | 6.6 | 1 |
-| gemma4:e4b-it-qat (no-think) | local | 21.4570 | ×1.90 | 4.0 | 2 |
-| gemma4:12b-it-qat (no-think) | local | 21.4570 | ×1.90 | 11.3 | 3 |
-| gemma4:e2b (no-think) | local | 21.4570 | ×1.90 | 1.8 | 2 |
-| gemma4:latest (no-think) | local | 21.4570 | ×1.90 | 4.3 | 2 |
-| gemma4:e4b-it-qat (think) | local | 21.4570 | ×1.90 | 6.9 | 1 |
-| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 19.6626 | ×1.74 | 8.4 | 1 |
-| nemotron-3-nano:4b (no-think) | local | 19.6626 | ×1.74 | 10.3 | 2 |
-| qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | 19.6617 | ×1.74 | 8.8 | 1 |
-| qwen3.5:latest (think) | local | 17.6320 | ×1.56 | 2.2 | 1 |
-| richardyoung/frognano-4b-2609:latest (no-think) | local | 17.6320 | ×1.56 | 14.6 | 1 |
-| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | 17.6320 | ×1.56 | 1.2 | 1 |
-| devstral-small-2:24b (no-think) | local | 17.6320 | ×1.56 | 6.5 | 1 |
-| qwen3-coder:30b (no-think) | local | 17.6292 | ×1.56 | 11.3 | 1 |
-| qwen2.5-coder:7b (no-think) | local | 11.2861 | ×1.00 | - | 0 |
-| qwen3.5:27b (no-think) | local | 11.2861 | ×1.00 | - | 0 |
-| qwen3.8:27b-mtp-q4_K_M (no-think) | local | 11.2861 | ×1.00 | - | 0 |
-| gemma4:12b-it-qat (think) | local | | | | failed: all 2 model requests failed: gemma4:12b-it-qat: answer … |
-| gemma4:e2b (think) | local | 11.2861 | ×1.00 | - | 0 |
-| gemma4:26b-a4b-it-qat (think) | local | 11.2861 | ×1.00 | - | 0 |
-| qwen3.5:27b (think) | local | 11.2861 | ×1.00 | - | 0 |
-| qwen3.8:27b-mtp-q4_K_M (think) | local | 11.2861 | ×1.00 | - | 0 |
-| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | 11.2861 | ×1.00 | - | 0 |
-| llm-jp-4-8b-omega:q4_k_m (no-think) | local | 11.2861 | ×1.00 | - | 0 |
-| glm-4.7-flash:latest (no-think) | local | 11.2861 | ×1.00 | - | 0 |
-| frob/sarvam:30b (no-think) | local | 11.2861 | ×1.00 | - | 0 |
-| glm-4.7-flash:latest (think) | local | 11.2861 | ×1.00 | - | 0 |
-| frob/sarvam:30b (think) | local | 11.2861 | ×1.00 | - | 0 |
-| nemotron-3-nano:30b-a3b-mlx (no-think) | local | 11.2861 | ×1.00 | - | 0 |
-| nemotron-3.5-lightning:30b-mlx (no-think) | local | 11.2861 | ×1.00 | - | 0 |
-| nemotron-3-nano:4b (think) | local | 11.2861 | ×1.00 | - | 0 |
-| nemotron-3-nano:30b-a3b-mlx (think) | local | 11.2861 | ×1.00 | - | 0 |
-| nemotron-3.5-lightning:30b-mlx (think) | local | | | | failed: all 5 model requests failed … |
+| Model | Where | Machine | Best | Gain | Minutes to best | New bests |
+|---|---|---|--:|--:|--:|--:|
+| gpt-oss:20b (think) | local | i7-8700K + 2x GTX 1080 Ti | 27.3727 | ×2.43 | 8.6 | 3 |
+| qwen3.5:latest (no-think) | local | Apple M1 Max | 26.8544 | ×2.38 | 7.6 | 2 |
+| gemma4:latest (think) | local | Apple M1 Max | 26.8544 | ×2.38 | 10.7 | 3 |
+| richardyoung/frognano-4b-2609:latest (think) | local | Apple M1 Max | 26.8544 | ×2.38 | 6.2 | 3 |
+| gemma4:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 26.8544 | ×2.38 | 3.9 | 2 |
+| gemma4:12b-it-qat (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 26.8544 | ×2.38 | 11.8 | 3 |
+| gpt-oss:20b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 26.8544 | ×2.38 | 10.1 | 4 |
+| gemma4:e4b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | 26.8544 | ×2.38 | 14.7 | 3 |
+| muse-glimmer:30b (think) | local | Apple M1 Max | 24.9412 | ×2.21 | 18.2 | 1 |
+| muse-glimmer:30b (no-think) | local | Apple M1 Max | 24.7493 | ×2.19 | 5.8 | 1 |
+| gemma4:26b-a4b-it-qat (no-think) | local | Apple M1 Max | 21.7984 | ×1.93 | 8.9 | 3 |
+| gpt-oss:20b (think) | local | Apple M1 Max | 21.5518 | ×1.91 | 14.5 | 5 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | Apple M1 Max | 21.5508 | ×1.91 | 11.4 | 1 |
+| gpt-oss:20b (no-think) | local | Apple M1 Max | 21.5163 | ×1.91 | 13.3 | 3 |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | Apple M1 Max | 21.4903 | ×1.90 | 2.5 | 1 |
+| ingu627/exaone4.0:32b (no-think) | local | Apple M1 Max | 21.4903 | ×1.90 | 6.6 | 1 |
+| gemma4:26b-a4b-it-qat (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 21.4892 | ×1.90 | 6.9 | 2 |
+| gemma4:e4b-it-qat (no-think) | local | Apple M1 Max | 21.4570 | ×1.90 | 4.0 | 2 |
+| gemma4:12b-it-qat (no-think) | local | Apple M1 Max | 21.4570 | ×1.90 | 11.3 | 3 |
+| gemma4:e2b (no-think) | local | Apple M1 Max | 21.4570 | ×1.90 | 1.8 | 2 |
+| gemma4:latest (no-think) | local | Apple M1 Max | 21.4570 | ×1.90 | 4.3 | 2 |
+| gemma4:e4b-it-qat (think) | local | Apple M1 Max | 21.4570 | ×1.90 | 6.9 | 1 |
+| gemma4:e2b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 21.4570 | ×1.90 | 1.6 | 1 |
+| qwen2.5-coder:7b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 21.4570 | ×1.90 | 14.4 | 1 |
+| gemma4:e2b (think) | local | i7-8700K + 2x GTX 1080 Ti | 21.4570 | ×1.90 | 11.0 | 2 |
+| gemma4:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 21.4570 | ×1.90 | 11.1 | 2 |
+| richardyoung/frognano-4b-2609:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 19.7019 | ×1.75 | 3.0 | 1 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | Apple M1 Max | 19.6626 | ×1.74 | 8.4 | 1 |
+| nemotron-3-nano:4b (no-think) | local | Apple M1 Max | 19.6626 | ×1.74 | 10.3 | 2 |
+| gemma4:e4b-it-qat (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 19.6626 | ×1.74 | 9.2 | 3 |
+| glm-4.7-flash:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 19.6626 | ×1.74 | 5.5 | 1 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | Apple M1 Max | 19.6617 | ×1.74 | 8.8 | 1 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 19.6617 | ×1.74 | 7.2 | 1 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 19.6617 | ×1.74 | 6.4 | 1 |
+| qwen3.5:latest (think) | local | Apple M1 Max | 17.6320 | ×1.56 | 2.2 | 1 |
+| richardyoung/frognano-4b-2609:latest (no-think) | local | Apple M1 Max | 17.6320 | ×1.56 | 14.6 | 1 |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | Apple M1 Max | 17.6320 | ×1.56 | 1.2 | 1 |
+| devstral-small-2:24b (no-think) | local | Apple M1 Max | 17.6320 | ×1.56 | 6.5 | 1 |
+| richardyoung/frognano-4b-2609:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 17.6320 | ×1.56 | 6.0 | 1 |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 17.6320 | ×1.56 | 11.7 | 1 |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 17.6320 | ×1.56 | 8.5 | 1 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 17.6320 | ×1.56 | 9.6 | 1 |
+| qwen3.5:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 17.6320 | ×1.56 | 6.6 | 1 |
+| qwen3-coder:30b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 17.6313 | ×1.56 | 6.8 | 1 |
+| qwen3-coder:30b (no-think) | local | Apple M1 Max | 17.6292 | ×1.56 | 11.3 | 1 |
+| qwen2.5-coder:7b (no-think) | local | Apple M1 Max | 11.2861 | ×1.00 | - | 0 |
+| qwen3.5:27b (no-think) | local | Apple M1 Max | 11.2861 | ×1.00 | - | 0 |
+| qwen3.8:27b-mtp-q4_K_M (no-think) | local | Apple M1 Max | 11.2861 | ×1.00 | - | 0 |
+| gemma4:12b-it-qat (think) | local | Apple M1 Max | | | | failed: all 2 model requests failed: gemma4:12b-it-qat: answer … |
+| gemma4:e2b (think) | local | Apple M1 Max | 11.2861 | ×1.00 | - | 0 |
+| gemma4:26b-a4b-it-qat (think) | local | Apple M1 Max | 11.2861 | ×1.00 | - | 0 |
+| qwen3.5:27b (think) | local | Apple M1 Max | 11.2861 | ×1.00 | - | 0 |
+| qwen3.8:27b-mtp-q4_K_M (think) | local | Apple M1 Max | 11.2861 | ×1.00 | - | 0 |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | Apple M1 Max | 11.2861 | ×1.00 | - | 0 |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | local | Apple M1 Max | 11.2861 | ×1.00 | - | 0 |
+| glm-4.7-flash:latest (no-think) | local | Apple M1 Max | 11.2861 | ×1.00 | - | 0 |
+| frob/sarvam:30b (no-think) | local | Apple M1 Max | 11.2861 | ×1.00 | - | 0 |
+| glm-4.7-flash:latest (think) | local | Apple M1 Max | 11.2861 | ×1.00 | - | 0 |
+| frob/sarvam:30b (think) | local | Apple M1 Max | 11.2861 | ×1.00 | - | 0 |
+| nemotron-3-nano:30b-a3b-mlx (no-think) | local | Apple M1 Max | 11.2861 | ×1.00 | - | 0 |
+| nemotron-3.5-lightning:30b-mlx (no-think) | local | Apple M1 Max | 11.2861 | ×1.00 | - | 0 |
+| nemotron-3-nano:4b (think) | local | Apple M1 Max | 11.2861 | ×1.00 | - | 0 |
+| nemotron-3-nano:30b-a3b-mlx (think) | local | Apple M1 Max | 11.2861 | ×1.00 | - | 0 |
+| nemotron-3.5-lightning:30b-mlx (think) | local | Apple M1 Max | | | | failed: all 5 model requests failed … |
+| nemotron-3-nano:4b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 11.2861 | ×1.00 | - | 0 |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 11.2861 | ×1.00 | - | 0 |
+| Bored/GigaChat3.1-10B-A1.8B-q4_K_M:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 11.2861 | ×1.00 | - | 0 |
+| qwen3.5:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 11.2861 | ×1.00 | - | 0 |
+| qwen3.8:27b-mtp-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 11.2861 | ×1.00 | - | 0 |
+| frob/sarvam:30b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 11.2861 | ×1.00 | - | 0 |
+| nemotron-3-nano:4b (think) | local | i7-8700K + 2x GTX 1080 Ti | 11.2861 | ×1.00 | - | 0 |
+| gemma4:12b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | 11.2861 | ×1.00 | - | 0 |
+| gemma4:26b-a4b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 2 model requests failed: gemma4:26b-a4b-it-qat: answer … |
+| qwen3.8:27b-mtp-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 1 model requests failed: qwen3.8:27b-mtp-q4_K_M: answer … |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 11.2861 | ×1.00 | - | 0 |
+| glm-4.7-flash:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 11.2861 | ×1.00 | - | 0 |
+| frob/sarvam:30b (think) | local | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 4 model requests failed: frob/sarvam:30b: answer … |

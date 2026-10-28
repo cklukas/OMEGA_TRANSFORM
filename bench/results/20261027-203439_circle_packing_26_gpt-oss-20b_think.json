@@ -1,0 +1,415 @@
+{
+ "schema": 3,
+ "example": "circle_packing_26",
+ "model": "gpt-oss:20b",
+ "variant": "think",
+ "model_size_gb": 13.8,
+ "model_params": "20.9B",
+ "started": "2026-10-27T20:34:39",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 2.23355544213057,
+ "improvement": 1.4989279052258866,
+ "llm_calls": 21,
+ "mean_llm_seconds": 43.1,
+ "attempts": 21,
+ "ok": 17,
+ "statuses": {
+  "ok": 17,
+  "llm_error": 1,
+  "invalid": 2,
+  "duplicate": 1
+ },
+ "sweeps": 9,
+ "sweep_variants": 114,
+ "improvements": 5,
+ "minutes_to_best": 15.14,
+ "best_idea": "tuned HEX_SHIFT=1, INITIAL_RADIUS_FACTOR=0.97, MAX_ITER=300 on top of: Reduce only the larger radius in each overlapping pair (improves total radius sum) and enable hexagonal offset with tunable param",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   3.85,
+   1.6557524984965373
+  ],
+  [
+   4.11,
+   1.9721059287972702
+  ],
+  [
+   11.54,
+   2.0179485485058493
+  ],
+  [
+   12.96,
+   2.166666666666667
+  ],
+  [
+   15.14,
+   2.23355544213057
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.85,
+   "score": 1.4225872945685074,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "Introduce tunable grid parameters and an iterative shrink procedure to better resolve overlaps, allowing the engine to explore different column counts, hexagonal offsets, and initial radius scaling for higher total radius sums."
+  },
+  {
+   "minutes": 3.85,
+   "score": 1.6557524984965373,
+   "model": "gpt-oss:20b",
+   "mode": "sweep/exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "tuned COLS=5, HEX_SHIFT=0, INITIAL_RADIUS_FACTOR=0.9 on top of: Introduce tunable grid parameters and an iterative shrink procedure to better resolve overlaps, allowing the engine to explore different column counts, hexagonal offsets, and initial radius scaling for higher total radius sums."
+  },
+  {
+   "minutes": 5.48,
+   "score": 1.6557524984965373,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Increase the number of shrink iterations to allow the radii to be refined further, improving the total sum."
+  },
+  {
+   "minutes": 15.14,
+   "score": 2.1166666666666667,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Reduce only the larger radius in each overlapping pair (improves total radius sum) and enable hexagonal offset with tunable parameters to search for better packing configurations."
+  },
+  {
+   "minutes": 15.14,
+   "score": 2.23355544213057,
+   "model": "gpt-oss:20b",
+   "mode": "sweep/exploit/diff/refine",
+   "status": "ok",
+   "idea": "tuned HEX_SHIFT=1, INITIAL_RADIUS_FACTOR=0.97, MAX_ITER=300 on top of: Reduce only the larger radius in each overlapping pair (improves total radius sum) and enable hexagonal offset with tunable parameters to search for better packing configurations."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -7,28 +7,53 @@\n import math\n \n # OMEGA-BLOCK-START\n+# Tunable constants for the packing generation\n+COLS = 5                       # number of columns in the grid\n+HEX_SHIFT = 1                  # 0 = no hex offset, 1 = shift odd rows by half cell\n+INITIAL_RADIUS_FACTOR = 0.97   # scale initial radii to leave slack for shrink\n+MAX_ITER = 300                  # maximum iterations of shrink loop\n+\n def construct_packing(n=26):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n-    cols = math.ceil(math.sqrt(n))\n+    cols = COLS\n     rows = math.ceil(n / cols)\n-    centers = []\n-    for k in range(n):\n-        i, j = k % cols, k // cols\n-        centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n+    # Build candidate positions with optional hexagonal offset\n+    candidates = []\n+    shift = 0.5 / cols\n+    for j in range(rows):\n+        for i in range(cols):\n+            x = (i + 0.5) / cols\n+            if HEX_SHIFT and (j % 2 == 1):\n+                x += shift\n+                if x > 1:\n+                    continue  # skip positions that would fall outside the square\n+            y = (j + 0.5) / rows\n+            candidates.append((x, y))\n+    # Use the first n candidates\n+    centers = candidates[:n]\n     radii = max_radii(centers)\n     return [(x, y, r) for (x, y), r in zip(centers, radii)]\n \n \n def max_radii(centers):\n-    \"\"\"Largest radii for fixed centers: limit by walls, then shrink overlapping pairs.\"\"\"\n-    radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n-    for a in range(len(centers)):\n-        for b in range(a + 1, len(centers)):\n-            d = math.dist(centers[a], centers[b])\n-            if radii[a] + radii[b] > d:\n-                s = d / (radii[a] + radii[b])\n-                radii[a] *= s\n-                radii[b] *= s\n+    \"\"\"Largest radii for fixed centers: limit by walls, then iteratively shrink overlapping pairs.\"\"\"\n+    # initial radii limited by walls, scaled by factor\n+    radii = [min(x, y, 1 - x, 1 - y) * INITIAL_RADIUS_FACTOR for x, y in centers]\n+    for _ in range(MAX_ITER):\n+        changed = False\n+        for a in range(len(centers)):\n+            for b in range(a + 1, len(centers)):\n+                d = math.dist(centers[a], centers[b])\n+                if radii[a] + radii[b] > d:\n+                    s = d / (radii[a] + radii[b])\n+                    # shrink only the larger circle\n+                    if radii[a] > radii[b]:\n+                        radii[a] *= s\n+                    else:\n+                        radii[b] *= s\n+                    changed = True\n+        if not changed:\n+            break\n     return radii\n # OMEGA-BLOCK-END\n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.083333,
+    0.1,
+    0.060545
+   ],
+   [
+    0.25,
+    0.1,
+    0.039234
+   ],
+   [
+    0.416667,
+    0.1,
+    0.034262
+   ],
+   [
+    0.583333,
+    0.1,
+    0.040566
+   ],
+   [
+    0.75,
+    0.1,
+    0.05694
+   ],
+   [
+    0.916667,
+    0.1,
+    0.080973
+   ],
+   [
+    0.083333,
+    0.3,
+    0.047978
+   ],
+   [
+    0.25,
+    0.3,
+    0.032893
+   ],
+   [
+    0.416667,
+    0.3,
+    0.029299
+   ],
+   [
+    0.583333,
+    0.3,
+    0.040366
+   ],
+   [
+    0.75,
+    0.3,
+    0.058083
+   ],
+   [
+    0.916667,
+    0.3,
+    0.076636
+   ],
+   [
+    0.083333,
+    0.5,
+    0.05004
+   ],
+   [
+    0.25,
+    0.5,
+    0.036525
+   ],
+   [
+    0.416667,
+    0.5,
+    0.03396
+   ],
+   [
+    0.583333,
+    0.5,
+    0.041209
+   ],
+   [
+    0.75,
+    0.5,
+    0.058085
+   ],
+   [
+    0.916667,
+    0.5,
+    0.076976
+   ],
+   [
+    0.083333,
+    0.7,
+    0.059259
+   ],
+   [
+    0.25,
+    0.7,
+    0.06822
+   ],
+   [
+    0.416667,
+    0.7,
+    0.065257
+   ],
+   [
+    0.583333,
+    0.7,
+    0.069461
+   ],
+   [
+    0.75,
+    0.7,
+    0.089736
+   ],
+   [
+    0.916667,
+    0.7,
+    0.07693
+   ],
+   [
+    0.083333,
+    0.9,
+    0.075758
+   ],
+   [
+    0.25,
+    0.9,
+    0.090909
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.1,
+    0.083333,
+    0.080833
+   ],
+   [
+    0.3,
+    0.083333,
+    0.080833
+   ],
+   [
+    0.5,
+    0.083333,
+    0.080833
+   ],
+   [
+    0.7,
+    0.083333,
+    0.080833
+   ],
+   [
+    0.9,
+    0.083333,
+    0.080833
+   ],
+   [
+    0.2,
+    0.25,
+    0.097183
+   ],
+   [
+    0.4,
+    0.25,
+    0.097183
+   ],
+   [
+    0.6,
+    0.25,
+    0.097183
+   ],
+   [
+    0.8,
+    0.25,
+    0.097183
+   ],
+   [
+    1.0,
+    0.25,
+    0.0
+   ],
+   [
+    0.1,
+    0.416667,
+    0.097
+   ],
+   [
+    0.3,
+    0.416667,
+    0.097183
+   ],
+   [
+    0.5,
+    0.416667,
+    0.097183
+   ],
+   [
+    0.7,
+    0.416667,
+    0.097183
+   ],
+   [
+    0.9,
+    0.416667,
+    0.097
+   ],
+   [
+    0.2,
+    0.583333,
+    0.097183
+   ],
+   [
+    0.4,
+    0.583333,
+    0.097183
+   ],
+   [
+    0.6,
+    0.583333,
+    0.097183
+   ],
+   [
+    0.8,
+    0.583333,
+    0.097183
+   ],
+   [
+    1.0,
+    0.583333,
+    0.0
+   ],
+   [
+    0.1,
+    0.75,
+    0.097
+   ],
+   [
+    0.3,
+    0.75,
+    0.097183
+   ],
+   [
+    0.5,
+    0.75,
+    0.097183
+   ],
+   [
+    0.7,
+    0.75,
+    0.097183
+   ],
+   [
+    0.9,
+    0.75,
+    0.097
+   ],
+   [
+    0.2,
+    0.916667,
+    0.080833
+   ]
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 13.8,
+ "model_gpu_memory_gb": 13.8,
+ "context_length": 32768,
+ "load_seconds": 37.4,
+ "median_call_seconds": 37.2,
+ "p90_call_seconds": 74.2,
+ "prompt_tokens_per_s": 1662.9,
+ "gen_tokens_per_s": 51.3,
+ "mean_prompt_tokens": 2844,
+ "mean_gen_tokens": 1838,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

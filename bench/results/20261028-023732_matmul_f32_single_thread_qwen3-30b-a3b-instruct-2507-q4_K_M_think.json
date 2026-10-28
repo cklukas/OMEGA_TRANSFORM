@@ -1,0 +1,94 @@
+{
+ "schema": 3,
+ "example": "matmul_f32_single_thread",
+ "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+ "variant": "think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-10-28T02:37:32",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.59052,
+ "best_score": 1.59052,
+ "improvement": 1.0,
+ "llm_calls": 35,
+ "mean_llm_seconds": 25.7,
+ "attempts": 35,
+ "ok": 0,
+ "statuses": {
+  "compile_error": 10,
+  "invalid": 5,
+  "duplicate": 15,
+  "edit_error": 4,
+  "llm_error": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 0,
+ "minutes_to_best": null,
+ "best_idea": "initial program",
+ "progress": [
+  [
+   0.0,
+   1.59052
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.59052,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  }
+ ],
+ "best_diff": "",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 768,
+  "cores": "one core, CPU time"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 768,
+  "cores": "one core, CPU time"
+ },
+ "error": "",
+ "model_memory_gb": 22.2,
+ "model_gpu_memory_gb": 18.9,
+ "context_length": 32768,
+ "load_seconds": 53.2,
+ "median_call_seconds": 15.0,
+ "p90_call_seconds": 52.2,
+ "prompt_tokens_per_s": 1126.3,
+ "gen_tokens_per_s": 34.6,
+ "mean_prompt_tokens": 3406,
+ "mean_gen_tokens": 573,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

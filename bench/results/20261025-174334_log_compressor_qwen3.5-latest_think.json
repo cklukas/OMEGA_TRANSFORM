@@ -1,0 +1,130 @@
+{
+ "schema": 3,
+ "example": "log_compressor",
+ "model": "qwen3.5:latest",
+ "variant": "think",
+ "model_size_gb": 6.6,
+ "model_params": "9.0B",
+ "started": "2026-10-25T17:43:35",
+ "minutes_budget": 15.0,
+ "wall_minutes": 19.8,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 11.28605206956168,
+ "best_score": 17.631990784874482,
+ "improvement": 1.5622815379726722,
+ "llm_calls": 11,
+ "mean_llm_seconds": 106.5,
+ "attempts": 11,
+ "ok": 1,
+ "statuses": {
+  "invalid": 9,
+  "ok": 1,
+  "edit_error": 1
+ },
+ "sweeps": 1,
+ "sweep_variants": 3,
+ "improvements": 1,
+ "minutes_to_best": 6.64,
+ "best_idea": "Increase zlib compression level from 1 to 9 to significantly improve the compression ratio (from ~11.3 to ~17.6 based on reference data) while keeping the simple lossless format for any byte input.",
+ "progress": [
+  [
+   0.0,
+   11.28605206956168
+  ],
+  [
+   6.64,
+   17.631990784874482
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 11.28605206956168,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 6.64,
+   "score": 17.631990784874482,
+   "model": "qwen3.5:latest",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "Increase zlib compression level from 1 to 9 to significantly improve the compression ratio (from ~11.3 to ~17.6 based on reference data) while keeping the simple lossless format for any byte input."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -10,6 +10,8 @@\n import zlib\n \n # OMEGA-BLOCK-START\n+COMPRESS_LEVEL = [9]  # Sweep: try different compression levels\n+\n def compress(data: bytes) -> bytes:\n     \"\"\"Compress arbitrary bytes losslessly and return the compressed blob.\n \n@@ -19,9 +21,9 @@\n     Only the Python standard library may be used (zlib, lzma, bz2, struct, re, ...).\n     Compress plus decompress of the main input must stay within 20 CPU seconds.\n \n-    Current method: plain zlib at level 1.\n+    Current method: zlib at level 9 (was level 1).\n     \"\"\"\n-    return zlib.compress(data, 1)\n+    return zlib.compress(data, COMPRESS_LEVEL[0])\n \n \n def decompress(blob: bytes) -> bytes:\n",
+ "initial_solution": {
+  "kind": "compression",
+  "input": "web server access log",
+  "head": [
+   "203.242.94.172 - - [04/Oct/2024:09:52:35 +0000] \"GET /search?q=novel&page=1 HTTP/1.1\" 200 13481 \"https://search.example.net/?q=shop\" \"Mozilla/5.0 (compatible; ExampleBot/2.1; +http://bot.example.org/info)\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/155 HTTP/1.1\" 200 23584 \"https://www.example.com/\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/books/203?ref=search HTTP/1.1\" 200 25206 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/106 HTTP/1.1\" 404 24868 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\""
+  ],
+  "lines": 2000,
+  "original_bytes": 443903,
+  "compressed_bytes": 39332,
+  "references": {
+   "zlib -9": 25176,
+   "bz2 -9": 16530,
+   "lzma -9e": 20656
+  }
+ },
+ "best_solution": {
+  "kind": "compression",
+  "input": "web server access log",
+  "head": [
+   "203.242.94.172 - - [04/Oct/2024:09:52:35 +0000] \"GET /search?q=novel&page=1 HTTP/1.1\" 200 13481 \"https://search.example.net/?q=shop\" \"Mozilla/5.0 (compatible; ExampleBot/2.1; +http://bot.example.org/info)\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/155 HTTP/1.1\" 200 23584 \"https://www.example.com/\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/books/203?ref=search HTTP/1.1\" 200 25206 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/106 HTTP/1.1\" 404 24868 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\""
+  ],
+  "lines": 2000,
+  "original_bytes": 443903,
+  "compressed_bytes": 25176,
+  "references": {
+   "zlib -9": 25176,
+   "bz2 -9": 16530,
+   "lzma -9e": 20656
+  }
+ },
+ "error": "",
+ "model_memory_gb": 7.6,
+ "model_gpu_memory_gb": 7.6,
+ "context_length": 32768,
+ "load_seconds": 19.8,
+ "median_call_seconds": 55.4,
+ "p90_call_seconds": 196.9,
+ "prompt_tokens_per_s": 1309.1,
+ "gen_tokens_per_s": 37.0,
+ "mean_prompt_tokens": 2373,
+ "mean_gen_tokens": 3726,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

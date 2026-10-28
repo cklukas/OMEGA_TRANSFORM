@@ -59,9 +59,9 @@ def run():
 
 ## Benchmark results
 
-The best result so far comes from **gemma4:latest (think)**, run locally with Ollama on 2026-10-16: a score of **0.02049** (×4.28 the starting program's 0.00479), reached after 5.91 of 15 minutes with 21 model requests.
+The best result so far comes from **gemma4:12b-it-qat (no-think)**, run locally with Ollama on 2026-10-23: a score of **0.02179** (×4.55 the starting program's 0.00479), reached after 7.2 of 15 minutes with 18 model requests.
 
-What the starting program produces (left) and what the best program by gemma4:latest (think) produces (right):
+What the starting program produces (left) and what the best program by gemma4:12b-it-qat (no-think) produces (right):
 
 ![heilbronn: the starting program's solution and the best one](../assets/examples/heilbronn.svg)
 
@@ -72,9 +72,9 @@ The best program's ancestry, from the starting program on. "Edit" and "rewrite" 
 | Step | Minute | Score | Kind | Idea |
 |--:|--:|--:|---|---|
 | 0 | 0.0 | 0.00479 | start | initial program |
-| 1 | 2.6 | 0.01331 | edit | Increase the radius from 0.3 to 0.5 to ensure the generated points span the entire unit square, significantly increasing the minimum possible triangle area compared to a small circumscribed circle. |
-| 2 | 4.2 | 0.01323 | edit | Implement a randomized local search optimization starting from the regular polygon configuration to iteratively perturb points and maximize the minimum triangle area, as suggested by successful prior attempts. |
-| 3 | 5.9 | 0.02049 | edit | Replace the heuristic acceptance criteria with a proper Simulated Annealing cooling schedule to allow for broader exploration while gradually converging towards local maxima. |
+| 1 | 2.0 | 0 | edit | Replace the circle layout with a greedy heuristic that places points to maximize the minimum distance/area, followed by a simple random walk to improve the configuration. |
+| 2 | 7.2 | 0.01186 | edit | Replace the static layout with a simulated annealing process to maximize the minimum triangle area. |
+| 3 | 7.2 | 0.02179 | parameter sweep | tuned move_scale=0.1 on top of: Replace the static layout with a simulated annealing process to maximize the minimum triangle area. |
 
 ### The best program
 
@@ -83,78 +83,69 @@ What changed compared with the starting program:
 ```diff
 --- initial
 +++ best
-@@ -13,9 +13,71 @@
-     the points on a regular polygon on a small circle around the center, which
-     avoids collinear triples but wastes most of the square.
-     """
+@@ -5,17 +5,56 @@
+ import math
+ 
+ # OMEGA-BLOCK-START
++import random
++import time
++
+ def construct(n=13):
+-    """Return a list of n points (x, y) inside the closed unit square [0,1]^2.
++    """Return a list of n points (x, y) inside the closed unit square [0,1]^2."""
++    # Initial points: mix of boundaries and interior
++    pts = [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (1.0, 1.0),
++            (0.5, 0.0), (0.0, 0.5), (1.0, 0.5), (0.5, 1.0),
++            (0.2, 0.2), (0.8, 0.8), (0.3, 0.7), (0.7, 0.3), (0.5, 0.5)]
++    
++    def get_min_area(points):
++        ma = float('inf')
++        for i in range(n):
++            x1, y1 = points[i]
++            for j in range(i + 1, n):
++                x2, y2 = points[j]
++                for k in range(j + 1, n):
++                    x3, y3 = points[k]
++                    area = 0.5 * abs(x1*(y2 - y3) + x2*(y3 - y1) + x3*(y1 - y2))
++                    if area < ma: ma = area
++        return ma
+ 
+-    The score is the smallest area among all triangles with corners at three of
+-    the points, so no three points may be (nearly) collinear. This start puts
+-    the points on a regular polygon on a small circle around the center, which
+-    avoids collinear triples but wastes most of the square.
+-    """
 -    radius = 0.3
 -    return [(0.5 + radius * math.cos(2 * math.pi * k / n),
 -             0.5 + radius * math.sin(2 * math.pi * k / n)) for k in range(n)]
-+    import random
-+    random.seed(42) # Fixed seed for reproducibility
-+
-+    def triangle_area(p1, p2, p3):
-+        return 0.5 * abs(p1[0] * (p2[1] - p3[1]) + p2[0] * (p3[1] - p1[1]) + p3[0] * (p1[1] - p2[1]))
-+
-+    def get_min_area(points):
-+        min_a = float('inf')
-+        for i in range(n):
-+            for j in range(i + 1, n):
-+                for k in range(j + 1, n):
-+                    area = triangle_area(points[i], points[j], points[k])
-+                    if area < min_a:
-+                        min_a = area
-+        return min_a
-+
-+    # Initial placement using the provided radius
-+    points = [(0.5 + 0.5 * math.cos(2 * math.pi * k / n),
-+               0.5 + 0.5 * math.sin(2 * math.pi * k / n)) for k in range(n)]
-+
-+    current_min_area = get_min_area(points)
++    best_pts = list(pts)
++    best_area = get_min_area(pts)
 +    
-+    # Simulated Annealing loop
-+    T = 0.1 # Initial Temperature
-+    T_min = 1e-6 # Minimum Temperature
-+    cooling_rate = 0.9999 # Geometric cooling factor
-+    
-+    for iteration in range(100000):
-+        # Decay temperature
-+        T = T * cooling_rate
++    start_time = time.time()
++    temp = 0.01
++    # Simulated annealing to maximize minimum triangle area
++    while time.time() - start_time < 57:
++        idx = random.randint(0, n - 1)
++        old_x, old_y = pts[idx]
 +        
-+        if T < T_min:
-+            break
++        # Small random perturbation
++        move_scale = 0.1
++        pts[idx] = (
++            max(0.0, min(1.0, old_x + random.uniform(-move_scale, move_scale))),
++            max(0.0, min(1.0, old_y + random.uniform(-move_scale, move_scale)))
++        )
++        
++        new_area = get_min_area(pts)
++        if new_area > best_area or random.random() < math.exp((new_area - best_area) / (temp + 1e-9)):
++            best_area = new_area
++            if best_area > get_min_area(best_pts):
++                best_pts = list(pts)
++        else:
++            pts[idx] = (old_x, old_y)
 +            
-+        step_size = 0.5 / (1 + iteration / 50000.0) # Initial step size 0.5
++        temp *= 0.9999
 +        
-+        i = random.randint(0, n - 1)
-+        
-+        # Propose a perturbation
-+        new_points = [p[:] for p in points]
-+        
-+        d_x = random.uniform(-step_size, step_size)
-+        d_y = random.uniform(-step_size, step_size)
-+        
-+        # Apply perturbation and clamp
-+        new_x = max(0.0, min(1.0, points[i][0] + d_x))
-+        new_y = max(0.0, min(1.0, points[i][1] + d_y))
-+        
-+        new_points[i] = (new_x, new_y)
-+        
-+        new_min_area = get_min_area(new_points)
-+        
-+        delta_E = new_min_area - current_min_area
-+        
-+        # Acceptance criteria: Metropolis criterion
-+        if delta_E > 0:
-+            points = new_points
-+            current_min_area = new_min_area
-+        elif T > 1e-10: # Avoid division by zero in near-zero temperature cases
-+            acceptance_prob = math.exp(delta_E / T)
-+            if random.random() < acceptance_prob:
-+                points = new_points
-+                current_min_area = new_min_area
-+             
-+    return points
++    return best_pts
  # OMEGA-BLOCK-END
 ```
 
@@ -162,48 +153,82 @@ What changed compared with the starting program:
 
 One run per model and reasoning mode; the [model benchmarks](../benchmarks/heilbronn_13.md) page has speed, memory and progress over time.
 
-| Model | Where | Best | Gain | Minutes to best | New bests |
-|---|---|--:|--:|--:|--:|
-| gemma4:latest (think) | local | 0.02049 | ×4.28 | 5.9 | 2 |
-| nemotron-3-nano:30b-a3b-mlx (think) | local | 0.01909 | ×3.98 | 16.6 | 2 |
-| muse-glimmer:30b (think) | local | 0.01858 | ×3.88 | 25.3 | 3 |
-| gemma4:e4b-it-qat (think) | local | 0.01814 | ×3.79 | 14.1 | 3 |
-| muse-glimmer:30b (no-think) | local | 0.01724 | ×3.60 | 10.1 | 2 |
-| gemma4:12b-it-qat (no-think) | local | 0.01662 | ×3.47 | 17.4 | 4 |
-| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | 0.01543 | ×3.22 | 21.0 | 1 |
-| gemma4:26b-a4b-it-qat (no-think) | local | 0.0141 | ×2.94 | 12.7 | 6 |
-| qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | 0.01394 | ×2.91 | 11.3 | 3 |
-| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 0.01332 | ×2.78 | 12.3 | 9 |
-| gemma4:e4b-it-qat (no-think) | local | 0.01331 | ×2.78 | 4.5 | 4 |
-| gemma4:e2b (no-think) | local | 0.01331 | ×2.78 | 2.8 | 2 |
-| gemma4:latest (no-think) | local | 0.01331 | ×2.78 | 4.7 | 1 |
-| gpt-oss:20b (no-think) | local | 0.01331 | ×2.78 | 11.7 | 1 |
-| gpt-oss:20b (think) | local | 0.01331 | ×2.78 | 7.3 | 2 |
-| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | 0.01331 | ×2.78 | 4.3 | 3 |
-| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | 0.01331 | ×2.78 | 2.8 | 1 |
-| devstral-small-2:24b (no-think) | local | 0.01331 | ×2.78 | 5.8 | 2 |
-| glm-4.7-flash:latest (no-think) | local | 0.01331 | ×2.78 | 0.9 | 2 |
-| frob/sarvam:30b (no-think) | local | 0.01331 | ×2.78 | 8.9 | 1 |
-| nemotron-3-nano:4b (no-think) | local | 0.01331 | ×2.78 | 1.4 | 1 |
-| nemotron-3-nano:30b-a3b-mlx (no-think) | local | 0.01331 | ×2.78 | 4.1 | 1 |
-| nemotron-3-nano:4b (think) | local | 0.01331 | ×2.78 | 2.4 | 1 |
-| qwen3.5:27b (think) | local | 0.01287 | ×2.69 | 7.3 | 2 |
-| gemma4:26b-a4b-it-qat (think) | local | 0.01072 | ×2.24 | 18.1 | 3 |
-| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 0.00896 | ×1.87 | 11.6 | 1 |
-| qwen3.8:27b-mtp-q4_K_M (no-think) | local | 0.00834 | ×1.74 | 9.8 | 2 |
-| frob/sarvam:30b (think) | local | 0.00573 | ×1.20 | 16.2 | 1 |
-| richardyoung/frognano-4b-2609:latest (think) | local | 0.00555 | ×1.16 | 7.8 | 2 |
-| qwen2.5-coder:7b (no-think) | local | 0.00479 | ×1.00 | - | 0 |
-| qwen3.5:latest (no-think) | local | 0.00479 | ×1.00 | - | 0 |
-| qwen3.5:27b (no-think) | local | 0.00479 | ×1.00 | - | 0 |
-| qwen3-coder:30b (no-think) | local | 0.00479 | ×1.00 | - | 0 |
-| qwen3.5:latest (think) | local | 0.00479 | ×1.00 | - | 0 |
-| gemma4:12b-it-qat (think) | local | | | | failed: all 2 model requests failed: gemma4:12b-it-qat: answer … |
-| gemma4:e2b (think) | local | 0.00479 | ×1.00 | - | 0 |
-| qwen3.8:27b-mtp-q4_K_M (think) | local | 0.00479 | ×1.00 | - | 0 |
-| richardyoung/frognano-4b-2609:latest (no-think) | local | 0.00479 | ×1.00 | - | 0 |
-| llm-jp-4-8b-omega:q4_k_m (no-think) | local | 0.00479 | ×1.00 | - | 0 |
-| ingu627/exaone4.0:32b (no-think) | local | 0.00479 | ×1.00 | - | 0 |
-| glm-4.7-flash:latest (think) | local | 0.00479 | ×1.00 | - | 0 |
-| nemotron-3.5-lightning:30b-mlx (no-think) | local | 0.00479 | ×1.00 | - | 0 |
-| nemotron-3.5-lightning:30b-mlx (think) | local | | | | failed: all 4 model requests failed … |
+| Model | Where | Machine | Best | Gain | Minutes to best | New bests |
+|---|---|---|--:|--:|--:|--:|
+| gemma4:12b-it-qat (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.02179 | ×4.55 | 7.2 | 4 |
+| gemma4:e4b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.02093 | ×4.37 | 2.2 | 1 |
+| gemma4:latest (think) | local | Apple M1 Max | 0.02049 | ×4.28 | 5.9 | 2 |
+| gemma4:26b-a4b-it-qat (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.01949 | ×4.07 | 9.8 | 3 |
+| gemma4:e4b-it-qat (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.01914 | ×4.00 | 15.7 | 3 |
+| nemotron-3-nano:30b-a3b-mlx (think) | local | Apple M1 Max | 0.01909 | ×3.98 | 16.6 | 2 |
+| muse-glimmer:30b (think) | local | Apple M1 Max | 0.01858 | ×3.88 | 25.3 | 3 |
+| gemma4:e4b-it-qat (think) | local | Apple M1 Max | 0.01814 | ×3.79 | 14.1 | 3 |
+| gemma4:26b-a4b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.01808 | ×3.77 | 17.2 | 1 |
+| muse-glimmer:30b (no-think) | local | Apple M1 Max | 0.01724 | ×3.60 | 10.1 | 2 |
+| qwen3.8:27b-mtp-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.01689 | ×3.52 | 37.4 | 1 |
+| gemma4:12b-it-qat (no-think) | local | Apple M1 Max | 0.01662 | ×3.47 | 17.4 | 4 |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | Apple M1 Max | 0.01543 | ×3.22 | 21.0 | 1 |
+| gemma4:26b-a4b-it-qat (no-think) | local | Apple M1 Max | 0.0141 | ×2.94 | 12.7 | 6 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | Apple M1 Max | 0.01394 | ×2.91 | 11.3 | 3 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.01394 | ×2.91 | 15.2 | 5 |
+| gpt-oss:20b (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.01384 | ×2.89 | 14.5 | 4 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | Apple M1 Max | 0.01332 | ×2.78 | 12.3 | 9 |
+| gemma4:e2b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.01331 | ×2.78 | 4.8 | 3 |
+| gemma4:e4b-it-qat (no-think) | local | Apple M1 Max | 0.01331 | ×2.78 | 4.5 | 4 |
+| gemma4:e2b (no-think) | local | Apple M1 Max | 0.01331 | ×2.78 | 2.8 | 2 |
+| gemma4:latest (no-think) | local | Apple M1 Max | 0.01331 | ×2.78 | 4.7 | 1 |
+| gpt-oss:20b (no-think) | local | Apple M1 Max | 0.01331 | ×2.78 | 11.7 | 1 |
+| gpt-oss:20b (think) | local | Apple M1 Max | 0.01331 | ×2.78 | 7.3 | 2 |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | Apple M1 Max | 0.01331 | ×2.78 | 4.3 | 3 |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | Apple M1 Max | 0.01331 | ×2.78 | 2.8 | 1 |
+| devstral-small-2:24b (no-think) | local | Apple M1 Max | 0.01331 | ×2.78 | 5.8 | 2 |
+| glm-4.7-flash:latest (no-think) | local | Apple M1 Max | 0.01331 | ×2.78 | 0.9 | 2 |
+| frob/sarvam:30b (no-think) | local | Apple M1 Max | 0.01331 | ×2.78 | 8.9 | 1 |
+| nemotron-3-nano:4b (no-think) | local | Apple M1 Max | 0.01331 | ×2.78 | 1.4 | 1 |
+| nemotron-3-nano:30b-a3b-mlx (no-think) | local | Apple M1 Max | 0.01331 | ×2.78 | 4.1 | 1 |
+| nemotron-3-nano:4b (think) | local | Apple M1 Max | 0.01331 | ×2.78 | 2.4 | 1 |
+| nemotron-3-nano:4b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.01331 | ×2.78 | 4.5 | 1 |
+| qwen2.5-coder:7b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.01331 | ×2.78 | 1.6 | 3 |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.01331 | ×2.78 | 14.6 | 3 |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.01331 | ×2.78 | 1.0 | 2 |
+| gemma4:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.01331 | ×2.78 | 3.5 | 1 |
+| gpt-oss:20b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.01331 | ×2.78 | 1.8 | 1 |
+| qwen3.8:27b-mtp-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.01331 | ×2.78 | 9.3 | 1 |
+| glm-4.7-flash:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.01331 | ×2.78 | 5.8 | 2 |
+| gemma4:e2b (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.01331 | ×2.78 | 1.8 | 1 |
+| gemma4:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.01331 | ×2.78 | 4.8 | 2 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.01331 | ×2.78 | 8.4 | 6 |
+| qwen3.5:27b (think) | local | Apple M1 Max | 0.01287 | ×2.69 | 7.3 | 2 |
+| nemotron-3-nano:4b (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.01278 | ×2.67 | 15.3 | 2 |
+| gemma4:26b-a4b-it-qat (think) | local | Apple M1 Max | 0.01072 | ×2.24 | 18.1 | 3 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | Apple M1 Max | 0.00896 | ×1.87 | 11.6 | 1 |
+| qwen3-coder:30b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.00852 | ×1.78 | 5.3 | 1 |
+| qwen3.8:27b-mtp-q4_K_M (no-think) | local | Apple M1 Max | 0.00834 | ×1.74 | 9.8 | 2 |
+| glm-4.7-flash:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.00657 | ×1.37 | 18.0 | 2 |
+| richardyoung/frognano-4b-2609:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.00607 | ×1.27 | 3.6 | 1 |
+| frob/sarvam:30b (think) | local | Apple M1 Max | 0.00573 | ×1.20 | 16.2 | 1 |
+| richardyoung/frognano-4b-2609:latest (think) | local | Apple M1 Max | 0.00555 | ×1.16 | 7.8 | 2 |
+| qwen2.5-coder:7b (no-think) | local | Apple M1 Max | 0.00479 | ×1.00 | - | 0 |
+| qwen3.5:latest (no-think) | local | Apple M1 Max | 0.00479 | ×1.00 | - | 0 |
+| qwen3.5:27b (no-think) | local | Apple M1 Max | 0.00479 | ×1.00 | - | 0 |
+| qwen3-coder:30b (no-think) | local | Apple M1 Max | 0.00479 | ×1.00 | - | 0 |
+| qwen3.5:latest (think) | local | Apple M1 Max | 0.00479 | ×1.00 | - | 0 |
+| gemma4:12b-it-qat (think) | local | Apple M1 Max | | | | failed: all 2 model requests failed: gemma4:12b-it-qat: answer … |
+| gemma4:e2b (think) | local | Apple M1 Max | 0.00479 | ×1.00 | - | 0 |
+| qwen3.8:27b-mtp-q4_K_M (think) | local | Apple M1 Max | 0.00479 | ×1.00 | - | 0 |
+| richardyoung/frognano-4b-2609:latest (no-think) | local | Apple M1 Max | 0.00479 | ×1.00 | - | 0 |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | local | Apple M1 Max | 0.00479 | ×1.00 | - | 0 |
+| ingu627/exaone4.0:32b (no-think) | local | Apple M1 Max | 0.00479 | ×1.00 | - | 0 |
+| glm-4.7-flash:latest (think) | local | Apple M1 Max | 0.00479 | ×1.00 | - | 0 |
+| nemotron-3.5-lightning:30b-mlx (no-think) | local | Apple M1 Max | 0.00479 | ×1.00 | - | 0 |
+| nemotron-3.5-lightning:30b-mlx (think) | local | Apple M1 Max | | | | failed: all 4 model requests failed … |
+| richardyoung/frognano-4b-2609:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.00479 | ×1.00 | - | 0 |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.00479 | ×1.00 | - | 0 |
+| Bored/GigaChat3.1-10B-A1.8B-q4_K_M:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.00479 | ×1.00 | - | 0 |
+| qwen3.5:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.00479 | ×1.00 | - | 0 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.00479 | ×1.00 | - | 0 |
+| frob/sarvam:30b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.00479 | ×1.00 | - | 0 |
+| qwen3.5:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.00479 | ×1.00 | - | 0 |
+| gemma4:12b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 2 model requests failed: gemma4:12b-it-qat: answer … |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.00479 | ×1.00 | - | 0 |
+| frob/sarvam:30b (think) | local | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 3 model requests failed: frob/sarvam:30b: answer … |

@@ -1,0 +1,114 @@
+{
+ "schema": 3,
+ "example": "matmul_f32",
+ "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-10-24T20:48:09",
+ "minutes_budget": 15.0,
+ "wall_minutes": 17.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.03822,
+ "best_score": 18.6807,
+ "improvement": 17.99300726242993,
+ "llm_calls": 33,
+ "mean_llm_seconds": 27.2,
+ "attempts": 33,
+ "ok": 4,
+ "statuses": {
+  "compile_error": 14,
+  "invalid": 7,
+  "duplicate": 6,
+  "ok": 4,
+  "edit_error": 2
+ },
+ "sweeps": 1,
+ "sweep_variants": 16,
+ "improvements": 1,
+ "minutes_to_best": 10.69,
+ "best_idea": "The loop reordering i-k-j is correct for performance, but the function must initialize C to zero before accumulating results, as the harness initializes C with garbage and expects matmul to overwrite ",
+ "progress": [
+  [
+   0.0,
+   1.03822
+  ],
+  [
+   10.69,
+   18.6807
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.03822,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.61,
+   "score": null,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "best/diff/refine",
+   "status": "invalid",
+   "idea": "Reorder loops to i-k-j to enable streaming of B and C rows and improve cache performance, which should significantly boost GFLOPS by enhancing data locality and enabling better vectorization."
+  },
+  {
+   "minutes": 10.69,
+   "score": 18.6807,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "The loop reordering i-k-j is correct for performance, but the function must initialize C to zero before accumulating results, as the harness initializes C with garbage and expects matmul to overwrite all elements, which the current code fails to do for n=1 due to uninitialized memory access. Adding zero initialization fixes correctness while preserving the performance benefits."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -22,11 +22,13 @@\n // Computes C = A * B. C is NOT zeroed by the caller. Any number of threads may be\n // used (std::thread is available); n is any size from 1 to 2048.\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n+    // Initialize C to zero before accumulation\n+    std::fill(C, C + (size_t)n * n, 0.0f);\n     for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+        for (int k = 0; k < n; ++k) {\n+            float a = A[i * n + k];\n+            for (int j = 0; j < n; ++j)\n+                C[i * n + j] += a * B[k * n + j];\n         }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "error": "",
+ "model_memory_gb": 22.2,
+ "model_gpu_memory_gb": 18.9,
+ "context_length": 32768,
+ "load_seconds": 81.5,
+ "median_call_seconds": 18.6,
+ "p90_call_seconds": 44.1,
+ "prompt_tokens_per_s": 1025.0,
+ "gen_tokens_per_s": 28.3,
+ "mean_prompt_tokens": 3035,
+ "mean_gen_tokens": 552,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

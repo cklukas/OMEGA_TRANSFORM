@@ -1,0 +1,445 @@
+{
+ "schema": 3,
+ "example": "tammes_30",
+ "model": "gemma4:e4b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 6.1,
+ "model_params": "7.5B",
+ "started": "2026-10-24T07:16:12",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 3.2013569883368893,
+ "best_score": 36.95631171094356,
+ "improvement": 11.54395209455926,
+ "llm_calls": 37,
+ "mean_llm_seconds": 24.5,
+ "attempts": 37,
+ "ok": 25,
+ "statuses": {
+  "ok": 25,
+  "invalid": 9,
+  "edit_error": 2,
+  "duplicate": 1
+ },
+ "sweeps": 4,
+ "sweep_variants": 32,
+ "improvements": 5,
+ "minutes_to_best": 14.74,
+ "best_idea": "tuned s_energy=2, initial_learning_rate=0.5, iterations=20000 on top of: Introduce a robust energy minimization loop with a dynamic learning rate schedule and a chosen repulsion exponent $s$ to refine",
+ "progress": [
+  [
+   0.0,
+   3.2013569883368893
+  ],
+  [
+   0.49,
+   9.720116537611036
+  ],
+  [
+   0.95,
+   21.403349639406645
+  ],
+  [
+   7.91,
+   32.133508319934535
+  ],
+  [
+   10.69,
+   36.0325546325269
+  ],
+  [
+   14.74,
+   36.95631171094356
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.2013569883368893,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.09,
+   "score": 9.720116537611036,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Implement the Fibonacci/Golden Spiral method for initial point distribution as it provides a much more uniform starting configuration than purely random points."
+  },
+  {
+   "minutes": 11.71,
+   "score": 21.403349639406645,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "explore/diff/refine",
+   "status": "ok",
+   "idea": "Modify the initial point distribution from a simple uniform distribution to the Fibonacci spiral configuration as suggested by the lineage, which is known to provide a much better starting point for optimization."
+  },
+  {
+   "minutes": 14.74,
+   "score": 35.71921797199102,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "Introduce a robust energy minimization loop with a dynamic learning rate schedule and a chosen repulsion exponent $s$ to refine the initial Fibonacci configuration."
+  },
+  {
+   "minutes": 14.74,
+   "score": 36.95631171094356,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "sweep/exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "tuned s_energy=2, initial_learning_rate=0.5, iterations=20000 on top of: Introduce a robust energy minimization loop with a dynamic learning rate schedule and a chosen repulsion exponent $s$ to refine the initial Fibonacci configuration."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -15,12 +15,76 @@\n     close together.\n     \"\"\"\n     rng = random.Random(1)\n+    phi_const = (1 + math.sqrt(5)) / 2.0\n+    \n+    # Initial configuration using Fibonacci spiral\n     points = []\n-    for _ in range(n):\n-        z = rng.uniform(-1.0, 1.0)\n-        phi = rng.uniform(0.0, 2 * math.pi)\n-        s = math.sqrt(1.0 - z * z)\n-        points.append((s * math.cos(phi), s * math.sin(phi), z))\n+    for i in range(n):\n+        angle = 2 * math.pi * i / phi_const\n+        z = 1 - (2 * i / (n - 1))\n+        r = math.sqrt(1 - z*z)\n+        x = r * math.cos(angle)\n+        y = r * math.sin(angle)\n+        points.append((x, y, z))\n+\n+    # Energy minimization parameters\n+    s_energy = 2.0  # Repulsion exponent\n+    initial_learning_rate = 0.5\n+    iterations = 20000\n+    \n+    for iteration in range(iterations):\n+        gradients = [(0.0, 0.0, 0.0) for _ in range(n)]\n+        \n+        # Calculate forces based on repulsion energy\n+        for i in range(n):\n+            xi, yi, zi = points[i]\n+            for j in range(i + 1, n):\n+                xj, yj, zj = points[j]\n+                \n+                # Vector difference\n+                dx, dy, dz = xi - xj, yi - yj, zi - zj\n+                dist_sq = dx*dx + dy*dy + dz*dz\n+                \n+                if dist_sq < 1e-12: continue\n+                dist = math.sqrt(dist_sq)\n+                \n+                # Repulsion force magnitude derived from E = sum(1/d^s)\n+                # dE/dr = -s / d^(s+1) -> Force magnitude is proportional to this\n+                force_magnitude = (s_energy / dist**(s_energy + 1))\n+                \n+                # Unit vector from j to i\n+                nx, ny, nz = dx / dist, dy / dist, dz / dist\n+                \n+                # Accumulate gradients (forces)\n+                # Move i away from j (positive direction along vector ji)\n+                gradients[i] = (gradients[i][0] + force_magnitude * nx, \n+                                gradients[i][1] + force_magnitude * ny, \n+                                gradients[i][2] + force_magnitude * nz)\n+                \n+                # Move j away from i (negative direction along vector ij)\n+                gradients[j] = (gradients[j][0] - force_magnitude * nx, \n+                                gradients[j][1] - force_magnitude * ny, \n+                                gradients[j][2] - force_magnitude * nz)\n+\n+        new_points = []\n+        # Dynamic learning rate schedule (annealing)\n+        current_lr = initial_learning_rate * (1.0 - iteration / iterations)\n+        \n+        for i in range(n):\n+            x, y, z = points[i]\n+            gx, gy, gz = gradients[i]\n+            \n+            # Update position\n+            new_x = x + current_lr * gx\n+            new_y = y + current_lr * gy\n+            new_z = z + current_lr * gz\n+            \n+            # Normalize back to the unit sphere\n+            norm = math.sqrt(new_x*new_x + new_y*new_y + new_z*new_z)\n+            new_points.append((new_x/norm, new_y/norm, new_z/norm))\n+        \n+        points = new_points\n+\n     return points\n # OMEGA-BLOCK-END\n \n",
+ "initial_solution": {
+  "kind": "sphere_points",
+  "points": [
+   [
+    0.3919709387244532,
+    -0.5582121095618475,
+    -0.7312715117751976
+   ],
+   [
+    -0.027052463738772504,
+    0.8490936142385189,
+    0.5275492379532281
+   ],
+   [
+    -0.9500239047545286,
+    0.31204362944230385,
+    -0.009129825816118098
+   ],
+   [
+    0.22957314306547277,
+    -0.9248645600666849,
+    0.30318594544552596
+   ],
+   [
+    0.5740391880355756,
+    0.1033386161058686,
+    -0.8122808264515302
+   ],
+   [
+    -0.6758397496085636,
+    0.3037890926411783,
+    0.6715302078397394
+   ],
+   [
+    0.8512988419434201,
+    0.011265659732678564,
+    0.524560164915884
+   ],
+   [
+    -0.17680359044518373,
+    -0.9781667833824966,
+    -0.10922561189039716
+   ],
+   [
+    0.7908900515540614,
+    -0.28321934240489055,
+    -0.5424755574590947
+   ],
+   [
+    0.5851964340381928,
+    0.11388203849293084,
+    0.8028549152229673
+   ],
+   [
+    -0.30434810274742335,
+    -0.08102906244732802,
+    -0.9491082780130784
+   ],
+   [
+    -0.3509958145626131,
+    0.3246444046695718,
+    0.8782983255570211
+   ],
+   [
+    -0.7271635298854837,
+    0.3872590786250933,
+    -0.5668012057387734
+   ],
+   [
+    0.05942052898539893,
+    0.33054331283916893,
+    -0.9419184248502641
+   ],
+   [
+    -0.9919106268324059,
+    0.02610563707090374,
+    -0.12422481269885588
+   ],
+   [
+    0.10141148542176433,
+    0.8394879795728718,
+    -0.5338310994848547
+   ],
+   [
+    -0.800348025639128,
+    0.20762133322971385,
+    -0.5624379253246229
+   ],
+   [
+    0.8990635126271509,
+    0.12213812674917045,
+    -0.4204367708190289
+   ],
+   [
+    -0.6917519647168419,
+    -0.2562101885183855,
+    0.6751559513251457
+   ],
+   [
+    0.3757097440071294,
+    0.88195886829755,
+    0.28458872586489115
+   ],
+   [
+    0.10962933743537041,
+    -0.1326097917248836,
+    0.9850868243521302
+   ],
+   [
+    -0.32373272592570945,
+    0.5659500259391612,
+    -0.7582200803883872
+   ],
+   [
+    -0.2164510454505914,
+    -0.8700158468173443,
+    0.44296881516653674
+   ],
+   [
+    -0.43065317546221576,
+    0.22938243010501777,
+    0.8728811735989193
+   ],
+   [
+    -0.3606302208330362,
+    -0.6589776995328848,
+    0.660071386548654
+   ],
+   [
+    -0.7836961589264019,
+    -0.48079575758636983,
+    -0.3932629781341648
+   ],
+   [
+    0.3660243386758451,
+    -0.5299673944570227,
+    0.7649580016637154
+   ],
+   [
+    -0.8476230763315352,
+    -0.5304935866064687,
+    0.010567641159200837
+   ],
+   [
+    0.016650981414250473,
+    0.36477107016970456,
+    -0.9309483396973168
+   ],
+   [
+    -0.6901522939672605,
+    0.4121803795407587,
+    0.5948084951086057
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "sphere_points",
+  "points": [
+   [
+    -0.18352399875102912,
+    0.06532713225373567,
+    0.980842142076866
+   ],
+   [
+    -0.40333336877178844,
+    -0.7640198467666302,
+    -0.5035830292830523
+   ],
+   [
+    -0.8804913804539171,
+    -0.35587551938107115,
+    0.31318930960620056
+   ],
+   [
+    0.8379417617799554,
+    0.3001530364126266,
+    -0.455808905789899
+   ],
+   [
+    0.07083549894476926,
+    -0.9133685928810124,
+    0.4009241145501293
+   ],
+   [
+    -0.13796621761359637,
+    0.34913768408937484,
+    -0.926859320687938
+   ],
+   [
+    0.8818217637624869,
+    0.34028951213288355,
+    0.3264864849992735
+   ],
+   [
+    -0.356408304608537,
+    0.81646208815527,
+    -0.4542717017504004
+   ],
+   [
+    -0.4517132673843237,
+    -0.19972649592842473,
+    -0.8695196667661585
+   ],
+   [
+    -0.7323873825736005,
+    0.20153530113075538,
+    0.6503785391947727
+   ],
+   [
+    -0.6325526095873889,
+    0.7575876370240707,
+    0.1610533089770876
+   ],
+   [
+    -0.009082274290516938,
+    0.9978275032301921,
+    0.06525171331936842
+   ],
+   [
+    0.29430439976332173,
+    0.729198446788105,
+    -0.6177819562610795
+   ],
+   [
+    0.3700038773237199,
+    0.7437144025060363,
+    0.5567638801776774
+   ],
+   [
+    0.17770553331621816,
+    -0.9420329512535568,
+    -0.28459561166910585
+   ],
+   [
+    -0.4268440032823899,
+    -0.5143735786726821,
+    0.7437903054122993
+   ],
+   [
+    0.23254001827370696,
+    -0.4756716190660687,
+    0.8483287397679798
+   ],
+   [
+    0.6835845253007629,
+    -0.4950740208334724,
+    -0.5362964764615832
+   ],
+   [
+    -0.7509590712043336,
+    0.32545079238953367,
+    -0.5745800684925899
+   ],
+   [
+    0.11856261362129566,
+    -0.5100534458128012,
+    -0.8519321505059985
+   ],
+   [
+    -0.5022755651431782,
+    -0.8566264808808508,
+    0.11794205744258647
+   ],
+   [
+    0.44184075990209765,
+    0.05704359156053319,
+    -0.8952780414770666
+   ],
+   [
+    0.6116551159309588,
+    0.7882702950588493,
+    -0.06714135151544243
+   ],
+   [
+    -0.970489553071827,
+    0.240370297420685,
+    0.019291124807460265
+   ],
+   [
+    -0.8761781756024708,
+    -0.3358423567582842,
+    -0.34571912878081723
+   ],
+   [
+    0.6468963269913038,
+    -0.7515079036392566,
+    0.12946433058140067
+   ],
+   [
+    -0.24740231707388327,
+    0.6726841513561294,
+    0.6973436211945715
+   ],
+   [
+    0.9808941982499304,
+    -0.18285248265217308,
+    -0.06641943561611294
+   ],
+   [
+    0.7736867761319739,
+    -0.28753030727937945,
+    0.5645662891409109
+   ],
+   [
+    0.43762031770923654,
+    0.19957821122054242,
+    0.8767308567251842
+   ]
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 4.4,
+ "model_gpu_memory_gb": 4.4,
+ "context_length": 32768,
+ "load_seconds": 19.8,
+ "median_call_seconds": 24.3,
+ "p90_call_seconds": 41.2,
+ "prompt_tokens_per_s": 1671.0,
+ "gen_tokens_per_s": 43.7,
+ "mean_prompt_tokens": 3186,
+ "mean_gen_tokens": 869,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

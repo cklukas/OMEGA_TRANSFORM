@@ -1,0 +1,105 @@
+{
+ "schema": 3,
+ "example": "matmul_f32",
+ "model": "gemma4:e2b",
+ "variant": "think",
+ "model_size_gb": 4.6,
+ "model_params": "4.6B",
+ "started": "2026-10-27T14:38:47",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.39969,
+ "best_score": 3.78053,
+ "improvement": 2.7009766448284975,
+ "llm_calls": 29,
+ "mean_llm_seconds": 30.2,
+ "attempts": 29,
+ "ok": 2,
+ "statuses": {
+  "compile_error": 19,
+  "edit_error": 3,
+  "invalid": 5,
+  "ok": 2
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 12.12,
+ "best_idea": "Implement a tiled matrix multiplication using the $i-k-j$ loop order structure, employing NEON intrinsics (`vfmaq_f32`) to compute dot products across rows of A and columns of B efficiently within sma",
+ "progress": [
+  [
+   0.0,
+   1.39969
+  ],
+  [
+   12.12,
+   3.78053
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.39969,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 12.12,
+   "score": 3.78053,
+   "model": "gemma4:e2b",
+   "mode": "explore/rewrite/bold",
+   "status": "ok",
+   "idea": "Implement a tiled matrix multiplication using the $i-k-j$ loop order structure, employing NEON intrinsics (`vfmaq_f32`) to compute dot products across rows of A and columns of B efficiently within small tile blocks, and parallelize the outer loop over $i$ using standard threading to maximize core utilization."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,14 +19,58 @@\n #endif\n \n // OMEGA-BLOCK-START\n-// Computes C = A * B. C is NOT zeroed by the caller. Any number of threads may be\n-// used (std::thread is available); n is any size from 1 to 2048.\n+#include <iostream>\n+#include <algorithm>\n+#include <cmath>\n+#include <thread>\n+#include <vector>\n+#if defined(__ARM_NEON)\n+#include <arm_neon.h>\n+#endif\n+\n+// Define tile size and vector width\n+constexpr int TILE_SIZE = 32;\n+\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+    const int N = n;\n+\n+    // Parallelize over rows of C (i loop)\n+    std::vector<std::thread> threads;\n+    int num_threads = std::thread::hardware_concurrency();\n+    if (num_threads == 0) num_threads = 1;\n+    \n+    int rows_per_thread = N / num_threads;\n+    if (rows_per_thread == 0) rows_per_thread = 1;\n+\n+    auto worker = [&](int start_row, int end_row) {\n+        for (int i = start_row; i < end_row; ++i) {\n+            for (int j = 0; j < N; ++j) {\n+                float sum = 0.0f;\n+                // Inner loop k: C[i, j] = sum_k (A[i, k] * B[k, j])\n+                for (int k = 0; k < N; ++k) {\n+                    // Access A[i, k] (row-major: i*N + k)\n+                    float a_ik = A[i * N + k];\n+                    // Access B[k, j] (row-major: k*N + j)\n+                    float b_kj = B[k * N + j];\n+                    sum += a_ik * b_kj;\n+                }\n+                C[i * N + j] = sum;\n+            }\n         }\n+    };\n+\n+    for (int t = 0; t < num_threads; ++t) {\n+        int start = t * rows_per_thread;\n+        int end = (t == num_threads - 1) ? N : (t + 1) * rows_per_thread;\n+        if (start < N) {\n+            threads.emplace_back(worker, start, end);\n+        }\n+    }\n+\n+    for (auto& t : threads) {\n+        if (t.joinable()) {\n+            t.join();\n+        }\n+    }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "error": "",
+ "model_memory_gb": 0.5,
+ "model_gpu_memory_gb": 0.5,
+ "context_length": 32768,
+ "load_seconds": 17.6,
+ "median_call_seconds": 29.5,
+ "p90_call_seconds": 42.8,
+ "prompt_tokens_per_s": 3245.6,
+ "gen_tokens_per_s": 104.6,
+ "mean_prompt_tokens": 3279,
+ "mean_gen_tokens": 2770,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

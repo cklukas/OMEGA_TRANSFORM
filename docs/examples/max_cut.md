@@ -61,9 +61,9 @@ def cut(n, edges):
 
 ## Benchmark results
 
-The best result so far comes from **qwen3:30b-a3b-instruct-2507-q4_K_M (think)**, run locally with Ollama on 2026-10-17: a score of **0.7673** (×1.50 the starting program's 0.51218), reached after 8.03 of 15 minutes with 33 model requests.
+The best result so far comes from **gpt-oss:20b (think)**, run locally with Ollama on 2026-10-26: a score of **0.76741** (×1.50 the starting program's 0.51218), reached after 11.7 of 15 minutes with 14 model requests.
 
-What the starting program produces (left) and what the best program by qwen3:30b-a3b-instruct-2507-q4_K_M (think) produces (right), drawn for the instance `g100`:
+What the starting program produces (left) and what the best program by gpt-oss:20b (think) produces (right), drawn for the instance `g100`:
 
 ![max_cut: the starting program's solution and the best one](../assets/examples/max_cut.svg)
 
@@ -74,9 +74,9 @@ The best program's ancestry, from the starting program on. "Edit" and "rewrite" 
 | Step | Minute | Score | Kind | Idea |
 |--:|--:|--:|---|---|
 | 0 | 0.0 | 0.51218 | start | initial program |
-| 1 | 6.7 | 0.76149 | rewrite | Replace the naive alternating assignment with a one-flip local search starting from a random initial assignment, using a configurable time limit ratio and random restarts to escape local optima and improve the cut weight across all three graphs. |
-| 2 | 8.0 | 0.76517 | rewrite | Replace the naive gain computation in the local search with incremental updates to avoid O(degree) recomputation per node, drastically reducing per-iteration cost and allowing more iterations within time limit, especially beneficial for the weak g200 graph … |
-| 3 | 8.0 | 0.7673 | parameter sweep | tuned TIME_RATIO=0.9606, RESTART_RATIO=0.6253, MIN_RESTARTS=7, MAX_RESTARTS=29 on top of: Replace the naive gain computation in the local search with incremental updates to avoid O(degree) recomputation per node, drastically reducing per-iteration cost and … |
+| 1 | 4.5 | 0.72255 | edit | Replace the trivial alternating assignment with a greedy construction followed by an incremental one‑flip local search that updates node gains efficiently, improving the cut quality while staying within the time limit. |
+| 2 | 7.3 | 0.73256 | edit | Add a perturbation step that flips a small random subset of nodes after the first local optimum and restarts the incremental local search, increasing escape from local optima and improving the ratio on the middle‑size graph. |
+| 3 | 11.7 | 0.76741 | edit | Add repeated perturbation‑restart local search cycles with a larger perturbation rate (10%) to escape more local optima and improve the middle‑size graph score. |
 
 ### The best program
 
@@ -85,127 +85,148 @@ What changed compared with the starting program:
 ```diff
 --- initial
 +++ best
-@@ -11,15 +11,114 @@
- 
- # OMEGA-BLOCK-START
+@@ -13,13 +13,136 @@
  def cut(n, edges):
--    """Return a list of n values, side[i] in {0, 1} for node i.
-+    """One-flip local search with random restarts: start from a random assignment and iteratively flip nodes with positive gain,
-+    with periodic random restarts to escape poor local optima. Uses a configurable time ratio for the main loop and restarts.
-+    Gain is updated incrementally after each flip to avoid recomputing from scratch.
-+    """
-+    import random
-+    import time
+     """Return a list of n values, side[i] in {0, 1} for node i.
  
 -    n: number of nodes (0..n-1); edges: list of (u, v, w) with 0 <= u < v < n, no
 -    duplicate pairs, integer weight 1 <= w <= 10. The cut weight is the sum of w over
 -    edges whose endpoints are on different sides; larger is better. The call has a CPU
 -    time limit of 2.0 s (time.process_time(); more than 1.5 x the limit makes the program
 -    invalid). Only the Python standard library may be used.
++    Implements greedy construction followed by incremental one‑flip local search.
++    """
++    MAX_TIME = 1.9  # CPU seconds allowed for this graph
++    start_time = time.process_time()
+ 
+-    Current method: alternate the sides by node index (ignores the edges entirely).
+-    """
+-    return [i % 2 for i in range(n)]
 +    # Build adjacency list
 +    adj = [[] for _ in range(n)]
 +    for u, v, w in edges:
 +        adj[u].append((v, w))
 +        adj[v].append((u, w))
- 
--    Current method: alternate the sides by node index (ignores the edges entirely).
--    """
--    return [i % 2 for i in range(n)]
-+    # Compute total edge weight for ratio
-+    total_weight = sum(w for _, _, w in edges)
 +
-+    # Gain array: gain[i] = (sum of weights to side 1) - (sum of weights to side 0)
-+    # Initially, all nodes are unplaced; we start with random assignment
-+    side = [random.randint(0, 1) for _ in range(n)]
-+    gain = [0] * n  # gain[i] = net weight to side 1 minus side 0
-+
-+    # Initialize gains based on initial assignment
++    # Greedy construction: assign each node to side that maximizes current cut
++    side = [None] * n
 +    for i in range(n):
-+        for j, w in adj[i]:
-+            if side[i] == side[j]:
-+                gain[i] += w
-+            else:
-+                gain[i] -= w
++        w0 = w1 = 0
++        for nb, w in adj[i]:
++            sj = side[nb]
++            if sj == 0:
++                w1 += w
++            elif sj == 1:
++                w0 += w
++        if w0 > w1:
++            side[i] = 0
++        elif w1 > w0:
++            side[i] = 1
++        else:
++            side[i] = random.randint(0, 1)
 +
-+    # Helper: compute cut weight
-+    def compute_cut(side):
-+        return sum(w for u, v, w in edges if side[u] != side[v])
++    # Compute initial cut weight
++    cur_weight = 0
++    for u, v, w in edges:
++        if side[u] != side[v]:
++            cur_weight += w
 +
-+    # Time control constants
-+    MAX_TIME = 2.0
-+    TIME_RATIO = 0.9605537307901484  # Fraction of time to use for local search
-+    RESTART_RATIO = 0.62526945405078  # Fraction of time to use before restart
-+    MIN_RESTARTS = 7  # Minimum number of restarts
-+    MAX_RESTARTS = 29  # Maximum number of restarts
-+
-+    # Initial best solution
-+    best_cut = compute_cut(side)
++    best_weight = cur_weight
 +    best_side = side[:]
 +
-+    # Main loop with restarts
-+    start_time = time.process_time()
-+    time_limit = MAX_TIME * TIME_RATIO
-+    restart_time = start_time + MAX_TIME * RESTART_RATIO
-+
-+    restart_count = 0
-+    while time.process_time() - start_time < time_limit:
-+        improved = True
-+        while improved and time.process_time() - start_time < restart_time:
-+            improved = False
-+            best_gain = -1
-+            best_node = -1
-+
-+            # Find best node to flip (positive gain)
-+            for i in range(n):
-+                if gain[i] > best_gain:
-+                    best_gain = gain[i]
-+                    best_node = i
-+
-+            if best_gain > 0:
-+                # Flip node best_node
-+                old_side = side[best_node]
-+                side[best_node] = 1 - old_side
-+
-+                # Update gain of best_node: flip sign
-+                gain[best_node] = -gain[best_node]
-+
-+                # Update gain of all neighbors: each edge flips from same to different or vice versa
-+                for j, w in adj[best_node]:
-+                    # If j was on same side, now different → gain[j] -= 2w
-+                    # If j was on different side, now same → gain[j] += 2w
-+                    if side[j] == old_side:
-+                        gain[j] -= 2 * w
-+                    else:
-+                        gain[j] += 2 * w
-+
-+                # Update current cut
-+                current_cut = compute_cut(side)
-+                if current_cut > best_cut:
-+                    best_cut = current_cut
-+                    best_side = side[:]
-+
-+                improved = True
++    # Compute initial gains for each node
++    gain = [0] * n
++    for u in range(n):
++        g = 0
++        for v, w in adj[u]:
++            if side[v] == side[u]:
++                g += w
 +            else:
-+                break  # No improvement, break inner loop
++                g -= w
++        gain[u] = g
 +
-+        # Random restart if we have not reached the minimum or are not at the end
-+        if restart_count < MIN_RESTARTS or time.process_time() - start_time < time_limit:
-+            # Perturb the current solution by flipping a random 5-10% of nodes
-+            num_flip = max(1, int(n * 0.05) + random.randint(0, int(n * 0.05)))
-+            for _ in range(num_flip):
-+                i = random.randint(0, n - 1)
-+                # Flip and update gain
-+                old_side = side[i]
-+                side[i] = 1 - old_side
-+                gain[i] = -gain[i]
-+                for j, w in adj[i]:
-+                    if side[j] == old_side:
-+                        gain[j] -= 2 * w
-+                    else:
-+                        gain[j] += 2 * w
-+            restart_count += 1
-+        else:
++    # One‑flip local search with incremental updates
++    while True:
++        if time.process_time() - start_time > MAX_TIME:
++            return best_side
++
++        # Find node with maximum positive gain
++        best_g = 0
++        best_node = -1
++        for i in range(n):
++            if gain[i] > best_g:
++                best_g = gain[i]
++                best_node = i
++
++        if best_g <= 0:
 +            break
++
++        # Flip the best node
++        u = best_node
++        old_side = side[u]
++        side[u] ^= 1
++        cur_weight += best_g
++
++        if cur_weight > best_weight:
++            best_weight = cur_weight
++            best_side = side[:]
++
++        # Update gain of the flipped node
++        gain[u] = -gain[u]
++
++        # Update gains of neighbors
++        for v, w in adj[u]:
++            if side[v] == old_side:  # neighbor was same side before flip
++                gain[v] -= 2 * w
++            else:  # neighbor was opposite before flip
++                gain[v] += 2 * w
++
++    # Multiple perturbation‑restart local search cycles until time expires
++    PERTURB_RATE = 0.1  # fraction of nodes to flip each restart
++    while True:
++        if time.process_time() - start_time > MAX_TIME:
++            return best_side
++        # perturb a fraction of nodes
++        k = max(1, int(PERTURB_RATE * n))
++        to_flip = random.sample(range(n), k)
++        for u in to_flip:
++            side[u] ^= 1
++        # recompute gains
++        for u in range(n):
++            g = 0
++            for v, w in adj[u]:
++                if side[v] == side[u]:
++                    g += w
++                else:
++                    g -= w
++            gain[u] = g
++        # recompute current weight
++        cur_weight = sum(w for u, v, w in edges if side[u] != side[v])
++        # inner local search
++        while True:
++            if time.process_time() - start_time > MAX_TIME:
++                return best_side
++            best_g = 0
++            best_node = -1
++            for i in range(n):
++                if gain[i] > best_g:
++                    best_g = gain[i]
++                    best_node = i
++            if best_g <= 0:
++                break
++            u = best_node
++            old_side = side[u]
++            side[u] ^= 1
++            cur_weight += best_g
++            if cur_weight > best_weight:
++                best_weight = cur_weight
++                best_side = side[:]
++            gain[u] = -gain[u]
++            for v, w in adj[u]:
++                if side[v] == old_side:
++                    gain[v] -= 2 * w
++                else:
++                    gain[v] += 2 * w
 +
 +    return best_side
  # OMEGA-BLOCK-END
@@ -215,48 +236,82 @@ What changed compared with the starting program:
 
 One run per model and reasoning mode; the [model benchmarks](../benchmarks/max_cut.md) page has speed, memory and progress over time.
 
-| Model | Where | Best | Gain | Minutes to best | New bests |
-|---|---|--:|--:|--:|--:|
-| qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | 0.7673 | ×1.50 | 8.0 | 5 |
-| gpt-oss:20b (think) | local | 0.76722 | ×1.50 | 16.4 | 8 |
-| nemotron-3-nano:30b-a3b-mlx (no-think) | local | 0.76715 | ×1.50 | 14.4 | 6 |
-| qwen3.8:27b-mtp-q4_K_M (think) | local | 0.7654 | ×1.49 | 13.8 | 1 |
-| gemma4:26b-a4b-it-qat (no-think) | local | 0.76503 | ×1.49 | 5.4 | 3 |
-| muse-glimmer:30b (think) | local | 0.75919 | ×1.48 | 14.6 | 1 |
-| muse-glimmer:30b (no-think) | local | 0.75858 | ×1.48 | 16.5 | 4 |
-| gemma4:latest (no-think) | local | 0.7555 | ×1.48 | 14.1 | 8 |
-| gemma4:e4b-it-qat (think) | local | 0.75304 | ×1.47 | 15.2 | 4 |
-| nemotron-3.5-lightning:30b-mlx (no-think) | local | 0.75179 | ×1.47 | 13.2 | 2 |
-| gpt-oss:20b (no-think) | local | 0.75151 | ×1.47 | 14.9 | 4 |
-| gemma4:e4b-it-qat (no-think) | local | 0.75125 | ×1.47 | 10.5 | 7 |
-| gemma4:latest (think) | local | 0.75099 | ×1.47 | 15.7 | 5 |
-| gemma4:e2b (no-think) | local | 0.75025 | ×1.46 | 11.9 | 4 |
-| nemotron-3-nano:30b-a3b-mlx (think) | local | 0.74783 | ×1.46 | 16.9 | 3 |
-| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 0.74224 | ×1.45 | 13.7 | 4 |
-| frob/sarvam:30b (no-think) | local | 0.74075 | ×1.45 | 11.3 | 2 |
-| qwen3.5:latest (no-think) | local | 0.73771 | ×1.44 | 7.6 | 3 |
-| qwen3.8:27b-mtp-q4_K_M (no-think) | local | 0.73771 | ×1.44 | 17.6 | 1 |
-| richardyoung/frognano-4b-2609:latest (no-think) | local | 0.73771 | ×1.44 | 8.1 | 3 |
-| ingu627/exaone4.0:32b (no-think) | local | 0.73561 | ×1.44 | 17.8 | 2 |
-| gemma4:e2b (think) | local | 0.73531 | ×1.44 | 5.3 | 2 |
-| gemma4:26b-a4b-it-qat (think) | local | 0.73495 | ×1.43 | 12.9 | 2 |
-| qwen3.5:latest (think) | local | 0.72921 | ×1.42 | 11.5 | 2 |
-| nemotron-3-nano:4b (think) | local | 0.72498 | ×1.42 | 14.8 | 4 |
-| glm-4.7-flash:latest (no-think) | local | 0.72224 | ×1.41 | 2.9 | 1 |
-| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 0.71488 | ×1.40 | 9.2 | 2 |
-| gemma4:12b-it-qat (no-think) | local | 0.71177 | ×1.39 | 3.5 | 1 |
-| qwen3-coder:30b (no-think) | local | 0.69428 | ×1.36 | 12.3 | 2 |
-| qwen3.5:27b (no-think) | local | 0.69385 | ×1.35 | 9.2 | 1 |
-| devstral-small-2:24b (no-think) | local | 0.69368 | ×1.35 | 5.5 | 1 |
-| nemotron-3-nano:4b (no-think) | local | 0.61463 | ×1.20 | 4.3 | 1 |
-| qwen2.5-coder:7b (no-think) | local | 0.59204 | ×1.16 | 14.1 | 4 |
-| richardyoung/frognano-4b-2609:latest (think) | local | 0.54422 | ×1.06 | 2.0 | 2 |
-| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | 0.51766 | ×1.01 | 6.3 | 1 |
-| gemma4:12b-it-qat (think) | local | 0.51218 | ×1.00 | - | 0 |
-| qwen3.5:27b (think) | local | 0.51218 | ×1.00 | - | 0 |
-| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | | | | failed: all 1 model requests failed: qwen3.6:27b-coding-mtp-q4_K_M … |
-| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | 0.51218 | ×1.00 | - | 0 |
-| llm-jp-4-8b-omega:q4_k_m (no-think) | local | 0.51218 | ×1.00 | - | 0 |
-| glm-4.7-flash:latest (think) | local | 0.51218 | ×1.00 | - | 0 |
-| frob/sarvam:30b (think) | local | | | | failed: all 5 model requests failed: frob/sarvam:30b: answer … |
-| nemotron-3.5-lightning:30b-mlx (think) | local | | | | failed: all 4 model requests failed … |
+| Model | Where | Machine | Best | Gain | Minutes to best | New bests |
+|---|---|---|--:|--:|--:|--:|
+| gpt-oss:20b (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.76741 | ×1.50 | 11.7 | 6 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | Apple M1 Max | 0.7673 | ×1.50 | 8.0 | 5 |
+| gpt-oss:20b (think) | local | Apple M1 Max | 0.76722 | ×1.50 | 16.4 | 8 |
+| nemotron-3-nano:30b-a3b-mlx (no-think) | local | Apple M1 Max | 0.76715 | ×1.50 | 14.4 | 6 |
+| gemma4:12b-it-qat (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.76688 | ×1.50 | 10.4 | 3 |
+| qwen3.8:27b-mtp-q4_K_M (think) | local | Apple M1 Max | 0.7654 | ×1.49 | 13.8 | 1 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.76506 | ×1.49 | 9.7 | 5 |
+| gemma4:26b-a4b-it-qat (no-think) | local | Apple M1 Max | 0.76503 | ×1.49 | 5.4 | 3 |
+| qwen3.8:27b-mtp-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.76207 | ×1.49 | 17.9 | 2 |
+| gemma4:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.762 | ×1.49 | 11.7 | 12 |
+| muse-glimmer:30b (think) | local | Apple M1 Max | 0.75919 | ×1.48 | 14.6 | 1 |
+| muse-glimmer:30b (no-think) | local | Apple M1 Max | 0.75858 | ×1.48 | 16.5 | 4 |
+| gemma4:26b-a4b-it-qat (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.7572 | ×1.48 | 11.2 | 2 |
+| gemma4:26b-a4b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.75568 | ×1.48 | 8.2 | 1 |
+| gemma4:latest (no-think) | local | Apple M1 Max | 0.7555 | ×1.48 | 14.1 | 8 |
+| gemma4:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.75448 | ×1.47 | 4.4 | 4 |
+| gemma4:e4b-it-qat (think) | local | Apple M1 Max | 0.75304 | ×1.47 | 15.2 | 4 |
+| richardyoung/frognano-4b-2609:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.75273 | ×1.47 | 9.3 | 3 |
+| qwen3-coder:30b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.75195 | ×1.47 | 11.9 | 5 |
+| nemotron-3.5-lightning:30b-mlx (no-think) | local | Apple M1 Max | 0.75179 | ×1.47 | 13.2 | 2 |
+| gpt-oss:20b (no-think) | local | Apple M1 Max | 0.75151 | ×1.47 | 14.9 | 4 |
+| gemma4:e4b-it-qat (no-think) | local | Apple M1 Max | 0.75125 | ×1.47 | 10.5 | 7 |
+| gemma4:latest (think) | local | Apple M1 Max | 0.75099 | ×1.47 | 15.7 | 5 |
+| gemma4:e2b (no-think) | local | Apple M1 Max | 0.75025 | ×1.46 | 11.9 | 4 |
+| gemma4:e2b (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.74942 | ×1.46 | 6.4 | 5 |
+| nemotron-3-nano:30b-a3b-mlx (think) | local | Apple M1 Max | 0.74783 | ×1.46 | 16.9 | 3 |
+| gemma4:e4b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.74504 | ×1.45 | 13.3 | 5 |
+| gpt-oss:20b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.74483 | ×1.45 | 10.3 | 4 |
+| gemma4:e2b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.74351 | ×1.45 | 14.9 | 8 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | Apple M1 Max | 0.74224 | ×1.45 | 13.7 | 4 |
+| frob/sarvam:30b (no-think) | local | Apple M1 Max | 0.74075 | ×1.45 | 11.3 | 2 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.74038 | ×1.45 | 13.7 | 4 |
+| gemma4:e4b-it-qat (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.73916 | ×1.44 | 6.0 | 4 |
+| qwen3.5:latest (no-think) | local | Apple M1 Max | 0.73771 | ×1.44 | 7.6 | 3 |
+| qwen3.8:27b-mtp-q4_K_M (no-think) | local | Apple M1 Max | 0.73771 | ×1.44 | 17.6 | 1 |
+| richardyoung/frognano-4b-2609:latest (no-think) | local | Apple M1 Max | 0.73771 | ×1.44 | 8.1 | 3 |
+| qwen3.5:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.73771 | ×1.44 | 4.0 | 3 |
+| ingu627/exaone4.0:32b (no-think) | local | Apple M1 Max | 0.73561 | ×1.44 | 17.8 | 2 |
+| gemma4:e2b (think) | local | Apple M1 Max | 0.73531 | ×1.44 | 5.3 | 2 |
+| gemma4:26b-a4b-it-qat (think) | local | Apple M1 Max | 0.73495 | ×1.43 | 12.9 | 2 |
+| qwen3.5:latest (think) | local | Apple M1 Max | 0.72921 | ×1.42 | 11.5 | 2 |
+| qwen3.5:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.72903 | ×1.42 | 6.7 | 2 |
+| nemotron-3-nano:4b (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.72862 | ×1.42 | 5.8 | 2 |
+| qwen2.5-coder:7b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.72736 | ×1.42 | 12.4 | 3 |
+| nemotron-3-nano:4b (think) | local | Apple M1 Max | 0.72498 | ×1.42 | 14.8 | 4 |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.72369 | ×1.41 | 6.3 | 4 |
+| glm-4.7-flash:latest (no-think) | local | Apple M1 Max | 0.72224 | ×1.41 | 2.9 | 1 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | Apple M1 Max | 0.71488 | ×1.40 | 9.2 | 2 |
+| nemotron-3-nano:4b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.71461 | ×1.40 | 12.7 | 2 |
+| gemma4:12b-it-qat (no-think) | local | Apple M1 Max | 0.71177 | ×1.39 | 3.5 | 1 |
+| qwen3.8:27b-mtp-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.71141 | ×1.39 | 32.1 | 2 |
+| qwen3-coder:30b (no-think) | local | Apple M1 Max | 0.69428 | ×1.36 | 12.3 | 2 |
+| qwen3.5:27b (no-think) | local | Apple M1 Max | 0.69385 | ×1.35 | 9.2 | 1 |
+| devstral-small-2:24b (no-think) | local | Apple M1 Max | 0.69368 | ×1.35 | 5.5 | 1 |
+| frob/sarvam:30b (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.69189 | ×1.35 | 13.6 | 1 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.68774 | ×1.34 | 14.0 | 2 |
+| richardyoung/frognano-4b-2609:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.63591 | ×1.24 | 15.5 | 6 |
+| nemotron-3-nano:4b (no-think) | local | Apple M1 Max | 0.61463 | ×1.20 | 4.3 | 1 |
+| qwen2.5-coder:7b (no-think) | local | Apple M1 Max | 0.59204 | ×1.16 | 14.1 | 4 |
+| richardyoung/frognano-4b-2609:latest (think) | local | Apple M1 Max | 0.54422 | ×1.06 | 2.0 | 2 |
+| glm-4.7-flash:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.53668 | ×1.05 | 13.7 | 4 |
+| Bored/GigaChat3.1-10B-A1.8B-q4_K_M:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.51849 | ×1.01 | 1.7 | 1 |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | Apple M1 Max | 0.51766 | ×1.01 | 6.3 | 1 |
+| gemma4:12b-it-qat (think) | local | Apple M1 Max | 0.51218 | ×1.00 | - | 0 |
+| qwen3.5:27b (think) | local | Apple M1 Max | 0.51218 | ×1.00 | - | 0 |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | Apple M1 Max | | | | failed: all 1 model requests failed: qwen3.6:27b-coding-mtp-q4_K_M … |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | Apple M1 Max | 0.51218 | ×1.00 | - | 0 |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | local | Apple M1 Max | 0.51218 | ×1.00 | - | 0 |
+| glm-4.7-flash:latest (think) | local | Apple M1 Max | 0.51218 | ×1.00 | - | 0 |
+| frob/sarvam:30b (think) | local | Apple M1 Max | | | | failed: all 5 model requests failed: frob/sarvam:30b: answer … |
+| nemotron-3.5-lightning:30b-mlx (think) | local | Apple M1 Max | | | | failed: all 4 model requests failed … |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |
+| frob/sarvam:30b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |
+| gemma4:12b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |
+| glm-4.7-flash:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |

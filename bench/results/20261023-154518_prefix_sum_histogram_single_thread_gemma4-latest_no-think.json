@@ -1,0 +1,148 @@
+{
+ "schema": 3,
+ "example": "prefix_sum_histogram_single_thread",
+ "model": "gemma4:latest",
+ "variant": "no-think",
+ "model_size_gb": 6.6,
+ "model_params": "7.5B",
+ "started": "2026-10-23T15:45:18",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.9,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 5.47847,
+ "best_score": 6.35338,
+ "improvement": 1.1596996971782267,
+ "llm_calls": 43,
+ "mean_llm_seconds": 20.4,
+ "attempts": 43,
+ "ok": 24,
+ "statuses": {
+  "invalid": 4,
+  "ok": 24,
+  "edit_error": 3,
+  "compile_error": 10,
+  "duplicate": 2
+ },
+ "sweeps": 6,
+ "sweep_variants": 96,
+ "improvements": 4,
+ "minutes_to_best": 11.79,
+ "best_idea": "Consolidate the duplicated and conflicting initializations and loop structures by removing redundant variable declarations and unifying the logic around the chosen `SUB_HIST_COUNT`.",
+ "progress": [
+  [
+   0.0,
+   5.47847
+  ],
+  [
+   1.88,
+   5.5572
+  ],
+  [
+   2.2,
+   6.06784
+  ],
+  [
+   10.72,
+   6.16011
+  ],
+  [
+   11.79,
+   6.35338
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 5.47847,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.2,
+   "score": 6.06784,
+   "model": "gemma4:latest",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Implement loop unrolling and use private sub-histograms to reduce dependency chains and improve data locality, addressing the hot bin issue."
+  },
+  {
+   "minutes": 10.11,
+   "score": null,
+   "model": "gemma4:latest",
+   "mode": "explore/diff/refine",
+   "status": "compile_error",
+   "idea": "Increase the unrolling factor from 4 to 8 to exploit more instruction-level parallelism and reduce loop overhead further, while doubling the number of sub-histograms to maintain low contention."
+  },
+  {
+   "minutes": 11.79,
+   "score": 6.35338,
+   "model": "gemma4:latest",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Consolidate the duplicated and conflicting initializations and loop structures by removing redundant variable declarations and unifying the logic around the chosen `SUB_HIST_COUNT`."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -28,12 +28,53 @@\n // hist is zeroed by the caller. n is any size from 0 to 20'000'000; the sums\n // never overflow int64.\n extern \"C\" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, uint64_t* hist) {\n-    for (int b = 0; b < 256; ++b) hist[b] = 0;\n+    constexpr int SUB_HIST_COUNT = 8;\n+    uint32_t sub_hist[SUB_HIST_COUNT][256] = {};\n+    for (int b = 0; b < SUB_HIST_COUNT; ++b) {\n+        for (int k = 0; k < 256; ++k) sub_hist[b][k] = 0;\n+    }\n+\n+    // Prefix sum logic\n     int64_t sum = 0;\n-    for (size_t i = 0; i < n; ++i) {\n+    size_t i = 0;\n+\n+    // Unrolled loop body (processing 8 elements at a time)\n+    for (; i + 7 < n; i += 8) {\n+        // Process 8 elements: in[i] to in[i+7]\n+        int64_t v[8];\n+        for (int j = 0; j < 8; ++j) v[j] = in[i+j];\n+\n+        // Calculate prefix sums for block\n+        int64_t current_sum = sum;\n+        for (int j = 0; j < 8; ++j) {\n+            current_sum += v[j];\n+            out[i+j] = current_sum;\n+        }\n+\n+        // Update histogram counters locally (using sub-histograms)\n+        for (int j = 0; j < 8; ++j) {\n+            size_t sub_hist_idx = (i + j) % SUB_HIST_COUNT;\n+            sub_hist[sub_hist_idx][v[j] & 255]++;\n+        }\n+        \n+        // Update global sum for next iteration\n+        sum = current_sum;\n+    }\n+\n+    // Handle remainder elements\n+    for (; i < n; ++i) {\n         sum += in[i];\n         out[i] = sum;\n-        hist[in[i] & 255]++;\n+        sub_hist[i % SUB_HIST_COUNT][in[i] & 255]++;\n+    }\n+\n+    // Finalize histograms\n+    for (int b = 0; b < 256; ++b) {\n+        uint64_t total = 0;\n+        for (int k = 0; k < SUB_HIST_COUNT; ++k) {\n+            total += sub_hist[k][b];\n+        }\n+        hist[b] = total;\n     }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "best_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 1.6,
+ "model_gpu_memory_gb": 1.6,
+ "context_length": 32768,
+ "load_seconds": 39.4,
+ "median_call_seconds": 19.0,
+ "p90_call_seconds": 26.9,
+ "prompt_tokens_per_s": 1093.8,
+ "gen_tokens_per_s": 64.2,
+ "mean_prompt_tokens": 6213,
+ "mean_gen_tokens": 751,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

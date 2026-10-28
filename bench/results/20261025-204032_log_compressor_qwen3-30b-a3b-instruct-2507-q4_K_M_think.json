@@ -1,0 +1,132 @@
+{
+ "schema": 3,
+ "example": "log_compressor",
+ "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+ "variant": "think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-10-25T20:40:32",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 11.28605206956168,
+ "best_score": 19.661735394427957,
+ "improvement": 1.7421269433494262,
+ "llm_calls": 27,
+ "mean_llm_seconds": 34.4,
+ "attempts": 27,
+ "ok": 4,
+ "statuses": {
+  "invalid": 9,
+  "ok": 4,
+  "edit_error": 8,
+  "llm_error": 4,
+  "duplicate": 2
+ },
+ "sweeps": 2,
+ "sweep_variants": 20,
+ "improvements": 1,
+ "minutes_to_best": 6.44,
+ "best_idea": "Replace plain zlib with lzma at preset 9 in raw format to reduce header overhead and improve compression ratio on structured log data, while ensuring fallback for malformed inputs by adding a flag byt",
+ "progress": [
+  [
+   0.0,
+   11.28605206956168
+  ],
+  [
+   6.44,
+   19.661735394427957
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 11.28605206956168,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 6.44,
+   "score": 19.661735394427957,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Replace plain zlib with lzma at preset 9 in raw format to reduce header overhead and improve compression ratio on structured log data, while ensuring fallback for malformed inputs by adding a flag byte."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -10,6 +10,12 @@\n import zlib\n \n # OMEGA-BLOCK-START\n+import lzma\n+\n+# Compression mode flag: 0 for raw lzma, 1 for fallback (raw data with lzma)\n+RAW_LZMA_FLAG = 0\n+FALLBACK_FLAG = 1\n+\n def compress(data: bytes) -> bytes:\n     \"\"\"Compress arbitrary bytes losslessly and return the compressed blob.\n \n@@ -19,14 +25,42 @@\n     Only the Python standard library may be used (zlib, lzma, bz2, struct, re, ...).\n     Compress plus decompress of the main input must stay within 20 CPU seconds.\n \n-    Current method: plain zlib at level 1.\n+    Current method: lzma at preset 9 in raw format for high compression, with fallback for malformed inputs.\n     \"\"\"\n-    return zlib.compress(data, 1)\n+    if not data:\n+        return bytes([FALLBACK_FLAG]) + lzma.compress(data, preset=9)\n+\n+    try:\n+        # Use raw lzma format with high preset to reduce header overhead\n+        compressed = lzma.compress(data, preset=9, format=lzma.FORMAT_RAW)\n+        # Prepend flag byte to indicate raw lzma mode\n+        return bytes([RAW_LZMA_FLAG]) + compressed\n+    except Exception:\n+        # Fallback: compress the original data with lzma (with header)\n+        return bytes([FALLBACK_FLAG]) + lzma.compress(data, preset=9)\n \n \n def decompress(blob: bytes) -> bytes:\n     \"\"\"Invert compress() exactly.\"\"\"\n-    return zlib.decompress(blob)\n+    if not blob:\n+        return b\"\"\n+    flag = blob[0]\n+    payload = blob[1:]\n+\n+    if flag == RAW_LZMA_FLAG:\n+        try:\n+            return lzma.decompress(payload, format=lzma.FORMAT_RAW)\n+        except Exception:\n+            # Fallback: decompress as standard lzma\n+            return lzma.decompress(payload)\n+    elif flag == FALLBACK_FLAG:\n+        try:\n+            return lzma.decompress(payload)\n+        except Exception:\n+            # Fallback: return raw data if decompression fails\n+            return payload\n+    else:\n+        raise ValueError(\"Invalid flag byte in compressed data\")\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "compression",
+  "input": "web server access log",
+  "head": [
+   "203.242.94.172 - - [04/Oct/2024:09:52:35 +0000] \"GET /search?q=novel&page=1 HTTP/1.1\" 200 13481 \"https://search.example.net/?q=shop\" \"Mozilla/5.0 (compatible; ExampleBot/2.1; +http://bot.example.org/info)\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/155 HTTP/1.1\" 200 23584 \"https://www.example.com/\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/books/203?ref=search HTTP/1.1\" 200 25206 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/106 HTTP/1.1\" 404 24868 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\""
+  ],
+  "lines": 2000,
+  "original_bytes": 443903,
+  "compressed_bytes": 39332,
+  "references": {
+   "zlib -9": 25176,
+   "bz2 -9": 16530,
+   "lzma -9e": 20656
+  }
+ },
+ "best_solution": {
+  "kind": "compression",
+  "input": "web server access log",
+  "head": [
+   "203.242.94.172 - - [04/Oct/2024:09:52:35 +0000] \"GET /search?q=novel&page=1 HTTP/1.1\" 200 13481 \"https://search.example.net/?q=shop\" \"Mozilla/5.0 (compatible; ExampleBot/2.1; +http://bot.example.org/info)\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/155 HTTP/1.1\" 200 23584 \"https://www.example.com/\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/books/203?ref=search HTTP/1.1\" 200 25206 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/106 HTTP/1.1\" 404 24868 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\""
+  ],
+  "lines": 2000,
+  "original_bytes": 443903,
+  "compressed_bytes": 22577,
+  "references": {
+   "zlib -9": 25176,
+   "bz2 -9": 16530,
+   "lzma -9e": 20656
+  }
+ },
+ "error": "",
+ "model_memory_gb": 22.2,
+ "model_gpu_memory_gb": 18.9,
+ "context_length": 32768,
+ "load_seconds": 56.3,
+ "median_call_seconds": 24.6,
+ "p90_call_seconds": 100.7,
+ "prompt_tokens_per_s": 809.5,
+ "gen_tokens_per_s": 32.0,
+ "mean_prompt_tokens": 2657,
+ "mean_gen_tokens": 482,
+ "stopped_calls": 4,
+ "provider": "ollama",
+ "cost_usd": 0
+}

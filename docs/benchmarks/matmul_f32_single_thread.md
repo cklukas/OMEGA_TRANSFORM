@@ -4,11 +4,11 @@
 
 # matmul_f32_single_thread
 
-51 models, 15 minutes each, one run per model. The [overall ranking](../benchmarks.md#overall-ranking) compares the models over all examples.
+52 models, 15 minutes each, one run per model. The [overall ranking](../benchmarks.md#overall-ranking) compares the models over all examples.
 
-Machine: Apple M1 Max (Mac13,1), 10 cores, 32 GB.
+Machines: **Apple M1 Max**: Apple M1 Max (Mac13,1), 10 cores, 32 GB, 51 runs; **i7-8700K + 2x GTX 1080 Ti**: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz (MS-7A98), 12 cores, 64 GB, 2x NVIDIA GeForce GTX 1080 Ti, 11264 MiB, 34 runs.
 
-## Local models
+## Local models on Apple M1 Max
 
 Ollama on this machine.
 
@@ -60,7 +60,7 @@ Ollama on this machine.
 
 ```mermaid
 xychart-beta
-    title "matmul_f32_single_thread, local: best score"
+    title "matmul_f32_single_thread, local, Apple M1 Max: best score"
     x-axis ["qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "gemma4:e4b-it-qat (think)", "gemma4 (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "gemma4:26b-a4b-it-qat (no-think)", "qwen3.5:27b (no-think)", "devstral-small-2:24b (no-think)", "gemma4:12b-it-qat (think)", "gemma4:12b-it-qat (no-think)", "gemma4:e4b-it-qat (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "gpt-oss:20b (think)", "gemma4 (think)", "nemotron-3.5-lightning:30b-mlx (think)", "qwen3.5:27b (think)", "muse-glimmer:30b (think)", "muse-glimmer:30b (no-think)", "gemma4:26b-a4b-it-qat (think)", "qwen3.5 (think)", "exaone4.0:32b (no-think)", "gpt-oss:20b (no-think)", "glm-4.7-flash (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "nemotron-3-nano:30b-a3b-mlx (think)", "qwen2.5-coder:7b (no-think)", "qwen3-coder:30b (no-think)", "apertus:8b-instruct-2509-q4_k_m (no-think)", "frognano-4b-2609 (think)", "nemotron-3-nano:4b (no-think)", "gemma4:e2b (think)", "nemotron-3-nano:30b-a3b-mlx (no-think)", "qwen3.8:27b-mtp-q4_K_M (think)", "YandexGPT-5-Lite-8B-instruct-GGUF (no-think)", "gemma4:e2b (no-think)", "llm-jp-4-8b-omega:q4_k_m (no-think)", "nemotron-3.5-lightning:30b-mlx (no-think)", "nemotron-3-nano:4b (think)", "sarvam:30b (no-think)", "sarvam:30b (think)", "glm-4.7-flash (think)", "frognano-4b-2609 (no-think)", "qwen3.5 (no-think)"]
     y-axis "score" 0 --> 69.26
     bar [62.97, 31.16, 28.57, 28.07, 27.71, 26.33, 26.06, 26.05, 26.03, 26.01, 26, 25.96, 25.95, 25.88, 25.75, 25.62, 25.55, 25.49, 25.41, 25.41, 25.36, 25.09, 25.07, 21.35, 9.983, 6.934, 1.76, 1.747, 1.746, 1.741, 1.736, 1.727, 1.726, 1.712, 1.711, 1.707, 1.705, 1.705, 1.691, 1.679, 1.677, 1.675, 1.598]
@@ -68,7 +68,7 @@ xychart-beta
 
 ```mermaid
 xychart-beta
-    title "matmul_f32_single_thread, local: valid answers (%)"
+    title "matmul_f32_single_thread, local, Apple M1 Max: valid answers (%)"
     x-axis ["qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "gemma4:e4b-it-qat (think)", "gemma4 (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "gemma4:26b-a4b-it-qat (no-think)", "qwen3.5:27b (no-think)", "devstral-small-2:24b (no-think)", "gemma4:12b-it-qat (think)", "gemma4:12b-it-qat (no-think)", "gemma4:e4b-it-qat (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "gpt-oss:20b (think)", "gemma4 (think)", "nemotron-3.5-lightning:30b-mlx (think)", "qwen3.5:27b (think)", "muse-glimmer:30b (think)", "muse-glimmer:30b (no-think)", "gemma4:26b-a4b-it-qat (think)", "qwen3.5 (think)", "exaone4.0:32b (no-think)", "gpt-oss:20b (no-think)", "glm-4.7-flash (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "nemotron-3-nano:30b-a3b-mlx (think)", "qwen2.5-coder:7b (no-think)", "qwen3-coder:30b (no-think)", "apertus:8b-instruct-2509-q4_k_m (no-think)", "frognano-4b-2609 (think)", "nemotron-3-nano:4b (no-think)", "gemma4:e2b (think)", "nemotron-3-nano:30b-a3b-mlx (no-think)", "qwen3.8:27b-mtp-q4_K_M (think)", "YandexGPT-5-Lite-8B-instruct-GGUF (no-think)", "gemma4:e2b (no-think)", "llm-jp-4-8b-omega:q4_k_m (no-think)", "nemotron-3.5-lightning:30b-mlx (no-think)", "nemotron-3-nano:4b (think)", "sarvam:30b (no-think)", "sarvam:30b (think)", "glm-4.7-flash (think)", "frognano-4b-2609 (no-think)", "qwen3.5 (no-think)"]
     y-axis "% of answers" 0 --> 110
     bar [25, 36.54, 81.82, 34, 50, 65.52, 50, 12.5, 50, 68.18, 27.91, 33.33, 81.25, 64.29, 25, 100, 100, 83.33, 66.67, 7.692, 11.11, 22.22, 2.632, 25, 9.091, 13.64, 0, 5, 0, 7.792, 0, 0, 0, 0, 10.94, 5.556, 0, 0, 0, 0, 0, 5, 0]
@@ -76,7 +76,7 @@ xychart-beta
 
 ```mermaid
 xychart-beta
-    title "matmul_f32_single_thread, local: seconds per LLM call"
+    title "matmul_f32_single_thread, local, Apple M1 Max: seconds per LLM call"
     x-axis ["qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "gemma4:e4b-it-qat (think)", "gemma4 (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "gemma4:26b-a4b-it-qat (no-think)", "qwen3.5:27b (no-think)", "devstral-small-2:24b (no-think)", "gemma4:12b-it-qat (think)", "gemma4:12b-it-qat (no-think)", "gemma4:e4b-it-qat (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "gpt-oss:20b (think)", "gemma4 (think)", "nemotron-3.5-lightning:30b-mlx (think)", "qwen3.5:27b (think)", "muse-glimmer:30b (think)", "muse-glimmer:30b (no-think)", "gemma4:26b-a4b-it-qat (think)", "qwen3.5 (think)", "exaone4.0:32b (no-think)", "gpt-oss:20b (no-think)", "glm-4.7-flash (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "nemotron-3-nano:30b-a3b-mlx (think)", "qwen2.5-coder:7b (no-think)", "qwen3-coder:30b (no-think)", "apertus:8b-instruct-2509-q4_k_m (no-think)", "frognano-4b-2609 (think)", "nemotron-3-nano:4b (no-think)", "gemma4:e2b (think)", "nemotron-3-nano:30b-a3b-mlx (no-think)", "qwen3.8:27b-mtp-q4_K_M (think)", "YandexGPT-5-Lite-8B-instruct-GGUF (no-think)", "gemma4:e2b (no-think)", "llm-jp-4-8b-omega:q4_k_m (no-think)", "nemotron-3.5-lightning:30b-mlx (no-think)", "nemotron-3-nano:4b (think)", "sarvam:30b (no-think)", "sarvam:30b (think)", "glm-4.7-flash (think)", "frognano-4b-2609 (no-think)", "qwen3.5 (no-think)"]
     y-axis "seconds" 0 --> 1961
     bar [18.4, 16.8, 87.1, 17.5, 620.9, 30.9, 123.6, 58.6, 458.1, 41.1, 20.5, 156.2, 57.3, 65.2, 233.3, 233, 309.6, 162, 377.1, 71, 109.1, 105.3, 23.6, 119.9, 91.3, 20.3, 26.1, 21.7, 48.5, 11.2, 52.5, 25.8, 1783, 23.3, 13.9, 53.2, 40.2, 44.2, 171.4, 333.1, 340.2, 47.3, 61.5]
@@ -134,7 +134,7 @@ RAM is what Ollama reports for the loaded model (weights, context cache and buff
 
 ```mermaid
 xychart-beta
-    title "matmul_f32_single_thread, local: generation speed (tokens/s)"
+    title "matmul_f32_single_thread, local, Apple M1 Max: generation speed (tokens/s)"
     x-axis ["frognano-4b-2609 (think)", "frognano-4b-2609 (no-think)", "gemma4:e4b-it-qat (think)", "gemma4:e4b-it-qat (no-think)", "qwen2.5-coder:7b (no-think)", "gemma4:e2b (think)", "gemma4:e2b (no-think)", "qwen3.5 (think)", "qwen3.5 (no-think)", "gemma4:12b-it-qat (think)", "gemma4:12b-it-qat (no-think)", "YandexGPT-5-Lite-8B-instruct-GGUF (no-think)", "llm-jp-4-8b-omega:q4_k_m (no-think)", "apertus:8b-instruct-2509-q4_k_m (no-think)", "nemotron-3-nano:4b (think)", "gemma4 (think)", "nemotron-3-nano:4b (no-think)", "gpt-oss:20b (think)", "gpt-oss:20b (no-think)", "gemma4 (no-think)", "gemma4:26b-a4b-it-qat (no-think)", "gemma4:26b-a4b-it-qat (think)", "muse-glimmer:30b (no-think)", "muse-glimmer:30b (think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen3.8:27b-mtp-q4_K_M (think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.5:27b (think)", "qwen3.5:27b (no-think)", "sarvam:30b (no-think)", "devstral-small-2:24b (no-think)", "sarvam:30b (think)", "nemotron-3.5-lightning:30b-mlx (think)", "exaone4.0:32b (no-think)", "nemotron-3-nano:30b-a3b-mlx (think)", "glm-4.7-flash (no-think)", "glm-4.7-flash (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3-coder:30b (no-think)", "nemotron-3.5-lightning:30b-mlx (no-think)", "nemotron-3-nano:30b-a3b-mlx (no-think)"]
     y-axis "tokens/s" 0 --> 82.17
     bar [55.9, 47.7, 58.2, 59.5, 38.6, 74.7, 60.7, 34.3, 35.9, 28.1, 30.3, 34.9, 32, 32.5, 61.6, 44.5, 62.8, 48, 50.4, 50.1, 63.3, 53.8, 10.1, 10.3, 12.8, 15.8, 11.2, 15.3, 10.6, 11.4, 52.4, 11.5, 45, 54.4, 9.4, 54.1, 32.5, 23.2, 45.4, 52.2, 56.2, 55.2, 56.4]
@@ -142,7 +142,7 @@ xychart-beta
 
 ```mermaid
 xychart-beta
-    title "matmul_f32_single_thread, local: model memory (GB)"
+    title "matmul_f32_single_thread, local, Apple M1 Max: model memory (GB)"
     x-axis ["frognano-4b-2609 (think)", "frognano-4b-2609 (no-think)", "gemma4:e4b-it-qat (think)", "gemma4:e4b-it-qat (no-think)", "qwen2.5-coder:7b (no-think)", "gemma4:e2b (think)", "gemma4:e2b (no-think)", "qwen3.5 (think)", "qwen3.5 (no-think)", "gemma4:12b-it-qat (think)", "gemma4:12b-it-qat (no-think)", "YandexGPT-5-Lite-8B-instruct-GGUF (no-think)", "llm-jp-4-8b-omega:q4_k_m (no-think)", "apertus:8b-instruct-2509-q4_k_m (no-think)", "nemotron-3-nano:4b (think)", "gemma4 (think)", "nemotron-3-nano:4b (no-think)", "gpt-oss:20b (think)", "gpt-oss:20b (no-think)", "gemma4 (no-think)", "gemma4:26b-a4b-it-qat (no-think)", "gemma4:26b-a4b-it-qat (think)", "muse-glimmer:30b (no-think)", "muse-glimmer:30b (think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen3.8:27b-mtp-q4_K_M (think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.5:27b (think)", "qwen3.5:27b (no-think)", "sarvam:30b (no-think)", "devstral-small-2:24b (no-think)", "sarvam:30b (think)", "nemotron-3.5-lightning:30b-mlx (think)", "exaone4.0:32b (no-think)", "nemotron-3-nano:30b-a3b-mlx (think)", "glm-4.7-flash (no-think)", "glm-4.7-flash (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3-coder:30b (no-think)", "nemotron-3.5-lightning:30b-mlx (no-think)", "nemotron-3-nano:30b-a3b-mlx (no-think)"]
     y-axis "GB" 0 --> 25.96
     bar [4.4, 4.4, 5.7, 5.7, 6.6, 6.6, 6.6, 6.8, 6.8, 8, 8, 8.8, 8.8, 8.9, 9.4, 11.3, 11.6, 12.8, 12.9, 14.9, 15.2, 15.2, 15.6, 16.5, 17.4, 17.6, 17.6, 18.2, 18.4, 18.6, 18.9, 19.7, 19.8, 20, 20.2, 20.2, 20.8, 20.8, 21.8, 21.8, 21.8, 23, 23.6]
@@ -290,7 +290,244 @@ xychart-beta
 - **richardyoung/frognano-4b-2609:latest (no-think)**: tuned BLOCK=15 on top of: Introduce a fixed micro-kernel block size (8x8x8) and unroll the inner loops to maximize register usage and NEON throughput, replacing the naive scalar …
 - **qwen3.5:latest (no-think)**: initial program
 
-## Cloud models (OpenRouter)
+## Local models on i7-8700K + 2x GTX 1080 Ti
+
+Ollama on this machine.
+
+| Model | Params | Initial | Best | Gain | LLM calls | s/call | Valid | New bests | Min to best |
+|---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| gemma4:26b-a4b-it-qat (no-think) | 25.2B | 1.56929 | **31.3623** | ×19.99 | 25 | 39 | 60% | 3 | 14.1 |
+| gemma4:e4b-it-qat (think) | 7.5B | 1.58496 | **30.9891** | ×19.55 | 15 | 60 | 7% | 1 | 15.2 |
+| gemma4:latest (think) | 7.5B | 1.59845 | **30.1930** | ×18.89 | 17 | 54 | 29% | 2 | 4.7 |
+| gemma4:e4b-it-qat (no-think) | 7.5B | 1.56161 | **29.9495** | ×19.18 | 39 | 23 | 46% | 4 | 13.6 |
+| gpt-oss:20b (no-think) | 20.9B | 1.5568 | **29.6248** | ×19.03 | 13 | 76 | 77% | 2 | 14.0 |
+| qwen3.8:27b-mtp-q4_K_M (no-think) | 27.3B | 1.55992 | **29.4573** | ×18.88 | 4 | 235 | 50% | 1 | 16.3 |
+| gemma4:12b-it-qat (no-think) | 11.9B | 1.55508 | **29.3817** | ×18.89 | 25 | 37 | 36% | 1 | 4.3 |
+| gpt-oss:20b (think) | 20.9B | 1.58112 | **28.8896** | ×18.27 | 19 | 50 | 63% | 4 | 10.6 |
+| gemma4:e2b (think) | 4.6B | 1.56447 | **27.8495** | ×17.80 | 29 | 31 | 7% | 2 | 13.7 |
+| qwen2.5-coder:7b (no-think) | 7.6B | 1.56086 | **26.6624** | ×17.08 | 46 | 19 | 11% | 2 | 4.4 |
+| gemma4:26b-a4b-it-qat (think) | 25.2B | 1.60948 | **24.1031** | ×14.98 | 3 | 304 | 67% | 2 | 8.3 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | 30.5B | 1.59498 | **21.1361** | ×13.25 | 46 | 18 | 4% | 2 | 8.0 |
+| glm-4.7-flash:latest (think) | 29.9B | 1.64804 | **1.64804** | ×1.00 | 4 | 337 | 0% | 0 | - |
+| qwen3.8:27b-mtp-q4_K_M (think) | 27.3B | 1.62572 | **1.62572** | ×1.00 | 1 | 2158 | 0% | 0 | - |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | 27.3B | 1.62336 | **1.62336** | ×1.00 | 1 | 1410 | 0% | 0 | - |
+| richardyoung/frognano-4b-2609:latest (think) | 4.3B | 1.60595 | **1.60595** | ×1.00 | 22 | 42 | 5% | 0 | - |
+| qwen3.5:latest (think) | 9.0B | 1.60581 | **1.60581** | ×1.00 | 8 | 116 | 0% | 0 | - |
+| nemotron-3-nano:4b (think) | 4.0B | 1.59795 | **1.59795** | ×1.00 | 24 | 37 | 0% | 0 | - |
+| gemma4:12b-it-qat (think) | 11.9B | 1.59473 | **1.59473** | ×1.00 | 2 | 578 | 0% | 0 | - |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (think) | 30.5B | 1.59052 | **1.59052** | ×1.00 | 35 | 26 | 0% | 0 | - |
+| frob/sarvam:30b (think) | 32.2B | 1.58302 | **1.58302** | ×1.00 | 4 | 277 | 0% | 0 | - |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 8.0B | 1.54902 | **1.58122** | ×1.02 | 51 | 17 | 39% | 1 | 16.6 |
+| gemma4:e2b (no-think) | 4.6B | 1.57844 | **1.57844** | ×1.00 | 111 | 8 | 4% | 0 | - |
+| qwen3.5:latest (no-think) | 9.0B | 1.57499 | **1.57499** | ×1.00 | 16 | 58 | 0% | 0 | - |
+| gemma4:latest (no-think) | 7.5B | 1.56799 | **1.56799** | ×1.00 | 59 | 15 | 20% | 0 | - |
+| frob/sarvam:30b (no-think) | 32.2B | 1.56637 | **1.56637** | ×1.00 | 6 | 177 | 0% | 0 | - |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | 8.6B | 1.56461 | **1.56461** | ×1.00 | 22 | 43 | 5% | 0 | - |
+| Bored/GigaChat3.1-10B-A1.8B-q4_K_M:latest (no-think) | 10.7B | 1.56334 | **1.56334** | ×1.00 | 41 | 22 | 0% | 0 | - |
+| nemotron-3-nano:4b (no-think) | 4.0B | 1.55654 | **1.55654** | ×1.00 | 54 | 16 | 4% | 0 | - |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 8.1B | 1.55582 | **1.55582** | ×1.00 | 55 | 16 | 0% | 0 | - |
+| glm-4.7-flash:latest (no-think) | 29.9B | 1.55104 | **1.55104** | ×1.00 | 36 | 25 | 14% | 0 | - |
+| richardyoung/frognano-4b-2609:latest (no-think) | 4.3B | 1.55073 | **1.55073** | ×1.00 | 23 | 41 | 0% | 0 | - |
+| qwen3-coder:30b (no-think) | 30.5B | 1.5247 | **1.5247** | ×1.00 | 18 | 50 | 0% | 0 | - |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 27.3B | 1.52218 | **1.52218** | ×1.00 | 4 | 311 | 0% | 0 | - |
+
+```mermaid
+xychart-beta
+    title "matmul_f32_single_thread, local, i7-8700K + 2x GTX 1080 Ti: best score"
+    x-axis ["gemma4:26b-a4b-it-qat (no-think)", "gemma4:e4b-it-qat (think)", "gemma4 (think)", "gemma4:e4b-it-qat (no-think)", "gpt-oss:20b (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "gemma4:12b-it-qat (no-think)", "gpt-oss:20b (think)", "gemma4:e2b (think)", "qwen2.5-coder:7b (no-think)", "gemma4:26b-a4b-it-qat (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "glm-4.7-flash (think)", "qwen3.8:27b-mtp-q4_K_M (think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "frognano-4b-2609 (think)", "qwen3.5 (think)", "nemotron-3-nano:4b (think)", "gemma4:12b-it-qat (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "sarvam:30b (think)", "YandexGPT-5-Lite-8B-instruct-GGUF (no-think)", "gemma4:e2b (no-think)", "qwen3.5 (no-think)", "gemma4 (no-think)", "sarvam:30b (no-think)", "llm-jp-4-8b-omega:q4_k_m (no-think)", "GigaChat3.1-10B-A1.8B-q4_K_M (no-think)", "nemotron-3-nano:4b (no-think)", "apertus:8b-instruct-2509-q4_k_m (no-think)", "glm-4.7-flash (no-think)", "frognano-4b-2609 (no-think)", "qwen3-coder:30b (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)"]
+    y-axis "score" 0 --> 34.5
+    bar [31.36, 30.99, 30.19, 29.95, 29.62, 29.46, 29.38, 28.89, 27.85, 26.66, 24.1, 21.14, 1.648, 1.626, 1.623, 1.606, 1.606, 1.598, 1.595, 1.591, 1.583, 1.581, 1.578, 1.575, 1.568, 1.566, 1.565, 1.563, 1.557, 1.556, 1.551, 1.551, 1.525, 1.522]
+```
+
+```mermaid
+xychart-beta
+    title "matmul_f32_single_thread, local, i7-8700K + 2x GTX 1080 Ti: valid answers (%)"
+    x-axis ["gemma4:26b-a4b-it-qat (no-think)", "gemma4:e4b-it-qat (think)", "gemma4 (think)", "gemma4:e4b-it-qat (no-think)", "gpt-oss:20b (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "gemma4:12b-it-qat (no-think)", "gpt-oss:20b (think)", "gemma4:e2b (think)", "qwen2.5-coder:7b (no-think)", "gemma4:26b-a4b-it-qat (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "glm-4.7-flash (think)", "qwen3.8:27b-mtp-q4_K_M (think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "frognano-4b-2609 (think)", "qwen3.5 (think)", "nemotron-3-nano:4b (think)", "gemma4:12b-it-qat (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "sarvam:30b (think)", "YandexGPT-5-Lite-8B-instruct-GGUF (no-think)", "gemma4:e2b (no-think)", "qwen3.5 (no-think)", "gemma4 (no-think)", "sarvam:30b (no-think)", "llm-jp-4-8b-omega:q4_k_m (no-think)", "GigaChat3.1-10B-A1.8B-q4_K_M (no-think)", "nemotron-3-nano:4b (no-think)", "apertus:8b-instruct-2509-q4_k_m (no-think)", "glm-4.7-flash (no-think)", "frognano-4b-2609 (no-think)", "qwen3-coder:30b (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)"]
+    y-axis "% of answers" 0 --> 84.62
+    bar [60, 6.667, 29.41, 46.15, 76.92, 50, 36, 63.16, 6.897, 10.87, 66.67, 4.348, 0, 0, 0, 4.545, 0, 0, 0, 0, 0, 39.22, 3.604, 0, 20.34, 0, 4.545, 0, 3.704, 0, 13.89, 0, 0, 0]
+```
+
+```mermaid
+xychart-beta
+    title "matmul_f32_single_thread, local, i7-8700K + 2x GTX 1080 Ti: seconds per LLM call"
+    x-axis ["gemma4:26b-a4b-it-qat (no-think)", "gemma4:e4b-it-qat (think)", "gemma4 (think)", "gemma4:e4b-it-qat (no-think)", "gpt-oss:20b (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "gemma4:12b-it-qat (no-think)", "gpt-oss:20b (think)", "gemma4:e2b (think)", "qwen2.5-coder:7b (no-think)", "gemma4:26b-a4b-it-qat (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "glm-4.7-flash (think)", "qwen3.8:27b-mtp-q4_K_M (think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "frognano-4b-2609 (think)", "qwen3.5 (think)", "nemotron-3-nano:4b (think)", "gemma4:12b-it-qat (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "sarvam:30b (think)", "YandexGPT-5-Lite-8B-instruct-GGUF (no-think)", "gemma4:e2b (no-think)", "qwen3.5 (no-think)", "gemma4 (no-think)", "sarvam:30b (no-think)", "llm-jp-4-8b-omega:q4_k_m (no-think)", "GigaChat3.1-10B-A1.8B-q4_K_M (no-think)", "nemotron-3-nano:4b (no-think)", "apertus:8b-instruct-2509-q4_k_m (no-think)", "glm-4.7-flash (no-think)", "frognano-4b-2609 (no-think)", "qwen3-coder:30b (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)"]
+    y-axis "seconds" 0 --> 2374
+    bar [39.3, 60, 53.9, 23.2, 75.9, 235.4, 36.8, 49.6, 30.9, 19.1, 303.9, 18.3, 336.9, 2158, 1410, 42.3, 116, 37, 578.1, 25.7, 276.7, 17.4, 7.8, 58.1, 14.8, 176.9, 42.8, 22.2, 16.3, 15.8, 25, 40.7, 50.3, 311.4]
+```
+
+### Inference speed and memory
+
+RAM is what Ollama reports for the loaded model (weights, context cache and buffers; on Apple silicon this is shared memory). Load is the time to bring the model into memory. Prompt and generation speeds are tokens per second over all calls of the run.
+
+| Model | Params | RAM GB | Load s | Prompt tok/s | Gen tok/s | Median s/call | p90 s/call | Tokens/answer | Stopped |
+|---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| gemma4:e2b (think) | 4.6B | 0.5 | 18 | 2481 | 108.9 | 29 | 43 | 2911 | 0 |
+| gemma4:e2b (no-think) | 4.6B | 0.5 | 19 | 2844 | 129.3 | 7 | 11 | 513 | 1 |
+| gemma4:latest (think) | 7.5B | 1.6 | 25 | 1254 | 58.9 | 51 | 80 | 2802 | 0 |
+| gemma4:latest (no-think) | 7.5B | 1.6 | 26 | 1705 | 66.6 | 14 | 20 | 644 | 0 |
+| nemotron-3-nano:4b (think) | 4.0B | 3.5 | 10 | 1627 | 72.3 | 34 | 60 | 2316 | 0 |
+| nemotron-3-nano:4b (no-think) | 4.0B | 3.5 | 10 | 2124 | 71.3 | 13 | 27 | 826 | 4 |
+| richardyoung/frognano-4b-2609:latest (think) | 4.3B | 4.3 | 12 | 2993 | 59.9 | 33 | 50 | 1674 | 4 |
+| richardyoung/frognano-4b-2609:latest (no-think) | 4.3B | 4.3 | 13 | 2716 | 56.9 | 42 | 63 | 1427 | 9 |
+| gemma4:e4b-it-qat (think) | 7.5B | 4.4 | 20 | 2127 | 46.7 | 54 | 94 | 2570 | 0 |
+| gemma4:e4b-it-qat (no-think) | 7.5B | 4.4 | 21 | 2252 | 42.8 | 20 | 38 | 739 | 1 |
+| qwen2.5-coder:7b (no-think) | 7.6B | 6.6 | 15 | 1847 | 42.5 | 18 | 30 | 588 | 1 |
+| qwen3.5:latest (think) | 9.0B | 7.6 | 20 | 1697 | 36.9 | 51 | 356 | 1430 | 3 |
+| qwen3.5:latest (no-think) | 9.0B | 7.6 | 21 | 1830 | 36.3 | 69 | 86 | 1297 | 6 |
+| Bored/GigaChat3.1-10B-A1.8B-q4_K_M:latest (no-think) | 10.7B | 7.6 | 19 | 845 | 69.7 | 20 | 30 | 902 | 1 |
+| gemma4:12b-it-qat (no-think) | 11.9B | 9.0 | 23 | 784 | 28.3 | 28 | 63 | 672 | 4 |
+| gemma4:12b-it-qat (think) | 11.9B | 9.0 | 22 | 800 | 27.5 | 603 | 603 | 15402 | 0 |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 8.1B | 10.1 | 16 | 2184 | 42.1 | 14 | 23 | 475 | 1 |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 8.0B | 10.2 | 15 | 1979 | 42.2 | 18 | 21 | 525 | 0 |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | 8.6B | 10.4 | 16 | 2096 | 39.9 | 40 | 62 | 1503 | 0 |
+| gpt-oss:20b (no-think) | 20.9B | 13.8 | 40 | 2099 | 52.0 | 55 | 163 | 3590 | 0 |
+| gpt-oss:20b (think) | 20.9B | 13.8 | 38 | 2230 | 53.1 | 44 | 96 | 2336 | 0 |
+| gemma4:26b-a4b-it-qat (no-think) | 25.2B | 16.5 | 59 | 978 | 37.6 | 28 | 78 | 720 | 5 |
+| gemma4:26b-a4b-it-qat (think) | 25.2B | 16.5 | 56 | 1080 | 38.9 | 346 | 429 | 10902 | 0 |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | 27.3B | 19.9 | 55 | 171 | 5.7 | 1410 | 1410 | 7576 | 0 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 27.3B | 19.9 | 58 | 214 | 7.0 | 371 | 408 | 1967 | 0 |
+| qwen3.8:27b-mtp-q4_K_M (no-think) | 27.3B | 20.1 | 58 | 206 | 6.9 | 277 | 286 | 1410 | 0 |
+| qwen3.8:27b-mtp-q4_K_M (think) | 27.3B | 20.1 | 55 | 165 | 5.3 | 2158 | 2158 | 10984 | 0 |
+| frob/sarvam:30b (think) | 32.2B | 21.0 | 0 | 2439 | 51.7 | 266 | 373 | 11686 | 3 |
+| frob/sarvam:30b (no-think) | 32.2B | 21.0 | 65 | 2175 | 50.4 | 166 | 230 | 8192 | 0 |
+| glm-4.7-flash:latest (think) | 29.9B | 21.2 | 58 | 668 | 26.9 | 447 | 485 | 7048 | 1 |
+| glm-4.7-flash:latest (no-think) | 29.9B | 21.2 | 62 | 635 | 28.9 | 20 | 33 | 469 | 0 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | 30.5B | 22.2 | 56 | 1091 | 33.4 | 16 | 31 | 365 | 1 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (think) | 30.5B | 22.2 | 53 | 1126 | 34.6 | 15 | 52 | 573 | 1 |
+| qwen3-coder:30b (no-think) | 30.5B | 22.2 | 57 | 1031 | 31.5 | 46 | 86 | 1302 | 1 |
+
+```mermaid
+xychart-beta
+    title "matmul_f32_single_thread, local, i7-8700K + 2x GTX 1080 Ti: generation speed (tokens/s)"
+    x-axis ["gemma4:e2b (think)", "gemma4:e2b (no-think)", "gemma4 (think)", "gemma4 (no-think)", "nemotron-3-nano:4b (think)", "nemotron-3-nano:4b (no-think)", "frognano-4b-2609 (think)", "frognano-4b-2609 (no-think)", "gemma4:e4b-it-qat (think)", "gemma4:e4b-it-qat (no-think)", "qwen2.5-coder:7b (no-think)", "qwen3.5 (think)", "qwen3.5 (no-think)", "GigaChat3.1-10B-A1.8B-q4_K_M (no-think)", "gemma4:12b-it-qat (no-think)", "gemma4:12b-it-qat (think)", "apertus:8b-instruct-2509-q4_k_m (no-think)", "YandexGPT-5-Lite-8B-instruct-GGUF (no-think)", "llm-jp-4-8b-omega:q4_k_m (no-think)", "gpt-oss:20b (no-think)", "gpt-oss:20b (think)", "gemma4:26b-a4b-it-qat (no-think)", "gemma4:26b-a4b-it-qat (think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen3.8:27b-mtp-q4_K_M (think)", "sarvam:30b (think)", "sarvam:30b (no-think)", "glm-4.7-flash (think)", "glm-4.7-flash (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen3-coder:30b (no-think)"]
+    y-axis "tokens/s" 0 --> 142.2
+    bar [108.9, 129.3, 58.9, 66.6, 72.3, 71.3, 59.9, 56.9, 46.7, 42.8, 42.5, 36.9, 36.3, 69.7, 28.3, 27.5, 42.1, 42.2, 39.9, 52, 53.1, 37.6, 38.9, 5.7, 7, 6.9, 5.3, 51.7, 50.4, 26.9, 28.9, 33.4, 34.6, 31.5]
+```
+
+```mermaid
+xychart-beta
+    title "matmul_f32_single_thread, local, i7-8700K + 2x GTX 1080 Ti: model memory (GB)"
+    x-axis ["gemma4:e2b (think)", "gemma4:e2b (no-think)", "gemma4 (think)", "gemma4 (no-think)", "nemotron-3-nano:4b (think)", "nemotron-3-nano:4b (no-think)", "frognano-4b-2609 (think)", "frognano-4b-2609 (no-think)", "gemma4:e4b-it-qat (think)", "gemma4:e4b-it-qat (no-think)", "qwen2.5-coder:7b (no-think)", "qwen3.5 (think)", "qwen3.5 (no-think)", "GigaChat3.1-10B-A1.8B-q4_K_M (no-think)", "gemma4:12b-it-qat (no-think)", "gemma4:12b-it-qat (think)", "apertus:8b-instruct-2509-q4_k_m (no-think)", "YandexGPT-5-Lite-8B-instruct-GGUF (no-think)", "llm-jp-4-8b-omega:q4_k_m (no-think)", "gpt-oss:20b (no-think)", "gpt-oss:20b (think)", "gemma4:26b-a4b-it-qat (no-think)", "gemma4:26b-a4b-it-qat (think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3.8:27b-mtp-q4_K_M (no-think)", "qwen3.8:27b-mtp-q4_K_M (think)", "sarvam:30b (think)", "sarvam:30b (no-think)", "glm-4.7-flash (think)", "glm-4.7-flash (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen3-coder:30b (no-think)"]
+    y-axis "GB" 0 --> 24.42
+    bar [0.5, 0.5, 1.6, 1.6, 3.5, 3.5, 4.3, 4.3, 4.4, 4.4, 6.6, 7.6, 7.6, 7.6, 9, 9, 10.1, 10.2, 10.4, 13.8, 13.8, 16.5, 16.5, 19.9, 19.9, 20.1, 20.1, 21, 21, 21.2, 21.2, 22.2, 22.2, 22.2]
+```
+
+### Best score over time
+
+| Model | 3.75 min | 7.5 min | 11.25 min | 15 min |
+|---|--:|--:|--:|--:|
+| gemma4:26b-a4b-it-qat (no-think) | 24.8429 | 24.8429 | 24.8429 | 31.3623 |
+| gemma4:e4b-it-qat (think) | 1.58496 | 1.58496 | 1.58496 | 1.58496 |
+| gemma4:latest (think) | 28.2125 | 30.1930 | 30.1930 | 30.1930 |
+| gemma4:e4b-it-qat (no-think) | 27.4878 | 29.7122 | 29.7122 | 29.9495 |
+| gpt-oss:20b (no-think) | 28.6045 | 28.6045 | 28.6045 | 29.6248 |
+| qwen3.8:27b-mtp-q4_K_M (no-think) | 1.55992 | 1.55992 | 1.55992 | 1.55992 |
+| gemma4:12b-it-qat (no-think) | 1.55508 | 29.3817 | 29.3817 | 29.3817 |
+| gpt-oss:20b (think) | 26.7456 | 28.7460 | 28.8896 | 28.8896 |
+| gemma4:e2b (think) | 1.56447 | 1.56447 | 3.03249 | 27.8495 |
+| qwen2.5-coder:7b (no-think) | 3.12986 | 26.6624 | 26.6624 | 26.6624 |
+| gemma4:26b-a4b-it-qat (think) | 1.60948 | 23.2155 | 24.1031 | 24.1031 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | 1.59498 | 20.1033 | 21.1361 | 21.1361 |
+| glm-4.7-flash:latest (think) | 1.64804 | 1.64804 | 1.64804 | 1.64804 |
+| qwen3.8:27b-mtp-q4_K_M (think) | 1.62572 | 1.62572 | 1.62572 | 1.62572 |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | 1.62336 | 1.62336 | 1.62336 | 1.62336 |
+| richardyoung/frognano-4b-2609:latest (think) | 1.60595 | 1.60595 | 1.60595 | 1.60595 |
+| qwen3.5:latest (think) | 1.60581 | 1.60581 | 1.60581 | 1.60581 |
+| nemotron-3-nano:4b (think) | 1.59795 | 1.59795 | 1.59795 | 1.59795 |
+| gemma4:12b-it-qat (think) | 1.59473 | 1.59473 | 1.59473 | 1.59473 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (think) | 1.59052 | 1.59052 | 1.59052 | 1.59052 |
+| frob/sarvam:30b (think) | 1.58302 | 1.58302 | 1.58302 | 1.58302 |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 1.54902 | 1.54902 | 1.54902 | 1.54902 |
+| gemma4:e2b (no-think) | 1.57844 | 1.57844 | 1.57844 | 1.57844 |
+| qwen3.5:latest (no-think) | 1.57499 | 1.57499 | 1.57499 | 1.57499 |
+| gemma4:latest (no-think) | 1.56799 | 1.56799 | 1.56799 | 1.56799 |
+| frob/sarvam:30b (no-think) | 1.56637 | 1.56637 | 1.56637 | 1.56637 |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | 1.56461 | 1.56461 | 1.56461 | 1.56461 |
+| Bored/GigaChat3.1-10B-A1.8B-q4_K_M:latest (no-think) | 1.56334 | 1.56334 | 1.56334 | 1.56334 |
+| nemotron-3-nano:4b (no-think) | 1.55654 | 1.55654 | 1.55654 | 1.55654 |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 1.55582 | 1.55582 | 1.55582 | 1.55582 |
+| glm-4.7-flash:latest (no-think) | 1.55104 | 1.55104 | 1.55104 | 1.55104 |
+| richardyoung/frognano-4b-2609:latest (no-think) | 1.55073 | 1.55073 | 1.55073 | 1.55073 |
+| qwen3-coder:30b (no-think) | 1.5247 | 1.5247 | 1.5247 | 1.5247 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 1.52218 | 1.52218 | 1.52218 | 1.52218 |
+
+### Outcome of the LLM answers
+
+| Model | compile error | duplicate | edit error | invalid | llm error | ok |
+|---|--:|--:|--:|--:|--:|--:|
+| gemma4:26b-a4b-it-qat (no-think) | 2 | 2 | 0 | 1 | 5 | 15 |
+| gemma4:e4b-it-qat (think) | 11 | 0 | 1 | 2 | 0 | 1 |
+| gemma4:latest (think) | 11 | 0 | 1 | 0 | 0 | 5 |
+| gemma4:e4b-it-qat (no-think) | 5 | 1 | 4 | 10 | 1 | 18 |
+| gpt-oss:20b (no-think) | 1 | 0 | 2 | 0 | 0 | 10 |
+| qwen3.8:27b-mtp-q4_K_M (no-think) | 2 | 0 | 0 | 0 | 0 | 2 |
+| gemma4:12b-it-qat (no-think) | 9 | 0 | 0 | 3 | 4 | 9 |
+| gpt-oss:20b (think) | 5 | 0 | 0 | 2 | 0 | 12 |
+| gemma4:e2b (think) | 21 | 0 | 2 | 4 | 0 | 2 |
+| qwen2.5-coder:7b (no-think) | 17 | 9 | 3 | 11 | 1 | 5 |
+| gemma4:26b-a4b-it-qat (think) | 0 | 0 | 1 | 0 | 0 | 2 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | 15 | 13 | 5 | 10 | 1 | 2 |
+| glm-4.7-flash:latest (think) | 3 | 0 | 0 | 0 | 1 | 0 |
+| qwen3.8:27b-mtp-q4_K_M (think) | 0 | 0 | 1 | 0 | 0 | 0 |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | 1 | 0 | 0 | 0 | 0 | 0 |
+| richardyoung/frognano-4b-2609:latest (think) | 8 | 0 | 4 | 5 | 4 | 1 |
+| qwen3.5:latest (think) | 2 | 0 | 1 | 2 | 3 | 0 |
+| nemotron-3-nano:4b (think) | 8 | 0 | 15 | 1 | 0 | 0 |
+| gemma4:12b-it-qat (think) | 2 | 0 | 0 | 0 | 0 | 0 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (think) | 10 | 15 | 4 | 5 | 1 | 0 |
+| frob/sarvam:30b (think) | 1 | 0 | 0 | 0 | 3 | 0 |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 6 | 21 | 0 | 4 | 0 | 20 |
+| gemma4:e2b (no-think) | 55 | 10 | 19 | 22 | 1 | 4 |
+| qwen3.5:latest (no-think) | 7 | 0 | 2 | 1 | 6 | 0 |
+| gemma4:latest (no-think) | 33 | 8 | 1 | 5 | 0 | 12 |
+| frob/sarvam:30b (no-think) | 0 | 0 | 6 | 0 | 0 | 0 |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | 17 | 0 | 4 | 0 | 0 | 1 |
+| Bored/GigaChat3.1-10B-A1.8B-q4_K_M:latest (no-think) | 16 | 0 | 23 | 1 | 1 | 0 |
+| nemotron-3-nano:4b (no-think) | 13 | 0 | 31 | 4 | 4 | 2 |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 24 | 6 | 24 | 0 | 1 | 0 |
+| glm-4.7-flash:latest (no-think) | 13 | 2 | 1 | 15 | 0 | 5 |
+| richardyoung/frognano-4b-2609:latest (no-think) | 11 | 1 | 0 | 2 | 9 | 0 |
+| qwen3-coder:30b (no-think) | 11 | 3 | 0 | 3 | 1 | 0 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 3 | 0 | 0 | 1 | 0 | 0 |
+
+### Best idea per model
+
+- **gemma4:26b-a4b-it-qat (no-think)**: Use a 4-row register-blocking approach with NEON intrinsics to increase arithmetic intensity and minimize the number of loads/stores of C by keeping 4 rows of C in NEON registers.
+- **gemma4:e4b-it-qat (think)**: Implement explicit initialization of C to zero at the beginning of matmul to ensure mathematical correctness since the calling harness provides garbage data, which was the likely …
+- **gemma4:latest (think)**: Switch to i-k-j loop order and explicitly zero C to improve memory locality and correctness.
+- **gemma4:e4b-it-qat (no-think)**: Reorder the loops to i-k-j and introduce NEON vectorization on the innermost j loop using Fused Multiply-Add intrinsics to exploit SIMD parallelism and improve data locality.
+- **gpt-oss:20b (no-think)**: Compute the duplicated a vector once per k instead of per j loop, reducing NEON instructions and improving throughput.
+- **qwen3.8:27b-mtp-q4_K_M (no-think)**: Replace the scalar i-j-k kernel with a cache-blocked i-k-j implementation using a 4x8 NEON microkernel (4 C rows × 8 C cols per k-step), exposing the block size M and the …
+- **gemma4:12b-it-qat (no-think)**: The current program fails because C is not zeroed before the accumulation, so I will zero the row of C for each i before the k loop.
+- **gpt-oss:20b (think)**: Remove non‑standard `restrict` qualifiers from the function signature so the code compiles on all targets, keeping the same logic and performance.
+- **gemma4:e2b (think)**: Replace the explicit NEON intrinsic loop with standard scalar arithmetic for the innermost loop to guarantee compilation and correctness, adhering to the $i-k-j$ loop order.
+- **qwen2.5-coder:7b (no-think)**: Initialize C to zero before the matrix multiplication to ensure correctness.
+- **gemma4:26b-a4b-it-qat (think)**: Change the loop order from i-j-k to i-k-j to improve cache locality and enable better SIMD vectorization by making the innermost loop iterate over contiguous memory in both B and …
+- **qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)**: Initialize C to zero before computation to prevent garbage accumulation, which fixes the invalid result for n=1 and enables correct accumulation with FMA intrinsics, leading to …
+- **glm-4.7-flash:latest (think)**: initial program
+- **qwen3.8:27b-mtp-q4_K_M (think)**: initial program
+- **qwen3.6:27b-coding-mtp-q4_K_M (think)**: initial program
+- **richardyoung/frognano-4b-2609:latest (think)**: initial program
+- **qwen3.5:latest (think)**: initial program
+- **nemotron-3-nano:4b (think)**: initial program
+- **gemma4:12b-it-qat (think)**: initial program
+- **qwen3:30b-a3b-instruct-2507-q4_K_M (think)**: initial program
+- **frob/sarvam:30b (think)**: initial program
+- **yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think)**: tuned BLOCK_SIZE=756.9 on top of: Tune the cache blocking parameters further by varying BLOCK_SIZE to improve performance.
+- **gemma4:e2b (no-think)**: initial program
+- **qwen3.5:latest (no-think)**: initial program
+- **gemma4:latest (no-think)**: initial program
+- **frob/sarvam:30b (no-think)**: initial program
+- **llm-jp-4-8b-omega:q4_k_m (no-think)**: initial program
+- **Bored/GigaChat3.1-10B-A1.8B-q4_K_M:latest (no-think)**: initial program
+- **nemotron-3-nano:4b (no-think)**: initial program
+- **MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think)**: initial program
+- **glm-4.7-flash:latest (no-think)**: initial program
+- **richardyoung/frognano-4b-2609:latest (no-think)**: initial program
+- **qwen3-coder:30b (no-think)**: initial program
+- **qwen3.6:27b-coding-mtp-q4_K_M (no-think)**: initial program
+
+## Cloud models (OpenRouter) on Apple M1 Max
 
 Free OpenRouter models; times include the network and the provider's queue.
 
@@ -307,7 +544,7 @@ Free OpenRouter models; times include the network and the provider's queue.
 
 ```mermaid
 xychart-beta
-    title "matmul_f32_single_thread, cloud: best score"
+    title "matmul_f32_single_thread, cloud, Apple M1 Max: best score"
     x-axis ["nemotron-3-super-120b-a12b (no-think)", "nemotron-3-ultra-550b-a55b (think)", "nemotron-3-super-120b-a12b (think)", "laguna-s-2.1 (no-think)", "north-mini-code (no-think)", "nemotron-3-ultra-550b-a55b (no-think)", "laguna-s-2.1 (think)", "north-mini-code (think)"]
     y-axis "score" 0 --> 54.07
     bar [49.16, 35.34, 31.12, 28.18, 27.78, 25.8, 1.671, 1.55]
@@ -315,7 +552,7 @@ xychart-beta
 
 ```mermaid
 xychart-beta
-    title "matmul_f32_single_thread, cloud: valid answers (%)"
+    title "matmul_f32_single_thread, cloud, Apple M1 Max: valid answers (%)"
     x-axis ["nemotron-3-super-120b-a12b (no-think)", "nemotron-3-ultra-550b-a55b (think)", "nemotron-3-super-120b-a12b (think)", "laguna-s-2.1 (no-think)", "north-mini-code (no-think)", "nemotron-3-ultra-550b-a55b (no-think)", "laguna-s-2.1 (think)", "north-mini-code (think)"]
     y-axis "% of answers" 0 --> 73.33
     bar [25, 66.67, 60, 45.83, 16, 57.58, 0, 0]
@@ -323,7 +560,7 @@ xychart-beta
 
 ```mermaid
 xychart-beta
-    title "matmul_f32_single_thread, cloud: seconds per LLM call"
+    title "matmul_f32_single_thread, cloud, Apple M1 Max: seconds per LLM call"
     x-axis ["nemotron-3-super-120b-a12b (no-think)", "nemotron-3-ultra-550b-a55b (think)", "nemotron-3-super-120b-a12b (think)", "laguna-s-2.1 (no-think)", "north-mini-code (no-think)", "nemotron-3-ultra-550b-a55b (no-think)", "laguna-s-2.1 (think)", "north-mini-code (think)"]
     y-axis "seconds" 0 --> 228.8
     bar [10.1, 80.1, 48.5, 37.7, 11.7, 13.2, 208, 110.2]
@@ -346,7 +583,7 @@ Generation speed is measured from the first to the last streamed token; the time
 
 ```mermaid
 xychart-beta
-    title "matmul_f32_single_thread, cloud: generation speed (tokens/s)"
+    title "matmul_f32_single_thread, cloud, Apple M1 Max: generation speed (tokens/s)"
     x-axis ["north-mini-code (no-think)", "nemotron-3-super-120b-a12b (no-think)", "nemotron-3-super-120b-a12b (think)", "north-mini-code (think)", "nemotron-3-ultra-550b-a55b (no-think)", "laguna-s-2.1 (think)", "laguna-s-2.1 (no-think)", "nemotron-3-ultra-550b-a55b (think)"]
     y-axis "tokens/s" 0 --> 165.7
     bar [150.6, 140.4, 127.5, 113, 57.5, 55.5, 46.3, 37.8]

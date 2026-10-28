@@ -1,0 +1,303 @@
+{
+ "schema": 3,
+ "example": "feature_engineering",
+ "model": "gemma4:latest",
+ "variant": "no-think",
+ "model_size_gb": 6.6,
+ "model_params": "7.5B",
+ "started": "2026-10-22T11:38:40",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.8,
+ "omega_version": "0.1.0",
+ "omega_commit": "",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.623,
+ "best_score": 0.838,
+ "improvement": 1.3451043338683788,
+ "llm_calls": 66,
+ "mean_llm_seconds": 12.9,
+ "attempts": 66,
+ "ok": 46,
+ "statuses": {
+  "edit_error": 6,
+  "ok": 46,
+  "invalid": 6,
+  "duplicate": 8
+ },
+ "sweeps": 15,
+ "sweep_variants": 143,
+ "improvements": 8,
+ "minutes_to_best": 13.33,
+ "best_idea": "tuned THRESHOLD_T=7.14e-05 on top of: Replace the fixed threshold `THRESHOLD_T` with a swept parameter to find the optimal cutoff for the binary features derived from $\\log(x_3)$ and $x_5$, improving ",
+ "progress": [
+  [
+   0.0,
+   0.623
+  ],
+  [
+   1.75,
+   0.712
+  ],
+  [
+   2.11,
+   0.727
+  ],
+  [
+   2.6,
+   0.745
+  ],
+  [
+   2.86,
+   0.748
+  ],
+  [
+   3.99,
+   0.831
+  ],
+  [
+   5.54,
+   0.835
+  ],
+  [
+   6.9,
+   0.837
+  ],
+  [
+   13.33,
+   0.838
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.623,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.52,
+   "score": 0.623,
+   "model": "gemma4:latest",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "I will introduce features based on the product of pairs of inputs, specifically focusing on interactions between the standard-normal-like inputs ($x_1, x_2, x_6$) as hinted, to help linearize a non-linear rule."
+  },
+  {
+   "minutes": 2.86,
+   "score": 0.744,
+   "model": "gemma4:latest",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "Incorporate log transformations and squared features on the standard-normal-like inputs ($x_1, x_2, x_6$) and use a threshold on $\\log(x_3)$ to better capture non-linearities, as suggested by expert hints and leaderboard examples."
+  },
+  {
+   "minutes": 3.54,
+   "score": 0.744,
+   "model": "gemma4:latest",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "Sweep the threshold `THRESHOLD_T` controlling the binary feature derived from $\\log(x_3)$, as previous runs showed sensitivity to this parameter."
+  },
+  {
+   "minutes": 3.54,
+   "score": 0.748,
+   "model": "gemma4:latest",
+   "mode": "sweep/exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "tuned THRESHOLD_T=0.01 on top of: Sweep the threshold `THRESHOLD_T` controlling the binary feature derived from $\\log(x_3)$, as previous runs showed sensitivity to this parameter."
+  },
+  {
+   "minutes": 3.99,
+   "score": 0.831,
+   "model": "gemma4:latest",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Add squared features for the uniform inputs $x_4$ and $x_5$ to capture non-linear relationships, as well as a threshold feature on $x_4$ to probe step-like boundaries, to potentially improve feature expressiveness."
+  },
+  {
+   "minutes": 6.18,
+   "score": 0.83,
+   "model": "gemma4:latest",
+   "mode": "explore/diff/refine",
+   "status": "ok",
+   "idea": "Since the feedback indicates that the thresholding on $x_4$ was problematic in previous sweeps, I will replace the threshold on $x_4$ with a threshold on $x_5$ to explore a different decision boundary, keeping the structure consistent with the existing thresholding approach."
+  },
+  {
+   "minutes": 6.18,
+   "score": 0.833,
+   "model": "gemma4:latest",
+   "mode": "sweep/explore/diff/refine",
+   "status": "ok",
+   "idea": "tuned THRESHOLD_T=0.001 on top of: Since the feedback indicates that the thresholding on $x_4$ was problematic in previous sweeps, I will replace the threshold on $x_4$ with a threshold on $x_5$ to explore a different decision boundary, keeping the structure consistent with the existing thresholding"
+  },
+  {
+   "minutes": 6.9,
+   "score": 0.837,
+   "model": "gemma4:latest",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Extend the feature set by adding squared and product features involving the uniform inputs $x_4$ and $x_5$ with the strongly predictive features derived from $x_1, x_2, x_6, \\log(x_3)$ to better capture interactions."
+  },
+  {
+   "minutes": 13.33,
+   "score": 0.819,
+   "model": "gemma4:latest",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Replace the fixed threshold `THRESHOLD_T` with a swept parameter to find the optimal cutoff for the binary features derived from $\\log(x_3)$ and $x_5$, improving robustness."
+  },
+  {
+   "minutes": 13.33,
+   "score": 0.838,
+   "model": "gemma4:latest",
+   "mode": "sweep/best/diff/refine",
+   "status": "ok",
+   "idea": "tuned THRESHOLD_T=7.14e-05 on top of: Replace the fixed threshold `THRESHOLD_T` with a swept parameter to find the optimal cutoff for the binary features derived from $\\log(x_3)$ and $x_5$, improving robustness."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -9,6 +9,8 @@\n import math\n \n # OMEGA-BLOCK-START\n+THRESHOLD_T = 7.140304028995354e-05 # Initial guess, will be swept\n+\n def features(row):\n     \"\"\"Return the feature vector (a list of at most 30 finite floats) for one row.\n \n@@ -19,7 +21,35 @@\n     features (they are standardized and a bias is added), so nonlinear structure only\n     helps if a feature expresses it. Only the Python standard library may be used.\n \n-    Current method: the raw inputs.\n+    Current method: raw inputs plus pairwise products of x1, x2, x6.\n     \"\"\"\n-    return list(row)\n+    x1, x2, x3, x4, x5, x6 = row\n+    features_list = list(row)\n+    \n+    # Pairwise products of standard-normal-like inputs (x1, x2, x6)\n+    features_list.append(x1 * x2)\n+    features_list.append(x1 * x6)\n+    features_list.append(x2 * x6)\n+    \n+    # Squared features for standard-normal-like inputs\n+    features_list.append(x1 * x1)\n+    features_list.append(x2 * x2)\n+    features_list.append(x6 * x6)\n+    # Squared features for uniform inputs\n+    features_list.append(x4 * x4)\n+    features_list.append(x5 * x5)\n+    \n+    # Log transformation for skewed input x3\n+    log_x3 = math.log(x3 + 1e-6)\n+    features_list.append(log_x3)\n+    \n+    # Threshold feature on log(x3)\n+    features_list.append(1.0 if log_x3 > THRESHOLD_T else 0.0)\n+    # Threshold feature on x5\n+    features_list.append(1.0 if x5 > THRESHOLD_T else 0.0)\n+    # Interactions involving uniform inputs with log(x3)\n+    features_list.append(x4 * log_x3)\n+    features_list.append(x5 * log_x3)\n+    \n+    return features_list\n # OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "classification",
+  "columns": [
+   "x1",
+   "x2",
+   "x3",
+   "x4",
+   "x5",
+   "x6"
+  ],
+  "head": [
+   [
+    0.14,
+    1.08,
+    1.79,
+    -0.66,
+    1.01,
+    -0.54
+   ],
+   [
+    -1.03,
+    -0.71,
+    0.47,
+    1.72,
+    0.77,
+    -0.69
+   ],
+   [
+    0.36,
+    -0.3,
+    0.1,
+    -2.0,
+    0.57,
+    -0.15
+   ],
+   [
+    1.13,
+    1.16,
+    1.34,
+    1.26,
+    1.29,
+    0.92
+   ]
+  ],
+  "head_labels": [
+   1,
+   1,
+   0,
+   1
+  ],
+  "train_rows": 1000,
+  "num_features": 6,
+  "test_correct": "1110101111000101011111011010101001101100111100110111111101011110101110011011001101101000011100011010111110110111011110000011111111011100100110111110101000001001110101111110101010111011101101000010010100000101110011000100110001010111011001101100110011110111111010101001011101111011110101110011100101100100011011010011101011000101100100110110111110100101101111110111101100011110111111110110111111101100010111110011111011001100001101010011101100101011010111110000111000010111111111100111110101010101111011001000111110111101110001011111011110011101010011011101111101001101110110101100001110001001101010001011011001111110111110101111110110110110101010111001011111101111111101101111001111001000101101001000000100100101111111111011011101110111110101111110001111001101111101111101011111111011111111111111111000111001001110010010010000110000101111110101001111101111000111011000111111101111101111000111011111010001001101100011000110110111000010111110110001111111111101001111101100011100101100101011101110111010"
+ },
+ "best_solution": {
+  "kind": "classification",
+  "columns": [
+   "x1",
+   "x2",
+   "x3",
+   "x4",
+   "x5",
+   "x6"
+  ],
+  "head": [
+   [
+    0.14,
+    1.08,
+    1.79,
+    -0.66,
+    1.01,
+    -0.54
+   ],
+   [
+    -1.03,
+    -0.71,
+    0.47,
+    1.72,
+    0.77,
+    -0.69
+   ],
+   [
+    0.36,
+    -0.3,
+    0.1,
+    -2.0,
+    0.57,
+    -0.15
+   ],
+   [
+    1.13,
+    1.16,
+    1.34,
+    1.26,
+    1.29,
+    0.92
+   ]
+  ],
+  "head_labels": [
+   1,
+   1,
+   0,
+   1
+  ],
+  "train_rows": 1000,
+  "num_features": 19,
+  "test_correct": "1111101111111011111101011111101111111111111110110101111111111111111100111111111111111011111100111011111111011111111111101111111111111101100111111110101101110111111101111111111101110111110101001011101001011011111111110101110111010111110101001011110111111111111011111111111101111111011111111111101101101111001111111011111111111101101111110110111111111111111111011111111111111111111000110111111111111100011111111110111010111111011101100111101111111110010111111011111100111111110111111110111111111111101111111011111111111101111101111111111111011101110111011111111101111111111100110100111111111111111110011111111011111110111111110111100100110110101011100101111101101111111111111111101111101101011101111111011111001111111111111110011110010111111111111111110111011100111111111111010111111111111111111111011111111110111000111011111111111011101111111111111101101111111001011111111111111110111111111111111111111011101101111111011111111111111111110111011111101111101111111111110111111111111110111111011111011011"
+ },
+ "error": "",
+ "model_memory_gb": 1.6,
+ "model_gpu_memory_gb": 1.6,
+ "context_length": 32768,
+ "load_seconds": 79.0,
+ "median_call_seconds": 11.4,
+ "p90_call_seconds": 16.9,
+ "prompt_tokens_per_s": 1265.5,
+ "gen_tokens_per_s": 76.8,
+ "mean_prompt_tokens": 5307,
+ "mean_gen_tokens": 409,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

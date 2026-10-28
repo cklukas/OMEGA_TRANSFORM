@@ -1,0 +1,379 @@
+{
+ "schema": 3,
+ "example": "circle_packing_26",
+ "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-10-25T02:13:50",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 1.598767764966113,
+ "improvement": 1.0729250645318151,
+ "llm_calls": 39,
+ "mean_llm_seconds": 23.1,
+ "attempts": 39,
+ "ok": 25,
+ "statuses": {
+  "invalid": 8,
+  "ok": 25,
+  "duplicate": 4,
+  "edit_error": 2
+ },
+ "sweeps": 16,
+ "sweep_variants": 214,
+ "improvements": 2,
+ "minutes_to_best": 1.73,
+ "best_idea": "tuned cols=5, rows=5 on top of: Replace the regular grid layout with a hexagonal packing pattern to better utilize space and reduce wasted gaps, especially in the interior, while ensuring exactly 26 c",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   1.44,
+   1.495370674706105
+  ],
+  [
+   1.73,
+   1.598767764966113
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.73,
+   "score": 1.4044327127973495,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Replace the regular grid layout with a hexagonal packing pattern to better utilize space and reduce wasted gaps, especially in the interior, while ensuring exactly 26 circles and proper boundary constraints."
+  },
+  {
+   "minutes": 1.73,
+   "score": 1.598767764966113,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "sweep/best/diff/refine",
+   "status": "ok",
+   "idea": "tuned cols=5, rows=5 on top of: Replace the regular grid layout with a hexagonal packing pattern to better utilize space and reduce wasted gaps, especially in the interior, while ensuring exactly 26 circles and proper boundary constraints."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -9,12 +9,30 @@\n # OMEGA-BLOCK-START\n def construct_packing(n=26):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n-    cols = math.ceil(math.sqrt(n))\n-    rows = math.ceil(n / cols)\n+    # Hexagonal layout: staggered rows, offset by half a column\n+    # Use a hexagonal packing with rows and alternating offsets\n+    cols = 5\n+    rows = 5\n     centers = []\n-    for k in range(n):\n-        i, j = k % cols, k // cols\n-        centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n+    for j in range(rows):\n+        offset = 0.5 if j % 2 == 1 else 0.0\n+        for i in range(cols):\n+            x = (i + offset) / cols\n+            y = (j + 0.5) / rows\n+            centers.append((x, y))\n+        # Adjust cols for last row if needed\n+        if j == rows - 1 and len(centers) > n:\n+            # Remove excess centers\n+            centers = centers[:n]\n+            break\n+    # If still not enough, add remaining centers in last row\n+    while len(centers) < n:\n+        j = rows - 1\n+        offset = 0.5 if j % 2 == 1 else 0.0\n+        i = len([c for c in centers if c[1] == (j + 0.5) / rows])\n+        x = (i + offset) / cols\n+        y = (j + 0.5) / rows\n+        centers.append((x, y))\n     radii = max_radii(centers)\n     return [(x, y, r) for (x, y), r in zip(centers, radii)]\n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.083333,
+    0.1,
+    0.060545
+   ],
+   [
+    0.25,
+    0.1,
+    0.039234
+   ],
+   [
+    0.416667,
+    0.1,
+    0.034262
+   ],
+   [
+    0.583333,
+    0.1,
+    0.040566
+   ],
+   [
+    0.75,
+    0.1,
+    0.05694
+   ],
+   [
+    0.916667,
+    0.1,
+    0.080973
+   ],
+   [
+    0.083333,
+    0.3,
+    0.047978
+   ],
+   [
+    0.25,
+    0.3,
+    0.032893
+   ],
+   [
+    0.416667,
+    0.3,
+    0.029299
+   ],
+   [
+    0.583333,
+    0.3,
+    0.040366
+   ],
+   [
+    0.75,
+    0.3,
+    0.058083
+   ],
+   [
+    0.916667,
+    0.3,
+    0.076636
+   ],
+   [
+    0.083333,
+    0.5,
+    0.05004
+   ],
+   [
+    0.25,
+    0.5,
+    0.036525
+   ],
+   [
+    0.416667,
+    0.5,
+    0.03396
+   ],
+   [
+    0.583333,
+    0.5,
+    0.041209
+   ],
+   [
+    0.75,
+    0.5,
+    0.058085
+   ],
+   [
+    0.916667,
+    0.5,
+    0.076976
+   ],
+   [
+    0.083333,
+    0.7,
+    0.059259
+   ],
+   [
+    0.25,
+    0.7,
+    0.06822
+   ],
+   [
+    0.416667,
+    0.7,
+    0.065257
+   ],
+   [
+    0.583333,
+    0.7,
+    0.069461
+   ],
+   [
+    0.75,
+    0.7,
+    0.089736
+   ],
+   [
+    0.916667,
+    0.7,
+    0.07693
+   ],
+   [
+    0.083333,
+    0.9,
+    0.075758
+   ],
+   [
+    0.25,
+    0.9,
+    0.090909
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.0,
+    0.1,
+    0.0
+   ],
+   [
+    0.2,
+    0.1,
+    0.054836
+   ],
+   [
+    0.4,
+    0.1,
+    0.044164
+   ],
+   [
+    0.6,
+    0.1,
+    0.042614
+   ],
+   [
+    0.8,
+    0.1,
+    0.081043
+   ],
+   [
+    0.1,
+    0.3,
+    0.056233
+   ],
+   [
+    0.3,
+    0.3,
+    0.042006
+   ],
+   [
+    0.5,
+    0.3,
+    0.042089
+   ],
+   [
+    0.7,
+    0.3,
+    0.065288
+   ],
+   [
+    0.9,
+    0.3,
+    0.083259
+   ],
+   [
+    0.0,
+    0.5,
+    0.0
+   ],
+   [
+    0.2,
+    0.5,
+    0.054832
+   ],
+   [
+    0.4,
+    0.5,
+    0.044436
+   ],
+   [
+    0.6,
+    0.5,
+    0.044723
+   ],
+   [
+    0.8,
+    0.5,
+    0.084936
+   ],
+   [
+    0.1,
+    0.7,
+    0.080255
+   ],
+   [
+    0.3,
+    0.7,
+    0.089246
+   ],
+   [
+    0.5,
+    0.7,
+    0.088808
+   ],
+   [
+    0.7,
+    0.7,
+    0.1053
+   ],
+   [
+    0.9,
+    0.7,
+    0.0947
+   ],
+   [
+    0.0,
+    0.9,
+    0.0
+   ],
+   [
+    0.2,
+    0.9,
+    0.1
+   ],
+   [
+    0.4,
+    0.9,
+    0.1
+   ],
+   [
+    0.6,
+    0.9,
+    0.1
+   ],
+   [
+    0.8,
+    0.9,
+    0.1
+   ],
+   [
+    1.0,
+    0.9,
+    0.0
+   ]
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 22.2,
+ "model_gpu_memory_gb": 18.9,
+ "context_length": 32768,
+ "load_seconds": 56.5,
+ "median_call_seconds": 17.4,
+ "p90_call_seconds": 49.3,
+ "prompt_tokens_per_s": 712.6,
+ "gen_tokens_per_s": 33.1,
+ "mean_prompt_tokens": 3791,
+ "mean_gen_tokens": 464,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

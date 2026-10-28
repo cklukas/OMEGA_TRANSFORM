@@ -24,6 +24,7 @@ Every benchmarked model and the company that develops it, which the comparisons 
 | OpenAI | gpt-oss:20b | – |
 | Poolside | – | poolside/laguna-s-2.1:free |
 | Sarvam AI | frob/sarvam:30b | – |
+| Sber | Bored/GigaChat3.1-10B-A1.8B-q4_K_M:latest | – |
 | Swiss AI Initiative | MichelRosselli/apertus:8b-instruct-2509-q4_k_m | – |
 | Yandex | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest | – |
 | Z.ai | glm-4.7-flash:latest | – |
@@ -42,6 +43,7 @@ Every benchmarked model and the company that develops it, which the comparisons 
 - **OpenAI** (founded 2015, San Francisco, USA): Best known for ChatGPT and its proprietary GPT models; gpt-oss (August 2025, Apache 2.0) were its first open-weight language models since GPT-2 in 2019.
 - **Poolside** (founded 2023, Paris, France): Founded by a former GitHub CTO to build models for software development, trained with reinforcement learning from executing code; Laguna is its open-weight line (2026).
 - **Sarvam AI** (founded 2023, Bengaluru, India): Builds models for India's languages; released the Sarvam 30B and 105B mixture-of-experts models (March 2026, Apache 2.0), trained in India under the national IndiaAI mission.
+- **Sber** (founded 1841, Moscow, Russia): Russia's largest bank; develops the GigaChat family and has published open-weight GigaChat models under the MIT license since 2025, up to the 432B GigaChat 3.5 Ultra (July 2026).
 - **Swiss AI Initiative** (founded 2023, Lausanne and Zurich, Switzerland): A joint effort of EPFL, ETH Zurich and the national supercomputing centre CSCS; its Apertus models (2025) are fully open, with training data and recipes, under Apache 2.0.
 - **Yandex** (founded 1997, Moscow, Russia): Russia's largest search engine; published YandexGPT 5 Lite (8B) as open weights in 2025, while its flagship models (now Alice AI) remain proprietary.
 - **Z.ai** (founded 2019, Beijing, China): Founded as Zhipu AI, a spin-off of Tsinghua University; develops the GLM family, whose recent models are among the strongest open-weight coding models.
@@ -54,19 +56,20 @@ The developer's best single model, the mean share over all its models, and the m
 
 | Developer | Models | Best model | Released | Best model's share | Mean over its models | Best per example |
 |---|--:|---|---|--:|--:|--:|
-| Google | 10 | gemma4:26b-a4b-it-qat (no-think) | 2026-03-11 | **79%** | 54% | 92% |
-| OpenAI | 2 | gpt-oss:20b (think) | 2025-08-04 | **79%** | 72% | 79% |
+| OpenAI | 2 | gpt-oss:20b (think) | 2025-08-04 | **75%** | 71% | 80% |
+| Google | 10 | gemma4:26b-a4b-it-qat (no-think) | 2026-03-11 | **74%** | 54% | 84% |
 | Meta | 2 | muse-glimmer:30b (no-think) | 2026-08-09 | **68%** | 65% | 73% |
-| Alibaba (Qwen) | 12 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | 2025-07-28 | **60%** | 43% | 88% |
-| NVIDIA | 6 | nemotron-3-nano:30b-a3b-mlx (think) | 2025-12-04 | **45%** | 30% | 62% |
+| Alibaba (Qwen) | 12 | qwen3.8:27b-mtp-q4_K_M (no-think) | 2026-08-05 | **57%** | 41% | 78% |
+| NVIDIA | 6 | nemotron-3-nano:30b-a3b-mlx (think) | 2025-12-04 | **45%** | 29% | 60% |
 | LG | 1 | ingu627/exaone4.0:32b (no-think) | 2025-07-11 | **39%** | 39% | 39% |
 | Mistral AI | 1 | devstral-small-2:24b (no-think) | 2025-11-28 | **37%** | 37% | 37% |
-| Microsoft | 2 | richardyoung/frognano-4b-2609:latest (no-think) | 2026-09-17 | **35%** | 29% | 43% |
-| Z.ai | 2 | glm-4.7-flash:latest (no-think) | 2026-01-19 | **34%** | 26% | 36% |
-| Sarvam AI | 2 | frob/sarvam:30b (no-think) | 2026-03-03 | **21%** | 15% | 21% |
-| Yandex | 1 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 2025-03-28 | **18%** | 18% | 18% |
-| Swiss AI Initiative | 1 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 2025-08-13 | **13%** | 13% | 13% |
-| NII (LLM-jp) | 1 | llm-jp-4-8b-omega:q4_k_m (no-think) | 2026-03-16 | **4%** | 4% | 4% |
+| Microsoft | 2 | richardyoung/frognano-4b-2609:latest (no-think) | 2026-09-17 | **35%** | 30% | 39% |
+| Z.ai | 2 | glm-4.7-flash:latest (no-think) | 2026-01-19 | **32%** | 25% | 33% |
+| Yandex | 1 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 2025-03-28 | **24%** | 24% | 24% |
+| Sarvam AI | 2 | frob/sarvam:30b (no-think) | 2026-03-03 | **14%** | 11% | 15% |
+| Swiss AI Initiative | 1 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 2025-08-13 | **11%** | 11% | 11% |
+| NII (LLM-jp) | 1 | llm-jp-4-8b-omega:q4_k_m (no-think) | 2026-03-16 | **5%** | 5% | 5% |
+| Sber | 1 | Bored/GigaChat3.1-10B-A1.8B-q4_K_M:latest (no-think) | 2026-03-21 | **3%** | 3% | 3% |
 
 ### Progress over time
 
@@ -74,38 +77,39 @@ Each developer's ranked models by release date (the original publication on Hugg
 
 | Developer | Size class | Released | Model | Parameters | Share |
 |---|---|---|---|--:|--:|
-| Alibaba (Qwen) | under 15B | 2024-09-17 | qwen2.5-coder:7b (no-think) | 7.6B | 20% |
-| Alibaba (Qwen) | under 15B | 2026-02-27 | qwen3.5:latest (think) | 9.7B | 42% |
-| Alibaba (Qwen) | 15B and up | 2025-07-28 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | 30.5B | 60% |
-| Alibaba (Qwen) | 15B and up | 2025-07-31 | qwen3-coder:30b (no-think) | 30.5B | 43% |
+| Alibaba (Qwen) | under 15B | 2024-09-17 | qwen2.5-coder:7b (no-think) | 7.6B | 32% |
+| Alibaba (Qwen) | under 15B | 2026-02-27 | qwen3.5:latest (think) | 9.7B | 43% |
+| Alibaba (Qwen) | 15B and up | 2025-07-28 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | 30.5B | 55% |
+| Alibaba (Qwen) | 15B and up | 2025-07-31 | qwen3-coder:30b (no-think) | 30.5B | 41% |
 | Alibaba (Qwen) | 15B and up | 2026-02-24 | qwen3.5:27b (no-think) | 27.8B | 43% |
-| Alibaba (Qwen) | 15B and up | 2026-04-21 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 27.3B | 52% |
+| Alibaba (Qwen) | 15B and up | 2026-04-21 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 27.3B | 43% |
 | Alibaba (Qwen) | 15B and up | 2026-08-05 | qwen3.8:27b-mtp-q4_K_M (no-think) | 27.3B | 57% |
-| Google | under 15B | 2026-03-02 | gemma4:e2b (no-think) | 5.1B | 34% |
-| Google | under 15B | 2026-03-02 | gemma4:e4b-it-qat (think) | 7.5B | 76% |
-| Google | under 15B | 2026-03-02 | gemma4:latest (no-think) | 8.1B | 72% |
-| Google | under 15B | 2026-05-23 | gemma4:12b-it-qat (no-think) | 11.9B | 65% |
-| Google | 15B and up | 2026-03-11 | gemma4:26b-a4b-it-qat (no-think) | 25.2B | 79% |
+| Google | under 15B | 2026-03-02 | gemma4:e2b (no-think) | 5.1B | 37% |
+| Google | under 15B | 2026-03-02 | gemma4:e4b-it-qat (think) | 7.5B | 67% |
+| Google | under 15B | 2026-03-02 | gemma4:latest (no-think) | 8.1B | 63% |
+| Google | under 15B | 2026-05-23 | gemma4:12b-it-qat (no-think) | 11.9B | 67% |
+| Google | 15B and up | 2026-03-11 | gemma4:26b-a4b-it-qat (no-think) | 25.2B | 74% |
 | LG | 15B and up | 2025-07-11 | ingu627/exaone4.0:32b (no-think) | 32B | 39% |
 | Meta | 15B and up | 2026-08-09 | muse-glimmer:30b (no-think) | 27.9B | 68% |
 | Microsoft | under 15B | 2026-09-17 | richardyoung/frognano-4b-2609:latest (no-think) | 4.3B | 35% |
 | Mistral AI | 15B and up | 2025-11-28 | devstral-small-2:24b (no-think) | 24B | 37% |
-| NII (LLM-jp) | under 15B | 2026-03-16 | llm-jp-4-8b-omega:q4_k_m (no-think) | 8.6B | 4% |
-| NVIDIA | under 15B | 2026-03-07 | nemotron-3-nano:4b (no-think) | 4B | 28% |
+| NII (LLM-jp) | under 15B | 2026-03-16 | llm-jp-4-8b-omega:q4_k_m (no-think) | 8.6B | 5% |
+| NVIDIA | under 15B | 2026-03-07 | nemotron-3-nano:4b (think) | 4B | 29% |
 | NVIDIA | 15B and up | 2025-12-04 | nemotron-3-nano:30b-a3b-mlx (think) | 31.6B | 45% |
 | NVIDIA | 15B and up | 2026-08-01 | nemotron-3.5-lightning:30b-mlx (no-think) | 32.9B | 31% |
-| OpenAI | 15B and up | 2025-08-04 | gpt-oss:20b (think) | 20.9B | 79% |
-| Sarvam AI | 15B and up | 2026-03-03 | frob/sarvam:30b (no-think) | 32.2B | 21% |
-| Swiss AI Initiative | under 15B | 2025-08-13 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 8.1B | 13% |
-| Yandex | under 15B | 2025-03-28 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 8B | 18% |
-| Z.ai | 15B and up | 2026-01-19 | glm-4.7-flash:latest (no-think) | 29.9B | 34% |
+| OpenAI | 15B and up | 2025-08-04 | gpt-oss:20b (think) | 20.9B | 75% |
+| Sarvam AI | 15B and up | 2026-03-03 | frob/sarvam:30b (no-think) | 32.2B | 14% |
+| Sber | under 15B | 2026-03-21 | Bored/GigaChat3.1-10B-A1.8B-q4_K_M:latest (no-think) | 10.7B | 3% |
+| Swiss AI Initiative | under 15B | 2025-08-13 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 8.1B | 11% |
+| Yandex | under 15B | 2025-03-28 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 8B | 24% |
+| Z.ai | 15B and up | 2026-01-19 | glm-4.7-flash:latest (no-think) | 29.9B | 32% |
 
 ```mermaid
 xychart-beta
     title "Alibaba (Qwen), local, 15B and up: share by release date"
     x-axis ["qwen3:30b-a3b-instruct-2507-q4_K_M (2025-07)", "qwen3-coder:30b (2025-07)", "qwen3.5:27b (2026-02)", "qwen3.6:27b-coding-mtp-q4_K_M (2026-04)", "qwen3.8:27b-mtp-q4_K_M (2026-08)"]
     y-axis "% of the best gain" 0 --> 100
-    line [59.53, 42.52, 42.99, 51.93, 57.07]
+    line [54.6, 40.9, 42.99, 42.71, 57.11]
 ```
 
 ## Cloud models (OpenRouter)

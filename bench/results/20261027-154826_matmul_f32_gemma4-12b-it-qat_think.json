@@ -1,0 +1,107 @@
+{
+ "schema": 3,
+ "example": "matmul_f32",
+ "model": "gemma4:12b-it-qat",
+ "variant": "think",
+ "model_size_gb": 7.2,
+ "model_params": "11.9B",
+ "started": "2026-10-27T15:48:26",
+ "minutes_budget": 15.0,
+ "wall_minutes": 23.8,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.40073,
+ "best_score": 14.7889,
+ "improvement": 10.557994759875207,
+ "llm_calls": 3,
+ "mean_llm_seconds": 454.3,
+ "attempts": 3,
+ "ok": 2,
+ "statuses": {
+  "compile_error": 1,
+  "ok": 2
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 2,
+ "minutes_to_best": 23.05,
+ "best_idea": "Switch to a multithreaded $i-k-j$ loop order with zeroing of $C$ to improve cache locality and exploit all 10 cores.",
+ "progress": [
+  [
+   0.0,
+   1.40073
+  ],
+  [
+   22.95,
+   9.89237
+  ],
+  [
+   23.05,
+   14.7889
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.40073,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 23.05,
+   "score": 14.7889,
+   "model": "gemma4:12b-it-qat",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Switch to a multithreaded $i-k-j$ loop order with zeroing of $C$ to improve cache locality and exploit all 10 cores."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -22,11 +22,31 @@\n // Computes C = A * B. C is NOT zeroed by the caller. Any number of threads may be\n // used (std::thread is available); n is any size from 1 to 2048.\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+    std::memset(C, 0, (size_t)n * n * sizeof(float));\n+    int num_threads = std::thread::hardware_concurrency();\n+    if (num_threads == 0) num_threads = 1;\n+    std::vector<std::thread> threads;\n+    auto worker = [&](int start_i, int end_i) {\n+        for (int i = start_i; i < end_i; ++i) {\n+            const float* a_row = &A[i * n];\n+            float* c_row = &C[i * n];\n+            for (int k = 0; k < n; ++k) {\n+                float a_val = a_row[k];\n+                const float* b_row = &B[k * n];\n+                for (int j = 0; j < n; ++j) {\n+                    c_row[j] += a_val * b_row[j];\n+                }\n+            }\n         }\n+    };\n+    int chunk = n / num_threads;\n+    for (int t = 0; t < num_threads; ++t) {\n+        int start_i = t * chunk;\n+        int end_i = (t == num_threads - 1) ? n : (t + 1) * chunk;\n+        if (start_i < end_i) {\n+            threads.emplace_back(worker, start_i, end_i);\n+        }\n+    }\n+    for (auto& t : threads) t.join();\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "error": "",
+ "model_memory_gb": 9.0,
+ "model_gpu_memory_gb": 9.0,
+ "context_length": 32768,
+ "load_seconds": 21.7,
+ "median_call_seconds": 437.7,
+ "p90_call_seconds": 496.4,
+ "prompt_tokens_per_s": 803.3,
+ "gen_tokens_per_s": 27.9,
+ "mean_prompt_tokens": 2461,
+ "mean_gen_tokens": 12298,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -1,0 +1,104 @@
+{
+ "schema": 3,
+ "example": "matmul_f32",
+ "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 17.8,
+ "model_params": "27.3B",
+ "started": "2026-10-24T20:29:57",
+ "minutes_budget": 15.0,
+ "wall_minutes": 18.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.10903,
+ "best_score": 5.71206,
+ "improvement": 5.15050088816353,
+ "llm_calls": 4,
+ "mean_llm_seconds": 250.7,
+ "attempts": 4,
+ "ok": 1,
+ "statuses": {
+  "compile_error": 1,
+  "invalid": 2,
+  "ok": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 17.26,
+ "best_idea": "Switch to an i-k-j loop order with NEON vectorization to exploit temporal locality of A[i] and streaming access to rows of B and C, which is critical for performance on ARM architectures.",
+ "progress": [
+  [
+   0.0,
+   1.10903
+  ],
+  [
+   17.26,
+   5.71206
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.10903,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 17.26,
+   "score": 5.71206,
+   "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Switch to an i-k-j loop order with NEON vectorization to exploit temporal locality of A[i] and streaming access to rows of B and C, which is critical for performance on ARM architectures."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -22,11 +22,70 @@\n // Computes C = A * B. C is NOT zeroed by the caller. Any number of threads may be\n // used (std::thread is available); n is any size from 1 to 2048.\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+#if defined(__ARM_NEON)\n+    // Process rows of C in chunks using i-k-j order\n+    for (int i = 0; i < n; ++i) {\n+        const float* a_row = A + i * n;\n+        float* c_row = C + i * n;\n+        \n+        // Initialize C row to zero\n+        for (int j = 0; j < n; ++j) c_row[j] = 0.0f;\n+        \n+        // NEON registers to hold partial sums for 4 consecutive elements\n+        float32x4_t v_c0 = vdupq_n_f32(0.0f);\n+        float32x4_t v_c1 = vdupq_n_f32(0.0f);\n+        float32x4_t v_c2 = vdupq_n_f32(0.0f);\n+        float32x4_t v_c3 = vdupq_n_f32(0.0f);\n+        \n+        for (int k = 0; k < n; ++k) {\n+            float a_ik = a_row[k];\n+            const float* b_row = B + k * n;\n+            \n+            // Vectorized inner loop over j\n+            int j = 0;\n+            for (; j <= n - 16; j += 16) {\n+                float32x4_t v_b0 = vld1q_f32(b_row + j);\n+                float32x4_t v_b1 = vld1q_f32(b_row + j + 4);\n+                float32x4_t v_b2 = vld1q_f32(b_row + j + 8);\n+                float32x4_t v_b3 = vld1q_f32(b_row + j + 12);\n+                \n+                v_c0 = vfmaq_f32(v_c0, v_b0, vdupq_n_f32(a_ik));\n+                v_c1 = vfmaq_f32(v_c1, v_b1, vdupq_n_f32(a_ik));\n+                v_c2 = vfmaq_f32(v_c2, v_b2, vdupq_n_f32(a_ik));\n+                v_c3 = vfmaq_f32(v_c3, v_b3, vdupq_n_f32(a_ik));\n+            }\n+            \n+            // Handle remaining elements\n+            for (; j < n; ++j) {\n+                c_row[j] += a_ik * b_row[j];\n+            }\n         }\n+        \n+        // Store vector results back to C row\n+        int j = 0;\n+        for (; j <= n - 16; j += 16) {\n+            vst1q_f32(c_row + j, v_c0);\n+            vst1q_f32(c_row + j + 4, v_c1);\n+            vst1q_f32(c_row + j + 8, v_c2);\n+            vst1q_f32(c_row + j + 12, v_c3);\n+        }\n+    }\n+#else\n+    // Fallback for non-NEON systems\n+    for (int i = 0; i < n; ++i) {\n+        const float* a_row = A + i * n;\n+        float* c_row = C + i * n;\n+        \n+        for (int j = 0; j < n; ++j) c_row[j] = 0.0f;\n+        \n+        for (int k = 0; k < n; ++k) {\n+            float a_ik = a_row[k];\n+            const float* b_row = B + k * n;\n+            for (int j = 0; j < n; ++j) {\n+                c_row[j] += a_ik * b_row[j];\n+            }\n+        }\n+    }\n+#endif\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "error": "",
+ "model_memory_gb": 19.9,
+ "model_gpu_memory_gb": 14.3,
+ "context_length": 32768,
+ "load_seconds": 127.7,
+ "median_call_seconds": 208.9,
+ "p90_call_seconds": 432.2,
+ "prompt_tokens_per_s": 201.9,
+ "gen_tokens_per_s": 5.3,
+ "mean_prompt_tokens": 2372,
+ "mean_gen_tokens": 1094,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

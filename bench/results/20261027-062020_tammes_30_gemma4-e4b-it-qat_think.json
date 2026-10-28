@@ -1,0 +1,440 @@
+{
+ "schema": 3,
+ "example": "tammes_30",
+ "model": "gemma4:e4b-it-qat",
+ "variant": "think",
+ "model_size_gb": 6.1,
+ "model_params": "7.5B",
+ "started": "2026-10-27T06:20:21",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 3.2013569883368893,
+ "best_score": 36.87983606314923,
+ "improvement": 11.520063584757652,
+ "llm_calls": 21,
+ "mean_llm_seconds": 44.3,
+ "attempts": 21,
+ "ok": 17,
+ "statuses": {
+  "invalid": 3,
+  "ok": 17,
+  "duplicate": 1
+ },
+ "sweeps": 4,
+ "sweep_variants": 39,
+ "improvements": 4,
+ "minutes_to_best": 13.55,
+ "best_idea": "tuned S_EXP=4, LR=0.005, ITERS=1000 on top of: Expose the optimization parameters S_EXP, LR, and ITERS as named constants to allow the automated evolutionary search to discover optimal values through ",
+ "progress": [
+  [
+   0.0,
+   3.2013569883368893
+  ],
+  [
+   2.53,
+   21.403349639406645
+  ],
+  [
+   3.97,
+   36.811753195861264
+  ],
+  [
+   6.28,
+   36.81830833679627
+  ],
+  [
+   13.55,
+   36.87983606314923
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.2013569883368893,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 5.04,
+   "score": 21.403349639406645,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the random initial point generation with a deterministic Fibonacci sphere lattice configuration, which provides a highly uniform starting point for achieving a better minimum separation angle."
+  },
+  {
+   "minutes": 11.11,
+   "score": 36.75629966605921,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the simple Fibonacci initialization with an iterative energy minimization routine using repulsive forces, which is known to significantly improve the minimum separation angle by allowing the points to settle into a more optimal configuration."
+  },
+  {
+   "minutes": 13.55,
+   "score": 36.75629966605921,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Expose the optimization parameters S_EXP, LR, and ITERS as named constants to allow the automated evolutionary search to discover optimal values through sweeping."
+  },
+  {
+   "minutes": 13.55,
+   "score": 36.87983606314923,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "sweep/exploit/diff/tune",
+   "status": "ok",
+   "idea": "tuned S_EXP=4, LR=0.005, ITERS=1000 on top of: Expose the optimization parameters S_EXP, LR, and ITERS as named constants to allow the automated evolutionary search to discover optimal values through sweeping."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -11,17 +11,65 @@\n \n     Vectors need not be normalized (the evaluator normalizes them), but none may be\n     zero. The score is the minimum angle in degrees between any two points. This\n-    start draws uniformly random points with a fixed seed, so some pairs end up\n-    close together.\n+    uses optimization starting from a Fibonacci configuration.\n     \"\"\"\n-    rng = random.Random(1)\n+    # Initialize points using Fibonacci spiral\n     points = []\n-    for _ in range(n):\n-        z = rng.uniform(-1.0, 1.0)\n-        phi = rng.uniform(0.0, 2 * math.pi)\n+    for i in range(n):\n+        # Calculate golden angle structure\n+        theta = 2 * math.pi * i / math.sqrt(5) \n+        # Map index i to latitude z quasi-uniformly\n+        z = 1 - 2 * (i / (n - 1.0)) \n+        \n+        # Calculate radius in xy plane\n         s = math.sqrt(1.0 - z * z)\n-        points.append((s * math.cos(phi), s * math.sin(phi), z))\n-    return points\n+        points.append((s * math.cos(theta), s * math.sin(theta), z))\n+\n+    # Optimization parameters to be swept\n+    S_EXP = 4.0\n+    LR = 0.005\n+    ITERS = 1000\n+    \n+    current_pts = [list(p) for p in points]\n+\n+    for _ in range(ITERS):\n+        next_pts = [list(p) for p in current_pts]\n+        \n+        for i in range(n):\n+            F_i = [0.0, 0.0, 0.0]\n+            p_i = current_pts[i]\n+\n+            for j in range(n):\n+                if i == j:\n+                    continue\n+                \n+                p_j = current_pts[j]\n+                dx = p_i[0] - p_j[0]\n+                dy = p_i[1] - p_j[1]\n+                dz = p_i[2] - p_j[2]\n+                d2 = dx*dx + dy*dy + dz*dz\n+                d = math.sqrt(d2)\n+                \n+                if d > 1e-9:\n+                    # Calculate repulsive force based on inverse distance power\n+                    force_factor = LR / (d**S_EXP)\n+                    F_i[0] += dx * force_factor\n+                    F_i[1] += dy * force_factor\n+                    F_i[2] += dz * force_factor\n+\n+            # Apply force and re-normalize to stay on the sphere\n+            new_x = p_i[0] + F_i[0]\n+            new_y = p_i[1] + F_i[1]\n+            new_z = p_i[2] + F_i[2]\n+            \n+            mag = math.sqrt(new_x*new_x + new_y*new_y + new_z*new_z)\n+            \n+            if mag > 1e-9:\n+                next_pts[i] = [new_x / mag, new_y / mag, new_z / mag]\n+\n+        current_pts = next_pts\n+\n+    return [tuple(p) for p in current_pts]\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "sphere_points",
+  "points": [
+   [
+    0.3919709387244532,
+    -0.5582121095618475,
+    -0.7312715117751976
+   ],
+   [
+    -0.027052463738772504,
+    0.8490936142385189,
+    0.5275492379532281
+   ],
+   [
+    -0.9500239047545286,
+    0.31204362944230385,
+    -0.009129825816118098
+   ],
+   [
+    0.22957314306547277,
+    -0.9248645600666849,
+    0.30318594544552596
+   ],
+   [
+    0.5740391880355756,
+    0.1033386161058686,
+    -0.8122808264515302
+   ],
+   [
+    -0.6758397496085636,
+    0.3037890926411783,
+    0.6715302078397394
+   ],
+   [
+    0.8512988419434201,
+    0.011265659732678564,
+    0.524560164915884
+   ],
+   [
+    -0.17680359044518373,
+    -0.9781667833824966,
+    -0.10922561189039716
+   ],
+   [
+    0.7908900515540614,
+    -0.28321934240489055,
+    -0.5424755574590947
+   ],
+   [
+    0.5851964340381928,
+    0.11388203849293084,
+    0.8028549152229673
+   ],
+   [
+    -0.30434810274742335,
+    -0.08102906244732802,
+    -0.9491082780130784
+   ],
+   [
+    -0.3509958145626131,
+    0.3246444046695718,
+    0.8782983255570211
+   ],
+   [
+    -0.7271635298854837,
+    0.3872590786250933,
+    -0.5668012057387734
+   ],
+   [
+    0.05942052898539893,
+    0.33054331283916893,
+    -0.9419184248502641
+   ],
+   [
+    -0.9919106268324059,
+    0.02610563707090374,
+    -0.12422481269885588
+   ],
+   [
+    0.10141148542176433,
+    0.8394879795728718,
+    -0.5338310994848547
+   ],
+   [
+    -0.800348025639128,
+    0.20762133322971385,
+    -0.5624379253246229
+   ],
+   [
+    0.8990635126271509,
+    0.12213812674917045,
+    -0.4204367708190289
+   ],
+   [
+    -0.6917519647168419,
+    -0.2562101885183855,
+    0.6751559513251457
+   ],
+   [
+    0.3757097440071294,
+    0.88195886829755,
+    0.28458872586489115
+   ],
+   [
+    0.10962933743537041,
+    -0.1326097917248836,
+    0.9850868243521302
+   ],
+   [
+    -0.32373272592570945,
+    0.5659500259391612,
+    -0.7582200803883872
+   ],
+   [
+    -0.2164510454505914,
+    -0.8700158468173443,
+    0.44296881516653674
+   ],
+   [
+    -0.43065317546221576,
+    0.22938243010501777,
+    0.8728811735989193
+   ],
+   [
+    -0.3606302208330362,
+    -0.6589776995328848,
+    0.660071386548654
+   ],
+   [
+    -0.7836961589264019,
+    -0.48079575758636983,
+    -0.3932629781341648
+   ],
+   [
+    0.3660243386758451,
+    -0.5299673944570227,
+    0.7649580016637154
+   ],
+   [
+    -0.8476230763315352,
+    -0.5304935866064687,
+    0.010567641159200837
+   ],
+   [
+    0.016650981414250473,
+    0.36477107016970456,
+    -0.9309483396973168
+   ],
+   [
+    -0.6901522939672605,
+    0.4121803795407587,
+    0.5948084951086057
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "sphere_points",
+  "points": [
+   [
+    0.05554447796514994,
+    0.28279759011859434,
+    0.9575700151898526
+   ],
+   [
+    -0.18926456854637416,
+    -0.32418281959939615,
+    0.9268680718255108
+   ],
+   [
+    0.5517838901901896,
+    -0.09092733188609828,
+    0.8290155359477024
+   ],
+   [
+    -0.5924542604262804,
+    0.21577238573040344,
+    0.7761702305931085
+   ],
+   [
+    0.33169786328225603,
+    -0.6799232990806727,
+    0.6539731147847285
+   ],
+   [
+    -0.27385837673232083,
+    0.7537674964484545,
+    0.5973576406068374
+   ],
+   [
+    -0.30173734505342326,
+    -0.8079052688046835,
+    0.5062051473836903
+   ],
+   [
+    0.42559144922878817,
+    0.677964574779406,
+    0.5993629565526378
+   ],
+   [
+    -0.8051367488801484,
+    -0.3242283642534758,
+    0.49661935465325996
+   ],
+   [
+    0.8841316133728679,
+    0.27592255027443946,
+    0.37706502951711
+   ],
+   [
+    -0.9201172149591182,
+    0.32400740227259,
+    0.2200079862378728
+   ],
+   [
+    0.8868435994963461,
+    -0.36288383240353483,
+    0.2860485172352548
+   ],
+   [
+    -0.5670843656449531,
+    0.8231511873209953,
+    0.02893864290350865
+   ],
+   [
+    0.5056949285943688,
+    -0.8605034680432067,
+    0.061696196637641254
+   ],
+   [
+    0.09608052346161414,
+    0.9921189145230811,
+    0.08042756030668594
+   ],
+   [
+    -0.09654951411232753,
+    -0.9920733838117964,
+    -0.08042756030668603
+   ],
+   [
+    0.6617709701959648,
+    0.7471631430459758,
+    -0.06169619663764069
+   ],
+   [
+    -0.714829245820269,
+    -0.6987000102096239,
+    -0.02893864290350893
+   ],
+   [
+    0.9400840658007593,
+    0.185521413898844,
+    -0.28604851723525426
+   ],
+   [
+    -0.9652583807489216,
+    -0.1409707217315908,
+    -0.22000798623787363
+   ],
+   [
+    0.8145471819910695,
+    -0.4408342679802343,
+    -0.37706502951710946
+   ],
+   [
+    -0.727735755481579,
+    0.4730432187204831,
+    -0.4966193546532604
+   ],
+   [
+    0.2872362821753907,
+    -0.7471675612033359,
+    -0.5993629565526374
+   ],
+   [
+    -0.1407007016438995,
+    0.8508581910748527,
+    -0.5062051473836905
+   ],
+   [
+    -0.4137328715251439,
+    -0.6870145269411638,
+    -0.5973576406068376
+   ],
+   [
+    0.4562882033676775,
+    0.6034237653641575,
+    -0.6539731147847282
+   ],
+   [
+    -0.6228949939548842,
+    -0.09778343237473718,
+    -0.7761702305931091
+   ],
+   [
+    0.558969932992499,
+    -0.016907251926488037,
+    -0.829015535947702
+   ],
+   [
+    -0.1233731087993199,
+    0.354534417871736,
+    -0.926868071825511
+   ],
+   [
+    0.00011062429495672929,
+    -0.2882007178540175,
+    -0.9575700151898525
+   ]
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 4.4,
+ "model_gpu_memory_gb": 4.4,
+ "context_length": 32768,
+ "load_seconds": 20.2,
+ "median_call_seconds": 37.8,
+ "p90_call_seconds": 76.5,
+ "prompt_tokens_per_s": 1757.0,
+ "gen_tokens_per_s": 44.1,
+ "mean_prompt_tokens": 3256,
+ "mean_gen_tokens": 1735,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

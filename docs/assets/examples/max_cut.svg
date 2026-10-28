@@ -506,7 +506,7 @@
 <circle cx="204.54" cy="372.37" r="2.6" fill="#7b6cff"/>
 <line x1="16" y1="408.00" x2="34" y2="408.00" stroke="#0f9d8a" stroke-width="2"/><text x="40" y="412.00" font-size="11" fill="#5d6178">cut edge (counts)</text><line x1="160" y1="408.00" x2="178" y2="408.00" stroke="#e8590c" stroke-width="2"/><text x="184" y="412.00" font-size="11" fill="#5d6178">edge within a side (lost)</text>
 <rect x="420.5" y="0.5" width="399" height="419" rx="10" fill="#fbfbfe" stroke="#dcdfea"/>
-<text x="436" y="26" font-size="15" font-weight="600" fill="#1d2033">Best · score 0.7673</text>
+<text x="436" y="26" font-size="15" font-weight="600" fill="#1d2033">Best · score 0.76741</text>
 <text x="436" y="46" font-size="12" fill="#5d6178">cut 1813 of 2311 edge weight (78.5%) · sides 49/51</text>
 <line x1="480.28" y1="264.64" x2="720.55" y2="331.70" stroke="#0f9d8a" stroke-opacity="0.30" stroke-width="1"/>
 <line x1="480.28" y1="264.64" x2="742.81" y2="304.04" stroke="#0f9d8a" stroke-opacity="0.35" stroke-width="1"/>

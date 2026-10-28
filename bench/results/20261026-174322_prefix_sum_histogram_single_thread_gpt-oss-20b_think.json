@@ -1,0 +1,134 @@
+{
+ "schema": 3,
+ "example": "prefix_sum_histogram_single_thread",
+ "model": "gpt-oss:20b",
+ "variant": "think",
+ "model_size_gb": 13.8,
+ "model_params": "20.9B",
+ "started": "2026-10-26T17:43:22",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.9,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 4.65563,
+ "best_score": 6.01735,
+ "improvement": 1.2924888790561107,
+ "llm_calls": 15,
+ "mean_llm_seconds": 64.0,
+ "attempts": 15,
+ "ok": 11,
+ "statuses": {
+  "edit_error": 3,
+  "ok": 11,
+  "compile_error": 1
+ },
+ "sweeps": 1,
+ "sweep_variants": 6,
+ "improvements": 3,
+ "minutes_to_best": 12.25,
+ "best_idea": "Expand to 8 sub\u2011histograms and an 8\u2011way unrolled loop with larger prefetch distance to further reduce write\u2011conflict stalls on hot histogram bins.",
+ "progress": [
+  [
+   0.0,
+   4.65563
+  ],
+  [
+   3.31,
+   5.52066
+  ],
+  [
+   6.42,
+   5.71875
+  ],
+  [
+   12.25,
+   6.01735
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 4.65563,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 9.1,
+   "score": 5.63289,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the simple loop with a 4\u2011way unrolled loop using four private uint32_t sub\u2011histograms to eliminate hot\u2011bin stalls, prefetch input, and combine the sub\u2011histograms at the end."
+  },
+  {
+   "minutes": 12.25,
+   "score": 6.01735,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Expand to 8 sub\u2011histograms and an 8\u2011way unrolled loop with larger prefetch distance to further reduce write\u2011conflict stalls on hot histogram bins."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -28,12 +28,46 @@\n // hist is zeroed by the caller. n is any size from 0 to 20'000'000; the sums\n // never overflow int64.\n extern \"C\" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, uint64_t* hist) {\n-    for (int b = 0; b < 256; ++b) hist[b] = 0;\n+    uint32_t h0[256] = {0}, h1[256] = {0}, h2[256] = {0}, h3[256] = {0};\n+    uint32_t h4[256] = {0}, h5[256] = {0}, h6[256] = {0}, h7[256] = {0};\n     int64_t sum = 0;\n-    for (size_t i = 0; i < n; ++i) {\n-        sum += in[i];\n+    size_t i = 0;\n+    size_t n8 = n & ~size_t(7);\n+    for (; i < n8; i += 8) {\n+        int64_t v0 = in[i];\n+        int64_t v1 = in[i+1];\n+        int64_t v2 = in[i+2];\n+        int64_t v3 = in[i+3];\n+        int64_t v4 = in[i+4];\n+        int64_t v5 = in[i+5];\n+        int64_t v6 = in[i+6];\n+        int64_t v7 = in[i+7];\n+        sum += v0; out[i]   = sum;\n+        sum += v1; out[i+1] = sum;\n+        sum += v2; out[i+2] = sum;\n+        sum += v3; out[i+3] = sum;\n+        sum += v4; out[i+4] = sum;\n+        sum += v5; out[i+5] = sum;\n+        sum += v6; out[i+6] = sum;\n+        sum += v7; out[i+7] = sum;\n+        h0[(uint8_t)(v0 & 255)]++;\n+        h1[(uint8_t)(v1 & 255)]++;\n+        h2[(uint8_t)(v2 & 255)]++;\n+        h3[(uint8_t)(v3 & 255)]++;\n+        h4[(uint8_t)(v4 & 255)]++;\n+        h5[(uint8_t)(v5 & 255)]++;\n+        h6[(uint8_t)(v6 & 255)]++;\n+        h7[(uint8_t)(v7 & 255)]++;\n+        if (i + 128 < n) __builtin_prefetch(&in[i+128], 0, 1);\n+    }\n+    for (; i < n; ++i) {\n+        int64_t v = in[i];\n+        sum += v;\n         out[i] = sum;\n-        hist[in[i] & 255]++;\n+        h0[(uint8_t)(v & 255)]++;\n+    }\n+    for (int b = 0; b < 256; ++b) {\n+        hist[b] = (uint64_t)h0[b] + h1[b] + h2[b] + h3[b] + h4[b] + h5[b] + h6[b] + h7[b];\n     }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "best_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 13.2,
+ "model_gpu_memory_gb": 13.2,
+ "context_length": 32768,
+ "load_seconds": 59.0,
+ "median_call_seconds": 50.8,
+ "p90_call_seconds": 105.3,
+ "prompt_tokens_per_s": 1721.7,
+ "gen_tokens_per_s": 50.1,
+ "mean_prompt_tokens": 4882,
+ "mean_gen_tokens": 2758,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -1,0 +1,393 @@
+{
+ "schema": 3,
+ "example": "circles_in_circle_21",
+ "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-10-22T02:37:26",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.7,
+ "omega_version": "0.1.0",
+ "omega_commit": "",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 3.1890454825108625,
+ "best_score": 4.013004372833357,
+ "improvement": 1.258371633406043,
+ "llm_calls": 37,
+ "mean_llm_seconds": 23.2,
+ "attempts": 37,
+ "ok": 23,
+ "statuses": {
+  "invalid": 11,
+  "ok": 23,
+  "duplicate": 1,
+  "edit_error": 2
+ },
+ "sweeps": 20,
+ "sweep_variants": 320,
+ "improvements": 10,
+ "minutes_to_best": 11.22,
+ "best_idea": "tuned ring1_radius=0.4279, ring2_radius=0.8063 on top of: Replace the fixed ring radii and uniform circle radius assignment with independently optimized parameters and a flexible radius computation th",
+ "progress": [
+  [
+   0.0,
+   3.1890454825108625
+  ],
+  [
+   3.33,
+   3.250841595710449
+  ],
+  [
+   4.15,
+   3.5334702519480183
+  ],
+  [
+   4.4,
+   3.7488243168372275
+  ],
+  [
+   4.83,
+   3.8370032915766705
+  ],
+  [
+   5.33,
+   3.863650123508168
+  ],
+  [
+   6.68,
+   3.994440345006254
+  ],
+  [
+   8.59,
+   3.9946059406371552
+  ],
+  [
+   8.59,
+   3.998227550616398
+  ],
+  [
+   9.95,
+   3.9988483446100025
+  ],
+  [
+   11.22,
+   4.013004372833357
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.1890454825108625,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 5.33,
+   "score": 3.8370032915766705,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "explore/rewrite/refine",
+   "status": "ok",
+   "idea": "Replace the fixed ring radii 0.35 and 0.75 with optimized values found via a sweep to better balance container fit and inter-circle spacing, increasing the sum of radii by reducing wasted space near the container wall and improving packing efficiency."
+  },
+  {
+   "minutes": 5.33,
+   "score": 3.863650123508168,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "sweep/explore/rewrite/refine",
+   "status": "ok",
+   "idea": "tuned ring1_radius=0.424, ring2_radius=0.8036 on top of: Replace the fixed ring radii 0.35 and 0.75 with optimized values found via a sweep to better balance container fit and inter-circle spacing, increasing the sum of radii by reducing wasted space near the container wall and improving packing eff"
+  },
+  {
+   "minutes": 6.68,
+   "score": 3.994440345006254,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "Replace the fixed ring radii and uniform circle radius with optimized parameters and a more flexible radius assignment that allows smaller circles near the container wall to increase the total sum of radii by better filling gaps."
+  },
+  {
+   "minutes": 9.95,
+   "score": 3.9988483446100025,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Improve the ring radius sweep by allowing independent optimization of ring radii and individual circle radii via a more refined search space, enabling better utilization of space near the container wall by adjusting ring positions and radii to reduce wasted gaps."
+  },
+  {
+   "minutes": 11.22,
+   "score": 3.9988483446100025,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "best/diff/tune",
+   "status": "ok",
+   "idea": "Replace the fixed ring radii and uniform circle radius assignment with independently optimized parameters and a flexible radius computation that adapts to local geometry, enabling better utilization of space near the container wall and improving the sum of radii."
+  },
+  {
+   "minutes": 11.22,
+   "score": 4.013004372833357,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "sweep/best/diff/tune",
+   "status": "ok",
+   "idea": "tuned ring1_radius=0.4279, ring2_radius=0.8063 on top of: Replace the fixed ring radii and uniform circle radius assignment with independently optimized parameters and a flexible radius computation that adapts to local geometry, enabling better utilization of space near the container wall and improv"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -9,19 +9,36 @@\n     radius 1) without overlaps.\n \n     This start places one circle at the center and two concentric rings of 7 and\n-    13 circles, all with the same radius: the largest one that keeps every pair\n-    apart and every circle inside the container.\n+    13 circles, with ring radii and individual radii optimized via sweep to maximize sum of radii.\n     \"\"\"\n+    # Optimize ring radii for better packing (swept)\n+    ring1_radius = 0.4278780046530624\n+    ring2_radius = 0.8063305750863319\n     centers = [(0.0, 0.0)]\n-    for count, ring in ((7, 0.35), (n - 8, 0.75)):\n+    for count, ring in ((7, ring1_radius), (n - 8, ring2_radius)):\n         centers += [(ring * math.cos(2 * math.pi * k / count),\n                      ring * math.sin(2 * math.pi * k / count)) for k in range(count)]\n-    r = min(1.0 - math.hypot(x, y) for x, y in centers)\n-    for a in range(n):\n-        for b in range(a + 1, n):\n-            r = min(r, math.dist(centers[a], centers[b]) / 2)\n-    r *= 1 - 1e-12  # stay strictly feasible despite rounding\n-    return [(x, y, r) for x, y in centers]\n+    \n+    # Compute individual radii based on distance to wall and neighbors\n+    radii = []\n+    for i, (x, y) in enumerate(centers):\n+        # Radius limited by distance to container wall\n+        r_wall = 1.0 - math.hypot(x, y)\n+        # Radius limited by distance to nearest neighbor\n+        r_neighbor = float('inf')\n+        for j, (xj, yj) in enumerate(centers):\n+            if i != j:\n+                d = math.dist((x, y), (xj, yj))\n+                r_neighbor = min(r_neighbor, d / 2)\n+        # Use the smaller of the two constraints\n+        r = min(r_wall, r_neighbor)\n+        radii.append(r)\n+    \n+    # Shrink all radii slightly to ensure strict feasibility\n+    scale = 1 - 1e-12\n+    radii = [r * scale for r in radii]\n+    \n+    return [(x, y, r) for (x, y), r in zip(centers, radii)]\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.0,
+    0.0,
+    0.151859
+   ],
+   [
+    0.35,
+    0.0,
+    0.151859
+   ],
+   [
+    0.218221,
+    0.273641,
+    0.151859
+   ],
+   [
+    -0.077882,
+    0.341225,
+    0.151859
+   ],
+   [
+    -0.315339,
+    0.151859,
+    0.151859
+   ],
+   [
+    -0.315339,
+    -0.151859,
+    0.151859
+   ],
+   [
+    -0.077882,
+    -0.341225,
+    0.151859
+   ],
+   [
+    0.218221,
+    -0.273641,
+    0.151859
+   ],
+   [
+    0.75,
+    0.0,
+    0.151859
+   ],
+   [
+    0.664092,
+    0.348542,
+    0.151859
+   ],
+   [
+    0.426049,
+    0.617238,
+    0.151859
+   ],
+   [
+    0.090403,
+    0.744532,
+    0.151859
+   ],
+   [
+    -0.265954,
+    0.701262,
+    0.151859
+   ],
+   [
+    -0.561383,
+    0.497342,
+    0.151859
+   ],
+   [
+    -0.728206,
+    0.179487,
+    0.151859
+   ],
+   [
+    -0.728206,
+    -0.179487,
+    0.151859
+   ],
+   [
+    -0.561383,
+    -0.497342,
+    0.151859
+   ],
+   [
+    -0.265954,
+    -0.701262,
+    0.151859
+   ],
+   [
+    0.090403,
+    -0.744532,
+    0.151859
+   ],
+   [
+    0.426049,
+    -0.617238,
+    0.151859
+   ],
+   [
+    0.664092,
+    -0.348542,
+    0.151859
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.0,
+    0.0,
+    0.213939
+   ],
+   [
+    0.427878,
+    0.0,
+    0.185649
+   ],
+   [
+    0.266778,
+    0.334528,
+    0.185649
+   ],
+   [
+    -0.095212,
+    0.41715,
+    0.185649
+   ],
+   [
+    -0.385505,
+    0.185649,
+    0.185649
+   ],
+   [
+    -0.385505,
+    -0.185649,
+    0.185649
+   ],
+   [
+    -0.095212,
+    -0.41715,
+    0.185649
+   ],
+   [
+    0.266778,
+    -0.334528,
+    0.185649
+   ],
+   [
+    0.806331,
+    0.0,
+    0.189226
+   ],
+   [
+    0.71397,
+    0.374721,
+    0.192968
+   ],
+   [
+    0.458048,
+    0.663597,
+    0.190309
+   ],
+   [
+    0.097192,
+    0.800452,
+    0.192968
+   ],
+   [
+    -0.285929,
+    0.753932,
+    0.192968
+   ],
+   [
+    -0.603547,
+    0.534696,
+    0.192968
+   ],
+   [
+    -0.7829,
+    0.192968,
+    0.192968
+   ],
+   [
+    -0.7829,
+    -0.192968,
+    0.192968
+   ],
+   [
+    -0.603547,
+    -0.534696,
+    0.192968
+   ],
+   [
+    -0.285929,
+    -0.753932,
+    0.192968
+   ],
+   [
+    0.097192,
+    -0.800452,
+    0.192968
+   ],
+   [
+    0.458048,
+    -0.663597,
+    0.190309
+   ],
+   [
+    0.71397,
+    -0.374721,
+    0.192968
+   ]
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 22.2,
+ "model_gpu_memory_gb": 18.9,
+ "context_length": 32768,
+ "load_seconds": 141.6,
+ "median_call_seconds": 19.8,
+ "p90_call_seconds": 26.7,
+ "prompt_tokens_per_s": 689.8,
+ "gen_tokens_per_s": 38.9,
+ "mean_prompt_tokens": 4470,
+ "mean_gen_tokens": 410,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

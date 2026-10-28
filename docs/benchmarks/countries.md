@@ -10,14 +10,14 @@ Each country is represented by its best model in the [overall ranking](../benchm
 
 | # | Country | Best model | Released | Developer | Share | Lag behind #1 | Models |
 |--:|---|---|---|---|--:|--:|--:|
-| 1 | USA | gemma4:26b-a4b-it-qat (no-think) | 2026-03-11 | Google | **79%** | – | 22 |
-| 2 | China | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | 2025-07-28 | Alibaba (Qwen) | **60%** | −24% | 14 |
-| 3 | South Korea | ingu627/exaone4.0:32b (no-think) | 2025-07-11 | LG | **39%** | −51% | 1 |
-| 4 | France | devstral-small-2:24b (no-think) | 2025-11-28 | Mistral AI | **37%** | −53% | 1 |
-| 5 | India | frob/sarvam:30b (no-think) | 2026-03-03 | Sarvam AI | **21%** | −74% | 2 |
-| 6 | Russia | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 2025-03-28 | Yandex | **18%** | −77% | 1 |
-| 7 | Switzerland | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 2025-08-13 | Swiss AI Initiative | **13%** | −83% | 1 |
-| 8 | Japan | llm-jp-4-8b-omega:q4_k_m (no-think) | 2026-03-16 | NII (LLM-jp) | **4%** | −95% | 1 |
+| 1 | USA | gpt-oss:20b (think) | 2025-08-04 | OpenAI | **75%** | – | 22 |
+| 2 | China | qwen3.8:27b-mtp-q4_K_M (no-think) | 2026-08-05 | Alibaba (Qwen) | **57%** | −24% | 14 |
+| 3 | South Korea | ingu627/exaone4.0:32b (no-think) | 2025-07-11 | LG | **39%** | −49% | 1 |
+| 4 | France | devstral-small-2:24b (no-think) | 2025-11-28 | Mistral AI | **37%** | −50% | 1 |
+| 5 | Russia | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 2025-03-28 | Yandex | **24%** | −68% | 2 |
+| 6 | India | frob/sarvam:30b (no-think) | 2026-03-03 | Sarvam AI | **14%** | −81% | 2 |
+| 7 | Switzerland | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 2025-08-13 | Swiss AI Initiative | **11%** | −85% | 1 |
+| 8 | Japan | llm-jp-4-8b-omega:q4_k_m (no-think) | 2026-03-16 | NII (LLM-jp) | **5%** | −93% | 1 |
 
 ## Cloud models (OpenRouter)
 

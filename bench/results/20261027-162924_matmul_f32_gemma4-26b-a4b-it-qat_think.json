@@ -1,0 +1,103 @@
+{
+ "schema": 3,
+ "example": "matmul_f32",
+ "model": "gemma4:26b-a4b-it-qat",
+ "variant": "think",
+ "model_size_gb": 15.6,
+ "model_params": "25.2B",
+ "started": "2026-10-27T16:29:24",
+ "minutes_budget": 15.0,
+ "wall_minutes": 20.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.41469,
+ "best_score": 117.059,
+ "improvement": 82.74533643413045,
+ "llm_calls": 4,
+ "mean_llm_seconds": 283.2,
+ "attempts": 4,
+ "ok": 3,
+ "statuses": {
+  "compile_error": 1,
+  "ok": 3
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 19.14,
+ "best_idea": "Implement the $i-k-j$ loop order with NEON vectorization and multithreading to improve cache locality and instruction throughput.",
+ "progress": [
+  [
+   0.0,
+   1.41469
+  ],
+  [
+   19.14,
+   117.059
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.41469,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 19.14,
+   "score": 117.059,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Implement the $i-k-j$ loop order with NEON vectorization and multithreading to improve cache locality and instruction throughput."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -22,11 +22,43 @@\n // Computes C = A * B. C is NOT zeroed by the caller. Any number of threads may be\n // used (std::thread is available); n is any size from 1 to 2048.\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+    auto worker = [&](int i_start, int i_end, int n, const float* A, const float* B, float* C) {\n+        for (int i = i_start; i < i_end; ++i) {\n+            float* c_row = &C[i * n];\n+            for (int j = 0; j < n; ++j) c_row[j] = 0.0f;\n+            for (int k = 0; k < n; ++k) {\n+                float a_val = A[i * n + k];\n+                const float* b_row = &B[k * n];\n+                int j = 0;\n+#if defined(__ARM_NEON)\n+                float32x4_t a_vec = vdupq_n_f32(a_val);\n+                for (; j <= n - 4; j += 4) {\n+                    float32x4_t b_vec = vld1q_f32(b_row + j);\n+                    float32x4_t c_vec = vld1q_f32(c_row + j);\n+                    c_vec = vmlaq_f32(c_vec, a_vec, b_vec);\n+                    vst1q_f32(c_row + j, c_vec);\n+                }\n+#endif\n+                for (; j < n; ++j) {\n+                    c_row[j] += a_val * b_row[j];\n+                }\n+            }\n         }\n+    };\n+\n+    int num_threads = std::thread::hardware_concurrency();\n+    if (num_threads == 0) num_threads = 4;\n+    if (n < 128) num_threads = 1;\n+\n+    std::vector<std::thread> threads;\n+    int rows_per_thread = n / num_threads;\n+    for (int t = 0; t < num_threads; ++t) {\n+        int start = t * rows_per_thread;\n+        int end = (t == num_threads - 1) ? n : (t + 1) * rows_per_thread;\n+        if (start < end) {\n+            threads.emplace_back(worker, start, end, n, A, B, C);\n+        }\n+    }\n+    for (auto& th : threads) th.join();\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "error": "",
+ "model_memory_gb": 16.5,
+ "model_gpu_memory_gb": 14.8,
+ "context_length": 32768,
+ "load_seconds": 55.6,
+ "median_call_seconds": 282.1,
+ "p90_call_seconds": 336.2,
+ "prompt_tokens_per_s": 1449.7,
+ "gen_tokens_per_s": 34.4,
+ "mean_prompt_tokens": 2484,
+ "mean_gen_tokens": 9108,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

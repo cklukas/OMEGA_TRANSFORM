@@ -1,0 +1,366 @@
+{
+ "schema": 3,
+ "example": "circle_packing_26",
+ "model": "gemma4:latest",
+ "variant": "no-think",
+ "model_size_gb": 6.6,
+ "model_params": "7.5B",
+ "started": "2026-10-25T00:35:13",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 1.644715116356541,
+ "improvement": 1.1037601026379817,
+ "llm_calls": 57,
+ "mean_llm_seconds": 15.3,
+ "attempts": 57,
+ "ok": 38,
+ "statuses": {
+  "ok": 38,
+  "invalid": 18,
+  "duplicate": 1
+ },
+ "sweeps": 2,
+ "sweep_variants": 28,
+ "improvements": 1,
+ "minutes_to_best": 10.62,
+ "best_idea": "Implement a multi-iteration radius refinement loop, similar to the relaxation strategy suggested in earlier successful attempts, to allow the radii to converge better after an initial estimation.",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   10.62,
+   1.644715116356541
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 10.62,
+   "score": 1.644715116356541,
+   "model": "gemma4:latest",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Implement a multi-iteration radius refinement loop, similar to the relaxation strategy suggested in earlier successful attempts, to allow the radii to converge better after an initial estimation."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -15,20 +15,58 @@\n     for k in range(n):\n         i, j = k % cols, k // cols\n         centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n-    radii = max_radii(centers)\n-    return [(x, y, r) for (x, y), r in zip(centers, radii)]\n+    \n+    # Multi-iteration radius refinement\n+    current_radii = max_radii(centers)\n+    NUM_ITERATIONS = 50\n+    \n+    for _ in range(NUM_ITERATIONS):\n+        previous_radii = list(current_radii)\n+        # Recalculate radii based on current centers, allowing for convergence\n+        current_radii = max_radii(centers)\n+        \n+        # A simple correction step might be needed if max_radii doesn't fully converge\n+        # Here, we rely on the inherent iterative nature of the radius constraint solving\n+        # performed by max_radii, but running it multiple times helps stability.\n+        \n+    return [(x, y, r) for (x, y), r in zip(centers, current_radii)]\n \n \n def max_radii(centers):\n-    \"\"\"Largest radii for fixed centers: limit by walls, then shrink overlapping pairs.\"\"\"\n+    \"\"\"Largest radii for fixed centers: limit by walls, then shrink overlapping pairs iteratively.\"\"\"\n+    n = len(centers)\n+    \n+    # Initial wall constraints\n     radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n-    for a in range(len(centers)):\n-        for b in range(a + 1, len(centers)):\n-            d = math.dist(centers[a], centers[b])\n-            if radii[a] + radii[b] > d:\n-                s = d / (radii[a] + radii[b])\n-                radii[a] *= s\n-                radii[b] *= s\n+    \n+    # Iterative refinement for pairwise overlaps\n+    MAX_INNER_ITER = 20\n+    for _ in range(MAX_INNER_ITER):\n+        radii_new = list(radii)\n+        changed = False\n+        for a in range(n):\n+            for b in range(a + 1, n):\n+                d = math.dist(centers[a], centers[b])\n+                \n+                sum_r = radii[a] + radii[b]\n+                if sum_r > d + 1e-9:\n+                    # Scale down both radii proportionally to meet the distance d\n+                    s = d / sum_r\n+                    \n+                    # Ensure we don't scale down below the wall limit found initially if that's tighter\n+                    new_ra = radii[a] * s\n+                    new_rb = radii[b] * s\n+                    \n+                    # Update only if the new scaled radii are smaller than current ones (prevents drift if not perfectly balanced)\n+                    if new_ra < radii_new[a] or new_rb < radii_new[b]:\n+                        radii_new[a] = min(radii_new[a], new_ra)\n+                        radii_new[b] = min(radii_new[b], new_rb)\n+                        changed = True\n+        \n+        radii = radii_new\n+        if not changed:\n+            break\n+            \n     return radii\n # OMEGA-BLOCK-END\n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.083333,
+    0.1,
+    0.060545
+   ],
+   [
+    0.25,
+    0.1,
+    0.039234
+   ],
+   [
+    0.416667,
+    0.1,
+    0.034262
+   ],
+   [
+    0.583333,
+    0.1,
+    0.040566
+   ],
+   [
+    0.75,
+    0.1,
+    0.05694
+   ],
+   [
+    0.916667,
+    0.1,
+    0.080973
+   ],
+   [
+    0.083333,
+    0.3,
+    0.047978
+   ],
+   [
+    0.25,
+    0.3,
+    0.032893
+   ],
+   [
+    0.416667,
+    0.3,
+    0.029299
+   ],
+   [
+    0.583333,
+    0.3,
+    0.040366
+   ],
+   [
+    0.75,
+    0.3,
+    0.058083
+   ],
+   [
+    0.916667,
+    0.3,
+    0.076636
+   ],
+   [
+    0.083333,
+    0.5,
+    0.05004
+   ],
+   [
+    0.25,
+    0.5,
+    0.036525
+   ],
+   [
+    0.416667,
+    0.5,
+    0.03396
+   ],
+   [
+    0.583333,
+    0.5,
+    0.041209
+   ],
+   [
+    0.75,
+    0.5,
+    0.058085
+   ],
+   [
+    0.916667,
+    0.5,
+    0.076976
+   ],
+   [
+    0.083333,
+    0.7,
+    0.059259
+   ],
+   [
+    0.25,
+    0.7,
+    0.06822
+   ],
+   [
+    0.416667,
+    0.7,
+    0.065257
+   ],
+   [
+    0.583333,
+    0.7,
+    0.069461
+   ],
+   [
+    0.75,
+    0.7,
+    0.089736
+   ],
+   [
+    0.916667,
+    0.7,
+    0.07693
+   ],
+   [
+    0.083333,
+    0.9,
+    0.075758
+   ],
+   [
+    0.25,
+    0.9,
+    0.090909
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.083333,
+    0.1,
+    0.065085
+   ],
+   [
+    0.25,
+    0.1,
+    0.057143
+   ],
+   [
+    0.416667,
+    0.1,
+    0.05
+   ],
+   [
+    0.583333,
+    0.1,
+    0.05
+   ],
+   [
+    0.75,
+    0.1,
+    0.057143
+   ],
+   [
+    0.916667,
+    0.1,
+    0.065085
+   ],
+   [
+    0.083333,
+    0.3,
+    0.041667
+   ],
+   [
+    0.25,
+    0.3,
+    0.075758
+   ],
+   [
+    0.416667,
+    0.3,
+    0.083333
+   ],
+   [
+    0.583333,
+    0.3,
+    0.083333
+   ],
+   [
+    0.75,
+    0.3,
+    0.075758
+   ],
+   [
+    0.916667,
+    0.3,
+    0.041667
+   ],
+   [
+    0.083333,
+    0.5,
+    0.041667
+   ],
+   [
+    0.25,
+    0.5,
+    0.0625
+   ],
+   [
+    0.416667,
+    0.5,
+    0.083333
+   ],
+   [
+    0.583333,
+    0.5,
+    0.083333
+   ],
+   [
+    0.75,
+    0.5,
+    0.0625
+   ],
+   [
+    0.916667,
+    0.5,
+    0.041667
+   ],
+   [
+    0.083333,
+    0.7,
+    0.041667
+   ],
+   [
+    0.25,
+    0.7,
+    0.075758
+   ],
+   [
+    0.416667,
+    0.7,
+    0.083333
+   ],
+   [
+    0.583333,
+    0.7,
+    0.083333
+   ],
+   [
+    0.75,
+    0.7,
+    0.075758
+   ],
+   [
+    0.916667,
+    0.7,
+    0.041667
+   ],
+   [
+    0.083333,
+    0.9,
+    0.065085
+   ],
+   [
+    0.25,
+    0.9,
+    0.057143
+   ]
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 1.6,
+ "model_gpu_memory_gb": 1.6,
+ "context_length": 32768,
+ "load_seconds": 24.9,
+ "median_call_seconds": 14.9,
+ "p90_call_seconds": 25.6,
+ "prompt_tokens_per_s": 1233.3,
+ "gen_tokens_per_s": 66.1,
+ "mean_prompt_tokens": 3343,
+ "mean_gen_tokens": 664,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -1,0 +1,341 @@
+{
+ "schema": 3,
+ "example": "circles_in_circle_21",
+ "model": "gemma4:e2b",
+ "variant": "no-think",
+ "model_size_gb": 4.6,
+ "model_params": "4.6B",
+ "started": "2026-10-21T22:53:56",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 3.1890454825108625,
+ "best_score": 3.7391284140469296,
+ "improvement": 1.1724914036355998,
+ "llm_calls": 97,
+ "mean_llm_seconds": 8.9,
+ "attempts": 97,
+ "ok": 27,
+ "statuses": {
+  "invalid": 40,
+  "ok": 27,
+  "edit_error": 21,
+  "duplicate": 9
+ },
+ "sweeps": 2,
+ "sweep_variants": 25,
+ "improvements": 3,
+ "minutes_to_best": 10.58,
+ "best_idea": "Implement a local optimization step using a simple perturbation strategy on the centers to refine the placement and radii, as suggested by the lessons learned, to potentially escape local optima and i",
+ "progress": [
+  [
+   0.0,
+   3.1890454825108625
+  ],
+  [
+   3.36,
+   3.6446234085838434
+  ],
+  [
+   10.16,
+   3.7358715294930853
+  ],
+  [
+   10.58,
+   3.7391284140469296
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.1890454825108625,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.36,
+   "score": 3.1890454825108625,
+   "model": "gemma4:e2b",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Parameterize the initial distribution of circles to allow the search to explore non-symmetric placements, which are often better for maximizing the sum of radii."
+  },
+  {
+   "minutes": 3.36,
+   "score": 3.6446234085838434,
+   "model": "gemma4:e2b",
+   "mode": "sweep/exploit/diff/tune",
+   "status": "ok",
+   "idea": "tuned center_radius_ratio=0.4, ring_radius_ratio=0.75 on top of: Parameterize the initial distribution of circles to allow the search to explore non-symmetric placements, which are often better for maximizing the sum of radii."
+  },
+  {
+   "minutes": 10.58,
+   "score": 3.7391284140469296,
+   "model": "gemma4:e2b",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Implement a local optimization step using a simple perturbation strategy on the centers to refine the placement and radii, as suggested by the lessons learned, to potentially escape local optima and improve the objective function."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -8,20 +8,90 @@\n     \"\"\"Return a list of n circles (x, y, r) inside the unit circle (center (0,0),\n     radius 1) without overlaps.\n \n-    This start places one circle at the center and two concentric rings of 7 and\n-    13 circles, all with the same radius: the largest one that keeps every pair\n-    apart and every circle inside the container.\n+    This uses a structured placement based on a hexagonal packing approximation\n+    to distribute the centers and then computes the maximum possible radius\n+    for each circle based on container constraints and neighbor overlaps.\n     \"\"\"\n+    center_radius_ratio = 0.4\n+    ring_radius_ratio = 0.75\n+    \n+    # Initial structured placement\n     centers = [(0.0, 0.0)]\n-    for count, ring in ((7, 0.35), (n - 8, 0.75)):\n-        centers += [(ring * math.cos(2 * math.pi * k / count),\n-                     ring * math.sin(2 * math.pi * k / count)) for k in range(count)]\n-    r = min(1.0 - math.hypot(x, y) for x, y in centers)\n-    for a in range(n):\n-        for b in range(a + 1, n):\n-            r = min(r, math.dist(centers[a], centers[b]) / 2)\n-    r *= 1 - 1e-12  # stay strictly feasible despite rounding\n-    return [(x, y, r) for x, y in centers]\n+    for count, ratio in ((7, center_radius_ratio), (n - 8, ring_radius_ratio)):\n+        centers += [(ratio * math.cos(2 * math.pi * k / count),\n+                     ratio * math.sin(2 * math.pi * k / count)) for k in range(count)]\n+        \n+    # Calculate initial radii based on constraints\n+    r_min = 1.0\n+    for x, y in centers:\n+        r_min = min(r_min, 1.0 - math.hypot(x, y))\n+        \n+    for a in range(len(centers)):\n+        for b in range(a + 1, len(centers)):\n+            dist = math.dist(centers[a], centers[b])\n+            r_min = min(r_min, dist / 2.0)\n+            \n+    r = r_min * 0.999\n+    \n+    # Local refinement (Perturbation approach)\n+    # We perturb centers and re-calculate radii to improve the score.\n+    \n+    # Initial best found so far\n+    best_circles = [(x, y, r) for x, y in centers]\n+    best_score = sum(c[2] for c in best_circles)\n+\n+    # Number of iterations for refinement\n+    max_iterations = 500\n+    \n+    current_centers = list(centers)\n+    current_r = [c[2] for c in best_circles]\n+    \n+    for iteration in range(max_iterations):\n+        # Perturb centers slightly\n+        new_centers = []\n+        for cx, cy in current_centers:\n+            # Small random perturbation scaled by the current best radius magnitude\n+            perturbation_scale = current_r[current_centers.index((cx, cy))] * 0.01\n+            \n+            # Use math.random if available, otherwise default to a small fixed perturbation\n+            # Since math.random is unavailable, we use a deterministic perturbation based on iteration index\n+            perturb_x = math.sin(iteration * 0.1 + cx) * perturbation_scale\n+            perturb_y = math.cos(iteration * 0.1 + cy) * perturbation_scale\n+            new_centers.append((cx + perturb_x, cy + perturb_y))\n+\n+        # Recalculate radii for perturbed centers\n+        new_circles = []\n+        temp_r_min = 1.0\n+        \n+        for i in range(len(new_centers)):\n+            cx, cy = new_centers[i]\n+            \n+            # Container constraint\n+            r_container = 1.0 - math.hypot(cx, cy)\n+            \n+            # Overlap constraint\n+            r_overlap = float('inf')\n+            for j in range(len(new_centers)):\n+                if i != j:\n+                    dx = cx - new_centers[j][0]\n+                    dy = cy - new_centers[j][1]\n+                    dist = math.hypot(dx, dy)\n+                    r_overlap = min(r_overlap, dist / 2.0)\n+            \n+            r_new = min(r_container, r_overlap)\n+            r_new = max(0.0, r_new)\n+            new_circles.append((cx, cy, r_new))\n+            temp_r_min = min(temp_r_min, r_new)\n+\n+        current_centers = new_centers\n+        current_r = [c[2] for c in new_circles]\n+        current_score = sum(c[2] for c in new_circles)\n+\n+        if current_score > best_score:\n+            best_score = current_score\n+            best_circles = new_circles\n+            \n+    return best_circles\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.0,
+    0.0,
+    0.151859
+   ],
+   [
+    0.35,
+    0.0,
+    0.151859
+   ],
+   [
+    0.218221,
+    0.273641,
+    0.151859
+   ],
+   [
+    -0.077882,
+    0.341225,
+    0.151859
+   ],
+   [
+    -0.315339,
+    0.151859,
+    0.151859
+   ],
+   [
+    -0.315339,
+    -0.151859,
+    0.151859
+   ],
+   [
+    -0.077882,
+    -0.341225,
+    0.151859
+   ],
+   [
+    0.218221,
+    -0.273641,
+    0.151859
+   ],
+   [
+    0.75,
+    0.0,
+    0.151859
+   ],
+   [
+    0.664092,
+    0.348542,
+    0.151859
+   ],
+   [
+    0.426049,
+    0.617238,
+    0.151859
+   ],
+   [
+    0.090403,
+    0.744532,
+    0.151859
+   ],
+   [
+    -0.265954,
+    0.701262,
+    0.151859
+   ],
+   [
+    -0.561383,
+    0.497342,
+    0.151859
+   ],
+   [
+    -0.728206,
+    0.179487,
+    0.151859
+   ],
+   [
+    -0.728206,
+    -0.179487,
+    0.151859
+   ],
+   [
+    -0.561383,
+    -0.497342,
+    0.151859
+   ],
+   [
+    -0.265954,
+    -0.701262,
+    0.151859
+   ],
+   [
+    0.090403,
+    -0.744532,
+    0.151859
+   ],
+   [
+    0.426049,
+    -0.617238,
+    0.151859
+   ],
+   [
+    0.664092,
+    -0.348542,
+    0.151859
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.001188,
+    0.007582,
+    0.199273
+   ],
+   [
+    0.403612,
+    0.006815,
+    0.173461
+   ],
+   [
+    0.252083,
+    0.318896,
+    0.173461
+   ],
+   [
+    -0.088587,
+    0.395884,
+    0.174092
+   ],
+   [
+    -0.361833,
+    0.180085,
+    0.173373
+   ],
+   [
+    -0.361833,
+    -0.166661,
+    0.173373
+   ],
+   [
+    -0.088586,
+    -0.383257,
+    0.17434
+   ],
+   [
+    0.252085,
+    -0.305921,
+    0.173756
+   ],
+   [
+    0.755458,
+    0.006872,
+    0.175923
+   ],
+   [
+    0.669247,
+    0.354739,
+    0.179195
+   ],
+   [
+    0.429854,
+    0.622241,
+    0.175799
+   ],
+   [
+    0.092103,
+    0.748949,
+    0.180368
+   ],
+   [
+    -0.266766,
+    0.705896,
+    0.178784
+   ],
+   [
+    -0.564211,
+    0.502967,
+    0.179262
+   ],
+   [
+    -0.732074,
+    0.186168,
+    0.179262
+   ],
+   [
+    -0.732075,
+    -0.172418,
+    0.179293
+   ],
+   [
+    -0.564214,
+    -0.490676,
+    0.179906
+   ],
+   [
+    -0.266766,
+    -0.695227,
+    0.179634
+   ],
+   [
+    0.092104,
+    -0.738645,
+    0.180537
+   ],
+   [
+    0.429861,
+    -0.610998,
+    0.176548
+   ],
+   [
+    0.669251,
+    -0.341601,
+    0.179489
+   ]
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 0.5,
+ "model_gpu_memory_gb": 0.5,
+ "context_length": 32768,
+ "load_seconds": 53.2,
+ "median_call_seconds": 7.7,
+ "p90_call_seconds": 13.9,
+ "prompt_tokens_per_s": 2083.9,
+ "gen_tokens_per_s": 138.2,
+ "mean_prompt_tokens": 4036,
+ "mean_gen_tokens": 592,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -1,0 +1,164 @@
+{
+ "schema": 3,
+ "example": "log_compressor",
+ "model": "gemma4:e4b-it-qat",
+ "variant": "think",
+ "model_size_gb": 6.1,
+ "model_params": "7.5B",
+ "started": "2026-10-25T17:27:55",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.7,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 11.28605206956168,
+ "best_score": 26.854385964912282,
+ "improvement": 2.3794313369630973,
+ "llm_calls": 27,
+ "mean_llm_seconds": 33.2,
+ "attempts": 27,
+ "ok": 5,
+ "statuses": {
+  "llm_error": 1,
+  "edit_error": 5,
+  "ok": 5,
+  "invalid": 11,
+  "duplicate": 5
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 3,
+ "minutes_to_best": 14.68,
+ "best_idea": "Define `compress_level` inside `compress` and set it to 9 to resolve the NameError and maximize compression ratio for BZ2.",
+ "progress": [
+  [
+   0.0,
+   11.28605206956168
+  ],
+  [
+   2.82,
+   17.631990784874482
+  ],
+  [
+   5.37,
+   21.45702822892498
+  ],
+  [
+   14.68,
+   26.854385964912282
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 11.28605206956168,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.88,
+   "score": 17.631990784874482,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Increase the zlib compression level from 1 to 9, as feedback indicates that maximum compression settings yield significantly better compression ratios for structured log data."
+  },
+  {
+   "minutes": 5.37,
+   "score": 21.45702822892498,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace zlib with lzma and utilize the extreme compression preset to leverage superior compression algorithms known to handle structured data like logs better than zlib."
+  },
+  {
+   "minutes": 12.1,
+   "score": null,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "best/diff/refine",
+   "status": "invalid",
+   "idea": "Switch the compression algorithm from LZMA to BZ2 and use a swept compression level to leverage BZ2's known high compression ratio advantage over LZMA for this data type."
+  },
+  {
+   "minutes": 14.68,
+   "score": 26.854385964912282,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Define `compress_level` inside `compress` and set it to 9 to resolve the NameError and maximize compression ratio for BZ2."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -10,6 +10,8 @@\n import zlib\n \n # OMEGA-BLOCK-START\n+import bz2\n+\n def compress(data: bytes) -> bytes:\n     \"\"\"Compress arbitrary bytes losslessly and return the compressed blob.\n \n@@ -19,14 +21,15 @@\n     Only the Python standard library may be used (zlib, lzma, bz2, struct, re, ...).\n     Compress plus decompress of the main input must stay within 20 CPU seconds.\n \n-    Current method: plain zlib at level 1.\n+    Current method: BZ2 compression.\n     \"\"\"\n-    return zlib.compress(data, 1)\n+    compress_level = 9\n+    return bz2.compress(data, compress_level)\n \n \n def decompress(blob: bytes) -> bytes:\n     \"\"\"Invert compress() exactly.\"\"\"\n-    return zlib.decompress(blob)\n+    return bz2.decompress(blob)\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "compression",
+  "input": "web server access log",
+  "head": [
+   "203.242.94.172 - - [04/Oct/2024:09:52:35 +0000] \"GET /search?q=novel&page=1 HTTP/1.1\" 200 13481 \"https://search.example.net/?q=shop\" \"Mozilla/5.0 (compatible; ExampleBot/2.1; +http://bot.example.org/info)\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/155 HTTP/1.1\" 200 23584 \"https://www.example.com/\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/books/203?ref=search HTTP/1.1\" 200 25206 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/106 HTTP/1.1\" 404 24868 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\""
+  ],
+  "lines": 2000,
+  "original_bytes": 443903,
+  "compressed_bytes": 39332,
+  "references": {
+   "zlib -9": 25176,
+   "bz2 -9": 16530,
+   "lzma -9e": 20656
+  }
+ },
+ "best_solution": {
+  "kind": "compression",
+  "input": "web server access log",
+  "head": [
+   "203.242.94.172 - - [04/Oct/2024:09:52:35 +0000] \"GET /search?q=novel&page=1 HTTP/1.1\" 200 13481 \"https://search.example.net/?q=shop\" \"Mozilla/5.0 (compatible; ExampleBot/2.1; +http://bot.example.org/info)\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/155 HTTP/1.1\" 200 23584 \"https://www.example.com/\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/books/203?ref=search HTTP/1.1\" 200 25206 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/106 HTTP/1.1\" 404 24868 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\""
+  ],
+  "lines": 2000,
+  "original_bytes": 443903,
+  "compressed_bytes": 16530,
+  "references": {
+   "zlib -9": 25176,
+   "bz2 -9": 16530,
+   "lzma -9e": 20656
+  }
+ },
+ "error": "",
+ "model_memory_gb": 4.4,
+ "model_gpu_memory_gb": 4.4,
+ "context_length": 32768,
+ "load_seconds": 0.0,
+ "median_call_seconds": 29.3,
+ "p90_call_seconds": 55.5,
+ "prompt_tokens_per_s": 1854.7,
+ "gen_tokens_per_s": 44.5,
+ "mean_prompt_tokens": 2704,
+ "mean_gen_tokens": 1189,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

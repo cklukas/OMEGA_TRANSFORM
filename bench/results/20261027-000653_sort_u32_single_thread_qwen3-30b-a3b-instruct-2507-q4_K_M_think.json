@@ -1,0 +1,135 @@
+{
+ "schema": 3,
+ "example": "sort_u32_single_thread",
+ "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+ "variant": "think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-10-27T00:06:53",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.9,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 22.3613431981687,
+ "best_score": 23.18042327353644,
+ "improvement": 1.0366292877896002,
+ "llm_calls": 25,
+ "mean_llm_seconds": 35.6,
+ "attempts": 25,
+ "ok": 10,
+ "statuses": {
+  "compile_error": 4,
+  "ok": 10,
+  "duplicate": 3,
+  "invalid": 3,
+  "edit_error": 4,
+  "llm_error": 1
+ },
+ "sweeps": 3,
+ "sweep_variants": 43,
+ "improvements": 1,
+ "minutes_to_best": 9.28,
+ "best_idea": "Reduce the insertion sort threshold to 8 to better handle small subarrays and improve performance on nearly sorted and reverse sorted inputs, where small runs are common and insertion sort excels.",
+ "progress": [
+  [
+   0.0,
+   22.3613431981687
+  ],
+  [
+   9.28,
+   23.18042327353644
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 22.3613431981687,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.88,
+   "score": 18.52610896215432,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace recursive merge sort with iterative bottom-up merge sort to eliminate recursion overhead and improve cache performance, especially for large arrays, while maintaining correctness and leveraging the scratch buffer efficiently."
+  },
+  {
+   "minutes": 7.47,
+   "score": 20.984927170320315,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Replace the fixed-width merge sort with a hybrid approach that switches to insertion sort for small subarrays, reducing overhead for small n and improving cache performance on nearly sorted data."
+  },
+  {
+   "minutes": 9.28,
+   "score": 23.18042327353644,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Reduce the insertion sort threshold to 8 to better handle small subarrays and improve performance on nearly sorted and reverse sorted inputs, where small runs are common and insertion sort excels."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -21,20 +21,42 @@\n // OMEGA-BLOCK-START\n // Sorts a[0..n) ascending, in place, on the calling thread. n is any size from\n // 0 to 2'000'000. Extra memory may be allocated freely.\n-static void merge_sort_rec(uint32_t* a, uint32_t* tmp, size_t lo, size_t hi) {\n-    if (hi - lo < 2) return;\n-    size_t mid = lo + (hi - lo) / 2;\n-    merge_sort_rec(a, tmp, lo, mid);\n-    merge_sort_rec(a, tmp, mid, hi);\n-    size_t i = lo, j = mid, k = lo;\n-    while (i < mid && j < hi) tmp[k++] = (a[j] < a[i]) ? a[j++] : a[i++];\n-    while (i < mid) tmp[k++] = a[i++];\n-    while (j < hi) tmp[k++] = a[j++];\n-    for (size_t t = lo; t < hi; ++t) a[t] = tmp[t];\n+constexpr size_t INSERTION_SORT_THRESHOLD = 8;\n+\n+static void insertion_sort(uint32_t* a, size_t n) {\n+    for (size_t i = 1; i < n; ++i) {\n+        uint32_t key = a[i];\n+        size_t j = i;\n+        while (j > 0 && a[j - 1] > key) {\n+            a[j] = a[j - 1];\n+            --j;\n+        }\n+        a[j] = key;\n+    }\n+}\n+\n+static void merge_sort_iter(uint32_t* a, uint32_t* tmp, size_t n) {\n+    size_t width = 1;\n+    while (width < n) {\n+        for (size_t i = 0; i < n; i += 2 * width) {\n+            size_t lo = i, mid = std::min(i + width, n), hi = std::min(i + 2 * width, n);\n+            size_t len = hi - lo;\n+            if (len <= INSERTION_SORT_THRESHOLD) {\n+                insertion_sort(a + lo, len);\n+                continue;\n+            }\n+            size_t i1 = lo, i2 = mid, j = lo;\n+            while (i1 < mid && i2 < hi) tmp[j++] = (a[i2] < a[i1]) ? a[i2++] : a[i1++];\n+            while (i1 < mid) tmp[j++] = a[i1++];\n+            while (i2 < hi) tmp[j++] = a[i2++];\n+            for (size_t k = lo; k < hi; ++k) a[k] = tmp[k];\n+        }\n+        width *= 2;\n+    }\n }\n \n extern \"C\" void sort_u32(uint32_t* a, size_t n) {\n     std::vector<uint32_t> tmp(n);\n-    merge_sort_rec(a, tmp.data(), 0, n);\n+    merge_sort_iter(a, tmp.data(), n);\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "best_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 22.2,
+ "model_gpu_memory_gb": 18.9,
+ "context_length": 32768,
+ "load_seconds": 55.6,
+ "median_call_seconds": 21.6,
+ "p90_call_seconds": 65.8,
+ "prompt_tokens_per_s": 1033.0,
+ "gen_tokens_per_s": 30.9,
+ "mean_prompt_tokens": 4307,
+ "mean_gen_tokens": 590,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

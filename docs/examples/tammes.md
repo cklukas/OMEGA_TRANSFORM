@@ -65,9 +65,9 @@ def run():
 
 ## Benchmark results
 
-The best result so far comes from **qwen3.5:27b (no-think)**, run locally with Ollama on 2026-10-15: a score of **38.5505** (×12.04 the starting program's 3.20136), reached after 15 of 15 minutes with 9 model requests.
+The best result so far comes from **gemma4:26b-a4b-it-qat (no-think)**, run locally with Ollama on 2026-10-24: a score of **38.5925** (×12.06 the starting program's 3.20136), reached after 12.2 of 15 minutes with 18 model requests.
 
-What the starting program produces (left) and what the best program by qwen3.5:27b (no-think) produces (right):
+What the starting program produces (left) and what the best program by gemma4:26b-a4b-it-qat (no-think) produces (right):
 
 ![tammes: the starting program's solution and the best one](../assets/examples/tammes.svg)
 
@@ -78,9 +78,10 @@ The best program's ancestry, from the starting program on. "Edit" and "rewrite" 
 | Step | Minute | Score | Kind | Idea |
 |--:|--:|--:|---|---|
 | 0 | 0.0 | 3.20136 | start | initial program |
-| 1 | 6.7 | 35.2597 | edit | Replace the random initialization and lack of optimization with a Fibonacci lattice start followed by a gradient-based repulsion optimization to significantly increase the minimum angle, as random points yield a very poor min angle of ~3 degrees. |
-| 2 | 15.0 | 38.2698 | edit | Add a dedicated "max-min polish" phase that targets only the closest pairs to push them apart, as the feedback indicates a single bottleneck pair (1, 2) limits the score while the rest are well-separated. |
-| 3 | 15.0 | 38.5505 | parameter sweep | tuned n_polish=4000, polish_step=0.05, polish_decay=0.999 on top of: Add a dedicated "max-min polish" phase that targets only the closest pairs to push them apart, as the feedback indicates a single bottleneck pair (1, 2) limits the score while the rest are … |
+| 1 | 5.0 | 36.2935 | edit | Implement a multi-stage optimization starting from a Fibonacci spiral and using a high-power repulsion potential to maximize the minimum distance. |
+| 2 | 7.9 | 35.4970 | edit | Implement a two-stage optimization: first a high-power repulsion to spread points, then a max-min "pushing" phase that focuses specifically on the closest pairs to increase the minimum angle. |
+| 3 | 12.2 | 38.5911 | rewrite | Implement a multi-restart strategy to avoid local minima and use the high-power repulsion method found in the leaderboards. |
+| 4 | 12.2 | 38.5925 | parameter sweep | tuned RESTART_COUNT=2, STAGE1_STEPS=300, POWER=6, STAGE2_STEPS=2000 on top of: Implement a multi-restart strategy to avoid local minima and use the high-power repulsion method found in the leaderboards. |
 
 ### The best program
 
@@ -89,164 +90,126 @@ What changed compared with the starting program:
 ```diff
 --- initial
 +++ best
-@@ -9,19 +9,149 @@
+@@ -7,21 +7,108 @@
+ 
+ # OMEGA-BLOCK-START
  def construct(n=30):
-     """Return a list of n points (x, y, z) on the unit sphere.
+-    """Return a list of n points (x, y, z) on the unit sphere.
++    import math
++    import random
  
 -    Vectors need not be normalized (the evaluator normalizes them), but none may be
 -    zero. The score is the minimum angle in degrees between any two points. This
 -    start draws uniformly random points with a fixed seed, so some pairs end up
 -    close together.
-+    Uses Fibonacci lattice initialization followed by repulsive force optimization.
-     """
+-    """
 -    rng = random.Random(1)
-+    # Fibonacci sphere distribution for uniform initial spread
-+    phi = math.pi * (3.0 - math.sqrt(5.0))  # golden angle
-     points = []
+-    points = []
 -    for _ in range(n):
 -        z = rng.uniform(-1.0, 1.0)
 -        phi = rng.uniform(0.0, 2 * math.pi)
 -        s = math.sqrt(1.0 - z * z)
 -        points.append((s * math.cos(phi), s * math.sin(phi), z))
 -    return points
-+    for i in range(n):
-+        y = 1 - (2 * i + 1) / n  # y goes from 1 to -1
-+        r = math.sqrt(1.0 - y * y)  # radius at y
-+        theta = phi * i
-+        x = math.cos(theta) * r
-+        z = math.sin(theta) * r
-+        points.append([x, y, z])
++    RESTART_COUNT = 2
++    STAGE1_STEPS = 300
++    STAGE1_LR = 0.02
++    STAGE1_DECAY = 0.99
++    STAGE2_STEPS = 2000
++    STAGE2_LR = 0.05
++    POWER = 6
++    num_to_push_ratio = 0.2
 +
-+    # Optimization parameters
-+    n_iter = 500
-+    decay = 0.998
-+    s = 2.0  # Exponent for repulsion force
-+    step_size = 0.1
-+    
-+    # Phase 1: Global gradient descent
-+    for it in range(n_iter):
-+        # Compute forces
-+        forces = [[0.0, 0.0, 0.0] for _ in range(n)]
++    def get_points_fib(n):
++        points = []
++        phi_inc = math.pi * (3.0 - math.sqrt(5.0))
++        for i in range(n):
++            y = 1.0 - (i / float(n - 1)) * 2.0
++            radius = math.sqrt(max(0.0, 1.0 - y * y))
++            theta = phi_inc * i
++            x = math.cos(theta) * radius
++            z = math.sin(theta) * radius
++            points.append([x, y, z])
++        return points
++
++    def dist_sq(p1, p2):
++        return sum((a - b)**2 for a, b in zip(p1, p2))
++
++    best_pts = None
++    best_min_angle = -1.0
++
++    rng_master = random.Random(42)
++
++    for restart in range(RESTART_COUNT):
++        pts = get_points_fib(n)
++        # Add noise for restarts
++        if restart > 0:
++            for p in pts:
++                p[0] += rng_master.uniform(-0.05, 0.05)
++                p[1] += rng_master.uniform(-0.05, 0.05)
++                p[2] += rng_master.uniform(-0.05, 0.05)
++                mag = math.sqrt(p[0]**2 + p[1]**2 + p[2]**2)
++                p[0]/=mag; p[1]/=mag; p[2]/=mag
++
++        # Stage 1: High-power repulsion to spread points
++        for step in range(STAGE1_STEPS):
++            lr = STAGE1_LR * (STAGE1_DECAY ** step)
++            grad = [[0.0, 0.0, 0.0] for _ in range(n)]
++            for i in range(n):
++                for j in range(i + 1, n):
++                    dx = pts[i][0] - pts[j][0]
++                    dy = pts[i][1] - pts[j][1]
++                    dz = pts[i][2] - pts[j][2]
++                    d2 = dx*dx + dy*dy + dz*dz + 1e-9
++                    f = 1.0 / (d2 ** (POWER / 2.0))
++                    grad[i][0] += f * dx; grad[i][1] += f * dy; grad[i][2] += f * dz
++                    grad[j][0] -= f * dx; grad[j][1] -= f * dy; grad[j][2] -= f * dz
++            for i in range(n):
++                pts[i][0] -= lr * grad[i][0]
++                pts[i][1] -= lr * grad[i][1]
++                pts[i][2] -= lr * grad[i][2]
++                mag = math.sqrt(pts[i][0]**2 + pts[i][1]**2 + pts[i][2]**2)
++                pts[i][0] /= mag; pts[i][1] /= mag; pts[i][2] /= mag
++
++        # Stage 2: Max-Min Polish (targeted repulsion)
++        for step in range(STAGE2_STEPS):
++            lr = STAGE2_LR * (1.0 - step / STAGE2_STEPS)
++            pairs = []
++            for i in range(n):
++                for j in range(i + 1, n):
++                    d2 = sum((pts[i][k]-pts[j][k])**2 for k in range(3))
++                    pairs.append((d2, i, j))
++            
++            pairs.sort()
++            num_to_push = max(2, int(n * num_to_push_ratio))
++            for k in range(min(num_to_push, len(pairs))):
++                d2, i, j = pairs[k]
++                dx = pts[i][0] - pts[j][0]
++                dy = pts[i][1] - pts[j][1]
++                dz = pts[i][2] - pts[j][2]
++                dist = math.sqrt(d2) + 1e-9
++                f = lr / dist
++                pts[i][0] += f * dx; pts[i][1] += f * dy; pts[i][2] += f * dz
++                pts[j][0] -= f * dx; pts[j][1] -= f * dy; pts[j][2] -= f * dz
++                for idx in (i, j):
++                    mag = math.sqrt(pts[idx][0]**2 + pts[idx][1]**2 + pts[idx][2]**2)
++                    pts[idx][0] /= mag; pts[idx][1] /= mag; pts[idx][2] /= mag
++
++        # Calculate min angle
++        min_angle = 181.0
 +        for i in range(n):
 +            for j in range(i + 1, n):
-+                # Vector difference
-+                dx = points[i][0] - points[j][0]
-+                dy = points[i][1] - points[j][1]
-+                dz = points[i][2] - points[j][2]
-+                dist_sq = dx*dx + dy*dy + dz*dz
-+                if dist_sq == 0:
-+                    continue
-+                dist = math.sqrt(dist_sq)
-+                # Repulsive force magnitude ~ 1 / dist^(s+1)
-+                force_mag = 1.0 / (dist ** (s + 1))
-+                
-+                fx = dx * force_mag
-+                fy = dy * force_mag
-+                fz = dz * force_mag
-+                
-+                forces[i][0] += fx
-+                forces[i][1] += fy
-+                forces[i][2] += fz
-+                forces[j][0] -= fx
-+                forces[j][1] -= fy
-+                forces[j][2] -= fz
++                dot = sum(pts[i][k]*pts[j][k] for k in range(3))
++                dot = max(-1.0, min(1.0, dot))
++                angle = math.degrees(math.acos(dot))
++                if angle < min_angle:
++                    min_angle = angle
++        
++        if min_angle > best_min_angle:
++            best_min_angle = min_angle
++            best_pts = [tuple(p) for p in pts]
 +
-+        # Update points
-+        for i in range(n):
-+            # Current position
-+            px, py, pz = points[i]
-+            fx, fy, fz = forces[i]
-+            
-+            # Project force onto tangent plane: F_tan = F - (F . p) * p
-+            dot = fx*px + fy*py + fz*pz
-+            tx = fx - dot * px
-+            ty = fy - dot * py
-+            tz = fz - dot * pz
-+            
-+            # Move
-+            new_x = px + step_size * tx
-+            new_y = py + step_size * ty
-+            new_z = pz + step_size * tz
-+            
-+            # Renormalize
-+            norm = math.sqrt(new_x*new_x + new_y*new_y + new_z*new_z)
-+            points[i] = [new_x/norm, new_y/norm, new_z/norm]
-+        
-+        step_size *= decay
-+
-+    # Phase 2: Max-min polish (push only closest pairs)
-+    # Repeatedly identify the minimum distance pair and push them apart.
-+    # This directly optimizes the objective function (min angle).
-+    n_polish = 4000
-+    polish_step = 0.05
-+    polish_decay = 0.999
-+    
-+    current_step = polish_step
-+    for _ in range(n_polish):
-+        # Find the pair with minimum distance
-+        min_d_sq = float('inf')
-+        min_i, min_j = -1, -1
-+        for i in range(n):
-+            for j in range(i + 1, n):
-+                dx = points[i][0] - points[j][0]
-+                dy = points[i][1] - points[j][1]
-+                dz = points[i][2] - points[j][2]
-+                d_sq = dx*dx + dy*dy + dz*dz
-+                if d_sq < min_d_sq:
-+                    min_d_sq = d_sq
-+                    min_i, min_j = i, j
-+        
-+        if min_i == -1: break # Should not happen
-+        
-+        # Push points min_i and min_j apart along the line connecting them
-+        # Direction for i: away from j
-+        dist = math.sqrt(min_d_sq)
-+        if dist < 1e-12: continue
-+        
-+        # Force direction
-+        dir_i = (points[min_i][0] - points[min_j][0]) / dist
-+        dir_j = (points[min_j][0] - points[min_i][0]) / dist
-+        
-+        # Apply step projected onto tangent plane
-+        def update_point(idx, dx_dir, dy_dir, dz_dir, step):
-+            px, py, pz = points[idx]
-+            # Project onto tangent: F_tan = F - (F.p)p
-+            dot = dx_dir*px + dy_dir*py + dz_dir*pz
-+            tx = dx_dir - dot*px
-+            ty = dy_dir - dot*py
-+            tz = dz_dir - dot*pz
-+            
-+            # Normalize tangent vector to ensure step size is consistent
-+            t_norm = math.sqrt(tx*tx + ty*ty + tz*tz)
-+            if t_norm < 1e-12: return # Point is at pole or direction is radial
-+            
-+            nx = px + step * (tx / t_norm)
-+            ny = py + step * (ty / t_norm)
-+            nz = pz + step * (tz / t_norm)
-+            
-+            norm = math.sqrt(nx*nx + ny*ny + nz*nz)
-+            points[idx] = [nx/norm, ny/norm, nz/norm]
-+            
-+        # Move both points
-+        dx_dir = points[min_i][0] - points[min_j][0]
-+        dy_dir = points[min_i][1] - points[min_j][1]
-+        dz_dir = points[min_i][2] - points[min_j][2]
-+        
-+        # Normalize direction vector for force
-+        d_len = math.sqrt(dx_dir*dx_dir + dy_dir*dy_dir + dz_dir*dz_dir)
-+        if d_len > 1e-12:
-+            ux = dx_dir / d_len
-+            uy = dy_dir / d_len
-+            uz = dz_dir / d_len
-+            
-+            # Push i away from j
-+            update_point(min_i, ux, uy, uz, current_step)
-+            # Push j away from i (symmetric)
-+            update_point(min_j, -ux, -uy, -uz, current_step)
-+            
-+        current_step *= polish_decay
-+
-+    return [(p[0], p[1], p[2]) for p in points]
++    return best_pts
  # OMEGA-BLOCK-END
 ```
 
@@ -254,48 +217,82 @@ What changed compared with the starting program:
 
 One run per model and reasoning mode; the [model benchmarks](../benchmarks/tammes_30.md) page has speed, memory and progress over time.
 
-| Model | Where | Best | Gain | Minutes to best | New bests |
-|---|---|--:|--:|--:|--:|
-| qwen3.5:27b (no-think) | local | 38.5505 | ×12.04 | 15.0 | 5 |
-| qwen3.8:27b-mtp-q4_K_M (think) | local | 38.5061 | ×12.03 | 15.7 | 1 |
-| gemma4:26b-a4b-it-qat (no-think) | local | 38.2264 | ×11.94 | 8.1 | 4 |
-| gemma4:12b-it-qat (no-think) | local | 38.2018 | ×11.93 | 10.8 | 4 |
-| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 37.9644 | ×11.86 | 14.5 | 4 |
-| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 37.7428 | ×11.79 | 7.0 | 6 |
-| gemma4:latest (think) | local | 37.0936 | ×11.59 | 15.5 | 6 |
-| gemma4:latest (no-think) | local | 37.0129 | ×11.56 | 11.3 | 7 |
-| gpt-oss:20b (no-think) | local | 36.8947 | ×11.52 | 15.3 | 7 |
-| qwen2.5-coder:7b (no-think) | local | 36.8186 | ×11.50 | 9.5 | 7 |
-| gemma4:e4b-it-qat (think) | local | 36.6117 | ×11.44 | 6.0 | 3 |
-| ingu627/exaone4.0:32b (no-think) | local | 36.5970 | ×11.43 | 9.5 | 1 |
-| gpt-oss:20b (think) | local | 36.4916 | ×11.40 | 8.3 | 5 |
-| muse-glimmer:30b (no-think) | local | 35.1061 | ×10.97 | 14.3 | 3 |
-| gemma4:e4b-it-qat (no-think) | local | 34.9872 | ×10.93 | 14.2 | 5 |
-| nemotron-3-nano:30b-a3b-mlx (no-think) | local | 34.8429 | ×10.88 | 11.1 | 4 |
-| qwen3.5:27b (think) | local | 34.7277 | ×10.85 | 9.0 | 3 |
-| qwen3-coder:30b (no-think) | local | 34.0461 | ×10.63 | 14.3 | 4 |
-| qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | 33.1981 | ×10.37 | 9.4 | 6 |
-| devstral-small-2:24b (no-think) | local | 32.7402 | ×10.23 | 15.6 | 3 |
-| qwen3.5:latest (no-think) | local | 32.7402 | ×10.23 | 1.3 | 1 |
-| qwen3.5:latest (think) | local | 32.7402 | ×10.23 | 9.7 | 2 |
-| richardyoung/frognano-4b-2609:latest (no-think) | local | 32.7402 | ×10.23 | 1.1 | 3 |
-| nemotron-3.5-lightning:30b-mlx (no-think) | local | 30.6317 | ×9.57 | 5.0 | 1 |
-| qwen3.8:27b-mtp-q4_K_M (no-think) | local | 29.5856 | ×9.24 | 13.5 | 2 |
-| glm-4.7-flash:latest (no-think) | local | 21.4033 | ×6.69 | 2.5 | 2 |
-| nemotron-3-nano:30b-a3b-mlx (think) | local | 21.4033 | ×6.69 | 4.7 | 2 |
-| glm-4.7-flash:latest (think) | local | 20.2871 | ×6.34 | 11.8 | 3 |
-| nemotron-3-nano:4b (no-think) | local | 14.6767 | ×4.58 | 7.2 | 3 |
-| gemma4:12b-it-qat (think) | local | 14.3392 | ×4.48 | 5.2 | 1 |
-| gemma4:e2b (no-think) | local | 12.0000 | ×3.75 | 13.0 | 5 |
-| nemotron-3-nano:4b (think) | local | 12.0000 | ×3.75 | 2.3 | 1 |
-| gemma4:e2b (think) | local | 10.8343 | ×3.38 | 2.4 | 2 |
-| richardyoung/frognano-4b-2609:latest (think) | local | 9.72012 | ×3.04 | 9.2 | 1 |
-| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | 9.44763 | ×2.95 | 8.8 | 3 |
-| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | 7.64645 | ×2.39 | 3.0 | 1 |
-| gemma4:26b-a4b-it-qat (think) | local | | | | failed: all 3 model requests failed: gemma4:26b-a4b-it-qat: answer … |
-| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | | | | failed: all 1 model requests failed: qwen3.6:27b-coding-mtp-q4_K_M … |
-| llm-jp-4-8b-omega:q4_k_m (no-think) | local | 3.20136 | ×1.00 | - | 0 |
-| frob/sarvam:30b (no-think) | local | 3.20136 | ×1.00 | - | 0 |
-| muse-glimmer:30b (think) | local | | | | failed: all 1 model requests failed: muse-glimmer:30b: answer … |
-| frob/sarvam:30b (think) | local | 3.20136 | ×1.00 | - | 0 |
-| nemotron-3.5-lightning:30b-mlx (think) | local | | | | failed: all 4 model requests failed … |
+| Model | Where | Machine | Best | Gain | Minutes to best | New bests |
+|---|---|---|--:|--:|--:|--:|
+| gemma4:26b-a4b-it-qat (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 38.5925 | ×12.06 | 12.2 | 9 |
+| qwen3.5:27b (no-think) | local | Apple M1 Max | 38.5505 | ×12.04 | 15.0 | 5 |
+| gemma4:26b-a4b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | 38.5160 | ×12.03 | 7.5 | 1 |
+| qwen3.8:27b-mtp-q4_K_M (think) | local | Apple M1 Max | 38.5061 | ×12.03 | 15.7 | 1 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 38.4313 | ×12.00 | 5.2 | 1 |
+| gemma4:26b-a4b-it-qat (no-think) | local | Apple M1 Max | 38.2264 | ×11.94 | 8.1 | 4 |
+| qwen3-coder:30b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 38.2228 | ×11.94 | 14.2 | 9 |
+| gemma4:12b-it-qat (no-think) | local | Apple M1 Max | 38.2018 | ×11.93 | 10.8 | 4 |
+| gpt-oss:20b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 38.1013 | ×11.90 | 11.7 | 6 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | Apple M1 Max | 37.9644 | ×11.86 | 14.5 | 4 |
+| gpt-oss:20b (think) | local | i7-8700K + 2x GTX 1080 Ti | 37.8105 | ×11.81 | 15.2 | 9 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | Apple M1 Max | 37.7428 | ×11.79 | 7.0 | 6 |
+| gemma4:12b-it-qat (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 37.1703 | ×11.61 | 8.2 | 4 |
+| gemma4:latest (think) | local | Apple M1 Max | 37.0936 | ×11.59 | 15.5 | 6 |
+| gemma4:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 37.0841 | ×11.58 | 7.9 | 4 |
+| gemma4:latest (no-think) | local | Apple M1 Max | 37.0129 | ×11.56 | 11.3 | 7 |
+| gemma4:e4b-it-qat (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 36.9563 | ×11.54 | 14.7 | 5 |
+| gpt-oss:20b (no-think) | local | Apple M1 Max | 36.8947 | ×11.52 | 15.3 | 7 |
+| richardyoung/frognano-4b-2609:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 36.8824 | ×11.52 | 12.6 | 7 |
+| gemma4:e4b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | 36.8798 | ×11.52 | 13.6 | 4 |
+| qwen2.5-coder:7b (no-think) | local | Apple M1 Max | 36.8186 | ×11.50 | 9.5 | 7 |
+| gemma4:e4b-it-qat (think) | local | Apple M1 Max | 36.6117 | ×11.44 | 6.0 | 3 |
+| ingu627/exaone4.0:32b (no-think) | local | Apple M1 Max | 36.5970 | ×11.43 | 9.5 | 1 |
+| qwen2.5-coder:7b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 36.5738 | ×11.42 | 6.7 | 2 |
+| gpt-oss:20b (think) | local | Apple M1 Max | 36.4916 | ×11.40 | 8.3 | 5 |
+| glm-4.7-flash:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 35.6749 | ×11.14 | 13.1 | 3 |
+| muse-glimmer:30b (no-think) | local | Apple M1 Max | 35.1061 | ×10.97 | 14.3 | 3 |
+| gemma4:e4b-it-qat (no-think) | local | Apple M1 Max | 34.9872 | ×10.93 | 14.2 | 5 |
+| nemotron-3-nano:30b-a3b-mlx (no-think) | local | Apple M1 Max | 34.8429 | ×10.88 | 11.1 | 4 |
+| qwen3.5:27b (think) | local | Apple M1 Max | 34.7277 | ×10.85 | 9.0 | 3 |
+| richardyoung/frognano-4b-2609:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 34.4914 | ×10.77 | 14.6 | 3 |
+| qwen3-coder:30b (no-think) | local | Apple M1 Max | 34.0461 | ×10.63 | 14.3 | 4 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | Apple M1 Max | 33.1981 | ×10.37 | 9.4 | 6 |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 32.7402 | ×10.23 | 18.3 | 2 |
+| devstral-small-2:24b (no-think) | local | Apple M1 Max | 32.7402 | ×10.23 | 15.6 | 3 |
+| qwen3.5:latest (no-think) | local | Apple M1 Max | 32.7402 | ×10.23 | 1.3 | 1 |
+| qwen3.5:latest (think) | local | Apple M1 Max | 32.7402 | ×10.23 | 9.7 | 2 |
+| qwen3.8:27b-mtp-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 32.7402 | ×10.23 | 11.6 | 1 |
+| qwen3.5:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 32.7402 | ×10.23 | 0.8 | 1 |
+| richardyoung/frognano-4b-2609:latest (no-think) | local | Apple M1 Max | 32.7402 | ×10.23 | 1.1 | 3 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 32.1880 | ×10.05 | 14.8 | 12 |
+| qwen3.8:27b-mtp-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 31.9274 | ×9.97 | 26.1 | 1 |
+| nemotron-3.5-lightning:30b-mlx (no-think) | local | Apple M1 Max | 30.6317 | ×9.57 | 5.0 | 1 |
+| qwen3.8:27b-mtp-q4_K_M (no-think) | local | Apple M1 Max | 29.5856 | ×9.24 | 13.5 | 2 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 29.1042 | ×9.09 | 15.6 | 4 |
+| qwen3.5:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 28.2314 | ×8.82 | 10.4 | 3 |
+| gemma4:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 27.3605 | ×8.55 | 10.5 | 4 |
+| glm-4.7-flash:latest (no-think) | local | Apple M1 Max | 21.4033 | ×6.69 | 2.5 | 2 |
+| nemotron-3-nano:30b-a3b-mlx (think) | local | Apple M1 Max | 21.4033 | ×6.69 | 4.7 | 2 |
+| glm-4.7-flash:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 21.4033 | ×6.69 | 12.1 | 1 |
+| nemotron-3-nano:4b (think) | local | i7-8700K + 2x GTX 1080 Ti | 21.0183 | ×6.57 | 11.6 | 3 |
+| glm-4.7-flash:latest (think) | local | Apple M1 Max | 20.2871 | ×6.34 | 11.8 | 3 |
+| nemotron-3-nano:4b (no-think) | local | Apple M1 Max | 14.6767 | ×4.58 | 7.2 | 3 |
+| gemma4:12b-it-qat (think) | local | Apple M1 Max | 14.3392 | ×4.48 | 5.2 | 1 |
+| gemma4:e2b (no-think) | local | Apple M1 Max | 12.0000 | ×3.75 | 13.0 | 5 |
+| nemotron-3-nano:4b (think) | local | Apple M1 Max | 12.0000 | ×3.75 | 2.3 | 1 |
+| gemma4:e2b (think) | local | i7-8700K + 2x GTX 1080 Ti | 12.0000 | ×3.75 | 14.2 | 3 |
+| gemma4:e2b (think) | local | Apple M1 Max | 10.8343 | ×3.38 | 2.4 | 2 |
+| gemma4:e2b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 9.8788 | ×3.09 | 0.6 | 1 |
+| richardyoung/frognano-4b-2609:latest (think) | local | Apple M1 Max | 9.72012 | ×3.04 | 9.2 | 1 |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | Apple M1 Max | 9.44763 | ×2.95 | 8.8 | 3 |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | Apple M1 Max | 7.64645 | ×2.39 | 3.0 | 1 |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 6.84728 | ×2.14 | 1.6 | 1 |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 6.73066 | ×2.10 | 6.5 | 1 |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 6.36826 | ×1.99 | 4.9 | 1 |
+| nemotron-3-nano:4b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 4.96929 | ×1.55 | 14.2 | 1 |
+| frob/sarvam:30b (think) | local | i7-8700K + 2x GTX 1080 Ti | 3.79933 | ×1.19 | 7.2 | 1 |
+| gemma4:26b-a4b-it-qat (think) | local | Apple M1 Max | | | | failed: all 3 model requests failed: gemma4:26b-a4b-it-qat: answer … |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | Apple M1 Max | | | | failed: all 1 model requests failed: qwen3.6:27b-coding-mtp-q4_K_M … |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | local | Apple M1 Max | 3.20136 | ×1.00 | - | 0 |
+| frob/sarvam:30b (no-think) | local | Apple M1 Max | 3.20136 | ×1.00 | - | 0 |
+| muse-glimmer:30b (think) | local | Apple M1 Max | | | | failed: all 1 model requests failed: muse-glimmer:30b: answer … |
+| frob/sarvam:30b (think) | local | Apple M1 Max | 3.20136 | ×1.00 | - | 0 |
+| nemotron-3.5-lightning:30b-mlx (think) | local | Apple M1 Max | | | | failed: all 4 model requests failed … |
+| Bored/GigaChat3.1-10B-A1.8B-q4_K_M:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 3.20136 | ×1.00 | - | 0 |
+| frob/sarvam:30b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 3.20136 | ×1.00 | - | 0 |
+| gemma4:12b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 2 model requests failed: gemma4:12b-it-qat: answer … |

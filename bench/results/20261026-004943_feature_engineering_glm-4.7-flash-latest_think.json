@@ -1,0 +1,213 @@
+{
+ "schema": 3,
+ "example": "feature_engineering",
+ "model": "glm-4.7-flash:latest",
+ "variant": "think",
+ "model_size_gb": 19.0,
+ "model_params": "29.9B",
+ "started": "2026-10-26T00:49:43",
+ "minutes_budget": 15.0,
+ "wall_minutes": 20.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.623,
+ "best_score": 0.774,
+ "improvement": 1.2423756019261638,
+ "llm_calls": 4,
+ "mean_llm_seconds": 303.0,
+ "attempts": 4,
+ "ok": 3,
+ "statuses": {
+  "ok": 3,
+  "edit_error": 1
+ },
+ "sweeps": 1,
+ "sweep_variants": 9,
+ "improvements": 2,
+ "minutes_to_best": 4.88,
+ "best_idea": "tuned THRESH_X3=1, THRESH_X4=1 on top of: Add interaction terms ($x_1 \\cdot x_2$) and geometric transforms ($x_1^2 + x_2^2$, $\\log(x_3)$) to capture nonlinear separations missed by raw inputs.",
+ "progress": [
+  [
+   0.0,
+   0.623
+  ],
+  [
+   4.88,
+   0.752
+  ],
+  [
+   4.88,
+   0.774
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.623,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 4.88,
+   "score": 0.752,
+   "model": "glm-4.7-flash:latest",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Add interaction terms ($x_1 \\cdot x_2$) and geometric transforms ($x_1^2 + x_2^2$, $\\log(x_3)$) to capture nonlinear separations missed by raw inputs."
+  },
+  {
+   "minutes": 4.88,
+   "score": 0.774,
+   "model": "glm-4.7-flash:latest",
+   "mode": "sweep/explore/diff/bold",
+   "status": "ok",
+   "idea": "tuned THRESH_X3=1, THRESH_X4=1 on top of: Add interaction terms ($x_1 \\cdot x_2$) and geometric transforms ($x_1^2 + x_2^2$, $\\log(x_3)$) to capture nonlinear separations missed by raw inputs."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -9,6 +9,9 @@\n import math\n \n # OMEGA-BLOCK-START\n+THRESH_X3 = 1.0\n+THRESH_X4 = 1.0\n+\n def features(row):\n     \"\"\"Return the feature vector (a list of at most 30 finite floats) for one row.\n \n@@ -19,7 +22,19 @@\n     features (they are standardized and a bias is added), so nonlinear structure only\n     helps if a feature expresses it. Only the Python standard library may be used.\n \n-    Current method: the raw inputs.\n+    New method: raw inputs plus geometric interactions and log transforms.\n     \"\"\"\n-    return list(row)\n+    x1, x2, x3, x4, x5, x6 = row\n+    # Raw inputs\n+    f0, f1, f2, f3, f4, f5 = x1, x2, x3, x4, x5, x6\n+    # Interaction (e.g., XOR/quadrant)\n+    f6 = x1 * x2\n+    # Radius (e.g., circle boundary)\n+    f7 = x1 * x1 + x2 * x2\n+    # Log transform for skewed variable\n+    f8 = math.log(x3)\n+    # Thresholds for step functions\n+    f9 = 1.0 if x3 > THRESH_X3 else 0.0\n+    f10 = 1.0 if x4 > THRESH_X4 else 0.0\n+    return [f0, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10]\n # OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "classification",
+  "columns": [
+   "x1",
+   "x2",
+   "x3",
+   "x4",
+   "x5",
+   "x6"
+  ],
+  "head": [
+   [
+    0.14,
+    1.08,
+    1.79,
+    -0.66,
+    1.01,
+    -0.54
+   ],
+   [
+    -1.03,
+    -0.71,
+    0.47,
+    1.72,
+    0.77,
+    -0.69
+   ],
+   [
+    0.36,
+    -0.3,
+    0.1,
+    -2.0,
+    0.57,
+    -0.15
+   ],
+   [
+    1.13,
+    1.16,
+    1.34,
+    1.26,
+    1.29,
+    0.92
+   ]
+  ],
+  "head_labels": [
+   1,
+   1,
+   0,
+   1
+  ],
+  "train_rows": 1000,
+  "num_features": 6,
+  "test_correct": "1110101111000101011111011010101001101100111100110111111101011110101110011011001101101000011100011010111110110111011110000011111111011100100110111110101000001001110101111110101010111011101101000010010100000101110011000100110001010111011001101100110011110111111010101001011101111011110101110011100101100100011011010011101011000101100100110110111110100101101111110111101100011110111111110110111111101100010111110011111011001100001101010011101100101011010111110000111000010111111111100111110101010101111011001000111110111101110001011111011110011101010011011101111101001101110110101100001110001001101010001011011001111110111110101111110110110110101010111001011111101111111101101111001111001000101101001000000100100101111111111011011101110111110101111110001111001101111101111101011111111011111111111111111000111001001110010010010000110000101111110101001111101111000111011000111111101111101111000111011111010001001101100011000110110111000010111110110001111111111101001111101100011100101100101011101110111010"
+ },
+ "best_solution": {
+  "kind": "classification",
+  "columns": [
+   "x1",
+   "x2",
+   "x3",
+   "x4",
+   "x5",
+   "x6"
+  ],
+  "head": [
+   [
+    0.14,
+    1.08,
+    1.79,
+    -0.66,
+    1.01,
+    -0.54
+   ],
+   [
+    -1.03,
+    -0.71,
+    0.47,
+    1.72,
+    0.77,
+    -0.69
+   ],
+   [
+    0.36,
+    -0.3,
+    0.1,
+    -2.0,
+    0.57,
+    -0.15
+   ],
+   [
+    1.13,
+    1.16,
+    1.34,
+    1.26,
+    1.29,
+    0.92
+   ]
+  ],
+  "head_labels": [
+   1,
+   1,
+   0,
+   1
+  ],
+  "train_rows": 1000,
+  "num_features": 11,
+  "test_correct": "1111101111111011111111011111101110101110111100110111111111111111101100111111101111000001111100011011111110011111011111101111111101110101100111111110110000101111111101111111101101011111011101001111001100011111111110110101010111011111111101001011110010110110111001111111111101111111010111011111101101100111001111010011111111111101101101100110111111101111111111111111111111111110111000110010101110111100011111111110111011111111011101110111101111111010010111111001011101111111110111111110111111011101111111111101111110111101111001111111111111011101110011011111111100101111101110100100111111101111101110001111011011111011111111101111111100110110101011111101111111101111111111111111001111101101001101111111011101101101111111111111001111010111111111111111110111010110111101111111010111111111111111111110010111111011111110111010111100110001101111110111111101101111001111011101111111101111111111101111010111010011111101111111110011111111111011111110111101111111101101001111101100111010111110101111001110011010"
+ },
+ "error": "",
+ "model_memory_gb": 21.2,
+ "model_gpu_memory_gb": 19.0,
+ "context_length": 32768,
+ "load_seconds": 58.5,
+ "median_call_seconds": 321.8,
+ "p90_call_seconds": 410.5,
+ "prompt_tokens_per_s": 480.2,
+ "gen_tokens_per_s": 23.8,
+ "mean_prompt_tokens": 2456,
+ "mean_gen_tokens": 6682,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

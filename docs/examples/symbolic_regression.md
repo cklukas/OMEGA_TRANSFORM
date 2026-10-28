@@ -96,9 +96,9 @@ def predict(params, x1, x2, x3):
 
 ## Benchmark results
 
-The best result so far comes from **qwen3.6:27b-coding-mtp-q4_K_M (no-think)**, run locally with Ollama on 2026-10-15: a score of **0.99869** (×3.19 the starting program's 0.31284), reached after 6.28 of 15 minutes with 6 model requests.
+The best result so far comes from **qwen2.5-coder:7b (no-think)**, run locally with Ollama on 2026-10-24: a score of **0.99875** (×3.19 the starting program's 0.31284), reached after 14.23 of 15 minutes with 42 model requests.
 
-What the starting program produces (left) and what the best program by qwen3.6:27b-coding-mtp-q4_K_M (no-think) produces (right):
+What the starting program produces (left) and what the best program by qwen2.5-coder:7b (no-think) produces (right):
 
 ![symbolic_regression: the starting program's solution and the best one](../assets/examples/symbolic_regression.svg)
 
@@ -109,7 +109,9 @@ The best program's ancestry, from the starting program on. "Edit" and "rewrite" 
 | Step | Minute | Score | Kind | Idea |
 |--:|--:|--:|---|---|
 | 0 | 0.0 | 0.31284 | start | initial program |
-| 1 | 6.3 | 0.99869 | edit | Replace the simple linear basis with a candidate set including quadratic terms, interaction terms, and trigonometric functions, then use forward selection to pick the best subset of basis functions that explains the variance, which should capture the … |
+| 1 | 0.7 | 0.37777 | edit | Introduce interaction terms and sinusoidal functions to capture more complex dependencies. |
+| 2 | 7.9 | 0.99875 | edit | Use a different set of basis functions that might better capture the underlying pattern in the data, such as powers of the inputs and their interactions. |
+| 3 | 14.2 | 0.99875 | edit | Introduce a constant for the number of basis functions to explore different sets of terms and prevent overfitting. |
 
 ### The best program
 
@@ -118,166 +120,101 @@ What changed compared with the starting program:
 ```diff
 --- initial
 +++ best
-@@ -33,9 +33,22 @@
+@@ -33,9 +33,11 @@
  
  
  # OMEGA-BLOCK-START
--def basis(x1, x2, x3):
--    """Basis functions of the model; the prediction is a weighted sum of them."""
++NUM_BASIS = 16
++
+ def basis(x1, x2, x3):
+     """Basis functions of the model; the prediction is a weighted sum of them."""
 -    return [1.0, x1, x2, x3]
-+def candidate_basis(x1, x2, x3):
-+    """Generate a broad set of candidate basis functions."""
-+    import math
-+    return [
-+        1.0,
-+        x1, x2, x3,
-+        x1**2, x2**2, x3**2,
-+        x1*x2, x1*x3, x2*x3,
-+        math.sin(x1), math.sin(x2), math.sin(x3),
-+        math.cos(x1), math.cos(x2), math.cos(x3),
-+        math.sin(x1)*x2, math.sin(x1)*x3,
-+        math.cos(x1)*x2, math.cos(x1)*x3,
-+        x1*math.sin(x2), x3*math.sin(x2),
-+        x1**3, x2**3, x3**3,
-+        x1*x2*x3,
-+    ]
++    return [1.0] + [x1, x2, x3, x1*x2, x1*x3, x2*x3, x1**2, x2**2, x3**2, x1*x2*x3, math.sin(x1) * x2, math.cos(x2) * x3] + [x1**i * x2**j * x3**k for i in range(2) for j in range(2) for k in range(2) if i + j + k < NUM_BASIS]
  
  
  def fit(rows):
-@@ -48,13 +61,81 @@
-     x3 in [0, 3]. Only the Python standard library may be used (math, statistics,
-     random, ...; no numpy). fit plus all predictions must take at most 10 CPU seconds.
- 
--    Current method: linear regression on the raw inputs.
-+    Current method: forward selection over candidate basis functions.
-     """
--    cols = list(zip(*[basis(x1, x2, x3) for x1, x2, x3, _ in rows]))
--    return least_squares([list(c) for c in cols], [y for *_, y in rows])
-+    import math
-+
-+    # Split data into train and validation for cross-validation
-+    n = len(rows)
-+    train_idx = list(range(n))
-+    val_idx = []
-+    # Simple split: last 20% for validation
-+    split = int(0.8 * n)
-+    val_idx = list(range(split, n))
-+    train_idx = list(range(split))
-+
-+    train_rows = [rows[i] for i in train_idx]
-+    val_rows = [rows[i] for i in val_idx]
-+
-+    # Precompute candidate basis values for all rows
-+    def get_basis_rows(data):
-+        return [candidate_basis(x1, x2, x3) for x1, x2, x3, _ in data]
-+
-+    train_basis = get_basis_rows(train_rows)
-+    val_basis = get_basis_rows(val_rows)
-+    train_y = [y for _, _, _, y in train_rows]
-+    val_y = [y for _, _, _, y in val_rows]
-+
-+    # Forward selection
-+    selected_indices = [0]  # Start with intercept
-+    best_val_mse = float('inf')
-+
-+    # Compute initial MSE with just intercept
-+    def compute_mse(selected, basis_data, y_data):
-+        cols = [[row[i] for row in basis_data] for i in selected]
-+        coeffs = least_squares(cols, y_data)
-+        preds = [sum(c * b for c, b in zip(coeffs, [row[i] for i in selected])) for row in basis_data]
-+        mse = sum((p - t) ** 2 for p, t in zip(preds, y_data)) / len(y_data)
-+        return mse, coeffs
-+
-+    # Iteratively add best basis function
-+    for _ in range(15):  # Limit number of terms
-+        best_mse = best_val_mse
-+        best_coeffs = None
-+        best_new_index = None
-+
-+        for j in range(len(candidate_basis(0, 0, 0))):
-+            if j in selected_indices:
-+                continue
-+            new_selected = selected_indices + [j]
-+            mse, coeffs = compute_mse(new_selected, train_basis, train_y)
-+            # Also compute validation MSE
-+            val_preds = [sum(c * b for c, b in zip(coeffs, [row[i] for i in new_selected])) for row in val_basis]
-+            val_mse = sum((p - t) ** 2 for p, t in zip(val_preds, val_y)) / len(val_y)
-+
-+            if val_mse < best_mse:
-+                best_mse = val_mse
-+                best_coeffs = coeffs
-+                best_new_index = j
-+
-+        if best_new_index is None:
-+            break
-+
-+        selected_indices.append(best_new_index)
-+        best_val_mse = best_mse
-+
-+    # Final fit on all data with selected basis
-+    all_basis = get_basis_rows(rows)
-+    all_y = [y for _, _, _, y in rows]
-+    final_mse, final_coeffs = compute_mse(selected_indices, all_basis, all_y)
-+
-+    # Return coefficients and selected indices
-+    return final_coeffs, selected_indices
- 
- 
- def predict(params, x1, x2, x3):
-     """Return the predicted y (a finite float) for one input."""
--    return sum(c * b for c, b in zip(params, basis(x1, x2, x3)))
-+    coeffs, selected_indices = params
-+    basis_vals = candidate_basis(x1, x2, x3)
-+    return sum(c * basis_vals[i] for c, i in zip(coeffs, selected_indices))
- # OMEGA-BLOCK-END
 ```
 
 ### All models
 
 One run per model and reasoning mode; the [model benchmarks](../benchmarks/symbolic_regression.md) page has speed, memory and progress over time.
 
-| Model | Where | Best | Gain | Minutes to best | New bests |
-|---|---|--:|--:|--:|--:|
-| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 0.99869 | ×3.19 | 6.3 | 2 |
-| qwen3.5:27b (think) | local | 0.99866 | ×3.19 | 19.6 | 2 |
-| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | 0.99865 | ×3.19 | 11.3 | 1 |
-| gemma4:latest (no-think) | local | 0.99864 | ×3.19 | 12.3 | 7 |
-| qwen3.5:latest (think) | local | 0.99862 | ×3.19 | 10.4 | 4 |
-| qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | 0.99801 | ×3.19 | 7.2 | 4 |
-| gemma4:12b-it-qat (no-think) | local | 0.9978 | ×3.19 | 9.8 | 4 |
-| gemma4:26b-a4b-it-qat (no-think) | local | 0.99772 | ×3.19 | 4.7 | 3 |
-| gemma4:e4b-it-qat (no-think) | local | 0.99768 | ×3.19 | 13.4 | 6 |
-| gemma4:e4b-it-qat (think) | local | 0.99759 | ×3.19 | 13.1 | 2 |
-| qwen3.5:27b (no-think) | local | 0.99752 | ×3.19 | 5.2 | 2 |
-| gemma4:26b-a4b-it-qat (think) | local | 0.99595 | ×3.18 | 14.2 | 1 |
-| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 0.99477 | ×3.18 | 10.2 | 2 |
-| qwen3.8:27b-mtp-q4_K_M (no-think) | local | 0.98968 | ×3.16 | 7.6 | 1 |
-| nemotron-3.5-lightning:30b-mlx (no-think) | local | 0.96645 | ×3.09 | 14.4 | 5 |
-| richardyoung/frognano-4b-2609:latest (no-think) | local | 0.86755 | ×2.77 | 6.0 | 4 |
-| gpt-oss:20b (think) | local | 0.70451 | ×2.25 | 15.0 | 4 |
-| gemma4:e2b (think) | local | 0.49742 | ×1.59 | 15.4 | 4 |
-| gpt-oss:20b (no-think) | local | 0.49719 | ×1.59 | 11.7 | 4 |
-| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | 0.49714 | ×1.59 | 9.0 | 3 |
-| ingu627/exaone4.0:32b (no-think) | local | 0.45589 | ×1.46 | 20.0 | 2 |
-| qwen2.5-coder:7b (no-think) | local | 0.44035 | ×1.41 | 10.5 | 5 |
-| glm-4.7-flash:latest (no-think) | local | 0.43898 | ×1.40 | 11.7 | 4 |
-| qwen3.5:latest (no-think) | local | 0.39952 | ×1.28 | 9.8 | 6 |
-| devstral-small-2:24b (no-think) | local | 0.39071 | ×1.25 | 11.4 | 2 |
-| nemotron-3-nano:4b (think) | local | 0.38238 | ×1.22 | 5.6 | 4 |
-| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | 0.38103 | ×1.22 | 4.6 | 2 |
-| nemotron-3-nano:4b (no-think) | local | 0.38063 | ×1.22 | 10.5 | 4 |
-| gemma4:e2b (no-think) | local | 0.38046 | ×1.22 | 12.9 | 6 |
-| muse-glimmer:30b (no-think) | local | 0.37999 | ×1.21 | 8.6 | 3 |
-| nemotron-3-nano:30b-a3b-mlx (think) | local | 0.37956 | ×1.21 | 15.5 | 2 |
-| gemma4:latest (think) | local | 0.3795 | ×1.21 | 9.8 | 2 |
-| llm-jp-4-8b-omega:q4_k_m (no-think) | local | 0.37945 | ×1.21 | 6.7 | 1 |
-| richardyoung/frognano-4b-2609:latest (think) | local | 0.37945 | ×1.21 | 1.2 | 1 |
-| nemotron-3-nano:30b-a3b-mlx (no-think) | local | 0.37836 | ×1.21 | 5.8 | 2 |
-| muse-glimmer:30b (think) | local | 0.37701 | ×1.21 | 9.2 | 1 |
-| nemotron-3.5-lightning:30b-mlx (think) | local | 0.37689 | ×1.20 | 15.7 | 1 |
-| qwen3-coder:30b (no-think) | local | 0.37689 | ×1.20 | 2.8 | 2 |
-| frob/sarvam:30b (no-think) | local | 0.37509 | ×1.20 | 4.9 | 1 |
-| gemma4:12b-it-qat (think) | local | 0.37429 | ×1.20 | 19.1 | 1 |
-| qwen3.8:27b-mtp-q4_K_M (think) | local | 0.31284 | ×1.00 | - | 0 |
-| glm-4.7-flash:latest (think) | local | 0.31284 | ×1.00 | - | 0 |
-| frob/sarvam:30b (think) | local | | | | failed: all 2 model requests failed: frob/sarvam:30b: answer … |
+| Model | Where | Machine | Best | Gain | Minutes to best | New bests |
+|---|---|---|--:|--:|--:|--:|
+| qwen2.5-coder:7b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.99875 | ×3.19 | 14.2 | 6 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | Apple M1 Max | 0.99869 | ×3.19 | 6.3 | 2 |
+| qwen3.5:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.99866 | ×3.19 | 12.9 | 4 |
+| qwen3.5:27b (think) | local | Apple M1 Max | 0.99866 | ×3.19 | 19.6 | 2 |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | Apple M1 Max | 0.99865 | ×3.19 | 11.3 | 1 |
+| gemma4:latest (no-think) | local | Apple M1 Max | 0.99864 | ×3.19 | 12.3 | 7 |
+| qwen3.5:latest (think) | local | Apple M1 Max | 0.99862 | ×3.19 | 10.4 | 4 |
+| qwen3.8:27b-mtp-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.99806 | ×3.19 | 12.5 | 2 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | Apple M1 Max | 0.99801 | ×3.19 | 7.2 | 4 |
+| gemma4:12b-it-qat (no-think) | local | Apple M1 Max | 0.9978 | ×3.19 | 9.8 | 4 |
+| gemma4:26b-a4b-it-qat (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.99775 | ×3.19 | 9.1 | 3 |
+| gemma4:26b-a4b-it-qat (no-think) | local | Apple M1 Max | 0.99772 | ×3.19 | 4.7 | 3 |
+| gemma4:e4b-it-qat (no-think) | local | Apple M1 Max | 0.99768 | ×3.19 | 13.4 | 6 |
+| gemma4:12b-it-qat (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.99764 | ×3.19 | 15.2 | 4 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.99761 | ×3.19 | 1.9 | 2 |
+| gemma4:e4b-it-qat (think) | local | Apple M1 Max | 0.99759 | ×3.19 | 13.1 | 2 |
+| qwen3.5:27b (no-think) | local | Apple M1 Max | 0.99752 | ×3.19 | 5.2 | 2 |
+| gemma4:26b-a4b-it-qat (think) | local | Apple M1 Max | 0.99595 | ×3.18 | 14.2 | 1 |
+| gemma4:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.99589 | ×3.18 | 15.2 | 4 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | Apple M1 Max | 0.99477 | ×3.18 | 10.2 | 2 |
+| gemma4:26b-a4b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.99139 | ×3.17 | 8.0 | 1 |
+| qwen3.8:27b-mtp-q4_K_M (no-think) | local | Apple M1 Max | 0.98968 | ×3.16 | 7.6 | 1 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.98173 | ×3.14 | 13.9 | 4 |
+| gemma4:e4b-it-qat (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.98129 | ×3.14 | 12.1 | 5 |
+| gemma4:12b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.97402 | ×3.11 | 8.5 | 1 |
+| nemotron-3.5-lightning:30b-mlx (no-think) | local | Apple M1 Max | 0.96645 | ×3.09 | 14.4 | 5 |
+| qwen3.5:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.93587 | ×2.99 | 12.0 | 7 |
+| richardyoung/frognano-4b-2609:latest (no-think) | local | Apple M1 Max | 0.86755 | ×2.77 | 6.0 | 4 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.8555 | ×2.73 | 8.3 | 2 |
+| richardyoung/frognano-4b-2609:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.84441 | ×2.70 | 3.9 | 3 |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.839 | ×2.68 | 3.4 | 3 |
+| gpt-oss:20b (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.81569 | ×2.61 | 14.4 | 5 |
+| gpt-oss:20b (think) | local | Apple M1 Max | 0.70451 | ×2.25 | 15.0 | 4 |
+| gemma4:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.58816 | ×1.88 | 14.7 | 7 |
+| gemma4:e2b (think) | local | Apple M1 Max | 0.49742 | ×1.59 | 15.4 | 4 |
+| gpt-oss:20b (no-think) | local | Apple M1 Max | 0.49719 | ×1.59 | 11.7 | 4 |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | Apple M1 Max | 0.49714 | ×1.59 | 9.0 | 3 |
+| qwen3-coder:30b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.48181 | ×1.54 | 6.9 | 4 |
+| ingu627/exaone4.0:32b (no-think) | local | Apple M1 Max | 0.45589 | ×1.46 | 20.0 | 2 |
+| qwen2.5-coder:7b (no-think) | local | Apple M1 Max | 0.44035 | ×1.41 | 10.5 | 5 |
+| glm-4.7-flash:latest (no-think) | local | Apple M1 Max | 0.43898 | ×1.40 | 11.7 | 4 |
+| qwen3.5:latest (no-think) | local | Apple M1 Max | 0.39952 | ×1.28 | 9.8 | 6 |
+| devstral-small-2:24b (no-think) | local | Apple M1 Max | 0.39071 | ×1.25 | 11.4 | 2 |
+| nemotron-3-nano:4b (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.38309 | ×1.22 | 11.1 | 1 |
+| gemma4:e2b (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.38253 | ×1.22 | 12.8 | 3 |
+| nemotron-3-nano:4b (think) | local | Apple M1 Max | 0.38238 | ×1.22 | 5.6 | 4 |
+| glm-4.7-flash:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.3819 | ×1.22 | 14.9 | 7 |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.38174 | ×1.22 | 2.7 | 2 |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | Apple M1 Max | 0.38103 | ×1.22 | 4.6 | 2 |
+| gpt-oss:20b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.38096 | ×1.22 | 7.6 | 6 |
+| nemotron-3-nano:4b (no-think) | local | Apple M1 Max | 0.38063 | ×1.22 | 10.5 | 4 |
+| gemma4:e2b (no-think) | local | Apple M1 Max | 0.38046 | ×1.22 | 12.9 | 6 |
+| frob/sarvam:30b (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.38018 | ×1.22 | 18.0 | 2 |
+| muse-glimmer:30b (no-think) | local | Apple M1 Max | 0.37999 | ×1.21 | 8.6 | 3 |
+| gemma4:e4b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.37966 | ×1.21 | 6.0 | 2 |
+| nemotron-3-nano:30b-a3b-mlx (think) | local | Apple M1 Max | 0.37956 | ×1.21 | 15.5 | 2 |
+| gemma4:latest (think) | local | Apple M1 Max | 0.3795 | ×1.21 | 9.8 | 2 |
+| richardyoung/frognano-4b-2609:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.37946 | ×1.21 | 14.4 | 2 |
+| gemma4:e2b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.37945 | ×1.21 | 12.0 | 3 |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | local | Apple M1 Max | 0.37945 | ×1.21 | 6.7 | 1 |
+| richardyoung/frognano-4b-2609:latest (think) | local | Apple M1 Max | 0.37945 | ×1.21 | 1.2 | 1 |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.37945 | ×1.21 | 7.7 | 1 |
+| Bored/GigaChat3.1-10B-A1.8B-q4_K_M:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.37906 | ×1.21 | 8.2 | 3 |
+| glm-4.7-flash:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.37836 | ×1.21 | 8.2 | 2 |
+| nemotron-3-nano:30b-a3b-mlx (no-think) | local | Apple M1 Max | 0.37836 | ×1.21 | 5.8 | 2 |
+| muse-glimmer:30b (think) | local | Apple M1 Max | 0.37701 | ×1.21 | 9.2 | 1 |
+| nemotron-3.5-lightning:30b-mlx (think) | local | Apple M1 Max | 0.37689 | ×1.20 | 15.7 | 1 |
+| qwen3-coder:30b (no-think) | local | Apple M1 Max | 0.37689 | ×1.20 | 2.8 | 2 |
+| frob/sarvam:30b (no-think) | local | Apple M1 Max | 0.37509 | ×1.20 | 4.9 | 1 |
+| gemma4:12b-it-qat (think) | local | Apple M1 Max | 0.37429 | ×1.20 | 19.1 | 1 |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.37146 | ×1.19 | 22.4 | 1 |
+| nemotron-3-nano:4b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.32424 | ×1.04 | 14.7 | 3 |
+| qwen3.8:27b-mtp-q4_K_M (think) | local | Apple M1 Max | 0.31284 | ×1.00 | - | 0 |
+| glm-4.7-flash:latest (think) | local | Apple M1 Max | 0.31284 | ×1.00 | - | 0 |
+| frob/sarvam:30b (think) | local | Apple M1 Max | | | | failed: all 2 model requests failed: frob/sarvam:30b: answer … |
+| frob/sarvam:30b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.31284 | ×1.00 | - | 0 |
+| qwen3.8:27b-mtp-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.31284 | ×1.00 | - | 0 |

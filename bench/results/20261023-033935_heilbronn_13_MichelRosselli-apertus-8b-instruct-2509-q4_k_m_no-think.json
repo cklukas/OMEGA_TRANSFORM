@@ -1,0 +1,214 @@
+{
+ "schema": 3,
+ "example": "heilbronn_13",
+ "model": "MichelRosselli/apertus:8b-instruct-2509-q4_k_m",
+ "variant": "no-think",
+ "model_size_gb": 5.1,
+ "model_params": "8.1B",
+ "started": "2026-10-23T03:39:35",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.004790811518724618,
+ "best_score": 0.013307809774235053,
+ "improvement": 2.7777777777777786,
+ "llm_calls": 84,
+ "mean_llm_seconds": 10.0,
+ "attempts": 84,
+ "ok": 13,
+ "statuses": {
+  "edit_error": 9,
+  "ok": 13,
+  "llm_error": 3,
+  "duplicate": 25,
+  "invalid": 34
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 2,
+ "minutes_to_best": 0.96,
+ "best_idea": "Place more points near the corners to increase their contribution to the smallest triangle area.",
+ "progress": [
+  [
+   0.0,
+   0.004790811518724618
+  ],
+  [
+   0.58,
+   0.008516998255510434
+  ],
+  [
+   0.96,
+   0.013307809774235053
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.004790811518724618,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 0.96,
+   "score": 0.013307809774235053,
+   "model": "MichelRosselli/apertus:8b-instruct-2509-q4_k_m",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Place more points near the corners to increase their contribution to the smallest triangle area."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -13,7 +13,7 @@\n     the points on a regular polygon on a small circle around the center, which\n     avoids collinear triples but wastes most of the square.\n     \"\"\"\n-    radius = 0.3\n+    radius = 0.5\n     return [(0.5 + radius * math.cos(2 * math.pi * k / n),\n              0.5 + radius * math.sin(2 * math.pi * k / n)) for k in range(n)]\n # OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "heilbronn",
+  "points": [
+   [
+    0.8,
+    0.5
+   ],
+   [
+    0.765636807695963,
+    0.6394169516131305
+   ],
+   [
+    0.6704194240193467,
+    0.7468951597680968
+   ],
+   [
+    0.536161004076597,
+    0.7978126622294162
+   ],
+   [
+    0.3936185338872394,
+    0.7805048728056244
+   ],
+   [
+    0.27544677554866964,
+    0.6989367974722386
+   ],
+   [
+    0.2087174547721844,
+    0.5717946992862672
+   ],
+   [
+    0.2087174547721844,
+    0.42820530071373275
+   ],
+   [
+    0.2754467755486696,
+    0.30106320252776153
+   ],
+   [
+    0.3936185338872392,
+    0.21949512719437558
+   ],
+   [
+    0.536161004076597,
+    0.20218733777058384
+   ],
+   [
+    0.6704194240193464,
+    0.25310484023190294
+   ],
+   [
+    0.765636807695963,
+    0.3605830483868695
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "heilbronn",
+  "points": [
+   [
+    1.0,
+    0.5
+   ],
+   [
+    0.9427280128266049,
+    0.7323615860218843
+   ],
+   [
+    0.784032373365578,
+    0.9114919329468282
+   ],
+   [
+    0.5602683401276615,
+    0.9963544370490269
+   ],
+   [
+    0.3226975564787323,
+    0.9675081213427075
+   ],
+   [
+    0.1257446259144494,
+    0.8315613291203976
+   ],
+   [
+    0.014529091286973994,
+    0.6196578321437789
+   ],
+   [
+    0.014529091286973939,
+    0.38034216785622127
+   ],
+   [
+    0.12574462591444935,
+    0.16843867087960251
+   ],
+   [
+    0.32269755647873205,
+    0.03249187865729264
+   ],
+   [
+    0.5602683401276616,
+    0.0036455629509730136
+   ],
+   [
+    0.7840323733655774,
+    0.08850806705317149
+   ],
+   [
+    0.942728012826605,
+    0.26763841397811583
+   ]
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 10.1,
+ "model_gpu_memory_gb": 10.1,
+ "context_length": 32768,
+ "load_seconds": 15.0,
+ "median_call_seconds": 7.9,
+ "p90_call_seconds": 16.2,
+ "prompt_tokens_per_s": 1677.0,
+ "gen_tokens_per_s": 43.5,
+ "mean_prompt_tokens": 2888,
+ "mean_gen_tokens": 226,
+ "stopped_calls": 3,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -1,0 +1,223 @@
+{
+ "schema": 3,
+ "example": "heilbronn_13",
+ "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-10-23T06:37:04",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.004790811518724618,
+ "best_score": 0.013936035697159156,
+ "improvement": 2.9089091989302736,
+ "llm_calls": 30,
+ "mean_llm_seconds": 29.3,
+ "attempts": 30,
+ "ok": 25,
+ "statuses": {
+  "invalid": 5,
+  "ok": 25
+ },
+ "sweeps": 23,
+ "sweep_variants": 368,
+ "improvements": 5,
+ "minutes_to_best": 15.16,
+ "best_idea": "Replace the circular layout with a symmetric hybrid configuration using 4 corners, 4 edge midpoints, and 5 inner points on a rotated pentagon, optimized via gradient-free sweep to maximize minimum tri",
+ "progress": [
+  [
+   0.0,
+   0.004790811518724618
+  ],
+  [
+   6.42,
+   0.009990325866958881
+  ],
+  [
+   8.04,
+   0.010640285826212695
+  ],
+  [
+   8.04,
+   0.012696662732865044
+  ],
+  [
+   11.21,
+   0.013935479009256535
+  ],
+  [
+   15.16,
+   0.013936035697159156
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.004790811518724618,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 15.16,
+   "score": 0.013936035697159156,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Replace the circular layout with a symmetric hybrid configuration using 4 corners, 4 edge midpoints, and 5 inner points on a rotated pentagon, optimized via gradient-free sweep to maximize minimum triangle area while avoiding degeneracy and improving space utilization."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -8,14 +8,135 @@\n def construct(n=13):\n     \"\"\"Return a list of n points (x, y) inside the closed unit square [0,1]^2.\n \n-    The score is the smallest area among all triangles with corners at three of\n-    the points, so no three points may be (nearly) collinear. This start puts\n-    the points on a regular polygon on a small circle around the center, which\n-    avoids collinear triples but wastes most of the square.\n+    Uses a symmetric hybrid layout: 4 corners, 4 edge midpoints, and 5 inner points on a rotated pentagon.\n+    Optimizes the inner radius and rotation via a soft-min surrogate objective with simulated annealing\n+    to maximize the smallest triangle area, avoiding degeneracy and improving space utilization.\n     \"\"\"\n-    radius = 0.3\n-    return [(0.5 + radius * math.cos(2 * math.pi * k / n),\n-             0.5 + radius * math.sin(2 * math.pi * k / n)) for k in range(n)]\n+    import random\n+    random.seed(42)  # Reproducibility\n+\n+    # Initial symmetric layout\n+    points = []\n+    # Corners\n+    points.extend([(0, 0), (1, 0), (1, 1), (0, 1)])\n+    # Midpoints\n+    points.extend([(0.5, 0), (1, 0.5), (0.5, 1), (0, 0.5)])\n+    # Inner pentagon (rotated)\n+    inner_radius = 0.4159  # optimized via sweep\n+    rotation = 0.07297       # optimized via sweep\n+    for k in range(5):\n+        angle = 2 * math.pi * k / 5 + rotation\n+        x = 0.5 + inner_radius * math.cos(angle)\n+        y = 0.5 + inner_radius * math.sin(angle)\n+        points.append((x, y))\n+\n+    # Constants for simulated annealing\n+    T0 = 0.01\n+    T_min = 1e-8\n+    alpha = 0.95\n+    step_size = 0.03015  # optimized via sweep\n+    beta = 1.0           # Soft-min parameter (increases over time)\n+    beta_max = 100.0\n+    beta_inc = 2         # increment step\n+\n+    # Helper: compute all triangle areas\n+    def compute_areas(pts):\n+        areas = []\n+        for i in range(len(pts)):\n+            for j in range(i + 1, len(pts)):\n+                for k in range(j + 1, len(pts)):\n+                    a = pts[i]\n+                    b = pts[j]\n+                    c = pts[k]\n+                    area = abs((b[0] - a[0]) * (c[1] - a[1]) - (c[0] - a[0]) * (b[1] - a[1])) / 2.0\n+                    areas.append(area)\n+        return areas\n+\n+    # Soft-min surrogate: -1/beta * log(sum(exp(-beta * area)))\n+    def soft_min(areas, beta):\n+        if not areas:\n+            return 0.0\n+        exp_sum = sum(math.exp(-beta * a) for a in areas)\n+        return -math.log(exp_sum) / beta\n+\n+    # Annealing loop\n+    T = T0\n+    best_min_area = 0.0\n+    best_points = [p for p in points]\n+\n+    for iter in range(10000):\n+        # Compute current soft-min and areas\n+        areas = compute_areas(points)\n+        current_min = min(areas)\n+        if current_min > best_min_area:\n+            best_min_area = current_min\n+            best_points = [p for p in points]\n+\n+        # Increase beta to focus on minimum area\n+        if beta < beta_max:\n+            beta += beta_inc\n+\n+        # Compute soft-min objective\n+        objective = soft_min(areas, beta)\n+\n+        # Try random perturbation\n+        i = random.randint(0, n - 1)\n+        dx = random.uniform(-step_size, step_size)\n+        dy = random.uniform(-step_size, step_size)\n+        new_x = points[i][0] + dx\n+        new_y = points[i][1] + dy\n+        new_x = max(0.0, min(1.0, new_x))\n+        new_y = max(0.0, min(1.0, new_y))\n+\n+        # Save old point\n+        old_x, old_y = points[i]\n+\n+        # Update point temporarily\n+        points[i] = (new_x, new_y)\n+\n+        # Compute new areas and soft-min\n+        new_areas = compute_areas(points)\n+        new_objective = soft_min(new_areas, beta)\n+\n+        # Acceptance probability\n+        delta = new_objective - objective\n+        if delta > 0 or random.random() < math.exp(delta / T):\n+            # Accept move\n+            pass\n+        else:\n+            # Revert\n+            points[i] = (old_x, old_y)\n+\n+        # Cool down\n+        T *= alpha\n+\n+        # Early stop if no progress\n+        if T < T_min and iter > 1000:\n+            # Final polish: greedy improvement\n+            improved = True\n+            while improved:\n+                improved = False\n+                areas = compute_areas(points)\n+                min_area = min(areas)\n+                for i in range(n):\n+                    for dx in [-0.001, 0.001]:\n+                        for dy in [-0.001, 0.001]:\n+                            new_x = points[i][0] + dx\n+                            new_y = points[i][1] + dy\n+                            new_x = max(0.0, min(1.0, new_x))\n+                            new_y = max(0.0, min(1.0, new_y))\n+                            old_x, old_y = points[i]\n+                            points[i] = (new_x, new_y)\n+                            new_areas = compute_areas(points)\n+                            new_min = min(new_areas)\n+                            if new_min > min_area:\n+                                min_area = new_min\n+                                improved = True\n+                            else:\n+                                points[i] = (old_x, old_y)\n+            break\n+\n+    return best_points\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "heilbronn",
+  "points": [
+   [
+    0.8,
+    0.5
+   ],
+   [
+    0.765636807695963,
+    0.6394169516131305
+   ],
+   [
+    0.6704194240193467,
+    0.7468951597680968
+   ],
+   [
+    0.536161004076597,
+    0.7978126622294162
+   ],
+   [
+    0.3936185338872394,
+    0.7805048728056244
+   ],
+   [
+    0.27544677554866964,
+    0.6989367974722386
+   ],
+   [
+    0.2087174547721844,
+    0.5717946992862672
+   ],
+   [
+    0.2087174547721844,
+    0.42820530071373275
+   ],
+   [
+    0.2754467755486696,
+    0.30106320252776153
+   ],
+   [
+    0.3936185338872392,
+    0.21949512719437558
+   ],
+   [
+    0.536161004076597,
+    0.20218733777058384
+   ],
+   [
+    0.6704194240193464,
+    0.25310484023190294
+   ],
+   [
+    0.765636807695963,
+    0.3605830483868695
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "heilbronn",
+  "points": [
+   [
+    0.0,
+    0.0
+   ],
+   [
+    1.0,
+    0.0
+   ],
+   [
+    1.0,
+    0.9889456971894967
+   ],
+   [
+    0.0,
+    0.96072687005047
+   ],
+   [
+    0.43410940947718957,
+    0.039242661789391134
+   ],
+   [
+    0.966400307671604,
+    0.5348107300516413
+   ],
+   [
+    0.36540859968691447,
+    1.0
+   ],
+   [
+    0.053440476341397106,
+    0.5214097531762826
+   ],
+   [
+    0.7917088642844715,
+    0.5627758546113548
+   ],
+   [
+    0.6098702315733183,
+    0.8729909625631759
+   ],
+   [
+    0.1852199762942925,
+    0.8281030983679247
+   ],
+   [
+    0.18371958295773785,
+    0.2142429265653902
+   ],
+   [
+    0.6844070683448313,
+    0.14392969582102538
+   ]
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 22.2,
+ "model_gpu_memory_gb": 18.9,
+ "context_length": 32768,
+ "load_seconds": 51.6,
+ "median_call_seconds": 21.9,
+ "p90_call_seconds": 53.3,
+ "prompt_tokens_per_s": 681.2,
+ "gen_tokens_per_s": 35.5,
+ "mean_prompt_tokens": 3752,
+ "mean_gen_tokens": 703,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

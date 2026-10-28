@@ -1,0 +1,149 @@
+{
+ "schema": 3,
+ "example": "sort_u32_single_thread",
+ "model": "gemma4:e4b-it-qat",
+ "variant": "think",
+ "model_size_gb": 6.1,
+ "model_params": "7.5B",
+ "started": "2026-10-26T21:30:58",
+ "minutes_budget": 15.0,
+ "wall_minutes": 17.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 22.179801935789154,
+ "best_score": 105.7071337836916,
+ "improvement": 4.765918743986771,
+ "llm_calls": 13,
+ "mean_llm_seconds": 76.7,
+ "attempts": 13,
+ "ok": 9,
+ "statuses": {
+  "ok": 9,
+  "invalid": 1,
+  "compile_error": 2,
+  "edit_error": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 5,
+ "minutes_to_best": 15.03,
+ "best_idea": "Implement the pass-skipping optimization in the LSD Radix Sort to skip counting and placement if all elements share the same $p$-th byte, significantly improving performance on already sorted or unifo",
+ "progress": [
+  [
+   0.0,
+   22.179801935789154
+  ],
+  [
+   2.79,
+   92.39772828235289
+  ],
+  [
+   7.28,
+   94.32683077982233
+  ],
+  [
+   8.64,
+   101.66799953821673
+  ],
+  [
+   13.36,
+   105.48128471153373
+  ],
+  [
+   15.03,
+   105.7071337836916
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 22.179801935789154,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.79,
+   "score": 92.39772828235289,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Replace the recursive Merge Sort with a 4-pass LSD Radix Sort (8 bits per pass), leveraging the constant time complexity $O(N)$ for fixed-width integers to maximize throughput."
+  },
+  {
+   "minutes": 10.37,
+   "score": 96.53190516135949,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Replace `std::copy` with `std::memcpy` for data transfers between the input array and temporary buffers, and between the temporary buffers and the final output array, as `memcpy` is typically a direct memory block transfer optimized by the compiler."
+  },
+  {
+   "minutes": 15.03,
+   "score": 105.7071337836916,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Implement the pass-skipping optimization in the LSD Radix Sort to skip counting and placement if all elements share the same $p$-th byte, significantly improving performance on already sorted or uniform data."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,22 +19,67 @@\n #endif\n \n // OMEGA-BLOCK-START\n-// Sorts a[0..n) ascending, in place, on the calling thread. n is any size from\n-// 0 to 2'000'000. Extra memory may be allocated freely.\n-static void merge_sort_rec(uint32_t* a, uint32_t* tmp, size_t lo, size_t hi) {\n-    if (hi - lo < 2) return;\n-    size_t mid = lo + (hi - lo) / 2;\n-    merge_sort_rec(a, tmp, lo, mid);\n-    merge_sort_rec(a, tmp, mid, hi);\n-    size_t i = lo, j = mid, k = lo;\n-    while (i < mid && j < hi) tmp[k++] = (a[j] < a[i]) ? a[j++] : a[i++];\n-    while (i < mid) tmp[k++] = a[i++];\n-    while (j < hi) tmp[k++] = a[j++];\n-    for (size_t t = lo; t < hi; ++t) a[t] = tmp[t];\n-}\n+// Sorts a[0..n) ascending, in place, using LSD Radix Sort.\n+extern \"C\" void sort_u32(uint32_t* a, size_t n) {\n+    if (n <= 1) return;\n \n-extern \"C\" void sort_u32(uint32_t* a, size_t n) {\n-    std::vector<uint32_t> tmp(n);\n-    merge_sort_rec(a, tmp.data(), 0, n);\n+    // Allocate two buffers for input/output swaps (A and B)\n+    std::vector<uint32_t> A(n);\n+    std::vector<uint32_t> B(n);\n+    \n+    // Initialize A with input data\n+    std::memcpy(A.data(), a, n * sizeof(uint32_t));\n+\n+    // Counters and starting indices for 256 buckets (8 bits)\n+    uint32_t count[256] = {0};\n+    uint32_t start_index[256];\n+\n+    // Pointers to manage input/output buffers: Pass 0: A -> B\n+    uint32_t* src = A.data();\n+    uint32_t* dst = B.data();\n+\n+    // 4 passes for 32 bits (8 bits per pass)\n+    for (int p = 0; p < 4; ++p) {\n+        // Optimization: Check if all elements share the same p-th byte\n+        uint32_t ref_byte = (src[0] >> (p * 8)) & 0xFF;\n+        bool all_same = true;\n+        for (size_t i = 1; i < n; ++i) {\n+            uint32_t current_byte = (src[i] >> (p * 8)) & 0xFF;\n+            if (current_byte != ref_byte) {\n+                all_same = false;\n+                break;\n+            }\n+        }\n+        if (all_same) continue;\n+\n+        // Reset counts\n+        std::memset(count, 0, sizeof(uint32_t) * 256);\n+        \n+        // 1. Count frequencies of the p-th byte\n+        for (size_t i = 0; i < n; ++i) {\n+            uint32_t byte = (src[i] >> (p * 8)) & 0xFF;\n+            count[byte]++;\n+        }\n+\n+        // 2. Compute starting indices (prefix sums)\n+        start_index[0] = 0;\n+        for (int i = 1; i < 256; ++i) {\n+            start_index[i] = start_index[i - 1] + count[i - 1];\n+        }\n+\n+        // 3. Place elements into the output array (dst)\n+        for (size_t i = 0; i < n; ++i) {\n+            uint32_t byte = (src[i] >> (p * 8)) & 0xFF;\n+            uint32_t dest_idx = start_index[byte];\n+            dst[dest_idx] = src[i];\n+            start_index[byte]++;\n+        }\n+\n+        // 4. Swap roles: current output becomes next input, and vice versa.\n+        std::swap(src, dst);\n+    }\n+    \n+    // Final result is in src. Copy back to the original buffer 'a'.\n+    std::memcpy(a, src, n * sizeof(uint32_t));\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "best_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 4.4,
+ "model_gpu_memory_gb": 4.4,
+ "context_length": 32768,
+ "load_seconds": 21.0,
+ "median_call_seconds": 69.6,
+ "p90_call_seconds": 121.2,
+ "prompt_tokens_per_s": 1845.6,
+ "gen_tokens_per_s": 41.5,
+ "mean_prompt_tokens": 5030,
+ "mean_gen_tokens": 2914,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

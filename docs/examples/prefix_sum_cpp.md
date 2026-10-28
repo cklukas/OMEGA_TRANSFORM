@@ -175,48 +175,82 @@ What changed compared with the starting program:
 
 One run per model and reasoning mode; the [model benchmarks](../benchmarks/prefix_sum_histogram_single_thread.md) page has speed, memory and progress over time.
 
-| Model | Where | Best | Gain | Minutes to best | New bests |
-|---|---|--:|--:|--:|--:|
-| gemma4:e4b-it-qat (think) | local | 17.2154 | ×3.52 | 15.5 | 4 |
-| gemma4:12b-it-qat (no-think) | local | 15.0602 | ×3.01 | 15.4 | 6 |
-| gpt-oss:20b (no-think) | local | 14.7140 | ×2.99 | 13.4 | 3 |
-| gemma4:26b-a4b-it-qat (no-think) | local | 14.6735 | ×3.04 | 7.6 | 4 |
-| gpt-oss:20b (think) | local | 14.5852 | ×3.02 | 16.6 | 3 |
-| muse-glimmer:30b (no-think) | local | 14.3807 | ×3.07 | 12.2 | 3 |
-| gemma4:26b-a4b-it-qat (think) | local | 13.9689 | ×2.88 | 14.4 | 3 |
-| qwen3.5:27b (no-think) | local | 13.4003 | ×2.71 | 9.3 | 2 |
-| qwen3.8:27b-mtp-q4_K_M (no-think) | local | 13.3222 | ×2.74 | 16.4 | 3 |
-| qwen3.8:27b-mtp-q4_K_M (think) | local | 12.6223 | ×2.65 | 31.8 | 2 |
-| gemma4:12b-it-qat (think) | local | 12.3762 | ×2.55 | 8.1 | 1 |
-| gemma4:e4b-it-qat (no-think) | local | 12.0591 | ×2.44 | 6.6 | 4 |
-| devstral-small-2:24b (no-think) | local | 12.0355 | ×2.55 | 14.3 | 4 |
-| qwen3.5:27b (think) | local | 11.7354 | ×2.40 | 9.9 | 2 |
-| qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | 11.5307 | ×2.46 | 3.1 | 2 |
-| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 11.0711 | ×2.31 | 9.0 | 2 |
-| qwen3.5:latest (think) | local | 10.8430 | ×2.27 | 8.1 | 1 |
-| muse-glimmer:30b (think) | local | 10.6355 | ×2.19 | 8.1 | 1 |
-| nemotron-3-nano:30b-a3b-mlx (think) | local | 10.6298 | ×2.17 | 16.0 | 2 |
-| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 10.3306 | ×2.12 | 15.3 | 3 |
-| qwen3-coder:30b (no-think) | local | 10.3040 | ×2.15 | 6.9 | 1 |
-| qwen3.5:latest (no-think) | local | 6.00646 | ×1.22 | 6.5 | 1 |
-| gemma4:latest (no-think) | local | 5.93032 | ×1.21 | 15.2 | 4 |
-| gemma4:e2b (no-think) | local | 5.88495 | ×1.18 | 1.2 | 1 |
-| richardyoung/frognano-4b-2609:latest (no-think) | local | 5.66974 | ×1.21 | 14.8 | 3 |
-| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | 5.62509 | ×1.17 | 13.8 | 3 |
-| glm-4.7-flash:latest (no-think) | local | 5.37743 | ×1.18 | 12.5 | 2 |
-| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | 5.35117 | ×1.15 | 10.9 | 3 |
-| qwen2.5-coder:7b (no-think) | local | 5.00125 | ×1.00 | - | 0 |
-| nemotron-3-nano:4b (think) | local | 4.90707 | ×1.00 | - | 0 |
-| nemotron-3-nano:4b (no-think) | local | 4.86648 | ×1.01 | 14.5 | 1 |
-| nemotron-3.5-lightning:30b-mlx (no-think) | local | 4.85732 | ×1.00 | - | 0 |
-| ingu627/exaone4.0:32b (no-think) | local | 4.84291 | ×1.00 | - | 0 |
-| nemotron-3.5-lightning:30b-mlx (think) | local | | | | failed: all 4 model requests failed … |
-| gemma4:latest (think) | local | 4.81957 | ×1.00 | - | 0 |
-| nemotron-3-nano:30b-a3b-mlx (no-think) | local | 4.81174 | ×1.00 | - | 0 |
-| frob/sarvam:30b (think) | local | | | | failed: all 3 model requests failed: frob/sarvam:30b: answer … |
-| richardyoung/frognano-4b-2609:latest (think) | local | 4.78813 | ×1.00 | - | 0 |
-| frob/sarvam:30b (no-think) | local | 4.78297 | ×1.00 | - | 0 |
-| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | 4.77071 | ×1.00 | - | 0 |
-| gemma4:e2b (think) | local | 4.76105 | ×1.00 | - | 0 |
-| glm-4.7-flash:latest (think) | local | 4.70395 | ×1.00 | - | 0 |
-| llm-jp-4-8b-omega:q4_k_m (no-think) | local | 4.63338 | ×1.00 | - | 0 |
+| Model | Where | Machine | Best | Gain | Minutes to best | New bests |
+|---|---|---|--:|--:|--:|--:|
+| gemma4:e4b-it-qat (think) | local | Apple M1 Max | 17.2154 | ×3.52 | 15.5 | 4 |
+| gemma4:12b-it-qat (no-think) | local | Apple M1 Max | 15.0602 | ×3.01 | 15.4 | 6 |
+| gpt-oss:20b (no-think) | local | Apple M1 Max | 14.7140 | ×2.99 | 13.4 | 3 |
+| gemma4:26b-a4b-it-qat (no-think) | local | Apple M1 Max | 14.6735 | ×3.04 | 7.6 | 4 |
+| gpt-oss:20b (think) | local | Apple M1 Max | 14.5852 | ×3.02 | 16.6 | 3 |
+| muse-glimmer:30b (no-think) | local | Apple M1 Max | 14.3807 | ×3.07 | 12.2 | 3 |
+| gemma4:26b-a4b-it-qat (think) | local | Apple M1 Max | 13.9689 | ×2.88 | 14.4 | 3 |
+| qwen3.5:27b (no-think) | local | Apple M1 Max | 13.4003 | ×2.71 | 9.3 | 2 |
+| qwen3.8:27b-mtp-q4_K_M (no-think) | local | Apple M1 Max | 13.3222 | ×2.74 | 16.4 | 3 |
+| qwen3.8:27b-mtp-q4_K_M (think) | local | Apple M1 Max | 12.6223 | ×2.65 | 31.8 | 2 |
+| gemma4:12b-it-qat (think) | local | Apple M1 Max | 12.3762 | ×2.55 | 8.1 | 1 |
+| gemma4:e4b-it-qat (no-think) | local | Apple M1 Max | 12.0591 | ×2.44 | 6.6 | 4 |
+| devstral-small-2:24b (no-think) | local | Apple M1 Max | 12.0355 | ×2.55 | 14.3 | 4 |
+| qwen3.5:27b (think) | local | Apple M1 Max | 11.7354 | ×2.40 | 9.9 | 2 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | Apple M1 Max | 11.5307 | ×2.46 | 3.1 | 2 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | Apple M1 Max | 11.0711 | ×2.31 | 9.0 | 2 |
+| qwen3.5:latest (think) | local | Apple M1 Max | 10.8430 | ×2.27 | 8.1 | 1 |
+| muse-glimmer:30b (think) | local | Apple M1 Max | 10.6355 | ×2.19 | 8.1 | 1 |
+| nemotron-3-nano:30b-a3b-mlx (think) | local | Apple M1 Max | 10.6298 | ×2.17 | 16.0 | 2 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | Apple M1 Max | 10.3306 | ×2.12 | 15.3 | 3 |
+| qwen3-coder:30b (no-think) | local | Apple M1 Max | 10.3040 | ×2.15 | 6.9 | 1 |
+| qwen2.5-coder:7b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 6.37309 | ×1.10 | 15.8 | 2 |
+| gemma4:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 6.35338 | ×1.16 | 11.8 | 4 |
+| qwen3.8:27b-mtp-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 6.27605 | ×1.10 | 17.1 | 3 |
+| gemma4:e4b-it-qat (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 6.27482 | ×1.07 | 13.0 | 2 |
+| gemma4:12b-it-qat (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 6.20471 | ×1.12 | 8.7 | 3 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 6.19018 | ×1.07 | 11.0 | 1 |
+| gemma4:26b-a4b-it-qat (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 6.12277 | ×1.10 | 11.6 | 4 |
+| gpt-oss:20b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 6.07054 | ×1.67 | 15.8 | 4 |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 6.059 | ×1.05 | 12.4 | 3 |
+| gpt-oss:20b (think) | local | i7-8700K + 2x GTX 1080 Ti | 6.01735 | ×1.29 | 12.2 | 3 |
+| qwen3.5:latest (no-think) | local | Apple M1 Max | 6.00646 | ×1.22 | 6.5 | 1 |
+| gemma4:latest (no-think) | local | Apple M1 Max | 5.93032 | ×1.21 | 15.2 | 4 |
+| gemma4:e2b (no-think) | local | Apple M1 Max | 5.88495 | ×1.18 | 1.2 | 1 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.86227 | ×1.00 | - | 0 |
+| qwen3-coder:30b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.81527 | ×1.00 | - | 0 |
+| Bored/GigaChat3.1-10B-A1.8B-q4_K_M:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.80678 | ×1.00 | - | 0 |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.78251 | ×1.00 | - | 0 |
+| richardyoung/frognano-4b-2609:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.78183 | ×1.00 | - | 0 |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.77683 | ×1.03 | 15.7 | 3 |
+| qwen3.5:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.76735 | ×1.00 | - | 0 |
+| richardyoung/frognano-4b-2609:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 5.76153 | ×1.03 | 12.3 | 1 |
+| gemma4:e2b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.70053 | ×1.00 | - | 0 |
+| gemma4:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 5.68914 | ×1.10 | 3.4 | 1 |
+| richardyoung/frognano-4b-2609:latest (no-think) | local | Apple M1 Max | 5.66974 | ×1.21 | 14.8 | 3 |
+| glm-4.7-flash:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.66505 | ×1.00 | - | 0 |
+| nemotron-3-nano:4b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.661 | ×1.00 | - | 0 |
+| gemma4:e4b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | 5.65404 | ×1.00 | - | 0 |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | Apple M1 Max | 5.62509 | ×1.17 | 13.8 | 3 |
+| glm-4.7-flash:latest (no-think) | local | Apple M1 Max | 5.37743 | ×1.18 | 12.5 | 2 |
+| gemma4:26b-a4b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | 5.35544 | ×1.00 | - | 0 |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | Apple M1 Max | 5.35117 | ×1.15 | 10.9 | 3 |
+| glm-4.7-flash:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 5.2929 | ×1.02 | 17.1 | 1 |
+| frob/sarvam:30b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.2871 | ×1.00 | - | 0 |
+| frob/sarvam:30b (think) | local | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 3 model requests failed: frob/sarvam:30b: answer … |
+| gemma4:e2b (think) | local | i7-8700K + 2x GTX 1080 Ti | 5.26423 | ×1.00 | 13.8 | 1 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 5.24765 | ×1.00 | - | 0 |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 5.21149 | ×1.00 | 28.2 | 1 |
+| qwen3.8:27b-mtp-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 1 model requests failed: qwen3.8:27b-mtp-q4_K_M: answer … |
+| qwen2.5-coder:7b (no-think) | local | Apple M1 Max | 5.00125 | ×1.00 | - | 0 |
+| nemotron-3-nano:4b (think) | local | Apple M1 Max | 4.90707 | ×1.00 | - | 0 |
+| nemotron-3-nano:4b (no-think) | local | Apple M1 Max | 4.86648 | ×1.01 | 14.5 | 1 |
+| nemotron-3.5-lightning:30b-mlx (no-think) | local | Apple M1 Max | 4.85732 | ×1.00 | - | 0 |
+| ingu627/exaone4.0:32b (no-think) | local | Apple M1 Max | 4.84291 | ×1.00 | - | 0 |
+| nemotron-3.5-lightning:30b-mlx (think) | local | Apple M1 Max | | | | failed: all 4 model requests failed … |
+| gemma4:latest (think) | local | Apple M1 Max | 4.81957 | ×1.00 | - | 0 |
+| nemotron-3-nano:30b-a3b-mlx (no-think) | local | Apple M1 Max | 4.81174 | ×1.00 | - | 0 |
+| frob/sarvam:30b (think) | local | Apple M1 Max | | | | failed: all 3 model requests failed: frob/sarvam:30b: answer … |
+| nemotron-3-nano:4b (think) | local | i7-8700K + 2x GTX 1080 Ti | 4.80205 | ×1.00 | - | 0 |
+| richardyoung/frognano-4b-2609:latest (think) | local | Apple M1 Max | 4.78813 | ×1.00 | - | 0 |
+| frob/sarvam:30b (no-think) | local | Apple M1 Max | 4.78297 | ×1.00 | - | 0 |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | Apple M1 Max | 4.77071 | ×1.00 | - | 0 |
+| gemma4:e2b (think) | local | Apple M1 Max | 4.76105 | ×1.00 | - | 0 |
+| gemma4:12b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | 4.73075 | ×1.18 | 20.5 | 1 |
+| glm-4.7-flash:latest (think) | local | Apple M1 Max | 4.70395 | ×1.00 | - | 0 |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | local | Apple M1 Max | 4.63338 | ×1.00 | - | 0 |
+| qwen3.5:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 4.40136 | ×1.04 | 10.0 | 1 |

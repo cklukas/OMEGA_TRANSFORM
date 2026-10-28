@@ -1,0 +1,232 @@
+{
+ "schema": 3,
+ "example": "feature_engineering",
+ "model": "nemotron-3-nano:4b",
+ "variant": "no-think",
+ "model_size_gb": 2.8,
+ "model_params": "4.0B",
+ "started": "2026-10-22T09:02:15",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 0.623,
+ "best_score": 0.76,
+ "improvement": 1.2199036918138042,
+ "llm_calls": 122,
+ "mean_llm_seconds": 6.9,
+ "attempts": 122,
+ "ok": 36,
+ "statuses": {
+  "edit_error": 62,
+  "invalid": 22,
+  "ok": 36,
+  "duplicate": 1,
+  "llm_error": 1
+ },
+ "sweeps": 2,
+ "sweep_variants": 19,
+ "improvements": 4,
+ "minutes_to_best": 7.86,
+ "best_idea": "Replace redundant angle differences with a single quadrant indicator to reduce feature noise and improve linear separability",
+ "progress": [
+  [
+   0.0,
+   0.623
+  ],
+  [
+   1.29,
+   0.703
+  ],
+  [
+   3.46,
+   0.704
+  ],
+  [
+   3.81,
+   0.729
+  ],
+  [
+   7.86,
+   0.76
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.623,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.61,
+   "score": 0.7,
+   "model": "nemotron-3-nano:4b",
+   "mode": "exploit/rewrite/bold",
+   "status": "ok",
+   "idea": "Replace raw inputs with pairwise XOR indicators (sign of products) to create quadratic-like features for a linear model, enabling classification of quadrant-dependent nonlinearities"
+  },
+  {
+   "minutes": 3.09,
+   "score": 0.655,
+   "model": "nemotron-3-nano:4b",
+   "mode": "explore/rewrite/bold",
+   "status": "ok",
+   "idea": "Use a cosine similarity between (x1, x2) and (x4, x5) to create a radial feature that captures angular alignment, which may better separate nonlinear boundaries than pairwise products or XOR indicators."
+  },
+  {
+   "minutes": 7.86,
+   "score": 0.76,
+   "model": "nemotron-3-nano:4b",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Replace redundant angle differences with a single quadrant indicator to reduce feature noise and improve linear separability"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -9,17 +9,18 @@\n import math\n \n # OMEGA-BLOCK-START\n+# OMEGA-BLOCK-Start\n+SQEED   = 1.0\n+SEXP   = 2.0\n+LOGMAX  = 10.0\n+# OMEGA-BLOCK-End\n+\n def features(row):\n-    \"\"\"Return the feature vector (a list of at most 30 finite floats) for one row.\n-\n-    row: list of 6 floats [x1, x2, x3, x4, x5, x6]. Roughly: x1, x2, x6 are\n-    standard-normal-like, x3 is positive and right-skewed (lognormal-like), x4 and x5\n-    lie in [-2, 2]. The label is a hidden NONLINEAR function of the inputs plus noise.\n-    Every row must give the same number of features. The classifier is linear in the\n-    features (they are standardized and a bias is added), so nonlinear structure only\n-    helps if a feature expresses it. Only the Python standard library may be used.\n-\n-    Current method: the raw inputs.\n-    \"\"\"\n-    return list(row)\n+     x1, x2, x3, x4, x5, x6 = row\n+     def sq(ax, ay):\n+         return ax*ax + ay*ay\n+     def quadrant(ax, ay):\n+         q = ax * ay\n+         return 1 if q >= 0 else -1\n+     return [sq(x1, x2) + sq(x4, x5), quadrant(x1, x2), quadrant(x4, x5), x6]\n # OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "classification",
+  "columns": [
+   "x1",
+   "x2",
+   "x3",
+   "x4",
+   "x5",
+   "x6"
+  ],
+  "head": [
+   [
+    0.14,
+    1.08,
+    1.79,
+    -0.66,
+    1.01,
+    -0.54
+   ],
+   [
+    -1.03,
+    -0.71,
+    0.47,
+    1.72,
+    0.77,
+    -0.69
+   ],
+   [
+    0.36,
+    -0.3,
+    0.1,
+    -2.0,
+    0.57,
+    -0.15
+   ],
+   [
+    1.13,
+    1.16,
+    1.34,
+    1.26,
+    1.29,
+    0.92
+   ]
+  ],
+  "head_labels": [
+   1,
+   1,
+   0,
+   1
+  ],
+  "train_rows": 1000,
+  "num_features": 6,
+  "test_correct": "1110101111000101011111011010101001101100111100110111111101011110101110011011001101101000011100011010111110110111011110000011111111011100100110111110101000001001110101111110101010111011101101000010010100000101110011000100110001010111011001101100110011110111111010101001011101111011110101110011100101100100011011010011101011000101100100110110111110100101101111110111101100011110111111110110111111101100010111110011111011001100001101010011101100101011010111110000111000010111111111100111110101010101111011001000111110111101110001011111011110011101010011011101111101001101110110101100001110001001101010001011011001111110111110101111110110110110101010111001011111101111111101101111001111001000101101001000000100100101111111111011011101110111110101111110001111001101111101111101011111111011111111111111111000111001001110010010010000110000101111110101001111101111000111011000111111101111101111000111011111010001001101100011000110110111000010111110110001111111111101001111101100011100101100101011101110111010"
+ },
+ "best_solution": {
+  "kind": "classification",
+  "columns": [
+   "x1",
+   "x2",
+   "x3",
+   "x4",
+   "x5",
+   "x6"
+  ],
+  "head": [
+   [
+    0.14,
+    1.08,
+    1.79,
+    -0.66,
+    1.01,
+    -0.54
+   ],
+   [
+    -1.03,
+    -0.71,
+    0.47,
+    1.72,
+    0.77,
+    -0.69
+   ],
+   [
+    0.36,
+    -0.3,
+    0.1,
+    -2.0,
+    0.57,
+    -0.15
+   ],
+   [
+    1.13,
+    1.16,
+    1.34,
+    1.26,
+    1.29,
+    0.92
+   ]
+  ],
+  "head_labels": [
+   1,
+   1,
+   0,
+   1
+  ],
+  "train_rows": 1000,
+  "num_features": 4,
+  "test_correct": "0111110010101111011111111101111001011111111001111001011110111111111111101101110111110111100011111100100001001110111111110101110111111111111111110111110110011111111111111011110111011001001111111100110110111111110101111111001101111001111011111010111111111111111101111001111011011100011111011000111111111111111100111101111111000010111110101111111111111101110110011111110001100111110010110011001011110111110111111110101011110011101111111111010011110111101111110111110111001111101111001011110101101111111001011111111101110100111110111110101011111111111111111111111110010110001011011011111000011111111111110111111101011111110011111001111001111111111011011100111110111101111010010111111111010010110000111101111100011011011111010111001111111101101111111111101111110011111111110100111111111000111111111111111010101101111110111111110111011111110101101110011101110111111111111111101111010011110101001110110101101110111111111111111101111010010111111001111011011111011111111101111111101001111011111111011100111111"
+ },
+ "error": "",
+ "model_memory_gb": 3.5,
+ "model_gpu_memory_gb": 3.5,
+ "context_length": 32768,
+ "load_seconds": 22.7,
+ "median_call_seconds": 6.7,
+ "p90_call_seconds": 8.0,
+ "prompt_tokens_per_s": 2021.7,
+ "gen_tokens_per_s": 77.4,
+ "mean_prompt_tokens": 3734,
+ "mean_gen_tokens": 198,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

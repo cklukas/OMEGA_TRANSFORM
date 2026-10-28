@@ -1,0 +1,163 @@
+{
+ "schema": 3,
+ "example": "log_compressor",
+ "model": "gemma4:12b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 7.2,
+ "model_params": "11.9B",
+ "started": "2026-10-22T06:34:28",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.8,
+ "omega_version": "0.1.0",
+ "omega_commit": "",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 11.28605206956168,
+ "best_score": 26.854385964912282,
+ "improvement": 2.3794313369630973,
+ "llm_calls": 23,
+ "mean_llm_seconds": 39.4,
+ "attempts": 23,
+ "ok": 9,
+ "statuses": {
+  "invalid": 6,
+  "ok": 9,
+  "duplicate": 5,
+  "llm_error": 3
+ },
+ "sweeps": 7,
+ "sweep_variants": 55,
+ "improvements": 3,
+ "minutes_to_best": 11.81,
+ "best_idea": "tuned LZMA_PRESET=10 on top of: Use a more aggressive LZMA preset and a more efficient fallback (bz2) to improve compression ratio on structured data.",
+ "progress": [
+  [
+   0.0,
+   11.28605206956168
+  ],
+  [
+   2.87,
+   17.631990784874482
+  ],
+  [
+   4.58,
+   19.662606307583275
+  ],
+  [
+   11.81,
+   26.854385964912282
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 11.28605206956168,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 4.58,
+   "score": 19.662606307583275,
+   "model": "gemma4:12b-it-qat",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Use lzma with a high preset to significantly improve the compression ratio for the structured log data while providing a zlib fallback for safety."
+  },
+  {
+   "minutes": 10.44,
+   "score": 19.662606307583275,
+   "model": "gemma4:12b-it-qat",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Use a higher LZMA preset to increase the compression ratio for the structured log data."
+  },
+  {
+   "minutes": 11.81,
+   "score": 19.662606307583275,
+   "model": "gemma4:12b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Use a more aggressive LZMA preset and a more efficient fallback (bz2) to improve compression ratio on structured data."
+  },
+  {
+   "minutes": 11.81,
+   "score": 26.854385964912282,
+   "model": "gemma4:12b-it-qat",
+   "mode": "sweep/exploit/diff/refine",
+   "status": "ok",
+   "idea": "tuned LZMA_PRESET=10 on top of: Use a more aggressive LZMA preset and a more efficient fallback (bz2) to improve compression ratio on structured data."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -10,6 +10,12 @@\n import zlib\n \n # OMEGA-BLOCK-START\n+import zlib\n+import lzma\n+import bz2\n+\n+LZMA_PRESET = 10\n+\n def compress(data: bytes) -> bytes:\n     \"\"\"Compress arbitrary bytes losslessly and return the compressed blob.\n \n@@ -19,14 +25,32 @@\n     Only the Python standard library may be used (zlib, lzma, bz2, struct, re, ...).\n     Compress plus decompress of the main input must stay within 20 CPU seconds.\n \n-    Current method: plain zlib at level 1.\n+    Current method: lzma with preset 9.\n     \"\"\"\n-    return zlib.compress(data, 1)\n+    if not data:\n+        return b\"\"\n+    try:\n+        # LZMA is generally superior for logs; preset 9 maximizes ratio\n+        return lzma.compress(data, preset=LZMA_PRESET)\n+    except Exception:\n+        # Use bz2 as a better fallback than zlib for structured text\n+        return bz2.compress(data, 9)\n \n \n def decompress(blob: bytes) -> bytes:\n     \"\"\"Invert compress() exactly.\"\"\"\n-    return zlib.decompress(blob)\n+    if not blob:\n+        return b\"\"\n+    try:\n+        # Try lzma first as it is the primary compressor\n+        return lzma.decompress(blob)\n+    except Exception:\n+        try:\n+            # Try bz2 fallback\n+            return bz2.decompress(blob)\n+        except Exception:\n+            # Final fallback to zlib\n+            return zlib.decompress(blob)\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "compression",
+  "input": "web server access log",
+  "head": [
+   "203.242.94.172 - - [04/Oct/2024:09:52:35 +0000] \"GET /search?q=novel&page=1 HTTP/1.1\" 200 13481 \"https://search.example.net/?q=shop\" \"Mozilla/5.0 (compatible; ExampleBot/2.1; +http://bot.example.org/info)\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/155 HTTP/1.1\" 200 23584 \"https://www.example.com/\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/books/203?ref=search HTTP/1.1\" 200 25206 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/106 HTTP/1.1\" 404 24868 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\""
+  ],
+  "lines": 2000,
+  "original_bytes": 443903,
+  "compressed_bytes": 39332,
+  "references": {
+   "zlib -9": 25176,
+   "bz2 -9": 16530,
+   "lzma -9e": 20656
+  }
+ },
+ "best_solution": {
+  "kind": "compression",
+  "input": "web server access log",
+  "head": [
+   "203.242.94.172 - - [04/Oct/2024:09:52:35 +0000] \"GET /search?q=novel&page=1 HTTP/1.1\" 200 13481 \"https://search.example.net/?q=shop\" \"Mozilla/5.0 (compatible; ExampleBot/2.1; +http://bot.example.org/info)\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/155 HTTP/1.1\" 200 23584 \"https://www.example.com/\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/books/203?ref=search HTTP/1.1\" 200 25206 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/106 HTTP/1.1\" 404 24868 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\""
+  ],
+  "lines": 2000,
+  "original_bytes": 443903,
+  "compressed_bytes": 16530,
+  "references": {
+   "zlib -9": 25176,
+   "bz2 -9": 16530,
+   "lzma -9e": 20656
+  }
+ },
+ "error": "",
+ "model_memory_gb": 9.0,
+ "model_gpu_memory_gb": 9.0,
+ "context_length": 32768,
+ "load_seconds": 82.3,
+ "median_call_seconds": 23.2,
+ "p90_call_seconds": 111.8,
+ "prompt_tokens_per_s": 748.3,
+ "gen_tokens_per_s": 29.4,
+ "mean_prompt_tokens": 3044,
+ "mean_gen_tokens": 493,
+ "stopped_calls": 3,
+ "provider": "ollama",
+ "cost_usd": 0
+}

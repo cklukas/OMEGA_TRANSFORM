@@ -1,0 +1,393 @@
+{
+ "schema": 3,
+ "example": "circle_packing_26",
+ "model": "qwen3-coder:30b",
+ "variant": "no-think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-10-25T02:30:04",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 1.7038817526847114,
+ "improvement": 1.1434665368628913,
+ "llm_calls": 25,
+ "mean_llm_seconds": 36.1,
+ "attempts": 25,
+ "ok": 17,
+ "statuses": {
+  "ok": 17,
+  "duplicate": 8
+ },
+ "sweeps": 7,
+ "sweep_variants": 60,
+ "improvements": 2,
+ "minutes_to_best": 13.2,
+ "best_idea": "tuned RING_START_RADIUS=0.25, RING_RADIUS_INCREMENT=0.15, SPACING_FACTOR=0.18 on top of: Replace hardcoded ring parameters with sweepable constants to allow optimization of the ring-based packing layo",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   1.94,
+   1.6620373413727716
+  ],
+  [
+   13.2,
+   1.7038817526847114
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.97,
+   "score": 1.6620373413727716,
+   "model": "qwen3-coder:30b",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Replace the simple grid-based center placement with a hexagonal packing layout that better approximates optimal circle packing, which should increase the total sum of radii."
+  },
+  {
+   "minutes": 4.89,
+   "score": 1.5642903812455065,
+   "model": "qwen3-coder:30b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the hexagonal packing with a more sophisticated ring-based layout that places large circles in the center and smaller ones in gaps, which should improve the total sum of radii by better utilizing space."
+  },
+  {
+   "minutes": 13.2,
+   "score": 1.5642903812455065,
+   "model": "qwen3-coder:30b",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Replace hardcoded ring parameters with sweepable constants to allow optimization of the ring-based packing layout."
+  },
+  {
+   "minutes": 13.2,
+   "score": 1.7038817526847114,
+   "model": "qwen3-coder:30b",
+   "mode": "sweep/exploit/diff/tune",
+   "status": "ok",
+   "idea": "tuned RING_START_RADIUS=0.25, RING_RADIUS_INCREMENT=0.15, SPACING_FACTOR=0.18 on top of: Replace hardcoded ring parameters with sweepable constants to allow optimization of the ring-based packing layout."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -7,14 +7,35 @@\n import math\n \n # OMEGA-BLOCK-START\n+RING_START_RADIUS = 0.25\n+RING_RADIUS_INCREMENT = 0.15\n+MIN_RING_COUNT = 6\n+SPACING_FACTOR = 0.18\n+\n def construct_packing(n=26):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n-    cols = math.ceil(math.sqrt(n))\n-    rows = math.ceil(n / cols)\n-    centers = []\n-    for k in range(n):\n-        i, j = k % cols, k // cols\n-        centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n+    # Start with a central circle and place others in rings around it\n+    centers = [(0.5, 0.5)]  # Central circle\n+    \n+    # Add rings of circles around the center\n+    ring_radius = RING_START_RADIUS\n+    ring_count = 1\n+    while len(centers) < n:\n+        for i in range(ring_count):\n+            angle = 2 * math.pi * i / ring_count\n+            x = 0.5 + ring_radius * math.cos(angle)\n+            y = 0.5 + ring_radius * math.sin(angle)\n+            if 0 < x < 1 and 0 < y < 1:\n+                centers.append((x, y))\n+            if len(centers) >= n:\n+                break\n+        ring_radius += RING_RADIUS_INCREMENT\n+        ring_count = max(MIN_RING_COUNT, int(2 * math.pi * ring_radius / SPACING_FACTOR))  # Adjust based on spacing\n+        \n+    # Trim to exactly n centers if needed\n+    while len(centers) > n:\n+        centers.pop()\n+    \n     radii = max_radii(centers)\n     return [(x, y, r) for (x, y), r in zip(centers, radii)]\n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.083333,
+    0.1,
+    0.060545
+   ],
+   [
+    0.25,
+    0.1,
+    0.039234
+   ],
+   [
+    0.416667,
+    0.1,
+    0.034262
+   ],
+   [
+    0.583333,
+    0.1,
+    0.040566
+   ],
+   [
+    0.75,
+    0.1,
+    0.05694
+   ],
+   [
+    0.916667,
+    0.1,
+    0.080973
+   ],
+   [
+    0.083333,
+    0.3,
+    0.047978
+   ],
+   [
+    0.25,
+    0.3,
+    0.032893
+   ],
+   [
+    0.416667,
+    0.3,
+    0.029299
+   ],
+   [
+    0.583333,
+    0.3,
+    0.040366
+   ],
+   [
+    0.75,
+    0.3,
+    0.058083
+   ],
+   [
+    0.916667,
+    0.3,
+    0.076636
+   ],
+   [
+    0.083333,
+    0.5,
+    0.05004
+   ],
+   [
+    0.25,
+    0.5,
+    0.036525
+   ],
+   [
+    0.416667,
+    0.5,
+    0.03396
+   ],
+   [
+    0.583333,
+    0.5,
+    0.041209
+   ],
+   [
+    0.75,
+    0.5,
+    0.058085
+   ],
+   [
+    0.916667,
+    0.5,
+    0.076976
+   ],
+   [
+    0.083333,
+    0.7,
+    0.059259
+   ],
+   [
+    0.25,
+    0.7,
+    0.06822
+   ],
+   [
+    0.416667,
+    0.7,
+    0.065257
+   ],
+   [
+    0.583333,
+    0.7,
+    0.069461
+   ],
+   [
+    0.75,
+    0.7,
+    0.089736
+   ],
+   [
+    0.916667,
+    0.7,
+    0.07693
+   ],
+   [
+    0.083333,
+    0.9,
+    0.075758
+   ],
+   [
+    0.25,
+    0.9,
+    0.090909
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.5,
+    0.5,
+    0.166667
+   ],
+   [
+    0.75,
+    0.5,
+    0.067697
+   ],
+   [
+    0.9,
+    0.5,
+    0.061616
+   ],
+   [
+    0.854182,
+    0.685889,
+    0.079942
+   ],
+   [
+    0.727226,
+    0.829194,
+    0.099563
+   ],
+   [
+    0.548215,
+    0.897084,
+    0.080743
+   ],
+   [
+    0.358158,
+    0.874006,
+    0.068086
+   ],
+   [
+    0.200596,
+    0.765249,
+    0.080774
+   ],
+   [
+    0.111623,
+    0.595726,
+    0.085953
+   ],
+   [
+    0.111623,
+    0.404274,
+    0.065986
+   ],
+   [
+    0.200596,
+    0.234751,
+    0.078773
+   ],
+   [
+    0.358158,
+    0.125994,
+    0.092361
+   ],
+   [
+    0.548215,
+    0.102916,
+    0.070291
+   ],
+   [
+    0.727226,
+    0.170806,
+    0.092418
+   ],
+   [
+    0.854182,
+    0.314111,
+    0.099035
+   ],
+   [
+    0.934027,
+    0.837817,
+    0.065973
+   ],
+   [
+    0.800821,
+    0.960442,
+    0.039558
+   ],
+   [
+    0.127495,
+    0.904648,
+    0.076629
+   ],
+   [
+    0.016289,
+    0.761771,
+    0.016289
+   ],
+   [
+    0.016289,
+    0.238229,
+    0.016289
+   ],
+   [
+    0.127495,
+    0.095352,
+    0.07863
+   ],
+   [
+    0.800821,
+    0.039558,
+    0.039558
+   ],
+   [
+    0.934027,
+    0.162183,
+    0.065973
+   ],
+   [
+    0.994975,
+    0.994975,
+    0.005025
+   ],
+   [
+    0.005025,
+    0.994975,
+    0.005025
+   ],
+   [
+    0.005025,
+    0.005025,
+    0.005025
+   ]
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 22.2,
+ "model_gpu_memory_gb": 18.9,
+ "context_length": 32768,
+ "load_seconds": 55.5,
+ "median_call_seconds": 35.2,
+ "p90_call_seconds": 46.1,
+ "prompt_tokens_per_s": 649.8,
+ "gen_tokens_per_s": 32.2,
+ "mean_prompt_tokens": 2788,
+ "mean_gen_tokens": 879,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

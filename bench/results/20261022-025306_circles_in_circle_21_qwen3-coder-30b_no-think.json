@@ -1,0 +1,337 @@
+{
+ "schema": 3,
+ "example": "circles_in_circle_21",
+ "model": "qwen3-coder:30b",
+ "variant": "no-think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-10-22T02:53:06",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 3.1890454825108625,
+ "best_score": 3.738351690462336,
+ "improvement": 1.1722478437400594,
+ "llm_calls": 30,
+ "mean_llm_seconds": 30.1,
+ "attempts": 30,
+ "ok": 5,
+ "statuses": {
+  "invalid": 12,
+  "edit_error": 10,
+  "duplicate": 3,
+  "ok": 5
+ },
+ "sweeps": 5,
+ "sweep_variants": 80,
+ "improvements": 2,
+ "minutes_to_best": 12.64,
+ "best_idea": "tuned RING1_COUNT=6, RING1_RADIUS=0.4, RING2_COUNT=11, RING2_RADIUS=0.8 on top of: Replace the fixed ring configuration with a more flexible arrangement that uses named constants for ring radii and ci",
+ "progress": [
+  [
+   0.0,
+   3.1890454825108625
+  ],
+  [
+   10.33,
+   3.6749999999963237
+  ],
+  [
+   12.64,
+   3.738351690462336
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.1890454825108625,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 10.33,
+   "score": 3.1890454825108625,
+   "model": "qwen3-coder:30b",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Replace the fixed ring-based circle placement with a more flexible configuration that uses named constants for ring radii and circle counts to allow optimization of the packing arrangement."
+  },
+  {
+   "minutes": 12.64,
+   "score": 3.6749999999963237,
+   "model": "qwen3-coder:30b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the fixed ring configuration with a more flexible arrangement that uses named constants for ring radii and circle counts to allow optimization of the packing arrangement, while also enabling a better sweep of parameters to find higher-scoring configurations."
+  },
+  {
+   "minutes": 12.64,
+   "score": 3.738351690462336,
+   "model": "qwen3-coder:30b",
+   "mode": "sweep/exploit/diff/refine",
+   "status": "ok",
+   "idea": "tuned RING1_COUNT=6, RING1_RADIUS=0.4, RING2_COUNT=11, RING2_RADIUS=0.8 on top of: Replace the fixed ring configuration with a more flexible arrangement that uses named constants for ring radii and circle counts to allow optimization of the packing arrangement, while also enabling a better sweep of"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -4,16 +4,21 @@\n import math\n \n # OMEGA-BLOCK-START\n+RING1_COUNT = 6\n+RING1_RADIUS = 0.4\n+RING2_COUNT = 11\n+RING2_RADIUS = 0.8\n+\n def construct(n=21):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit circle (center (0,0),\n     radius 1) without overlaps.\n \n-    This start places one circle at the center and two concentric rings of 7 and\n-    13 circles, all with the same radius: the largest one that keeps every pair\n+    This start places one circle at the center and two concentric rings of 6 and\n+    11 circles, all with the same radius: the largest one that keeps every pair\n     apart and every circle inside the container.\n     \"\"\"\n     centers = [(0.0, 0.0)]\n-    for count, ring in ((7, 0.35), (n - 8, 0.75)):\n+    for count, ring in ((RING1_COUNT, RING1_RADIUS), (n - 1 - RING1_COUNT, RING2_RADIUS)):\n         centers += [(ring * math.cos(2 * math.pi * k / count),\n                      ring * math.sin(2 * math.pi * k / count)) for k in range(count)]\n     r = min(1.0 - math.hypot(x, y) for x, y in centers)\n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.0,
+    0.0,
+    0.151859
+   ],
+   [
+    0.35,
+    0.0,
+    0.151859
+   ],
+   [
+    0.218221,
+    0.273641,
+    0.151859
+   ],
+   [
+    -0.077882,
+    0.341225,
+    0.151859
+   ],
+   [
+    -0.315339,
+    0.151859,
+    0.151859
+   ],
+   [
+    -0.315339,
+    -0.151859,
+    0.151859
+   ],
+   [
+    -0.077882,
+    -0.341225,
+    0.151859
+   ],
+   [
+    0.218221,
+    -0.273641,
+    0.151859
+   ],
+   [
+    0.75,
+    0.0,
+    0.151859
+   ],
+   [
+    0.664092,
+    0.348542,
+    0.151859
+   ],
+   [
+    0.426049,
+    0.617238,
+    0.151859
+   ],
+   [
+    0.090403,
+    0.744532,
+    0.151859
+   ],
+   [
+    -0.265954,
+    0.701262,
+    0.151859
+   ],
+   [
+    -0.561383,
+    0.497342,
+    0.151859
+   ],
+   [
+    -0.728206,
+    0.179487,
+    0.151859
+   ],
+   [
+    -0.728206,
+    -0.179487,
+    0.151859
+   ],
+   [
+    -0.561383,
+    -0.497342,
+    0.151859
+   ],
+   [
+    -0.265954,
+    -0.701262,
+    0.151859
+   ],
+   [
+    0.090403,
+    -0.744532,
+    0.151859
+   ],
+   [
+    0.426049,
+    -0.617238,
+    0.151859
+   ],
+   [
+    0.664092,
+    -0.348542,
+    0.151859
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.0,
+    0.0,
+    0.178017
+   ],
+   [
+    0.4,
+    0.0,
+    0.178017
+   ],
+   [
+    0.2,
+    0.34641,
+    0.178017
+   ],
+   [
+    -0.2,
+    0.34641,
+    0.178017
+   ],
+   [
+    -0.4,
+    0.0,
+    0.178017
+   ],
+   [
+    -0.2,
+    -0.34641,
+    0.178017
+   ],
+   [
+    0.2,
+    -0.34641,
+    0.178017
+   ],
+   [
+    0.8,
+    0.0,
+    0.178017
+   ],
+   [
+    0.720775,
+    0.347107,
+    0.178017
+   ],
+   [
+    0.498792,
+    0.625465,
+    0.178017
+   ],
+   [
+    0.178017,
+    0.779942,
+    0.178017
+   ],
+   [
+    -0.178017,
+    0.779942,
+    0.178017
+   ],
+   [
+    -0.498792,
+    0.625465,
+    0.178017
+   ],
+   [
+    -0.720775,
+    0.347107,
+    0.178017
+   ],
+   [
+    -0.8,
+    0.0,
+    0.178017
+   ],
+   [
+    -0.720775,
+    -0.347107,
+    0.178017
+   ],
+   [
+    -0.498792,
+    -0.625465,
+    0.178017
+   ],
+   [
+    -0.178017,
+    -0.779942,
+    0.178017
+   ],
+   [
+    0.178017,
+    -0.779942,
+    0.178017
+   ],
+   [
+    0.498792,
+    -0.625465,
+    0.178017
+   ],
+   [
+    0.720775,
+    -0.347107,
+    0.178017
+   ]
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 22.2,
+ "model_gpu_memory_gb": 18.9,
+ "context_length": 32768,
+ "load_seconds": 137.0,
+ "median_call_seconds": 28.2,
+ "p90_call_seconds": 50.0,
+ "prompt_tokens_per_s": 761.0,
+ "gen_tokens_per_s": 37.6,
+ "mean_prompt_tokens": 2477,
+ "mean_gen_tokens": 752,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

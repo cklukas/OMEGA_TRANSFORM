@@ -32,21 +32,21 @@
 <circle cx="253.17" cy="305.03" r="4.5" fill="#4b3fc4"/>
 <circle cx="282.88" cy="271.50" r="4.5" fill="#4b3fc4"/>
 <rect x="420.5" y="0.5" width="399" height="419" rx="10" fill="#fbfbfe" stroke="#dcdfea"/>
-<text x="436" y="26" font-size="15" font-weight="600" fill="#1d2033">Best · score 0.02049</text>
-<text x="436" y="46" font-size="12" fill="#5d6178">smallest triangle 0.02049 (×n² = 3.462) · 1 at the minimum</text>
+<text x="436" y="26" font-size="15" font-weight="600" fill="#1d2033">Best · score 0.02179</text>
+<text x="436" y="46" font-size="12" fill="#5d6178">smallest triangle 0.02179 (×n² = 3.683) · 1 at the minimum</text>
 <rect x="464.00" y="72.00" width="312.00" height="312.00" fill="#fff" stroke="#1d2033" stroke-width="1.5"/>
-<polygon points="626.23,200.32 528.34,72.00 776.00,355.92" fill="#e8590c" fill-opacity="0.25" stroke="#e8590c" stroke-width="1.2" stroke-linejoin="round"/>
-<circle cx="589.55" cy="72.00" r="4.5" fill="#4b3fc4"/>
-<circle cx="626.23" cy="200.32" r="4.5" fill="#4b3fc4"/>
-<circle cx="727.03" cy="259.87" r="4.5" fill="#4b3fc4"/>
-<circle cx="464.00" cy="247.47" r="4.5" fill="#4b3fc4"/>
-<circle cx="528.34" cy="72.00" r="4.5" fill="#4b3fc4"/>
-<circle cx="606.32" cy="356.52" r="4.5" fill="#4b3fc4"/>
-<circle cx="561.21" cy="267.91" r="4.5" fill="#4b3fc4"/>
-<circle cx="776.00" cy="181.58" r="4.5" fill="#4b3fc4"/>
-<circle cx="751.49" cy="139.06" r="4.5" fill="#4b3fc4"/>
-<circle cx="735.11" cy="384.00" r="4.5" fill="#4b3fc4"/>
-<circle cx="776.00" cy="355.92" r="4.5" fill="#4b3fc4"/>
-<circle cx="464.00" cy="173.41" r="4.5" fill="#4b3fc4"/>
-<circle cx="523.17" cy="384.00" r="4.5" fill="#4b3fc4"/>
+<polygon points="532.76,383.35 677.61,330.40 776.00,323.72" fill="#e8590c" fill-opacity="0.25" stroke="#e8590c" stroke-width="1.2" stroke-linejoin="round"/>
+<circle cx="755.36" cy="203.66" r="4.5" fill="#4b3fc4"/>
+<circle cx="695.21" cy="72.00" r="4.5" fill="#4b3fc4"/>
+<circle cx="503.23" cy="103.13" r="4.5" fill="#4b3fc4"/>
+<circle cx="532.76" cy="383.35" r="4.5" fill="#4b3fc4"/>
+<circle cx="582.07" cy="113.01" r="4.5" fill="#4b3fc4"/>
+<circle cx="611.12" cy="384.00" r="4.5" fill="#4b3fc4"/>
+<circle cx="677.61" cy="330.40" r="4.5" fill="#4b3fc4"/>
+<circle cx="539.14" cy="261.88" r="4.5" fill="#4b3fc4"/>
+<circle cx="464.00" cy="193.54" r="4.5" fill="#4b3fc4"/>
+<circle cx="464.00" cy="301.75" r="4.5" fill="#4b3fc4"/>
+<circle cx="770.13" cy="82.48" r="4.5" fill="#4b3fc4"/>
+<circle cx="776.00" cy="323.72" r="4.5" fill="#4b3fc4"/>
+<circle cx="665.24" cy="252.86" r="4.5" fill="#4b3fc4"/>
 </svg>

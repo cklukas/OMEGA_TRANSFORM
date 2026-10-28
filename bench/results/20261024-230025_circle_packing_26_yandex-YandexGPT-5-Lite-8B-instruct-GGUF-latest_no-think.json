@@ -1,0 +1,404 @@
+{
+ "schema": 3,
+ "example": "circle_packing_26",
+ "model": "yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest",
+ "variant": "no-think",
+ "model_size_gb": 4.9,
+ "model_params": "8.0B",
+ "started": "2026-10-24T23:00:25",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 1.8371209047075825,
+ "improvement": 1.2328826665315635,
+ "llm_calls": 43,
+ "mean_llm_seconds": 20.8,
+ "attempts": 43,
+ "ok": 22,
+ "statuses": {
+  "ok": 22,
+  "invalid": 10,
+  "duplicate": 8,
+  "edit_error": 2,
+  "llm_error": 1
+ },
+ "sweeps": 11,
+ "sweep_variants": 52,
+ "improvements": 6,
+ "minutes_to_best": 8.54,
+ "best_idea": "tuned scale_factor=1.15 on top of: adjust the grid dimensions and radii scaling methods by introducing a scaling factor to improve the distribution of circles and allow larger circles in the interior.",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   1.05,
+   1.73928769307912
+  ],
+  [
+   1.82,
+   1.7650103696708153
+  ],
+  [
+   6.61,
+   1.8079429876203572
+  ],
+  [
+   7.9,
+   1.8221495396567813
+  ],
+  [
+   8.54,
+   1.830792647094538
+  ],
+  [
+   8.54,
+   1.8371209047075825
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.05,
+   "score": 1.73928769307912,
+   "model": "yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "improve the packing by adjusting the initialization of circle centers to create a more distributed and balanced layout, allowing larger circles in the interior and smaller ones in the corners."
+  },
+  {
+   "minutes": 8.54,
+   "score": 1.830792647094538,
+   "model": "yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "adjust the grid dimensions and radii scaling methods by introducing a scaling factor to improve the distribution of circles and allow larger circles in the interior."
+  },
+  {
+   "minutes": 8.54,
+   "score": 1.8371209047075825,
+   "model": "yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest",
+   "mode": "sweep/exploit/diff/bold",
+   "status": "ok",
+   "idea": "tuned scale_factor=1.15 on top of: adjust the grid dimensions and radii scaling methods by introducing a scaling factor to improve the distribution of circles and allow larger circles in the interior."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -7,14 +7,16 @@\n import math\n \n # OMEGA-BLOCK-START\n+scale_factor = 1.15  # Define scale_factor to improve the distribution of circles\n def construct_packing(n=26):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n-    cols = math.ceil(math.sqrt(n))\n-    rows = math.ceil(n / cols)\n+    cols = int(math.ceil(math.sqrt(n) * scale_factor))\n+    rows = int(math.ceil(n / cols))\n     centers = []\n     for k in range(n):\n         i, j = k % cols, k // cols\n         centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n+    centers = shuffle_centers(centers) # Add a shuffle to distribute centers more evenly\n     radii = max_radii(centers)\n     return [(x, y, r) for (x, y), r in zip(centers, radii)]\n \n@@ -30,6 +32,12 @@\n                 radii[a] *= s\n                 radii[b] *= s\n     return radii\n+\n+def shuffle_centers(centers):\n+    \"\"\"Shuffle the centers to distribute them more evenly.\"\"\"\n+    import random\n+    random.shuffle(centers)\n+    return centers\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.083333,
+    0.1,
+    0.060545
+   ],
+   [
+    0.25,
+    0.1,
+    0.039234
+   ],
+   [
+    0.416667,
+    0.1,
+    0.034262
+   ],
+   [
+    0.583333,
+    0.1,
+    0.040566
+   ],
+   [
+    0.75,
+    0.1,
+    0.05694
+   ],
+   [
+    0.916667,
+    0.1,
+    0.080973
+   ],
+   [
+    0.083333,
+    0.3,
+    0.047978
+   ],
+   [
+    0.25,
+    0.3,
+    0.032893
+   ],
+   [
+    0.416667,
+    0.3,
+    0.029299
+   ],
+   [
+    0.583333,
+    0.3,
+    0.040366
+   ],
+   [
+    0.75,
+    0.3,
+    0.058083
+   ],
+   [
+    0.916667,
+    0.3,
+    0.076636
+   ],
+   [
+    0.083333,
+    0.5,
+    0.05004
+   ],
+   [
+    0.25,
+    0.5,
+    0.036525
+   ],
+   [
+    0.416667,
+    0.5,
+    0.03396
+   ],
+   [
+    0.583333,
+    0.5,
+    0.041209
+   ],
+   [
+    0.75,
+    0.5,
+    0.058085
+   ],
+   [
+    0.916667,
+    0.5,
+    0.076976
+   ],
+   [
+    0.083333,
+    0.7,
+    0.059259
+   ],
+   [
+    0.25,
+    0.7,
+    0.06822
+   ],
+   [
+    0.416667,
+    0.7,
+    0.065257
+   ],
+   [
+    0.583333,
+    0.7,
+    0.069461
+   ],
+   [
+    0.75,
+    0.7,
+    0.089736
+   ],
+   [
+    0.916667,
+    0.7,
+    0.07693
+   ],
+   [
+    0.083333,
+    0.9,
+    0.075758
+   ],
+   [
+    0.25,
+    0.9,
+    0.090909
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.583333,
+    0.5,
+    0.004882
+   ],
+   [
+    0.916667,
+    0.7,
+    0.034303
+   ],
+   [
+    0.916667,
+    0.1,
+    0.075758
+   ],
+   [
+    0.75,
+    0.3,
+    0.066347
+   ],
+   [
+    0.083333,
+    0.9,
+    0.060545
+   ],
+   [
+    0.416667,
+    0.3,
+    0.051452
+   ],
+   [
+    0.25,
+    0.3,
+    0.064879
+   ],
+   [
+    0.083333,
+    0.5,
+    0.062846
+   ],
+   [
+    0.25,
+    0.9,
+    0.054121
+   ],
+   [
+    0.916667,
+    0.5,
+    0.064008
+   ],
+   [
+    0.583333,
+    0.3,
+    0.096407
+   ],
+   [
+    0.75,
+    0.5,
+    0.082079
+   ],
+   [
+    0.583333,
+    0.1,
+    0.07971
+   ],
+   [
+    0.25,
+    0.5,
+    0.056679
+   ],
+   [
+    0.25,
+    0.7,
+    0.063841
+   ],
+   [
+    0.416667,
+    0.7,
+    0.06323
+   ],
+   [
+    0.083333,
+    0.7,
+    0.083333
+   ],
+   [
+    0.416667,
+    0.1,
+    0.075758
+   ],
+   [
+    0.583333,
+    0.7,
+    0.07788
+   ],
+   [
+    0.416667,
+    0.5,
+    0.109988
+   ],
+   [
+    0.083333,
+    0.1,
+    0.07971
+   ],
+   [
+    0.75,
+    0.7,
+    0.088786
+   ],
+   [
+    0.083333,
+    0.3,
+    0.083333
+   ],
+   [
+    0.916667,
+    0.3,
+    0.083333
+   ],
+   [
+    0.25,
+    0.1,
+    0.086957
+   ],
+   [
+    0.75,
+    0.1,
+    0.086957
+   ]
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 10.2,
+ "model_gpu_memory_gb": 10.2,
+ "context_length": 32768,
+ "load_seconds": 17.3,
+ "median_call_seconds": 19.1,
+ "p90_call_seconds": 31.3,
+ "prompt_tokens_per_s": 1470.9,
+ "gen_tokens_per_s": 43.9,
+ "mean_prompt_tokens": 3204,
+ "mean_gen_tokens": 684,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

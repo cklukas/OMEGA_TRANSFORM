@@ -1,0 +1,134 @@
+{
+ "schema": 3,
+ "example": "matmul_f32",
+ "model": "gemma4:26b-a4b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 15.6,
+ "model_params": "25.2B",
+ "started": "2026-10-24T19:56:00",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.16773,
+ "best_score": 18.4288,
+ "improvement": 15.781730365752358,
+ "llm_calls": 31,
+ "mean_llm_seconds": 26.5,
+ "attempts": 31,
+ "ok": 25,
+ "statuses": {
+  "ok": 25,
+  "edit_error": 3,
+  "compile_error": 1,
+  "llm_error": 1,
+  "invalid": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 4,
+ "minutes_to_best": 15.29,
+ "best_idea": "Revert to a single-threaded high-performance implementation using the `i-k-j` loop order to avoid the synchronization and thread management overhead that caused the previous performance drop.",
+ "progress": [
+  [
+   0.0,
+   1.16773
+  ],
+  [
+   3.34,
+   15.5949
+  ],
+  [
+   3.37,
+   16.6779
+  ],
+  [
+   13.91,
+   17.1282
+  ],
+  [
+   15.29,
+   18.4288
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.16773,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.69,
+   "score": 15.5126,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Change the loop order to i-k-j to improve cache locality for matrix B and C."
+  },
+  {
+   "minutes": 6.56,
+   "score": 8.80077,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Parallelize the outermost loop using `std::thread` to utilize all CPU cores on Apple Silicon."
+  },
+  {
+   "minutes": 15.29,
+   "score": 18.4288,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "explore/rewrite/tune",
+   "status": "ok",
+   "idea": "Revert to a single-threaded high-performance implementation using the `i-k-j` loop order to avoid the synchronization and thread management overhead that caused the previous performance drop."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -22,11 +22,22 @@\n // Computes C = A * B. C is NOT zeroed by the caller. Any number of threads may be\n // used (std::thread is available); n is any size from 1 to 2048.\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+    // Initialize C with 0\n+    for (int i = 0; i < n * n; ++i) C[i] = 0.0f;\n+\n+    // i-k-j loop order for better spatial locality and vectorization.\n+    // This is highly efficient on Apple Silicon due to auto-vectorization.\n+    for (int i = 0; i < n; ++i) {\n+        const float* rowA = &A[i * n];\n+        float* rowC = &C[i * n];\n+        for (int k = 0; k < n; ++k) {\n+            float a_val = rowA[k];\n+            const float* rowB = &B[k * n];\n+            #pragma omp simd\n+            for (int j = 0; j < n; ++j) {\n+                rowC[j] += a_val * rowB[j];\n+            }\n         }\n+    }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "error": "",
+ "model_memory_gb": 16.5,
+ "model_gpu_memory_gb": 14.8,
+ "context_length": 32768,
+ "load_seconds": 68.2,
+ "median_call_seconds": 25.8,
+ "p90_call_seconds": 30.3,
+ "prompt_tokens_per_s": 1260.8,
+ "gen_tokens_per_s": 33.9,
+ "mean_prompt_tokens": 3647,
+ "mean_gen_tokens": 621,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

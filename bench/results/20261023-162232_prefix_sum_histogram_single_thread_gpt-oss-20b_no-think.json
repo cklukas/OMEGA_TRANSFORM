@@ -1,0 +1,129 @@
+{
+ "schema": 3,
+ "example": "prefix_sum_histogram_single_thread",
+ "model": "gpt-oss:20b",
+ "variant": "no-think",
+ "model_size_gb": 13.8,
+ "model_params": "20.9B",
+ "started": "2026-10-23T16:22:32",
+ "minutes_budget": 15.0,
+ "wall_minutes": 18.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 3.63044,
+ "best_score": 6.07054,
+ "improvement": 1.672122387369024,
+ "llm_calls": 9,
+ "mean_llm_seconds": 100.2,
+ "attempts": 9,
+ "ok": 7,
+ "statuses": {
+  "ok": 7,
+  "edit_error": 2
+ },
+ "sweeps": 1,
+ "sweep_variants": 11,
+ "improvements": 4,
+ "minutes_to_best": 15.85,
+ "best_idea": "Use 8 sub\u2011histograms to avoid hot counter stalls and combine them at the end.",
+ "progress": [
+  [
+   0.0,
+   3.63044
+  ],
+  [
+   5.82,
+   4.50809
+  ],
+  [
+   6.75,
+   5.43723
+  ],
+  [
+   10.99,
+   5.96954
+  ],
+  [
+   15.85,
+   6.07054
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.63044,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 15.85,
+   "score": 6.07054,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Use 8 sub\u2011histograms to avoid hot counter stalls and combine them at the end."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -28,12 +28,25 @@\n // hist is zeroed by the caller. n is any size from 0 to 20'000'000; the sums\n // never overflow int64.\n extern \"C\" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, uint64_t* hist) {\n+    constexpr int SUBS = 8;\n+    uint32_t sub[SUBS][256];\n+    std::memset(sub, 0, sizeof(sub));\n     for (int b = 0; b < 256; ++b) hist[b] = 0;\n     int64_t sum = 0;\n+    int sub_idx = 0;\n+    const int mask = SUBS - 1;\n     for (size_t i = 0; i < n; ++i) {\n-        sum += in[i];\n+        int64_t v = in[i];\n+        sum += v;\n         out[i] = sum;\n-        hist[in[i] & 255]++;\n+        uint8_t lo = static_cast<uint8_t>(v);\n+        sub[sub_idx][lo]++;          // increment sub histogram\n+        sub_idx &= mask;\n+    }\n+    for (int b = 0; b < 256; ++b) {\n+        uint64_t t = 0;\n+        for (int s = 0; s < SUBS; ++s) t += sub[s][b];\n+        hist[b] = t;\n     }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "best_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 13.8,
+ "model_gpu_memory_gb": 13.8,
+ "context_length": 32768,
+ "load_seconds": 53.9,
+ "median_call_seconds": 99.1,
+ "p90_call_seconds": 174.4,
+ "prompt_tokens_per_s": 2416.1,
+ "gen_tokens_per_s": 49.6,
+ "mean_prompt_tokens": 4248,
+ "mean_gen_tokens": 4444,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

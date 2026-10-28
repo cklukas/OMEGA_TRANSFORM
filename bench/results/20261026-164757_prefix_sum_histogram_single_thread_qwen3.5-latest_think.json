@@ -1,0 +1,119 @@
+{
+ "schema": 3,
+ "example": "prefix_sum_histogram_single_thread",
+ "model": "qwen3.5:latest",
+ "variant": "think",
+ "model_size_gb": 6.6,
+ "model_params": "9.0B",
+ "started": "2026-10-26T16:47:57",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 4.25239,
+ "best_score": 4.40136,
+ "improvement": 1.0350320643214757,
+ "llm_calls": 9,
+ "mean_llm_seconds": 101.6,
+ "attempts": 9,
+ "ok": 2,
+ "statuses": {
+  "ok": 2,
+  "invalid": 2,
+  "compile_error": 4,
+  "edit_error": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 9.97,
+ "best_idea": "Add __builtin_prefetch hints for better cache utilization and add loop unrolling to improve instruction-level parallelism, while keeping histogram accumulation in-place since it's already correct",
+ "progress": [
+  [
+   0.0,
+   4.25239
+  ],
+  [
+   9.97,
+   4.40136
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 4.25239,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 9.97,
+   "score": 4.40136,
+   "model": "qwen3.5:latest",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Add __builtin_prefetch hints for better cache utilization and add loop unrolling to improve instruction-level parallelism, while keeping histogram accumulation in-place since it's already correct"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -29,11 +29,23 @@\n // never overflow int64.\n extern \"C\" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, uint64_t* hist) {\n     for (int b = 0; b < 256; ++b) hist[b] = 0;\n+    constexpr size_t PREFETCH_DIST = 32;\n+    constexpr size_t UNROLL = 8;\n+    \n     int64_t sum = 0;\n-    for (size_t i = 0; i < n; ++i) {\n-        sum += in[i];\n-        out[i] = sum;\n-        hist[in[i] & 255]++;\n+    for (size_t i = 0; i < n; i += UNROLL) {\n+        size_t end = (i + UNROLL <= n) ? i + UNROLL : n;\n+        for (size_t j = 0; j < end - i; ++j) {\n+            int64_t val = in[i + j];\n+            sum += val;\n+            out[i + j] = sum;\n+            hist[val & 255]++;\n+            \n+            if ((i + j + PREFETCH_DIST) < n) {\n+                __builtin_prefetch((const int64_t*)(in + i + j + PREFETCH_DIST), 1, 3);\n+                __builtin_prefetch((int64_t*)(out + i + j + PREFETCH_DIST), 0, 3);\n+            }\n+        }\n     }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "best_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 7.6,
+ "model_gpu_memory_gb": 7.6,
+ "context_length": 32768,
+ "load_seconds": 27.6,
+ "median_call_seconds": 97.1,
+ "p90_call_seconds": 199.4,
+ "prompt_tokens_per_s": 1220.3,
+ "gen_tokens_per_s": 35.2,
+ "mean_prompt_tokens": 4056,
+ "mean_gen_tokens": 3273,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -1,0 +1,146 @@
+{
+ "schema": 3,
+ "example": "sort_u32_single_thread",
+ "model": "gpt-oss:20b",
+ "variant": "think",
+ "model_size_gb": 13.8,
+ "model_params": "20.9B",
+ "started": "2026-10-26T22:40:31",
+ "minutes_budget": 15.0,
+ "wall_minutes": 18.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 22.397838874562215,
+ "best_score": 241.44135321249038,
+ "improvement": 10.779671849800712,
+ "llm_calls": 15,
+ "mean_llm_seconds": 71.0,
+ "attempts": 15,
+ "ok": 9,
+ "statuses": {
+  "ok": 9,
+  "invalid": 2,
+  "edit_error": 2,
+  "compile_error": 1,
+  "llm_error": 1
+ },
+ "sweeps": 1,
+ "sweep_variants": 9,
+ "improvements": 4,
+ "minutes_to_best": 7.23,
+ "best_idea": "Add a reverse\u2011sorted detection and early insertion sort for very small arrays to skip costly radix passes, improving reverse and small\u2011size cases.",
+ "progress": [
+  [
+   0.0,
+   22.397838874562215
+  ],
+  [
+   1.62,
+   119.19751465957246
+  ],
+  [
+   3.3,
+   184.0518316199667
+  ],
+  [
+   4.57,
+   198.0979020131104
+  ],
+  [
+   7.23,
+   241.44135321249038
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 22.397838874562215,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.87,
+   "score": 38.27959658799515,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the custom merge sort with std::sort to reduce overhead and CPU time."
+  },
+  {
+   "minutes": 4.43,
+   "score": 173.86647375691254,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Replace std::sort with a 3\u2011pass 11\u2011bit LSD radix sort that skips passes when all keys share the same digit and checks for an already sorted array to avoid work on sorted inputs."
+  },
+  {
+   "minutes": 7.23,
+   "score": 241.44135321249038,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Add a reverse\u2011sorted detection and early insertion sort for very small arrays to skip costly radix passes, improving reverse and small\u2011size cases."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -21,20 +21,81 @@\n // OMEGA-BLOCK-START\n // Sorts a[0..n) ascending, in place, on the calling thread. n is any size from\n // 0 to 2'000'000. Extra memory may be allocated freely.\n-static void merge_sort_rec(uint32_t* a, uint32_t* tmp, size_t lo, size_t hi) {\n-    if (hi - lo < 2) return;\n-    size_t mid = lo + (hi - lo) / 2;\n-    merge_sort_rec(a, tmp, lo, mid);\n-    merge_sort_rec(a, tmp, mid, hi);\n-    size_t i = lo, j = mid, k = lo;\n-    while (i < mid && j < hi) tmp[k++] = (a[j] < a[i]) ? a[j++] : a[i++];\n-    while (i < mid) tmp[k++] = a[i++];\n-    while (j < hi) tmp[k++] = a[j++];\n-    for (size_t t = lo; t < hi; ++t) a[t] = tmp[t];\n-}\n+extern \"C\" void sort_u32(uint32_t* a, size_t n) {\n+    if (n <= 1) return;\n+    // Small arrays \u2013 insertion sort is fastest\n+    constexpr size_t SMALL_N = 64;\n+    if (n <= SMALL_N) {\n+        // Insertion sort\n+        for (size_t i = 1; i < n; ++i) {\n+            uint32_t key = a[i];\n+            size_t j = i;\n+            while (j > 0 && a[j - 1] > key) {\n+                a[j] = a[j - 1];\n+                --j;\n+            }\n+            a[j] = key;\n+        }\n+        return;\n+    }\n \n-extern \"C\" void sort_u32(uint32_t* a, size_t n) {\n-    std::vector<uint32_t> tmp(n);\n-    merge_sort_rec(a, tmp.data(), 0, n);\n+    // Quick check for already sorted input.\n+    bool sorted = true;\n+    for (size_t i = 1; i < n; ++i) {\n+        if (a[i - 1] > a[i]) { sorted = false; break; }\n+    }\n+    if (sorted) return;\n+\n+    // Quick check for reverse sorted input.\n+    bool reverse = true;\n+    for (size_t i = 1; i < n; ++i) {\n+        if (a[i - 1] < a[i]) { reverse = false; break; }\n+    }\n+    if (reverse) {\n+        std::reverse(a, a + n);\n+        return;\n+    }\n+\n+    static std::vector<uint32_t> tmp;\n+    static size_t tmp_cap = 0;\n+    if (n > tmp_cap) {\n+        tmp.resize(n);\n+        tmp_cap = n;\n+    }\n+    uint32_t* src = a;\n+    uint32_t* dst = tmp.data();\n+\n+    constexpr int BITS = 11;\n+    constexpr int RADIX = 1 << BITS;          // 2048\n+    static uint32_t hist[RADIX];\n+    static uint32_t pos[RADIX];\n+\n+    // Compute global min/max once to skip passes if all keys share a digit.\n+    uint32_t minv = src[0], maxv = src[0];\n+    for (size_t i = 1; i < n; ++i) {\n+        uint32_t v = src[i];\n+        if (v < minv) minv = v;\n+        if (v > maxv) maxv = v;\n+    }\n+\n+    for (int pass = 0; pass < 3; ++pass) {\n+        uint32_t shift = pass * BITS;\n+        uint32_t dmin = (minv >> shift) & 0x7FF;\n+        uint32_t dmax = (maxv >> shift) & 0x7FF;\n+        if (dmin == dmax) continue;          // all digits identical, skip this pass\n+\n+        std::memset(hist, 0, sizeof(hist));\n+        for (size_t i = 0; i < n; ++i) {\n+            ++hist[(src[i] >> shift) & 0x7FF];\n+        }\n+        pos[0] = 0;\n+        for (int i = 1; i < RADIX; ++i) pos[i] = pos[i - 1] + hist[i - 1];\n+        for (size_t i = 0; i < n; ++i) {\n+            uint32_t d = (src[i] >> shift) & 0x7FF;\n+            dst[pos[d]++] = src[i];\n+        }\n+        std::swap(src, dst);\n+    }\n+    if (src != a) std::memcpy(a, src, n * sizeof(uint32_t));\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "best_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 13.2,
+ "model_gpu_memory_gb": 13.2,
+ "context_length": 32768,
+ "load_seconds": 40.1,
+ "median_call_seconds": 54.8,
+ "p90_call_seconds": 87.4,
+ "prompt_tokens_per_s": 1735.3,
+ "gen_tokens_per_s": 51.9,
+ "mean_prompt_tokens": 4589,
+ "mean_gen_tokens": 2456,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

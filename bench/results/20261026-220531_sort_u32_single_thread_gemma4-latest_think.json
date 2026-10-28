@@ -1,0 +1,135 @@
+{
+ "schema": 3,
+ "example": "sort_u32_single_thread",
+ "model": "gemma4:latest",
+ "variant": "think",
+ "model_size_gb": 6.6,
+ "model_params": "7.5B",
+ "started": "2026-10-26T22:05:31",
+ "minutes_budget": 15.0,
+ "wall_minutes": 16.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 22.428308055837512,
+ "best_score": 151.31291164947328,
+ "improvement": 6.746514773774495,
+ "llm_calls": 14,
+ "mean_llm_seconds": 65.0,
+ "attempts": 14,
+ "ok": 11,
+ "statuses": {
+  "ok": 11,
+  "invalid": 3
+ },
+ "sweeps": 1,
+ "sweep_variants": 6,
+ "improvements": 4,
+ "minutes_to_best": 15.48,
+ "best_idea": "Add an O(N) check at the beginning of sort_u32 to detect if the input array is already sorted, allowing an immediate return and saving CPU time on the 'sorted' distribution.",
+ "progress": [
+  [
+   0.0,
+   22.428308055837512
+  ],
+  [
+   2.55,
+   115.31157505119809
+  ],
+  [
+   8.34,
+   119.07334470633126
+  ],
+  [
+   9.46,
+   137.615028379696
+  ],
+  [
+   15.48,
+   151.31291164947328
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 22.428308055837512,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 12.32,
+   "score": 113.80875957765409,
+   "model": "gemma4:latest",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the $O(N \\log N)$ Merge Sort with a stable LSD Radix Sort, which achieves $O(N)$ complexity for fixed-width integers and is expected to yield a massive performance improvement."
+  },
+  {
+   "minutes": 15.48,
+   "score": 151.31291164947328,
+   "model": "gemma4:latest",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Add an O(N) check at the beginning of sort_u32 to detect if the input array is already sorted, allowing an immediate return and saving CPU time on the 'sorted' distribution."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,22 +19,56 @@\n #endif\n \n // OMEGA-BLOCK-START\n-// Sorts a[0..n) ascending, in place, on the calling thread. n is any size from\n-// 0 to 2'000'000. Extra memory may be allocated freely.\n-static void merge_sort_rec(uint32_t* a, uint32_t* tmp, size_t lo, size_t hi) {\n-    if (hi - lo < 2) return;\n-    size_t mid = lo + (hi - lo) / 2;\n-    merge_sort_rec(a, tmp, lo, mid);\n-    merge_sort_rec(a, tmp, mid, hi);\n-    size_t i = lo, j = mid, k = lo;\n-    while (i < mid && j < hi) tmp[k++] = (a[j] < a[i]) ? a[j++] : a[i++];\n-    while (i < mid) tmp[k++] = a[i++];\n-    while (j < hi) tmp[k++] = a[j++];\n-    for (size_t t = lo; t < hi; ++t) a[t] = tmp[t];\n+// Stable counting sort pass for LSD Radix Sort\n+static void counting_sort_pass(uint32_t* src, uint32_t* dst, size_t n, int shift) {\n+    uint32_t count[256] = {0};\n+\n+    // 1. Count frequencies\n+    for (size_t i = 0; i < n; ++i) {\n+        uint8_t digit = (uint8_t)((src[i] >> shift) & 0xFF);\n+        count[digit]++;\n+    }\n+\n+    // 2. Compute cumulative counts (prefix sums)\n+    size_t total = 0;\n+    for (int i = 0; i < 256; ++i) {\n+        size_t current_count = count[i];\n+        count[i] = total;\n+        total += current_count;\n+    }\n+\n+    // 3. Place elements stably into dst (Iterate forward)\n+    for (size_t i = 0; i < n; ++i) {\n+        uint8_t digit = (uint8_t)((src[i] >> shift) & 0xFF);\n+        size_t dest_index = count[digit];\n+        dst[dest_index] = src[i];\n+        count[digit]++;\n+    }\n }\n \n extern \"C\" void sort_u32(uint32_t* a, size_t n) {\n+    if (n <= 1) return;\n     std::vector<uint32_t> tmp(n);\n-    merge_sort_rec(a, tmp.data(), 0, n);\n+\n+    uint32_t* src = a;\n+    uint32_t* dst = tmp.data();\n+\n+    // Check if already sorted\n+    bool sorted = true;\n+    for (size_t i = 0; i < n - 1; ++i) {\n+        if (a[i] > a[i+1]) {\n+            sorted = false;\n+            break;\n+        }\n+    }\n+    if (sorted) return;\n+\n+    // 4 passes for 32-bit integers (8 bits per pass)\n+    for (int shift = 0; shift < 32; shift += 8) {\n+        counting_sort_pass(src, dst, n, shift);\n+        // Ping-pong swap roles\n+        std::swap(src, dst);\n+    }\n+    // The final sorted array is pointed to by 'src'\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "best_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 1.6,
+ "model_gpu_memory_gb": 1.6,
+ "context_length": 32768,
+ "load_seconds": 27.8,
+ "median_call_seconds": 65.0,
+ "p90_call_seconds": 104.7,
+ "prompt_tokens_per_s": 1163.2,
+ "gen_tokens_per_s": 55.0,
+ "mean_prompt_tokens": 4921,
+ "mean_gen_tokens": 3112,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}
