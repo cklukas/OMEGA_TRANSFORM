@@ -493,7 +493,10 @@ DEVELOPER_INFO = {
                "build of Alibaba's Qwen3.8-27B that is tuned to keep tool calling intact."),
     "Liquid AI": ("2023", "Cambridge, USA",
                   "A spin-off of MIT's computer science lab; its LFM models use a hybrid "
-                  "architecture built for running on devices."),
+                  "architecture built for running on devices. LFM3 (October 2026, LFM "
+                  "Open License) is a family of six open-weight models of about 2B "
+                  "parameters for text, vision, audio and both, which share one 1.7B "
+                  "backbone of short convolutions and attention with a 256K context."),
 }
 
 

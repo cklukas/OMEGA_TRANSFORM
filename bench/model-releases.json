@@ -91,6 +91,12 @@
    "source": "huggingface",
    "params_b": 8.6
   },
+  "lfm3:latest": {
+   "repo": "LiquidAI/LFM3-1.7B",
+   "released": "2026-10-23",
+   "source": "huggingface",
+   "params_b": 1.7
+  },
   "llm-jp-4-8b-omega:q4_k_m": {
    "repo": "llm-jp/llm-jp-4-8b-thinking",
    "released": "2026-03-16",

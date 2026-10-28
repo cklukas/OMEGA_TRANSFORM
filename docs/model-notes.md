@@ -192,3 +192,14 @@ with reasoning, this stopped every call of the run on most examples, so the
 model never wrote an edit there. Its results with reasoning therefore show the
 guard's limit more than the model's ability; its results without reasoning are
 the meaningful ones. The same applies, less often, to Sarvam 30B.
+
+## LFM3 1.7B (Liquid AI, USA)
+
+`lfm3:latest` is the text model of Liquid AI's LFM3 family (announced
+2026-10-27; Hugging Face repository
+[LiquidAI/LFM3-1.7B](https://huggingface.co/LiquidAI/LFM3-1.7B), LFM Open
+License v1.0), taken as it is from Ollama's library (1.7 GB, the same build as
+`lfm3:1.7b`). It needs Ollama 0.40.12 or newer: older versions refuse the pull
+with "requires a newer version of Ollama" (HTTP 412). It supports reasoning and
+is benchmarked in both passes; at 1.7B parameters it is the smallest model in
+the benchmark.
