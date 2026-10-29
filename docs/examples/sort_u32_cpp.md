@@ -254,6 +254,8 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/sort_
 | underdog-saluki-27b:iq2-mix (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 28.4632 | ×1.24 | 3.4 | 1 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 27.4213 | ×1.22 | 10.8 | 3 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | Apple M1 Max | 25.8331 | ×1.15 | 5.4 | 4 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | Apple M1 Max | 23.9532 | ×1.00 | - | 0 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (think) | local | Apple M1 Max | | | | failed: all 10 model requests failed … |
 | lfm3:latest (no-think) | local | Apple M1 Max | 23.7228 | ×1.00 | - | 0 |
 | nemotron-3.5-lightning:30b-mlx (think) | local | Apple M1 Max | | | | failed: all 4 model requests failed … |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | Apple M1 Max | 23.3623 | ×1.01 | 5.1 | 1 |

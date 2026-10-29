@@ -201,6 +201,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/heilb
 | qwen3.5:27b (think) | local | Apple M1 Max | 0.01287 | ×2.69 | 7.3 | 2 |
 | nemotron-3-nano:4b (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.01278 | ×2.67 | 15.3 | 2 |
 | lfm3:latest (think) | local | Apple M1 Max | 0.01078 | ×2.25 | 3.8 | 2 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | Apple M1 Max | 0.01078 | ×2.25 | 1.6 | 2 |
 | gemma4:26b-a4b-it-qat (think) | local | Apple M1 Max | 0.01072 | ×2.24 | 18.1 | 3 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | Apple M1 Max | 0.00896 | ×1.87 | 11.6 | 1 |
 | qwen3-coder:30b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.00852 | ×1.78 | 5.3 | 1 |
@@ -240,3 +241,4 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/heilb
 | lfm3:latest (no-think) | local | Apple M1 Max | 0.00479 | ×1.00 | - | 0 |
 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.00479 | ×1.00 | - | 0 |
 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 10 model requests failed … |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (think) | local | Apple M1 Max | | | | failed: all 11 model requests failed … |

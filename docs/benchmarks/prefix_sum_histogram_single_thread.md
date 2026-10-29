@@ -6,7 +6,7 @@
 
 50 models, 15 minutes each, one run per model. The [overall ranking](../benchmarks.md#overall-ranking) compares the models over all examples.
 
-Machines: **Apple M1 Max**: Apple M1 Max (Mac13,1), 10 cores, 32 GB, 47 runs; **i7-8700K + 2x GTX 1080 Ti**: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz (MS-7A98), 12 cores, 64 GB, 2x NVIDIA GeForce GTX 1080 Ti, 11264 MiB, 38 runs.
+Machines: **Apple M1 Max**: Apple M1 Max (Mac13,1), 10 cores, 32 GB, 49 runs; **i7-8700K + 2x GTX 1080 Ti**: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz (MS-7A98), 12 cores, 64 GB, 2x NVIDIA GeForce GTX 1080 Ti, 11264 MiB, 38 runs.
 
 ## Local models on Apple M1 Max
 
@@ -44,8 +44,10 @@ Ollama on this machine.
 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 8.1B | 4.63526 | **5.35117** | ×1.15 | 23 | 39 | 13% | 3 | 10.9 |
 | qwen2.5-coder:7b (no-think) | 7.6B | 5.00125 | **5.00125** | ×1.00 | 34 | 27 | 9% | 0 | - |
 | lfm3:latest (no-think) |  | 4.98815 | **4.98815** | ×1.00 | 30 | 30 | 0% | 0 | - |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (think) | 1.73B | | | | | | | | failed: all 9 model requests failed: hf.co/LiquidAI/LFM3-1.7B-GGUF:Q |
 | nemotron-3-nano:4b (think) |  | 4.90707 | **4.90707** | ×1.00 | 21 | 45 | 10% | 0 | - |
 | lfm3:latest (think) |  | | | | | | | | failed: all 8 model requests failed: lfm3:latest: answer stopped: re |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | 1.73B | | | | | | | | failed: all 33 model requests failed: hf.co/LiquidAI/LFM3-1.7B-GGUF: |
 | nemotron-3-nano:4b (no-think) |  | 4.83471 | **4.86648** | ×1.01 | 50 | 17 | 14% | 1 | 14.5 |
 | nemotron-3.5-lightning:30b-mlx (no-think) |  | 4.85732 | **4.85732** | ×1.00 | 24 | 41 | 0% | 0 | - |
 | underdog-saluki-27b:iq2-mix (no-think) | 26.9B | 4.84731 | **4.84731** | ×1.00 | 5 | 230 | 0% | 0 | - |

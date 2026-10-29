@@ -197,6 +197,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/symbo
 | gemma4:e2b (no-think) | local | Apple M1 Max | 0.38046 | ×1.22 | 12.9 | 6 |
 | frob/sarvam:30b (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.38018 | ×1.22 | 18.0 | 2 |
 | muse-glimmer:30b (no-think) | local | Apple M1 Max | 0.37999 | ×1.21 | 8.6 | 3 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | Apple M1 Max | 0.37971 | ×1.21 | 8.2 | 2 |
 | gemma4:e4b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.37966 | ×1.21 | 6.0 | 2 |
 | nemotron-3-nano:30b-a3b-mlx (think) | local | Apple M1 Max | 0.37956 | ×1.21 | 15.5 | 2 |
 | gemma4:latest (think) | local | Apple M1 Max | 0.3795 | ×1.21 | 9.8 | 2 |
@@ -207,6 +208,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/symbo
 | llm-jp-4-8b-omega:q4_k_m (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.37945 | ×1.21 | 7.7 | 1 |
 | lfm3:latest (think) | local | Apple M1 Max | 0.37945 | ×1.21 | 2.1 | 1 |
 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.37945 | ×1.21 | 1.4 | 1 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (think) | local | Apple M1 Max | 0.37945 | ×1.21 | 5.3 | 2 |
 | Bored/GigaChat3.1-10B-A1.8B-q4_K_M:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.37906 | ×1.21 | 8.2 | 3 |
 | glm-4.7-flash:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.37836 | ×1.21 | 8.2 | 2 |
 | nemotron-3-nano:30b-a3b-mlx (no-think) | local | Apple M1 Max | 0.37836 | ×1.21 | 5.8 | 2 |

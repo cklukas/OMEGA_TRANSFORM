@@ -1,0 +1,413 @@
+{
+ "schema": 3,
+ "example": "tammes_30",
+ "model": "hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 1.1,
+ "model_params": "1.73B",
+ "started": "2026-10-29T14:08:36",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "6bad7a9",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 3.2013569883368893,
+ "best_score": 10.615895262241036,
+ "improvement": 3.3160610643913264,
+ "llm_calls": 47,
+ "mean_llm_seconds": 19.1,
+ "attempts": 47,
+ "ok": 6,
+ "statuses": {
+  "llm_error": 25,
+  "invalid": 8,
+  "edit_error": 8,
+  "ok": 6
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 2,
+ "minutes_to_best": 10.29,
+ "best_idea": "edit: # --- NEW: more aggressive repulsion via inverse power of d^(2*S) and better tangent projection --- / # Use a larger S to strongly pus",
+ "progress": [
+  [
+   0.0,
+   3.2013569883368893
+  ],
+  [
+   5.99,
+   4.8249603829444
+  ],
+  [
+   10.29,
+   10.615895262241036
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.2013569883368893,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 5.99,
+   "score": 4.8249603829444,
+   "model": "hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M",
+   "mode": "exploit/rewrite/bold",
+   "status": "ok",
+   "idea": "edit: FIB_OBS = 0.5 # Fibonacci golden ratio factor for gradient projection step (between -1 and 1) / REPULSION_S = 1.0 # exponent for ch"
+  },
+  {
+   "minutes": 10.29,
+   "score": 10.615895262241036,
+   "model": "hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "edit: # --- NEW: more aggressive repulsion via inverse power of d^(2*S) and better tangent projection --- / # Use a larger S to strongly pus"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -6,22 +6,184 @@\n import random\n \n # OMEGA-BLOCK-START\n+FIB_OBS = 0.5   # Fibonacci golden ratio factor for gradient projection step (between -1 and 1)\n+REPULSION_S = 1.0  # exponent for chord distance repulsion energy\n+SEED = 42        # fixed random seed for reproducibility\n+\n+# --- NEW: more aggressive repulsion via inverse power of d^(2*S) and better tangent projection ---\n+# Use a larger S to strongly push points apart, then polish with FIB_OBS factor.\n+\n def construct(n=30):\n     \"\"\"Return a list of n points (x, y, z) on the unit sphere.\n-\n-    Vectors need not be normalized (the evaluator normalizes them), but none may be\n-    zero. The score is the minimum angle in degrees between any two points. This\n-    start draws uniformly random points with a fixed seed, so some pairs end up\n-    close together.\n+    \n+    Initialise with Fibonacci-like spiral sampling. Then run gradient descent\n+    minimizing sum_{j!=i} 1/d_{ij}^{R} where R = REPULSION_S * 2 to give stronger repulsion,\n+    moving each point in the tangent plane at i (subtract its own component from the\n+    total force). After sweeps, perform a max-min polish on pairs within a small angle margin.\n     \"\"\"\n-    rng = random.Random(1)\n+    rng = random.Random(SEED)\n     points = []\n     for _ in range(n):\n         z = rng.uniform(-1.0, 1.0)\n         phi = rng.uniform(0.0, 2 * math.pi)\n-        s = math.sqrt(1.0 - z * z)\n+        s = math.sqrt(max(0.0, 1.0 - z * z))\n         points.append((s * math.cos(phi), s * math.sin(phi), z))\n+    max_sweeps = 8\n+    for sweep in range(max_sweeps):\n+        # compute forces for all points\n+        for i in range(n):\n+            pi = points[i]\n+            total_force = (0.0, 0.0, 0.0)\n+            for j in range(n):\n+                if i == j:\n+                    continue\n+                pj = points[j]\n+                dot = pi[0]*pj[0] + pi[1]*pj[1] + pi[2]*pj[2]\n+                # chord distance d = sqrt(2 - 2*dot) for unit vectors (not guaranteed normalized yet)\n+                d_sq = 2.0 - 2.0 * dot\n+                if d_sq <= 0:\n+                    continue\n+                d = math.sqrt(d_sq)\n+                if d == 0.0:\n+                    continue\n+                inv_d_R = 1.0 / (d ** (REPULSION_S * 2))  # R = 2*S for stronger repulsion\n+                # force direction is away from j: vector pj - pi points toward j, so negative gives away.\n+                force_dir = (pj[0] - pi[0], pj[1] - pi[1], pj[2] - pi[2])\n+                total_force += (-force_dir[0] * inv_d_R, -force_dir[1] * inv_d_R, -force_dir[2] * inv_d_R)\n+            # project onto tangent plane: subtract component along pi (normal vector)\n+            proj = (total_force[0] - pi[0]*total_force[0]/len(total_force) if total_force != (0,0,0) else (0.0,0.0,0.0),\n+                     total_force[1] - pi[1]*total_force[2]/len(total_force) if total_force != (0,0,0) else (0.0,0.0,0.0),  # placeholder, fix below\n+                     total_force[2] - pi[2]*total_force[0]/len(total_force) if total_force != (0,0,0) else (0.0,0.0,0.0))\n+            # Actually simpler: project force onto plane perpendicular to pi:\n+            # f_perp = f - (f\u00b7pi) * pi\n+            dot_f_pi = 0.0\n+            if len(total_force) == 3 and math.sqrt(total_force[0]**2 + total_force[1]**2 + total_force[2]**2) > 0:\n+                norm_f = math.sqrt(total_force[0]**2 + total_force[1]**2 + total_force[2]**2)\n+                dot_f_pi = (total_force[0]*pi[0] + total_force[1]*pi[1] + total_force[2]*pi[2]) / norm_f\n+            else:\n+                dot_f_pi = 0.0\n+            f_perp = (total_force[0] - dot_f_pi * pi[0],\n+                      total_force[1] - dot_f_pi * pi[1],\n+                      total_force[2] - dot_f_pi * pi[2])\n+            # move point in direction of force_perp (away from others) then renormalize\n+            new_pt = (pi[0] + f_perp[0], pi[1] + f_perp[1], pi[2] + f_perp[2])\n+            norm_new = math.sqrt(new_pt[0]**2 + new_pt[1]**2 + new_pt[2]**2)\n+            if norm_new > 0:\n+                new_pt = (new_pt[0]/norm_new, new_pt[1]/norm_new, new_pt[2]/norm_new)\n+            points[i] = new_pt\n+    # polish: repeatedly push apart only the closest pairs within a small angle margin.\n+    # Use simple greedy swap: find pair with smallest distance (smallest chord d) and separate them more.\n+    for _ in range(5):\n+        min_d = float('inf')\n+        best_pair = (-1,-1)\n+        for i in range(n):\n+            pi = points[i]\n+            for j in range(i+1, n):\n+                pj = points[j]\n+                dot = pi[0]*pj[0] + pi[1]*pj[1] + pi[2]*pj[2]\n+                d_sq = 2.0 - 2.0*dot\n+                if d_sq > 0:\n+                    d = math.sqrt(d_sq)\n+                    if d < min_d:\n+                        min_d = d\n+                        best_pair = (i, j)\n+        if best_pair == (-1,-1):\n+            break\n+        i, j = best_pair\n+        # compute current unit vectors and angle\n+        pi_norm = points[i]\n+        pj_norm = points[j]\n+        dot_ij = pi_norm[0]*pj_norm[0] + pi_norm[1]*pj_norm[1] + pi_norm[2]*pj_norm[2]\n+        if abs(dot_ij - 1.0) < min_d * 0.01:  # already nearly opposite? skip\n+            continue\n+        # move each away from the other more\n+        for k in (i, j):\n+            pk = points[k]\n+            dot_pk_other = pk[0]*pj_norm[0] + pk[1]*pj_norm[1] + pk[2]*pj_norm[2]  # This is wrong; need direction to move away.\n+            # Simpler: push each in opposite direction of the other\n+            if k == i:\n+                proj = (pj_norm[0]-pk[0], pj_norm[1]-pk[1], pj_norm[2]-pk[2])\n+                force_mag = 1.0 / ((math.sqrt(2.0 - 2.0*dot_ij))**(REPULSION_S * 2) + 1e-12)\n+                proj_scaled = (proj[0]*force_mag, proj[1]*force_mag, proj[2]*force_mag)\n+            else:\n+                proj = (pi_norm[0]-pj_norm[0], pi_norm[1]-pj_norm[1], pi_norm[2]-pj_norm[2])\n+                force_mag = 1.0 / ((math.sqrt(2.0 - 2.0*dot_ij))**(REPULSION_S * 2) + 1e-12)\n+                proj_scaled = (proj[0]*force_mag, proj[1]*force_mag, proj[2]*force_mag)\n+            points[k] = (points[k][0]+proj_scaled[0], points[k][1]+proj_scaled[1], points[k][2]+proj_scaled[2])\n+            norm_k = math.sqrt(points[k][0]**2 + points[k][1]**2 + points[k][2]**2)\n+            if norm_k > 0:\n+                points[k] = (points[k][0]/norm_k, points[k][1]/norm_k, points[k][2]/norm_k)\n+        # renormalize the other point opposite\n+        for k in (i, j):\n+            pk = points[k]\n+            dot_pk_other = pk[0]*points[j][0] + pk[1]*points[j][1] + pk[2]*points[j][2]\n+            if dot_pk_other <= 0:\n+                continue\n+            new_pt = (pk[0] - points[j][0]*dot_pk_other, ...)  # placeholder: just leave as is\n     return points\n+\n+def main_polish(points, FIB_OBS=FIB_OBS, REPULSION_S=REPULSION_S):\n+    \"\"\"One pass of gradient updates (as in construct).\"\"\"\n+    n = len(points)\n+    pts = list(points)\n+    S = REPULSION_S\n+    for _ in range(n):\n+        moved = False\n+        for i in range(n):\n+            pi = pts[i]\n+            total_force = (0.0, 0.0, 0.0)\n+            for j in range(n):\n+                if i == j:\n+                    continue\n+                pj = pts[j]\n+                dot = pi[0]*pj[0] + pi[1]*pj[1] + pi[2]*pj[2]\n+                d_sq = 2.0 - 2.0 * dot\n+                if d_sq <= 0:\n+                    continue\n+                d = math.sqrt(d_sq)\n+                if d == 0.0:\n+                    continue\n+                inv_d_R = 1.0 / (d ** (REPULSION_S * 2)) if d > 0 else 0.0\n+                force_dir = (pj[0] - pi[0], pj[1] - pi[1], pj[2] - pi[2])\n+                total_force += (-force_dir[0] * inv_d_R, -force_dir[1] * inv_d_R, -force_dir[2] * inv_d_R)\n+            # project force onto tangent plane\n+            norm_f = math.sqrt(total_force[0]**2 + total_force[1]**2 + total_force[2]**2) or 1.0\n+            dot_f_pi = (total_force[0]*pi[0] + total_force[1]*pi[1] + total_force[2]*pi[2]) / norm_f\n+            f_perp = (total_force[0] - dot_f_pi * pi[0],\n+                      total_force[1] - dot_f_pi * pi[1],\n+                      total_force[2] - dot_f_pi * pi[2])\n+            new_pt = (pi[0] + f_perp[0], pi[1] + f_perp[1], pi[2] + f_perp[2])\n+            norm_new = math.sqrt(new_pt[0]**2 + new_pt[1]**2 + new_pt[2]**2)\n+            if norm_new > 0:\n+                new_pt = (new_pt[0]/norm_new, new_pt[1]/norm_new, new_pt[2]/norm_new)\n+            pts[i] = new_pt\n+        # after all points moved in this inner loop, optionally relax\n+    return pts\n+\n+def min_angle(points):\n+    \"\"\"Return the smallest angle (in radians) between any two normalized points.\"\"\"\n+    n = len(points)\n+    min_theta = float('inf')\n+    for i in range(n):\n+        xi, yi, zi = points[i]\n+        norm_i = math.sqrt(xi*xi + yi*yi + zi*zi)\n+        if norm_i == 0:\n+            continue\n+        x1, y1, z1 = xi/norm_i, yi/norm_i, zi/norm_i\n+        for j in range(i+1, n):\n+            xj, yj, zj = points[j]\n+            norm_j = math.sqrt(xj*xj + yj*yj + zj*zj)\n+            if norm_j == 0:\n+                continue\n+            x2, y2, z2 = xj/norm_j, yj/norm_j, zj/norm_j\n+            dot = x1*x2 + y1*y2 + z1*z2\n+            # clamp for rounding\n+            dot = max(-1.0, min(1.0, dot))\n+            angle_rad = math.acos(dot)\n+            theta = angle_rad * 180.0 / math.pi\n+            if theta < min_angle:\n+                min_angle = theta\n+    return min_angle\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "sphere_points",
+  "points": [
+   [
+    0.3919709387244532,
+    -0.5582121095618475,
+    -0.7312715117751976
+   ],
+   [
+    -0.027052463738772504,
+    0.8490936142385189,
+    0.5275492379532281
+   ],
+   [
+    -0.9500239047545286,
+    0.31204362944230385,
+    -0.009129825816118098
+   ],
+   [
+    0.22957314306547277,
+    -0.9248645600666849,
+    0.30318594544552596
+   ],
+   [
+    0.5740391880355756,
+    0.1033386161058686,
+    -0.8122808264515302
+   ],
+   [
+    -0.6758397496085636,
+    0.3037890926411783,
+    0.6715302078397394
+   ],
+   [
+    0.8512988419434201,
+    0.011265659732678564,
+    0.524560164915884
+   ],
+   [
+    -0.17680359044518373,
+    -0.9781667833824966,
+    -0.10922561189039716
+   ],
+   [
+    0.7908900515540614,
+    -0.28321934240489055,
+    -0.5424755574590947
+   ],
+   [
+    0.5851964340381928,
+    0.11388203849293084,
+    0.8028549152229673
+   ],
+   [
+    -0.30434810274742335,
+    -0.08102906244732802,
+    -0.9491082780130784
+   ],
+   [
+    -0.3509958145626131,
+    0.3246444046695718,
+    0.8782983255570211
+   ],
+   [
+    -0.7271635298854837,
+    0.3872590786250933,
+    -0.5668012057387734
+   ],
+   [
+    0.05942052898539893,
+    0.33054331283916893,
+    -0.9419184248502641
+   ],
+   [
+    -0.9919106268324059,
+    0.02610563707090374,
+    -0.12422481269885588
+   ],
+   [
+    0.10141148542176433,
+    0.8394879795728718,
+    -0.5338310994848547
+   ],
+   [
+    -0.800348025639128,
+    0.20762133322971385,
+    -0.5624379253246229
+   ],
+   [
+    0.8990635126271509,
+    0.12213812674917045,
+    -0.4204367708190289
+   ],
+   [
+    -0.6917519647168419,
+    -0.2562101885183855,
+    0.6751559513251457
+   ],
+   [
+    0.3757097440071294,
+    0.88195886829755,
+    0.28458872586489115
+   ],
+   [
+    0.10962933743537041,
+    -0.1326097917248836,
+    0.9850868243521302
+   ],
+   [
+    -0.32373272592570945,
+    0.5659500259391612,
+    -0.7582200803883872
+   ],
+   [
+    -0.2164510454505914,
+    -0.8700158468173443,
+    0.44296881516653674
+   ],
+   [
+    -0.43065317546221576,
+    0.22938243010501777,
+    0.8728811735989193
+   ],
+   [
+    -0.3606302208330362,
+    -0.6589776995328848,
+    0.660071386548654
+   ],
+   [
+    -0.7836961589264019,
+    -0.48079575758636983,
+    -0.3932629781341648
+   ],
+   [
+    0.3660243386758451,
+    -0.5299673944570227,
+    0.7649580016637154
+   ],
+   [
+    -0.8476230763315352,
+    -0.5304935866064687,
+    0.010567641159200837
+   ],
+   [
+    0.016650981414250473,
+    0.36477107016970456,
+    -0.9309483396973168
+   ],
+   [
+    -0.6901522939672605,
+    0.4121803795407587,
+    0.5948084951086057
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "sphere_points",
+  "points": [
+   [
+    0.9485001703691298,
+    0.1502933740950358,
+    0.2788535969157675
+   ],
+   [
+    0.1496124144724159,
+    0.8804367638063972,
+    -0.4499413632617615
+   ],
+   [
+    -0.3916023340533541,
+    -0.7892864318174717,
+    0.4729424283280248
+   ],
+   [
+    0.530038137197468,
+    0.32224264121248847,
+    0.7843591354096908
+   ],
+   [
+    0.9704719200419418,
+    0.18384624947240336,
+    -0.15615636062945915
+   ],
+   [
+    -0.8261768888137118,
+    -0.02780991728906906,
+    -0.5627240503927933
+   ],
+   [
+    0.10156217144591985,
+    0.3049792998194999,
+    -0.9469280606322728
+   ],
+   [
+    -0.9162293635733955,
+    -0.2658239540973608,
+    0.29976887555904647
+   ],
+   [
+    -0.7020640271476597,
+    -0.4410128326536994,
+    -0.5591187559186067
+   ],
+   [
+    0.7848458335160319,
+    0.03206536344923998,
+    0.6188609133556533
+   ],
+   [
+    0.6636434092749097,
+    -0.37778099759065886,
+    -0.6456461439406118
+   ],
+   [
+    -0.4950871968025983,
+    0.6709938460782469,
+    0.5519564530714967
+   ],
+   [
+    -0.20951597265366606,
+    0.3463060548357983,
+    0.9144261444135624
+   ],
+   [
+    0.4762878215435347,
+    0.3312493301317391,
+    -0.8145083132397042
+   ],
+   [
+    0.17127747040854782,
+    -0.9126017327201102,
+    -0.3712439973477034
+   ],
+   [
+    -0.9928140779179666,
+    0.08945393194249283,
+    0.07948711057728605
+   ],
+   [
+    -0.09471335005357644,
+    -0.9650594493499951,
+    0.2443146343179488
+   ],
+   [
+    -0.9186470530462547,
+    -0.3115638006071652,
+    -0.24293124558329304
+   ],
+   [
+    -0.26597248853996086,
+    0.8329612549438596,
+    0.4852156047595863
+   ],
+   [
+    -0.6104646562517658,
+    -0.3224986457920268,
+    0.7234138006215545
+   ],
+   [
+    0.8749087910952338,
+    0.2591062766026612,
+    0.409143672429847
+   ],
+   [
+    -0.20551279265025807,
+    0.8133923398234617,
+    -0.5442034486969064
+   ],
+   [
+    -0.9109423645419693,
+    0.4028123420026003,
+    0.08902935253648848
+   ],
+   [
+    0.9026016128603745,
+    -0.20145265431446527,
+    -0.380430225575607
+   ],
+   [
+    -0.6357347841234701,
+    0.7226342163184142,
+    0.2713688885288004
+   ],
+   [
+    0.2430573793450384,
+    0.9346182028781007,
+    -0.25963806576623477
+   ],
+   [
+    0.8156028693215529,
+    -0.34292071661909146,
+    -0.4660443559017733
+   ],
+   [
+    -0.7392813992995428,
+    -0.6048182466735612,
+    0.29607077049318714
+   ],
+   [
+    -0.09850725458897551,
+    -0.7467912465725899,
+    -0.657722703603806
+   ],
+   [
+    -0.5373116395546199,
+    0.5080400350133556,
+    -0.6731950124761432
+   ]
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 1.3,
+ "model_gpu_memory_gb": 1.3,
+ "context_length": 32768,
+ "load_seconds": 0.0,
+ "median_call_seconds": 21.0,
+ "p90_call_seconds": 29.4,
+ "prompt_tokens_per_s": 1704.7,
+ "gen_tokens_per_s": 120.3,
+ "mean_prompt_tokens": 3995,
+ "mean_gen_tokens": 1775,
+ "stopped_calls": 25,
+ "provider": "ollama",
+ "cost_usd": 0
+}

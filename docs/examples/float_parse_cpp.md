@@ -157,6 +157,8 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/float
 | nemotron-3.5-lightning:30b-mlx (think) | local | Apple M1 Max | | | | failed: all 4 model requests failed … |
 | nemotron-3-nano:4b (think) | local | Apple M1 Max | 320.1020 | ×1.00 | - | 0 |
 | gemma4:e2b (no-think) | local | Apple M1 Max | 319.9610 | ×1.00 | - | 0 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | Apple M1 Max | 319.8490 | ×1.00 | - | 0 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (think) | local | Apple M1 Max | | | | failed: all 9 model requests failed … |
 | muse-glimmer:30b (no-think) | local | Apple M1 Max | 319.5570 | ×1.00 | - | 0 |
 | nemotron-3.5-lightning:30b-mlx (no-think) | local | Apple M1 Max | 319.5110 | ×1.00 | - | 0 |
 | nemotron-3-nano:30b-a3b-mlx (no-think) | local | Apple M1 Max | 319.3310 | ×1.00 | - | 0 |

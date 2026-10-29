@@ -279,6 +279,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/tamme
 | nemotron-3-nano:4b (think) | local | Apple M1 Max | 12.0000 | ×3.75 | 2.3 | 1 |
 | gemma4:e2b (think) | local | i7-8700K + 2x GTX 1080 Ti | 12.0000 | ×3.75 | 14.2 | 3 |
 | gemma4:e2b (think) | local | Apple M1 Max | 10.8343 | ×3.38 | 2.4 | 2 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | Apple M1 Max | 10.6159 | ×3.32 | 10.3 | 2 |
 | gemma4:e2b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 9.8788 | ×3.09 | 0.6 | 1 |
 | richardyoung/frognano-4b-2609:latest (think) | local | Apple M1 Max | 9.72012 | ×3.04 | 9.2 | 1 |
 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | Apple M1 Max | 9.44763 | ×2.95 | 8.8 | 3 |
@@ -304,3 +305,4 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/tamme
 | lfm3:latest (no-think) | local | Apple M1 Max | 3.20136 | ×1.00 | - | 0 |
 | lfm3:latest (think) | local | Apple M1 Max | | | | failed: all 10 model requests failed: lfm3:latest: answer stopped … |
 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 10 model requests failed … |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (think) | local | Apple M1 Max | | | | failed: all 10 model requests failed … |

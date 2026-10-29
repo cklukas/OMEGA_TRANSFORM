@@ -204,6 +204,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/matmu
 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | Apple M1 Max | 1.70226 | ×1.01 | 16.4 | 1 |
 | llm-jp-4-8b-omega:q4_k_m (no-think) | local | Apple M1 Max | 1.69985 | ×1.00 | - | 0 |
 | ingu627/exaone4.0:32b (no-think) | local | Apple M1 Max | 1.69695 | ×1.00 | - | 0 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | Apple M1 Max | 1.695 | ×1.00 | - | 0 |
 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | Apple M1 Max | 1.69487 | ×1.00 | - | 0 |
 | gemma4:e2b (no-think) | local | Apple M1 Max | 1.68469 | ×1.05 | 15.8 | 3 |
 | qwen3.5:latest (no-think) | local | Apple M1 Max | 1.6743 | ×1.00 | - | 0 |
@@ -240,5 +241,6 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/matmu
 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 1.17412 | ×1.00 | - | 0 |
 | qwen3.5:27b (think) | local | Apple M1 Max | | | | failed: all 1 model requests failed: qwen3.5:27b: answer stopped … |
 | glm-4.7-flash:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 1.14888 | ×1.01 | 16.6 | 1 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (think) | local | Apple M1 Max | | | | failed: all 7 model requests failed … |
 | frob/sarvam:30b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 1.07209 | ×1.00 | - | 0 |
 | underdog-saluki-27b:iq2-mix (think) | local | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 1 model requests failed: underdog-saluki-27b:iq2-mix … |

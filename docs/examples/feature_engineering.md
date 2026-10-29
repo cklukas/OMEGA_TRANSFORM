@@ -194,11 +194,13 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/featu
 | richardyoung/frognano-4b-2609:latest (no-think) | local | Apple M1 Max | 0.8 | ×1.28 | 0.4 | 1 |
 | gemma4:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.8 | ×1.28 | 15.4 | 5 |
 | gemma4:12b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.8 | ×1.28 | 20.8 | 2 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | Apple M1 Max | 0.8 | ×1.28 | 10.8 | 4 |
 | gemma4:12b-it-qat (think) | local | Apple M1 Max | 0.799 | ×1.28 | 18.3 | 3 |
 | gemma4:e4b-it-qat (think) | local | Apple M1 Max | 0.793 | ×1.27 | 7.0 | 6 |
 | gemma4:26b-a4b-it-qat (think) | local | Apple M1 Max | 0.793 | ×1.27 | 17.3 | 2 |
 | gemma4:26b-a4b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.791 | ×1.27 | 14.4 | 2 |
 | llm-jp-4-8b-omega:q4_k_m (no-think) | local | Apple M1 Max | 0.784 | ×1.26 | 12.8 | 4 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (think) | local | Apple M1 Max | 0.781 | ×1.25 | 11.1 | 1 |
 | gemma4:e2b (no-think) | local | Apple M1 Max | 0.774 | ×1.24 | 14.2 | 8 |
 | glm-4.7-flash:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.774 | ×1.24 | 4.9 | 2 |
 | qwen3.8:27b-mtp-q4_K_M (no-think) | local | Apple M1 Max | 0.765 | ×1.23 | 13.7 | 3 |

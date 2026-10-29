@@ -262,6 +262,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/bin_p
 | underdog-saluki-27b:iq2-mix (no-think) | local | Apple M1 Max | 0.95128 | ×1.20 | 2.3 | 1 |
 | underdog-saluki-27b:iq2-mix (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.95128 | ×1.20 | 0.8 | 1 |
 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.95128 | ×1.20 | 3.1 | 2 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | Apple M1 Max | 0.95128 | ×1.20 | 9.2 | 1 |
 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.95128 | ×1.20 | 12.1 | 1 |
 | glm-4.7-flash:latest (no-think) | local | Apple M1 Max | 0.94863 | ×1.19 | 2.9 | 1 |
 | frob/sarvam:30b (no-think) | local | Apple M1 Max | 0.94863 | ×1.19 | 11.2 | 1 |
@@ -280,3 +281,4 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/bin_p
 | underdog-saluki-27b:iq2-mix (think) | local | Apple M1 Max | | | | failed: all 1 model requests failed: underdog-saluki-27b:iq2-mix … |
 | underdog-saluki-27b:iq2-mix (think) | local | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 2 model requests failed: underdog-saluki-27b:iq2-mix … |
 | lfm3:latest (no-think) | local | Apple M1 Max | 0.79426 | ×1.00 | - | 0 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (think) | local | Apple M1 Max | | | | failed: all 11 model requests failed … |

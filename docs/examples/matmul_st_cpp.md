@@ -210,10 +210,12 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/matmu
 | lfm3:latest (think) | local | Apple M1 Max | 1.7633 | ×1.00 | - | 0 |
 | lfm3:latest (no-think) | local | Apple M1 Max | 1.76262 | ×1.00 | - | 0 |
 | underdog-saluki-27b:iq2-mix (think) | local | Apple M1 Max | | | | failed: all 1 model requests failed: underdog-saluki-27b:iq2-mix … |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | Apple M1 Max | 1.76053 | ×1.00 | - | 0 |
 | qwen3-coder:30b (no-think) | local | Apple M1 Max | 1.76048 | ×1.00 | - | 0 |
 | underdog-saluki-27b:iq2-mix (no-think) | local | Apple M1 Max | 1.75933 | ×1.00 | - | 0 |
 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | Apple M1 Max | 1.74731 | ×1.00 | - | 0 |
 | richardyoung/frognano-4b-2609:latest (think) | local | Apple M1 Max | 1.74596 | ×1.00 | - | 0 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (think) | local | Apple M1 Max | 1.74174 | ×1.00 | - | 0 |
 | nemotron-3-nano:4b (no-think) | local | Apple M1 Max | 1.7407 | ×1.00 | - | 0 |
 | gemma4:e2b (think) | local | Apple M1 Max | 1.73554 | ×1.00 | - | 0 |
 | nemotron-3-nano:30b-a3b-mlx (no-think) | local | Apple M1 Max | 1.72661 | ×1.00 | - | 0 |
