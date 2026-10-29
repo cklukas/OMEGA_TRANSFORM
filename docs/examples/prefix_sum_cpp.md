@@ -227,6 +227,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/prefi
 | nemotron-3-nano:4b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.661 | ×1.00 | - | 0 |
 | gemma4:e4b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | 5.65404 | ×1.00 | - | 0 |
 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | Apple M1 Max | 5.62509 | ×1.17 | 13.8 | 3 |
+| underdog-saluki-27b:iq2-mix (think) | local | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 1 model requests failed: underdog-saluki-27b:iq2-mix … |
 | glm-4.7-flash:latest (no-think) | local | Apple M1 Max | 5.37743 | ×1.18 | 12.5 | 2 |
 | gemma4:26b-a4b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | 5.35544 | ×1.00 | - | 0 |
 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | Apple M1 Max | 5.35117 | ×1.15 | 10.9 | 3 |

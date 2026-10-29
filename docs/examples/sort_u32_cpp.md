@@ -262,6 +262,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/sort_
 | qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 23.1804 | ×1.04 | 9.3 | 1 |
 | gemma4:e2b (think) | local | Apple M1 Max | 22.9626 | ×1.00 | - | 0 |
 | qwen3.5:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 22.8955 | ×1.00 | - | 0 |
+| underdog-saluki-27b:iq2-mix (think) | local | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 2 model requests failed: underdog-saluki-27b:iq2-mix … |
 | frob/sarvam:30b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 22.7542 | ×1.00 | - | 0 |
 | llm-jp-4-8b-omega:q4_k_m (no-think) | local | Apple M1 Max | 22.5858 | ×1.00 | - | 0 |
 | nemotron-3-nano:4b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 22.5245 | ×1.00 | - | 0 |

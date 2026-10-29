@@ -270,6 +270,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/circl
 | richardyoung/frognano-4b-2609:latest (think) | local | Apple M1 Max | 1.56387 | ×1.05 | 10.6 | 2 |
 | glm-4.7-flash:latest (no-think) | local | Apple M1 Max | 1.54556 | ×1.04 | 8.7 | 1 |
 | gemma4:e4b-it-qat (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 1.52133 | ×1.02 | 5.9 | 2 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 1.5 | ×1.01 | 7.2 | 1 |
 | gemma4:e4b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | 1.4973 | ×1.00 | 16.4 | 1 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | Apple M1 Max | 1.49537 | ×1.00 | 8.6 | 1 |
 | richardyoung/frognano-4b-2609:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 1.49537 | ×1.00 | 0.8 | 1 |
@@ -309,6 +310,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/circl
 | gemma4:12b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | 1.4901 | ×1.00 | - | 0 |
 | qwen3.8:27b-mtp-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 1 model requests failed: qwen3.8:27b-mtp-q4_K_M: an … |
 | qwen3.6:27b-coding-mtp-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 1.4901 | ×1.00 | - | 0 |
+| underdog-saluki-27b:iq2-mix (think) | local | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 1 model requests failed: underdog-saluki-27b:iq2-mix … |
 | underdog-saluki-27b:iq2-mix (think) | local | Apple M1 Max | | | | failed: all 1 model requests failed: underdog-saluki-27b:iq2-mix … |
 | lfm3:latest (no-think) | local | Apple M1 Max | 1.4901 | ×1.00 | - | 0 |
 | lfm3:latest (think) | local | Apple M1 Max | | | | failed: all 10 model requests failed: lfm3:latest: answer stopped … |

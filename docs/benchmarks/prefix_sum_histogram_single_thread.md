@@ -6,7 +6,7 @@
 
 48 models, 15 minutes each, one run per model. The [overall ranking](../benchmarks.md#overall-ranking) compares the models over all examples.
 
-Machines: **Apple M1 Max**: Apple M1 Max (Mac13,1), 10 cores, 32 GB, 47 runs; **i7-8700K + 2x GTX 1080 Ti**: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz (MS-7A98), 12 cores, 64 GB, 2x NVIDIA GeForce GTX 1080 Ti, 11264 MiB, 35 runs.
+Machines: **Apple M1 Max**: Apple M1 Max (Mac13,1), 10 cores, 32 GB, 47 runs; **i7-8700K + 2x GTX 1080 Ti**: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz (MS-7A98), 12 cores, 64 GB, 2x NVIDIA GeForce GTX 1080 Ti, 11264 MiB, 36 runs.
 
 ## Local models on Apple M1 Max
 
@@ -324,6 +324,7 @@ Ollama on this machine.
 | glm-4.7-flash:latest (no-think) | 29.9B | 5.66505 | **5.66505** | ×1.00 | 21 | 45 | 19% | 0 | - |
 | nemotron-3-nano:4b (no-think) | 4.0B | 5.661 | **5.661** | ×1.00 | 52 | 17 | 0% | 0 | - |
 | gemma4:e4b-it-qat (think) | 7.5B | 5.65404 | **5.65404** | ×1.00 | 8 | 113 | 88% | 0 | - |
+| underdog-saluki-27b:iq2-mix (think) | 26.9B | | | | | | | | failed: all 1 model requests failed: underdog-saluki-27b:iq2-mix: an |
 | gemma4:26b-a4b-it-qat (think) | 25.2B | 5.35544 | **5.35544** | ×1.00 | 2 | 460 | 100% | 0 | - |
 | glm-4.7-flash:latest (think) | 29.9B | 5.17474 | **5.2929** | ×1.02 | 2 | 498 | 50% | 1 | 17.1 |
 | frob/sarvam:30b (no-think) | 32.2B | 5.2871 | **5.2871** | ×1.00 | 6 | 179 | 0% | 0 | - |

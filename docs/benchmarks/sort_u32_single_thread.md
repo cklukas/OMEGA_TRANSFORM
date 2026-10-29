@@ -6,7 +6,7 @@
 
 48 models, 15 minutes each, one run per model. The [overall ranking](../benchmarks.md#overall-ranking) compares the models over all examples.
 
-Machines: **Apple M1 Max**: Apple M1 Max (Mac13,1), 10 cores, 32 GB, 47 runs; **i7-8700K + 2x GTX 1080 Ti**: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz (MS-7A98), 12 cores, 64 GB, 2x NVIDIA GeForce GTX 1080 Ti, 11264 MiB, 35 runs.
+Machines: **Apple M1 Max**: Apple M1 Max (Mac13,1), 10 cores, 32 GB, 47 runs; **i7-8700K + 2x GTX 1080 Ti**: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz (MS-7A98), 12 cores, 64 GB, 2x NVIDIA GeForce GTX 1080 Ti, 11264 MiB, 36 runs.
 
 ## Local models on Apple M1 Max
 
@@ -327,6 +327,7 @@ Ollama on this machine.
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | 30.5B | 22.4287 | **27.4213** | ×1.22 | 27 | 32 | 44% | 3 | 10.8 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (think) | 30.5B | 22.3613 | **23.1804** | ×1.04 | 25 | 36 | 40% | 1 | 9.3 |
 | qwen3.5:latest (no-think) | 9.0B | 22.8955 | **22.8955** | ×1.00 | 14 | 66 | 0% | 0 | - |
+| underdog-saluki-27b:iq2-mix (think) | 26.9B | | | | | | | | failed: all 2 model requests failed: underdog-saluki-27b:iq2-mix: an |
 | frob/sarvam:30b (no-think) | 32.2B | 22.7542 | **22.7542** | ×1.00 | 5 | 186 | 0% | 0 | - |
 | nemotron-3-nano:4b (no-think) | 4.0B | 22.5245 | **22.5245** | ×1.00 | 44 | 20 | 0% | 0 | - |
 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 8.0B | 22.5031 | **22.5031** | ×1.00 | 36 | 25 | 8% | 0 | - |

@@ -320,3 +320,4 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/max_c
 | qwen3.6:27b-coding-mtp-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |
 | glm-4.7-flash:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |
 | underdog-saluki-27b:iq2-mix (think) | local | Apple M1 Max | | | | failed: all 1 model requests failed: underdog-saluki-27b:iq2-mix … |
+| underdog-saluki-27b:iq2-mix (think) | local | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 2 model requests failed: underdog-saluki-27b:iq2-mix … |

@@ -8,6 +8,7 @@ Before benchmarking, `omega models` loads every installed model, greets it, asks
 
 | Model | Params | Size GB | Verdict | Load s | Gen tok/s | RAM GB | Hello | Edit | Think | Note |
 |---|---|--:|---|--:|--:|--:|---|---|---|---|
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M | 1.73B | 1.1 | ok | 1 | 1000000.0 | 1.3 | yes | no | yes | edit format not followed (benchmarked anyway) |
 | lfm3:latest |  | 1.7 | ok | 0 | 107.2 | 1.7 | yes | yes | yes |  |
 | nemotron-3-nano:4b |  | 2.9 | ok | 8 | 62.8 | 3.1 | yes | yes | yes |  |
 | richardyoung/frognano-4b-2609:latest | 4.3B | 3.5 | ok | 12 | 52.5 | 4.4 | yes | yes | yes |  |

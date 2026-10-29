@@ -227,4 +227,5 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/featu
 | frob/sarvam:30b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.678 | ×1.09 | 17.0 | 1 |
 | frob/sarvam:30b (think) | local | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 4 model requests failed: frob/sarvam:30b: answer … |
 | underdog-saluki-27b:iq2-mix (think) | local | Apple M1 Max | | | | failed: all 1 model requests failed: underdog-saluki-27b:iq2-mix … |
+| underdog-saluki-27b:iq2-mix (think) | local | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 2 model requests failed: underdog-saluki-27b:iq2-mix … |
 | lfm3:latest (no-think) | local | Apple M1 Max | 0.623 | ×1.00 | - | 0 |

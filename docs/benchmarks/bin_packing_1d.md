@@ -6,7 +6,7 @@
 
 48 models, 15 minutes each, one run per model. The [overall ranking](../benchmarks.md#overall-ranking) compares the models over all examples.
 
-Machines: **Apple M1 Max**: Apple M1 Max (Mac13,1), 10 cores, 32 GB, 47 runs; **i7-8700K + 2x GTX 1080 Ti**: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz (MS-7A98), 12 cores, 64 GB, 2x NVIDIA GeForce GTX 1080 Ti, 11264 MiB, 35 runs.
+Machines: **Apple M1 Max**: Apple M1 Max (Mac13,1), 10 cores, 32 GB, 47 runs; **i7-8700K + 2x GTX 1080 Ti**: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz (MS-7A98), 12 cores, 64 GB, 2x NVIDIA GeForce GTX 1080 Ti, 11264 MiB, 36 runs.
 
 ## Local models on Apple M1 Max
 
@@ -343,6 +343,7 @@ Ollama on this machine.
 | Bored/GigaChat3.1-10B-A1.8B-q4_K_M:latest (no-think) | 10.7B | 0.79426 | **0.79426** | ×1.00 | 52 | 17 | 4% | 0 | - |
 | qwen3.6:27b-coding-mtp-q4_K_M (think) | 27.3B | 0.79426 | **0.79426** | ×1.00 | 1 | 1926 | 0% | 0 | - |
 | frob/sarvam:30b (think) | 32.2B | 0.79426 | **0.79426** | ×1.00 | 4 | 256 | 0% | 0 | - |
+| underdog-saluki-27b:iq2-mix (think) | 26.9B | | | | | | | | failed: all 2 model requests failed: underdog-saluki-27b:iq2-mix: an |
 
 ```mermaid
 xychart-beta

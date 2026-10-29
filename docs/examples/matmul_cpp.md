@@ -228,6 +228,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/matmu
 | richardyoung/frognano-4b-2609:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 1.40714 | ×1.00 | - | 0 |
 | nemotron-3-nano:4b (think) | local | i7-8700K + 2x GTX 1080 Ti | 1.40425 | ×1.00 | - | 0 |
 | Bored/GigaChat3.1-10B-A1.8B-q4_K_M:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 1.39792 | ×1.00 | - | 0 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 1.37052 | ×1.00 | - | 0 |
 | richardyoung/frognano-4b-2609:latest (no-think) | local | Apple M1 Max | 1.36704 | ×1.00 | - | 0 |
 | qwen3.5:latest (think) | local | Apple M1 Max | 1.33259 | ×1.00 | - | 0 |
 | qwen3.6:27b-coding-mtp-q4_K_M (think) | local | Apple M1 Max | 1.32423 | ×1.00 | - | 0 |
@@ -238,3 +239,4 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/matmu
 | qwen3.5:27b (think) | local | Apple M1 Max | | | | failed: all 1 model requests failed: qwen3.5:27b: answer stopped … |
 | glm-4.7-flash:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 1.14888 | ×1.01 | 16.6 | 1 |
 | frob/sarvam:30b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 1.07209 | ×1.00 | - | 0 |
+| underdog-saluki-27b:iq2-mix (think) | local | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 1 model requests failed: underdog-saluki-27b:iq2-mix … |

@@ -221,3 +221,4 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/float
 | qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 77.3874 | ×1.00 | - | 0 |
 | underdog-saluki-27b:iq2-mix (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 77.3604 | ×1.00 | - | 0 |
 | gemma4:12b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | 76.1276 | ×1.00 | - | 0 |
+| underdog-saluki-27b:iq2-mix (think) | local | i7-8700K + 2x GTX 1080 Ti | 58.0126 | ×1.00 | - | 0 |
