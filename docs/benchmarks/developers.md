@@ -17,7 +17,7 @@ Every benchmarked model and the company that develops it, which the comparisons 
 | Conway | underdog-saluki-27b:iq2-mix | – |
 | Google | gemma4:12b-it-qat, gemma4:26b-a4b-it-qat, gemma4:e2b, gemma4:e4b-it-qat, gemma4:latest | – |
 | LG | ingu627/exaone4.0:32b | – |
-| Liquid AI | lfm3:latest | – |
+| Liquid AI | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M, lfm3:latest | – |
 | Meta | muse-glimmer:30b | – |
 | Microsoft | richardyoung/frognano-4b-2609:latest | – |
 | Mistral AI | devstral-small-2:24b | – |
@@ -71,8 +71,8 @@ The developer's best single model, the mean share over all its models, and the m
 | Microsoft | 2 | richardyoung/frognano-4b-2609:latest (no-think) | 2026-09-17 | **35%** | 30% | 39% |
 | Z.ai | 2 | glm-4.7-flash:latest (no-think) | 2026-01-19 | **32%** | 25% | 33% |
 | Yandex | 1 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 2025-03-28 | **24%** | 24% | 24% |
+| Liquid AI | 4 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | 2026-10-23 | **20%** | 11% | 25% |
 | Sarvam AI | 2 | frob/sarvam:30b (no-think) | 2026-03-03 | **14%** | 11% | 15% |
-| Liquid AI | 2 | lfm3:latest (think) | 2026-10-23 | **12%** | 8% | 12% |
 | Swiss AI Initiative | 1 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 2025-08-13 | **11%** | 11% | 11% |
 | NII (LLM-jp) | 1 | llm-jp-4-8b-omega:q4_k_m (no-think) | 2026-03-16 | **5%** | 5% | 5% |
 | Sber | 1 | Bored/GigaChat3.1-10B-A1.8B-q4_K_M:latest (no-think) | 2026-03-21 | **3%** | 3% | 3% |
@@ -97,6 +97,7 @@ Each developer's ranked models by release date (the original publication on Hugg
 | Google | under 15B | 2026-05-23 | gemma4:12b-it-qat (no-think) | 11.9B | 67% |
 | Google | 15B and up | 2026-03-11 | gemma4:26b-a4b-it-qat (no-think) | 25.2B | 74% |
 | LG | 15B and up | 2025-07-11 | ingu627/exaone4.0:32b (no-think) | 32B | 39% |
+| Liquid AI | under 15B | 2026-10-23 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | 1.7B | 20% |
 | Liquid AI | under 15B | 2026-10-23 | lfm3:latest (think) | 1.7B | 12% |
 | Meta | 15B and up | 2026-08-09 | muse-glimmer:30b (no-think) | 27.9B | 68% |
 | Microsoft | under 15B | 2026-09-17 | richardyoung/frognano-4b-2609:latest (no-think) | 4.3B | 35% |

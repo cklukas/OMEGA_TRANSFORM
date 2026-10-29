@@ -285,6 +285,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/tamme
 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | Apple M1 Max | 7.64645 | ×2.39 | 3.0 | 1 |
 | llm-jp-4-8b-omega:q4_k_m (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 6.84728 | ×2.14 | 1.6 | 1 |
 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 6.73066 | ×2.10 | 6.5 | 1 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 6.43845 | ×2.01 | 11.2 | 1 |
 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 6.36826 | ×1.99 | 4.9 | 1 |
 | nemotron-3-nano:4b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 4.96929 | ×1.55 | 14.2 | 1 |
 | frob/sarvam:30b (think) | local | i7-8700K + 2x GTX 1080 Ti | 3.79933 | ×1.19 | 7.2 | 1 |
@@ -302,3 +303,4 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/tamme
 | underdog-saluki-27b:iq2-mix (think) | local | Apple M1 Max | | | | failed: all 1 model requests failed: underdog-saluki-27b:iq2-mix … |
 | lfm3:latest (no-think) | local | Apple M1 Max | 3.20136 | ×1.00 | - | 0 |
 | lfm3:latest (think) | local | Apple M1 Max | | | | failed: all 10 model requests failed: lfm3:latest: answer stopped … |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 10 model requests failed … |

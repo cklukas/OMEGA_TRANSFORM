@@ -218,6 +218,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/prefi
 | llm-jp-4-8b-omega:q4_k_m (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.78251 | ×1.00 | - | 0 |
 | richardyoung/frognano-4b-2609:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.78183 | ×1.00 | - | 0 |
 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.77683 | ×1.03 | 15.7 | 3 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 9 model requests failed … |
 | qwen3.5:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.76735 | ×1.00 | - | 0 |
 | richardyoung/frognano-4b-2609:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 5.76153 | ×1.03 | 12.3 | 1 |
 | gemma4:e2b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.70053 | ×1.00 | - | 0 |
@@ -227,6 +228,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/prefi
 | nemotron-3-nano:4b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.661 | ×1.00 | - | 0 |
 | gemma4:e4b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | 5.65404 | ×1.00 | - | 0 |
 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | Apple M1 Max | 5.62509 | ×1.17 | 13.8 | 3 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.594 | ×1.00 | - | 0 |
 | underdog-saluki-27b:iq2-mix (think) | local | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 1 model requests failed: underdog-saluki-27b:iq2-mix … |
 | glm-4.7-flash:latest (no-think) | local | Apple M1 Max | 5.37743 | ×1.18 | 12.5 | 2 |
 | gemma4:26b-a4b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | 5.35544 | ×1.00 | - | 0 |

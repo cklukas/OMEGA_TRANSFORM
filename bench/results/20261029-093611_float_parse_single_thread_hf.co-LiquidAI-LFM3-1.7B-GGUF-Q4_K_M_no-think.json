@@ -1,0 +1,113 @@
+{
+ "schema": 3,
+ "example": "float_parse_single_thread",
+ "model": "hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 1.1,
+ "model_params": "1.73B",
+ "started": "2026-10-29T09:36:11",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.9,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 76.5089,
+ "best_score": 76.5089,
+ "improvement": 1.0,
+ "llm_calls": 32,
+ "mean_llm_seconds": 28.2,
+ "attempts": 32,
+ "ok": 0,
+ "statuses": {
+  "llm_error": 28,
+  "edit_error": 1,
+  "compile_error": 2,
+  "duplicate": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 0,
+ "minutes_to_best": null,
+ "best_idea": "initial program",
+ "progress": [
+  [
+   0.0,
+   76.5089
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 76.5089,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  }
+ ],
+ "best_diff": "",
+ "initial_solution": {
+  "kind": "parse",
+  "count": 2000000,
+  "text_mb": 28.39,
+  "head": [
+   "0",
+   "-0",
+   "1",
+   "-1.5",
+   "0.1",
+   "1e23",
+   "9007199254740993",
+   "4.9e-324"
+  ]
+ },
+ "best_solution": {
+  "kind": "parse",
+  "count": 2000000,
+  "text_mb": 28.39,
+  "head": [
+   "0",
+   "-0",
+   "1",
+   "-1.5",
+   "0.1",
+   "1e23",
+   "9007199254740993",
+   "4.9e-324"
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 1.3,
+ "model_gpu_memory_gb": 1.3,
+ "context_length": 32768,
+ "load_seconds": 0.0,
+ "median_call_seconds": 29.6,
+ "p90_call_seconds": 33.8,
+ "prompt_tokens_per_s": 4431.6,
+ "gen_tokens_per_s": 111.0,
+ "mean_prompt_tokens": 5534,
+ "mean_gen_tokens": 928,
+ "stopped_calls": 28,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -289,6 +289,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/log_c
 | qwen3.5:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 17.6320 | ×1.56 | 6.6 | 1 |
 | qwen3-coder:30b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 17.6313 | ×1.56 | 6.8 | 1 |
 | qwen3-coder:30b (no-think) | local | Apple M1 Max | 17.6292 | ×1.56 | 11.3 | 1 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 16.0520 | ×1.42 | 6.5 | 1 |
 | qwen2.5-coder:7b (no-think) | local | Apple M1 Max | 11.2861 | ×1.00 | - | 0 |
 | qwen3.5:27b (no-think) | local | Apple M1 Max | 11.2861 | ×1.00 | - | 0 |
 | qwen3.8:27b-mtp-q4_K_M (no-think) | local | Apple M1 Max | 11.2861 | ×1.00 | - | 0 |
@@ -327,3 +328,4 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/log_c
 | underdog-saluki-27b:iq2-mix (think) | local | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 2 model requests failed: underdog-saluki-27b:iq2-mix … |
 | lfm3:latest (no-think) | local | Apple M1 Max | 11.2861 | ×1.00 | - | 0 |
 | lfm3:latest (think) | local | Apple M1 Max | | | | failed: all 7 model requests failed: lfm3:latest: answer stopped … |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 10 model requests failed … |

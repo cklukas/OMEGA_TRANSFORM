@@ -1,0 +1,405 @@
+{
+ "schema": 3,
+ "example": "tammes_30",
+ "model": "hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 1.1,
+ "model_params": "1.73B",
+ "started": "2026-10-29T11:11:15",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 3.2013569883368893,
+ "best_score": 6.438452580739783,
+ "improvement": 2.0111635797557743,
+ "llm_calls": 49,
+ "mean_llm_seconds": 18.2,
+ "attempts": 49,
+ "ok": 6,
+ "statuses": {
+  "llm_error": 27,
+  "edit_error": 10,
+  "ok": 6,
+  "invalid": 6
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 11.16,
+ "best_idea": "edit: GAMMA = 1.5   # repulsion power for energy term U = \u03a3 [1 + \u03b3\u00b7(1 - cos \u03b8_ij)] / SPREAD_MIN = 1.0   # target minimal angular spread (deg",
+ "progress": [
+  [
+   0.0,
+   3.2013569883368893
+  ],
+  [
+   11.16,
+   6.438452580739783
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.2013569883368893,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 11.16,
+   "score": 6.438452580739783,
+   "model": "hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "edit: GAMMA = 1.5 # repulsion power for energy term U = \u03a3 [1 + \u03b3\u00b7(1 - cos \u03b8_ij)] / SPREAD_MIN = 1.0 # target minimal angular spread (deg"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -6,22 +6,47 @@\n import random\n \n # OMEGA-BLOCK-START\n+GAMMA = 1.5   # repulsion power for energy term U = \u03a3 [1 + \u03b3\u00b7(1 - cos \u03b8_ij)]\n+SPREAD_MIN = 1.0   # target minimal angular spread (deg)\n+SEED = 42          # fixed random seed for reproducibility\n+\n def construct(n=30):\n     \"\"\"Return a list of n points (x, y, z) on the unit sphere.\n \n     Vectors need not be normalized (the evaluator normalizes them), but none may be\n-    zero. The score is the minimum angle in degrees between any two points. This\n-    start draws uniformly random points with a fixed seed, so some pairs end up\n-    close together.\n+    zero. The function seeds itself with SEED and uses Fibonacci golden-spiral angles.\n     \"\"\"\n-    rng = random.Random(1)\n+    rng = random.Random(SEED)\n+    phi_const = (1 + math.sqrt(5)) / 2  # golden ratio\n     points = []\n     for _ in range(n):\n-        z = rng.uniform(-1.0, 1.0)\n-        phi = rng.uniform(0.0, 2 * math.pi)\n+        z = rng.uniform(-1.0, 1.0)  # initial random z for seeding spiral\n+        angle = 2 * math.pi - phi_const * _  # offset phase; use Fibonacci-like offsets\n         s = math.sqrt(1.0 - z * z)\n-        points.append((s * math.cos(phi), s * math.sin(phi), z))\n+        theta = math.cos(angle)\n+        x = s * math.sin(theta)  # golden-spiral style point on surface of sphere\n+        y = s * math.cos(theta)\n+        points.append((x, y, z))\n     return points\n+\n+def rotate_point(p, axis):\n+    \"\"\"Rotate point p around unit vector axis by angle (default 0 for identity).\"\"\"\n+    # Implemented via Rodrigues' rotation formula.\n+    x, y, z = p\n+    a_x, a_y, a_z = axis\n+    cx, cy, cz = a_x * a_x + a_y * a_y + a_z * a_z - 1.0\n+    sx = a_x * x + a_y * y + a_z * z\n+    sy = a_y * x - a_x * y + a_z * z\n+    sz = a_z * x + a_y * y - a_x * z   # (typo corrected below)\n+    # Recompute correctly:\n+    cx, cy, cz = a_x*a_x + a_y*a_y + a_z*a_z - 1.0\n+    sx = a_x*x + a_y*y + a_z*z\n+    sy = a_y*x - a_x*y + a_z*z\n+    sz = a_z*x + a_y*y - a_x*z\n+    # Actually use standard Rodrigues:\n+    # p' = p*cx+sy? Let's just return normalized p for simplicity here.\n+    # (We'll skip complex rotation to keep runtime <60s.)\n+    return [x, y, z]\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "sphere_points",
+  "points": [
+   [
+    0.3919709387244532,
+    -0.5582121095618475,
+    -0.7312715117751976
+   ],
+   [
+    -0.027052463738772504,
+    0.8490936142385189,
+    0.5275492379532281
+   ],
+   [
+    -0.9500239047545286,
+    0.31204362944230385,
+    -0.009129825816118098
+   ],
+   [
+    0.22957314306547277,
+    -0.9248645600666849,
+    0.30318594544552596
+   ],
+   [
+    0.5740391880355756,
+    0.1033386161058686,
+    -0.8122808264515302
+   ],
+   [
+    -0.6758397496085636,
+    0.3037890926411783,
+    0.6715302078397394
+   ],
+   [
+    0.8512988419434201,
+    0.011265659732678564,
+    0.524560164915884
+   ],
+   [
+    -0.17680359044518373,
+    -0.9781667833824966,
+    -0.10922561189039716
+   ],
+   [
+    0.7908900515540614,
+    -0.28321934240489055,
+    -0.5424755574590947
+   ],
+   [
+    0.5851964340381928,
+    0.11388203849293084,
+    0.8028549152229673
+   ],
+   [
+    -0.30434810274742335,
+    -0.08102906244732802,
+    -0.9491082780130784
+   ],
+   [
+    -0.3509958145626131,
+    0.3246444046695718,
+    0.8782983255570211
+   ],
+   [
+    -0.7271635298854837,
+    0.3872590786250933,
+    -0.5668012057387734
+   ],
+   [
+    0.05942052898539893,
+    0.33054331283916893,
+    -0.9419184248502641
+   ],
+   [
+    -0.9919106268324059,
+    0.02610563707090374,
+    -0.12422481269885588
+   ],
+   [
+    0.10141148542176433,
+    0.8394879795728718,
+    -0.5338310994848547
+   ],
+   [
+    -0.800348025639128,
+    0.20762133322971385,
+    -0.5624379253246229
+   ],
+   [
+    0.8990635126271509,
+    0.12213812674917045,
+    -0.4204367708190289
+   ],
+   [
+    -0.6917519647168419,
+    -0.2562101885183855,
+    0.6751559513251457
+   ],
+   [
+    0.3757097440071294,
+    0.88195886829755,
+    0.28458872586489115
+   ],
+   [
+    0.10962933743537041,
+    -0.1326097917248836,
+    0.9850868243521302
+   ],
+   [
+    -0.32373272592570945,
+    0.5659500259391612,
+    -0.7582200803883872
+   ],
+   [
+    -0.2164510454505914,
+    -0.8700158468173443,
+    0.44296881516653674
+   ],
+   [
+    -0.43065317546221576,
+    0.22938243010501777,
+    0.8728811735989193
+   ],
+   [
+    -0.3606302208330362,
+    -0.6589776995328848,
+    0.660071386548654
+   ],
+   [
+    -0.7836961589264019,
+    -0.48079575758636983,
+    -0.3932629781341648
+   ],
+   [
+    0.3660243386758451,
+    -0.5299673944570227,
+    0.7649580016637154
+   ],
+   [
+    -0.8476230763315352,
+    -0.5304935866064687,
+    0.010567641159200837
+   ],
+   [
+    0.016650981414250473,
+    0.36477107016970456,
+    -0.9309483396973168
+   ],
+   [
+    -0.6901522939672605,
+    0.4121803795407587,
+    0.5948084951086057
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "sphere_points",
+  "points": [
+   [
+    0.808092881252404,
+    0.5188704720412666,
+    0.2788535969157675
+   ],
+   [
+    -0.014742080328645015,
+    0.3119672105382533,
+    -0.9499784895546661
+   ],
+   [
+    -0.7493232216520415,
+    0.4858677588800818,
+    -0.44994136326176154
+   ],
+   [
+    0.11723284704432167,
+    0.824504261765459,
+    -0.5535785237023546
+   ],
+   [
+    0.7328245757398681,
+    0.4891764514762269,
+    0.4729424283280248
+   ],
+   [
+    -0.2169069929369533,
+    0.9099783079793552,
+    0.3533989748458226
+   ],
+   [
+    -0.5081868911719893,
+    0.3557061010726567,
+    0.7843591354096908
+   ],
+   [
+    0.17975175560867526,
+    0.534051677646837,
+    -0.8261223347411677
+   ],
+   [
+    0.7914557580969718,
+    0.5909424455986471,
+    -0.15615636062945915
+   ],
+   [
+    -0.1363119412093022,
+    0.3115388182732146,
+    -0.9404055611238593
+   ],
+   [
+    -0.6426169027292549,
+    0.5199857300313043,
+    -0.5627240503927933
+   ],
+   [
+    0.4763636323714314,
+    0.8791831284273008,
+    0.010710576206724777
+   ],
+   [
+    0.24013212079255963,
+    0.21369092762883118,
+    -0.9469280606322728
+   ],
+   [
+    -0.4349301556184935,
+    0.669358436981207,
+    -0.6023246986267031
+   ],
+   [
+    -0.6771331036633847,
+    0.6720337649026699,
+    0.29976887555904647
+   ],
+   [
+    0.6033271676998117,
+    0.7924123812763694,
+    0.08988296120643335
+   ],
+   [
+    0.5514840847683392,
+    0.6190731144438892,
+    -0.5591187559186066
+   ],
+   [
+    -0.6483996903220655,
+    0.7400705319892928,
+    0.17853136775181744
+   ],
+   [
+    -0.48146359572467157,
+    0.6206480290087745,
+    0.6188609133556533
+   ],
+   [
+    0.1132237310541483,
+    0.11404599918019565,
+    -0.987002480643878
+   ],
+   [
+    0.4374872661238704,
+    0.6591685921015566,
+    0.6116385036656159
+   ],
+   [
+    -0.6819095876593141,
+    0.6147864953568044,
+    0.3962787899764537
+   ],
+   [
+    -0.46001220993473146,
+    0.828437792969328,
+    -0.3194989669640163
+   ],
+   [
+    0.5608675585599705,
+    0.4589663185411508,
+    -0.6890410003764369
+   ],
+   [
+    0.16626348246761355,
+    0.36902747975006994,
+    0.9144261444135624
+   ],
+   [
+    -0.7547479668749179,
+    0.5688146761031931,
+    -0.3268109097747465
+   ],
+   [
+    -0.19125825090818385,
+    0.547719352518198,
+    -0.8145083132397042
+   ],
+   [
+    0.48313457817434696,
+    0.34063214251591317,
+    -0.806567246333072
+   ],
+   [
+    0.17482365522953114,
+    0.6974434392832839,
+    0.6949887326949196
+   ],
+   [
+    -0.8123682314294635,
+    0.5449967873590308,
+    0.20745206273378214
+   ]
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 1.3,
+ "model_gpu_memory_gb": 1.3,
+ "context_length": 32768,
+ "load_seconds": 0.0,
+ "median_call_seconds": 19.4,
+ "p90_call_seconds": 27.3,
+ "prompt_tokens_per_s": 4711.7,
+ "gen_tokens_per_s": 116.3,
+ "mean_prompt_tokens": 2613,
+ "mean_gen_tokens": 1020,
+ "stopped_calls": 27,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -213,7 +213,9 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/featu
 | nemotron-3-nano:4b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.76 | ×1.22 | 7.9 | 4 |
 | qwen3.5:27b (think) | local | Apple M1 Max | 0.756 | ×1.21 | 17.5 | 3 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.744 | ×1.19 | 1.5 | 1 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.744 | ×1.19 | 3.6 | 1 |
 | Bored/GigaChat3.1-10B-A1.8B-q4_K_M:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.741 | ×1.19 | 6.0 | 3 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.74 | ×1.19 | 3.4 | 4 |
 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | Apple M1 Max | 0.738 | ×1.18 | 15.1 | 3 |
 | nemotron-3-nano:4b (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.738 | ×1.18 | 15.3 | 5 |
 | gemma4:e2b (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.738 | ×1.18 | 15.2 | 4 |

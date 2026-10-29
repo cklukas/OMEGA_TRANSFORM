@@ -1,0 +1,329 @@
+{
+ "schema": 3,
+ "example": "circles_in_circle_21",
+ "model": "hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 1.1,
+ "model_params": "1.73B",
+ "started": "2026-10-29T08:49:40",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "37f5659",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 3.1890454825108625,
+ "best_score": 3.6646759963473836,
+ "improvement": 1.1491451020203194,
+ "llm_calls": 48,
+ "mean_llm_seconds": 18.0,
+ "attempts": 48,
+ "ok": 7,
+ "statuses": {
+  "edit_error": 11,
+  "llm_error": 24,
+  "invalid": 6,
+  "ok": 7
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 2,
+ "minutes_to_best": 10.69,
+ "best_idea": "edit: \"\"\"Return a list of n circles (x, y, r) inside the unit circle (center (0,0), radius 1) / without overlaps. Improved version with tune",
+ "progress": [
+  [
+   0.0,
+   3.1890454825108625
+  ],
+  [
+   6.65,
+   3.57134288728457
+  ],
+  [
+   10.69,
+   3.6646759963473836
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.1890454825108625,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 6.65,
+   "score": 3.57134288728457,
+   "model": "hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "edit: \"\"\"Return a list of n circles (x, y, r) inside the unit circle (center (0,0), radius 1) without overlaps. / This start places one circ"
+  },
+  {
+   "minutes": 10.69,
+   "score": 3.6646759963473836,
+   "model": "hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "edit: \"\"\"Return a list of n circles (x, y, r) inside the unit circle (center (0,0), radius 1) / without overlaps. Improved version with tune"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -5,23 +5,53 @@\n \n # OMEGA-BLOCK-START\n def construct(n=21):\n-    \"\"\"Return a list of n circles (x, y, r) inside the unit circle (center (0,0),\n-    radius 1) without overlaps.\n+    \"\"\"Return a list of n circles (x, y, r) inside the unit circle (center (0,0), radius 1)\n+    without overlaps. Improved version with tuned ring counts and larger outer-ring radius.\"\"\"\n+    \n+    # Constant: outer ring radius for the non-center rings\n+    R_OUTER = 0.78\n+    \n+    # Constant: inner small ring radius around center\n+    R_INNER = 0.35\n+    \n+    # Constant: number of circles in inner ring (7)\n+    INNER_COUNT = 7\n+    \n+    # Constant: number of circles in outer ring (n - 8, i.e., n-8 = 13 for n=21)\n+    OUTER_COUNT = n - 8\n+    \n+    centers = [(0.0, 0.0)]\n+    for count, ring in ((INNER_COUNT, R_INNER), (OUTER_COUNT, R_OUTER)):\n+        angles = [2 * math.pi * k / count for k in range(count)]\n+        for k in angles:\n+            cx = ring * math.cos(k)\n+            cy = ring * math.sin(k)\n+            centers.append((cx, cy))\n+    \n+    # Compute each circle's maximal radius: wall constraint and half-distance to any other center.\n+    radii = []\n+    for a, (x, y) in enumerate(centers):\n+        r_wall = 1.0 - math.hypot(x, y)\n+        r_neigh = float('inf')\n+        for b in range(len(centers)):\n+            if b == a:\n+                continue\n+            dx = centers[b][0] - x\n+            dy = centers[b][1] - y\n+            dist = math.hypot(dx, dy)\n+            if dist > 0:\n+                r_neigh = min(r_neigh, dist / 2.0)\n+        r = min(r_wall, r_neigh)\n+        if r < 0:\n+            r = 0.0\n+        radii.append(r)\n+    \n+    # Apply small margin to stay safely within tolerance (1e-10)\n+    for i in range(len(radii)):\n+        radii[i] *= (1 - 1e-10)\n+    \n+    return [(centers[a][0], centers[a][1], radii[a]) for a in range(n)]\n \n-    This start places one circle at the center and two concentric rings of 7 and\n-    13 circles, all with the same radius: the largest one that keeps every pair\n-    apart and every circle inside the container.\n-    \"\"\"\n-    centers = [(0.0, 0.0)]\n-    for count, ring in ((7, 0.35), (n - 8, 0.75)):\n-        centers += [(ring * math.cos(2 * math.pi * k / count),\n-                     ring * math.sin(2 * math.pi * k / count)) for k in range(count)]\n-    r = min(1.0 - math.hypot(x, y) for x, y in centers)\n-    for a in range(n):\n-        for b in range(a + 1, n):\n-            r = min(r, math.dist(centers[a], centers[b]) / 2)\n-    r *= 1 - 1e-12  # stay strictly feasible despite rounding\n-    return [(x, y, r) for x, y in centers]\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.0,
+    0.0,
+    0.151859
+   ],
+   [
+    0.35,
+    0.0,
+    0.151859
+   ],
+   [
+    0.218221,
+    0.273641,
+    0.151859
+   ],
+   [
+    -0.077882,
+    0.341225,
+    0.151859
+   ],
+   [
+    -0.315339,
+    0.151859,
+    0.151859
+   ],
+   [
+    -0.315339,
+    -0.151859,
+    0.151859
+   ],
+   [
+    -0.077882,
+    -0.341225,
+    0.151859
+   ],
+   [
+    0.218221,
+    -0.273641,
+    0.151859
+   ],
+   [
+    0.75,
+    0.0,
+    0.151859
+   ],
+   [
+    0.664092,
+    0.348542,
+    0.151859
+   ],
+   [
+    0.426049,
+    0.617238,
+    0.151859
+   ],
+   [
+    0.090403,
+    0.744532,
+    0.151859
+   ],
+   [
+    -0.265954,
+    0.701262,
+    0.151859
+   ],
+   [
+    -0.561383,
+    0.497342,
+    0.151859
+   ],
+   [
+    -0.728206,
+    0.179487,
+    0.151859
+   ],
+   [
+    -0.728206,
+    -0.179487,
+    0.151859
+   ],
+   [
+    -0.561383,
+    -0.497342,
+    0.151859
+   ],
+   [
+    -0.265954,
+    -0.701262,
+    0.151859
+   ],
+   [
+    0.090403,
+    -0.744532,
+    0.151859
+   ],
+   [
+    0.426049,
+    -0.617238,
+    0.151859
+   ],
+   [
+    0.664092,
+    -0.348542,
+    0.151859
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.0,
+    0.0,
+    0.175
+   ],
+   [
+    0.35,
+    0.0,
+    0.151859
+   ],
+   [
+    0.218221,
+    0.273641,
+    0.151859
+   ],
+   [
+    -0.077882,
+    0.341225,
+    0.151859
+   ],
+   [
+    -0.315339,
+    0.151859,
+    0.151859
+   ],
+   [
+    -0.315339,
+    -0.151859,
+    0.151859
+   ],
+   [
+    -0.077882,
+    -0.341225,
+    0.151859
+   ],
+   [
+    0.218221,
+    -0.273641,
+    0.151859
+   ],
+   [
+    0.78,
+    0.0,
+    0.186666
+   ],
+   [
+    0.690656,
+    0.362484,
+    0.186666
+   ],
+   [
+    0.443091,
+    0.641927,
+    0.186666
+   ],
+   [
+    0.094019,
+    0.774313,
+    0.186666
+   ],
+   [
+    -0.276592,
+    0.729313,
+    0.186666
+   ],
+   [
+    -0.583838,
+    0.517236,
+    0.186666
+   ],
+   [
+    -0.757335,
+    0.186666,
+    0.186666
+   ],
+   [
+    -0.757335,
+    -0.186666,
+    0.186666
+   ],
+   [
+    -0.583838,
+    -0.517236,
+    0.186666
+   ],
+   [
+    -0.276592,
+    -0.729313,
+    0.186666
+   ],
+   [
+    0.094019,
+    -0.774313,
+    0.186666
+   ],
+   [
+    0.443091,
+    -0.641927,
+    0.186666
+   ],
+   [
+    0.690656,
+    -0.362484,
+    0.186666
+   ]
+  ]
+ },
+ "error": "",
+ "model_memory_gb": 1.3,
+ "model_gpu_memory_gb": 1.3,
+ "context_length": 32768,
+ "load_seconds": 5.7,
+ "median_call_seconds": 17.9,
+ "p90_call_seconds": 33.3,
+ "prompt_tokens_per_s": 4353.8,
+ "gen_tokens_per_s": 116.8,
+ "mean_prompt_tokens": 3082,
+ "mean_gen_tokens": 867,
+ "stopped_calls": 24,
+ "provider": "ollama",
+ "cost_usd": 0
+}

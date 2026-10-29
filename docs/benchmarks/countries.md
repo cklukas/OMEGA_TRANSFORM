@@ -10,7 +10,7 @@ Each country is represented by its best model in the [overall ranking](../benchm
 
 | # | Country | Best model | Released | Developer | Share | Lag behind #1 | Models |
 |--:|---|---|---|---|--:|--:|--:|
-| 1 | USA | gpt-oss:20b (think) | 2025-08-04 | OpenAI | **75%** | – | 26 |
+| 1 | USA | gpt-oss:20b (think) | 2025-08-04 | OpenAI | **75%** | – | 28 |
 | 2 | China | qwen3.8:27b-mtp-q4_K_M (no-think) | 2026-08-05 | Alibaba (Qwen) | **57%** | −24% | 14 |
 | 3 | South Korea | ingu627/exaone4.0:32b (no-think) | 2025-07-11 | LG | **39%** | −49% | 1 |
 | 4 | France | devstral-small-2:24b (no-think) | 2025-11-28 | Mistral AI | **37%** | −50% | 1 |
