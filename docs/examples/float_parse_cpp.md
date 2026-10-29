@@ -151,6 +151,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/float
 | qwen3.5:latest (think) | local | Apple M1 Max | 328.9980 | ×1.05 | 14.3 | 1 |
 | nemotron-3-nano:30b-a3b-mlx (think) | local | Apple M1 Max | 325.8480 | ×1.02 | 15.1 | 1 |
 | gemma4:e2b (think) | local | Apple M1 Max | 322.6780 | ×1.02 | 6.2 | 1 |
+| lfm3:latest (no-think) | local | Apple M1 Max | 322.1030 | ×1.00 | - | 0 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | Apple M1 Max | 320.9740 | ×1.00 | - | 0 |
 | qwen3.5:latest (no-think) | local | Apple M1 Max | 320.7090 | ×1.00 | - | 0 |
 | nemotron-3.5-lightning:30b-mlx (think) | local | Apple M1 Max | | | | failed: all 4 model requests failed … |
@@ -170,6 +171,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/float
 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | Apple M1 Max | 316.6740 | ×1.02 | 11.2 | 5 |
 | gemma4:e4b-it-qat (no-think) | local | Apple M1 Max | 315.1790 | ×1.00 | 8.8 | 1 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | Apple M1 Max | 313.9800 | ×1.00 | - | 0 |
+| lfm3:latest (think) | local | Apple M1 Max | | | | failed: all 7 model requests failed: lfm3:latest: answer stopped … |
 | richardyoung/frognano-4b-2609:latest (think) | local | Apple M1 Max | 313.2800 | ×1.00 | - | 0 |
 | frob/sarvam:30b (think) | local | Apple M1 Max | | | | failed: all 4 model requests failed: frob/sarvam:30b: answer … |
 | muse-glimmer:30b (think) | local | Apple M1 Max | 313.1350 | ×1.00 | - | 0 |

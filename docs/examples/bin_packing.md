@@ -265,6 +265,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/bin_p
 | frob/sarvam:30b (no-think) | local | Apple M1 Max | 0.94863 | ×1.19 | 11.2 | 1 |
 | nemotron-3-nano:4b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.94863 | ×1.19 | 6.9 | 1 |
 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.79587 | ×1.00 | 4.9 | 1 |
+| lfm3:latest (think) | local | Apple M1 Max | 0.79587 | ×1.00 | 11.0 | 1 |
 | qwen2.5-coder:7b (no-think) | local | Apple M1 Max | 0.79426 | ×1.00 | - | 0 |
 | qwen3.8:27b-mtp-q4_K_M (think) | local | Apple M1 Max | | | | failed: all 1 model requests failed: qwen3.8:27b-mtp-q4_K_M: answer … |
 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | Apple M1 Max | 0.79426 | ×1.00 | - | 0 |
@@ -275,3 +276,4 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/bin_p
 | qwen3.6:27b-coding-mtp-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.79426 | ×1.00 | - | 0 |
 | frob/sarvam:30b (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.79426 | ×1.00 | - | 0 |
 | underdog-saluki-27b:iq2-mix (think) | local | Apple M1 Max | | | | failed: all 1 model requests failed: underdog-saluki-27b:iq2-mix … |
+| lfm3:latest (no-think) | local | Apple M1 Max | 0.79426 | ×1.00 | - | 0 |

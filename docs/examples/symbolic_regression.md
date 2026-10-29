@@ -205,9 +205,11 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/symbo
 | llm-jp-4-8b-omega:q4_k_m (no-think) | local | Apple M1 Max | 0.37945 | ×1.21 | 6.7 | 1 |
 | richardyoung/frognano-4b-2609:latest (think) | local | Apple M1 Max | 0.37945 | ×1.21 | 1.2 | 1 |
 | llm-jp-4-8b-omega:q4_k_m (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.37945 | ×1.21 | 7.7 | 1 |
+| lfm3:latest (think) | local | Apple M1 Max | 0.37945 | ×1.21 | 2.1 | 1 |
 | Bored/GigaChat3.1-10B-A1.8B-q4_K_M:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.37906 | ×1.21 | 8.2 | 3 |
 | glm-4.7-flash:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.37836 | ×1.21 | 8.2 | 2 |
 | nemotron-3-nano:30b-a3b-mlx (no-think) | local | Apple M1 Max | 0.37836 | ×1.21 | 5.8 | 2 |
+| lfm3:latest (no-think) | local | Apple M1 Max | 0.37792 | ×1.21 | 11.4 | 1 |
 | muse-glimmer:30b (think) | local | Apple M1 Max | 0.37701 | ×1.21 | 9.2 | 1 |
 | nemotron-3.5-lightning:30b-mlx (think) | local | Apple M1 Max | 0.37689 | ×1.20 | 15.7 | 1 |
 | qwen3-coder:30b (no-think) | local | Apple M1 Max | 0.37689 | ×1.20 | 2.8 | 2 |

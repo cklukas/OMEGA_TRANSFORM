@@ -292,11 +292,13 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/max_c
 | qwen3.8:27b-mtp-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.71141 | ×1.39 | 32.1 | 2 |
 | qwen3-coder:30b (no-think) | local | Apple M1 Max | 0.69428 | ×1.36 | 12.3 | 2 |
 | qwen3.5:27b (no-think) | local | Apple M1 Max | 0.69385 | ×1.35 | 9.2 | 1 |
+| lfm3:latest (think) | local | Apple M1 Max | 0.69385 | ×1.35 | 13.6 | 1 |
 | devstral-small-2:24b (no-think) | local | Apple M1 Max | 0.69368 | ×1.35 | 5.5 | 1 |
 | frob/sarvam:30b (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.69189 | ×1.35 | 13.6 | 1 |
 | underdog-saluki-27b:iq2-mix (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.69189 | ×1.35 | 7.5 | 3 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.68774 | ×1.34 | 14.0 | 2 |
 | richardyoung/frognano-4b-2609:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.63591 | ×1.24 | 15.5 | 6 |
+| lfm3:latest (no-think) | local | Apple M1 Max | 0.62411 | ×1.22 | 14.6 | 1 |
 | nemotron-3-nano:4b (no-think) | local | Apple M1 Max | 0.61463 | ×1.20 | 4.3 | 1 |
 | qwen2.5-coder:7b (no-think) | local | Apple M1 Max | 0.59204 | ×1.16 | 14.1 | 4 |
 | richardyoung/frognano-4b-2609:latest (think) | local | Apple M1 Max | 0.54422 | ×1.06 | 2.0 | 2 |

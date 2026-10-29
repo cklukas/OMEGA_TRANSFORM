@@ -1,0 +1,87 @@
+{
+ "schema": 3,
+ "example": "matmul_f32",
+ "model": "lfm3:latest",
+ "variant": "no-think",
+ "model_size_gb": 1.7,
+ "model_params": "",
+ "started": "2026-10-29T06:45:40",
+ "minutes_budget": 15.0,
+ "wall_minutes": 15.9,
+ "omega_version": "0.1.0",
+ "omega_commit": "6bad7a9",
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "cpu": "Apple M1 Max",
+  "model": "Mac13,1",
+  "cores": "10",
+  "memory_gb": 32,
+  "python": "3.13.1"
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8
+ },
+ "initial_score": 1.7089,
+ "best_score": 1.7089,
+ "improvement": 1.0,
+ "llm_calls": 41,
+ "mean_llm_seconds": 21.7,
+ "attempts": 41,
+ "ok": 0,
+ "statuses": {
+  "llm_error": 33,
+  "edit_error": 8
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 0,
+ "minutes_to_best": null,
+ "best_idea": "initial program",
+ "progress": [
+  [
+   0.0,
+   1.7089
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.7089,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  }
+ ],
+ "best_diff": "",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "error": "",
+ "model_memory_gb": 4.0,
+ "model_gpu_memory_gb": 4.0,
+ "context_length": 32768,
+ "load_seconds": 0.0,
+ "median_call_seconds": 25.2,
+ "p90_call_seconds": 28.0,
+ "prompt_tokens_per_s": 4221.5,
+ "gen_tokens_per_s": 112.7,
+ "mean_prompt_tokens": 3852,
+ "mean_gen_tokens": 613,
+ "stopped_calls": 33,
+ "provider": "ollama",
+ "cost_usd": 0
+}

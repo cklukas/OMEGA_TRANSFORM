@@ -242,6 +242,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/sort_
 | qwen3.6:27b-coding-mtp-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 131.5523 | ×5.85 | 23.9 | 1 |
 | glm-4.7-flash:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 131.0646 | ×5.73 | 16.1 | 4 |
 | nemotron-3-nano:4b (think) | local | Apple M1 Max | 130.4122 | ×5.47 | 13.1 | 2 |
+| lfm3:latest (think) | local | Apple M1 Max | 125.7167 | ×5.25 | 13.8 | 2 |
 | gemma4:e2b (think) | local | i7-8700K + 2x GTX 1080 Ti | 121.9891 | ×5.69 | 9.1 | 3 |
 | gemma4:e4b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | 105.7071 | ×4.77 | 15.0 | 5 |
 | gemma4:e4b-it-qat (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 102.9600 | ×4.54 | 6.3 | 2 |
@@ -252,6 +253,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/sort_
 | underdog-saluki-27b:iq2-mix (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 28.4632 | ×1.24 | 3.4 | 1 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 27.4213 | ×1.22 | 10.8 | 3 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | Apple M1 Max | 25.8331 | ×1.15 | 5.4 | 4 |
+| lfm3:latest (no-think) | local | Apple M1 Max | 23.7228 | ×1.00 | - | 0 |
 | nemotron-3.5-lightning:30b-mlx (think) | local | Apple M1 Max | | | | failed: all 4 model requests failed … |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | Apple M1 Max | 23.3623 | ×1.01 | 5.1 | 1 |
 | underdog-saluki-27b:iq2-mix (think) | local | Apple M1 Max | | | | failed: all 1 model requests failed: underdog-saluki-27b:iq2-mix … |

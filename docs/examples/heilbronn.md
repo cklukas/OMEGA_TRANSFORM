@@ -200,6 +200,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/heilb
 | qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.01331 | ×2.78 | 8.4 | 6 |
 | qwen3.5:27b (think) | local | Apple M1 Max | 0.01287 | ×2.69 | 7.3 | 2 |
 | nemotron-3-nano:4b (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.01278 | ×2.67 | 15.3 | 2 |
+| lfm3:latest (think) | local | Apple M1 Max | 0.01078 | ×2.25 | 3.8 | 2 |
 | gemma4:26b-a4b-it-qat (think) | local | Apple M1 Max | 0.01072 | ×2.24 | 18.1 | 3 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | Apple M1 Max | 0.00896 | ×1.87 | 11.6 | 1 |
 | qwen3-coder:30b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.00852 | ×1.78 | 5.3 | 1 |
@@ -235,3 +236,4 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/heilb
 | frob/sarvam:30b (think) | local | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 3 model requests failed: frob/sarvam:30b: answer … |
 | underdog-saluki-27b:iq2-mix (no-think) | local | Apple M1 Max | 0.00479 | ×1.00 | - | 0 |
 | underdog-saluki-27b:iq2-mix (think) | local | Apple M1 Max | | | | failed: all 1 model requests failed: underdog-saluki-27b:iq2-mix … |
+| lfm3:latest (no-think) | local | Apple M1 Max | 0.00479 | ×1.00 | - | 0 |

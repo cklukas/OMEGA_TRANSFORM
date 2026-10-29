@@ -238,7 +238,9 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/prefi
 | qwen3.6:27b-coding-mtp-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 5.21149 | ×1.00 | 28.2 | 1 |
 | qwen3.8:27b-mtp-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 1 model requests failed: qwen3.8:27b-mtp-q4_K_M: answer … |
 | qwen2.5-coder:7b (no-think) | local | Apple M1 Max | 5.00125 | ×1.00 | - | 0 |
+| lfm3:latest (no-think) | local | Apple M1 Max | 4.98815 | ×1.00 | - | 0 |
 | nemotron-3-nano:4b (think) | local | Apple M1 Max | 4.90707 | ×1.00 | - | 0 |
+| lfm3:latest (think) | local | Apple M1 Max | | | | failed: all 8 model requests failed: lfm3:latest: answer stopped … |
 | nemotron-3-nano:4b (no-think) | local | Apple M1 Max | 4.86648 | ×1.01 | 14.5 | 1 |
 | nemotron-3.5-lightning:30b-mlx (no-think) | local | Apple M1 Max | 4.85732 | ×1.00 | - | 0 |
 | underdog-saluki-27b:iq2-mix (no-think) | local | Apple M1 Max | 4.84731 | ×1.00 | - | 0 |

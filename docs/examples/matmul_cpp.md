@@ -196,9 +196,11 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/matmu
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.71206 | ×5.15 | 17.3 | 1 |
 | gemma4:e2b (think) | local | i7-8700K + 2x GTX 1080 Ti | 3.78053 | ×2.70 | 12.1 | 1 |
 | glm-4.7-flash:latest (no-think) | local | Apple M1 Max | 2.49095 | ×1.47 | 10.5 | 2 |
+| lfm3:latest (no-think) | local | Apple M1 Max | 1.7089 | ×1.00 | - | 0 |
 | nemotron-3-nano:4b (no-think) | local | Apple M1 Max | 1.70706 | ×1.01 | 16.4 | 2 |
 | underdog-saluki-27b:iq2-mix (think) | local | Apple M1 Max | | | | failed: all 1 model requests failed: underdog-saluki-27b:iq2-mix … |
 | nemotron-3-nano:30b-a3b-mlx (no-think) | local | Apple M1 Max | 1.70481 | ×1.00 | - | 0 |
+| lfm3:latest (think) | local | Apple M1 Max | | | | failed: all 9 model requests failed: lfm3:latest: answer stopped … |
 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | Apple M1 Max | 1.70226 | ×1.01 | 16.4 | 1 |
 | llm-jp-4-8b-omega:q4_k_m (no-think) | local | Apple M1 Max | 1.69985 | ×1.00 | - | 0 |
 | ingu627/exaone4.0:32b (no-think) | local | Apple M1 Max | 1.69695 | ×1.00 | - | 0 |

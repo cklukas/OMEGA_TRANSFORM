@@ -17,6 +17,7 @@ Every benchmarked model and the company that develops it, which the comparisons 
 | Conway | underdog-saluki-27b:iq2-mix | – |
 | Google | gemma4:12b-it-qat, gemma4:26b-a4b-it-qat, gemma4:e2b, gemma4:e4b-it-qat, gemma4:latest | – |
 | LG | ingu627/exaone4.0:32b | – |
+| Liquid AI | lfm3:latest | – |
 | Meta | muse-glimmer:30b | – |
 | Microsoft | richardyoung/frognano-4b-2609:latest | – |
 | Mistral AI | devstral-small-2:24b | – |
@@ -37,6 +38,7 @@ Every benchmarked model and the company that develops it, which the comparisons 
 - **Conway** (founded 2026, USA): AI lab (Conway Research) behind Underdog, an assistant that runs on the user's own devices; its open-weight Saluki 27B (October 2026, Apache 2.0) is a 2-bit build of Alibaba's Qwen3.8-27B that is tuned to keep tool calling intact.
 - **Google** (founded 1998, Mountain View, USA): Publishes the Gemma family as open-weight models since 2024, built from the research behind its larger proprietary models, from phone-sized to mid-sized models.
 - **LG** (founded 2020, Seoul, South Korea): LG AI Research, the AI lab of the LG group, develops the EXAONE models.
+- **Liquid AI** (founded 2023, Cambridge, USA): A spin-off of MIT's computer science lab; its LFM models use a hybrid architecture built for running on devices. LFM3 (October 2026, LFM Open License) is a family of six open-weight models of about 2B parameters for text, vision, audio and both, which share one 1.7B backbone of short convolutions and attention with a 256K context.
 - **Meta** (founded 2004, Menlo Park, USA): Opened up large models with Llama (2023–2025); its newer Muse family is mostly proprietary, with Muse Glimmer (30B, Apache 2.0, August 2026) and a large Muse Spark released as open weights.
 - **Microsoft** (founded 1975, Redmond, USA): Publishes small open models under the MIT license: the Phi family since 2023 and, in 2026, FrogNano, a 4B coding agent built on Qwen3.5-4B and trained with reinforcement learning on software-engineering tasks.
 - **Mistral AI** (founded 2023, Paris, France): Europe's largest developer of language models; publishes open-weight general models and the Codestral and Devstral coding models.
@@ -70,6 +72,7 @@ The developer's best single model, the mean share over all its models, and the m
 | Z.ai | 2 | glm-4.7-flash:latest (no-think) | 2026-01-19 | **32%** | 25% | 33% |
 | Yandex | 1 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 2025-03-28 | **24%** | 24% | 24% |
 | Sarvam AI | 2 | frob/sarvam:30b (no-think) | 2026-03-03 | **14%** | 11% | 15% |
+| Liquid AI | 2 | lfm3:latest (think) | 2026-10-23 | **12%** | 8% | 12% |
 | Swiss AI Initiative | 1 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 2025-08-13 | **11%** | 11% | 11% |
 | NII (LLM-jp) | 1 | llm-jp-4-8b-omega:q4_k_m (no-think) | 2026-03-16 | **5%** | 5% | 5% |
 | Sber | 1 | Bored/GigaChat3.1-10B-A1.8B-q4_K_M:latest (no-think) | 2026-03-21 | **3%** | 3% | 3% |
@@ -94,6 +97,7 @@ Each developer's ranked models by release date (the original publication on Hugg
 | Google | under 15B | 2026-05-23 | gemma4:12b-it-qat (no-think) | 11.9B | 67% |
 | Google | 15B and up | 2026-03-11 | gemma4:26b-a4b-it-qat (no-think) | 25.2B | 74% |
 | LG | 15B and up | 2025-07-11 | ingu627/exaone4.0:32b (no-think) | 32B | 39% |
+| Liquid AI | under 15B | 2026-10-23 | lfm3:latest (think) | 1.7B | 12% |
 | Meta | 15B and up | 2026-08-09 | muse-glimmer:30b (no-think) | 27.9B | 68% |
 | Microsoft | under 15B | 2026-09-17 | richardyoung/frognano-4b-2609:latest (no-think) | 4.3B | 35% |
 | Mistral AI | 15B and up | 2025-11-28 | devstral-small-2:24b (no-think) | 24B | 37% |
