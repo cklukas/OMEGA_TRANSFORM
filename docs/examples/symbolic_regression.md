@@ -220,3 +220,4 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/symbo
 | frob/sarvam:30b (think) | local | Apple M1 Max | | | | failed: all 2 model requests failed: frob/sarvam:30b: answer … |
 | frob/sarvam:30b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.31284 | ×1.00 | - | 0 |
 | qwen3.8:27b-mtp-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.31284 | ×1.00 | - | 0 |
+| underdog-saluki-27b:iq2-mix (think) | local | Apple M1 Max | 0.31284 | ×1.00 | - | 0 |

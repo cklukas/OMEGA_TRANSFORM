@@ -247,6 +247,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/prefi
 | gemma4:latest (think) | local | Apple M1 Max | 4.81957 | ×1.00 | - | 0 |
 | nemotron-3-nano:30b-a3b-mlx (no-think) | local | Apple M1 Max | 4.81174 | ×1.00 | - | 0 |
 | frob/sarvam:30b (think) | local | Apple M1 Max | | | | failed: all 3 model requests failed: frob/sarvam:30b: answer … |
+| underdog-saluki-27b:iq2-mix (think) | local | Apple M1 Max | | | | failed: all 1 model requests failed: underdog-saluki-27b:iq2-mix … |
 | nemotron-3-nano:4b (think) | local | i7-8700K + 2x GTX 1080 Ti | 4.80205 | ×1.00 | - | 0 |
 | richardyoung/frognano-4b-2609:latest (think) | local | Apple M1 Max | 4.78813 | ×1.00 | - | 0 |
 | frob/sarvam:30b (no-think) | local | Apple M1 Max | 4.78297 | ×1.00 | - | 0 |

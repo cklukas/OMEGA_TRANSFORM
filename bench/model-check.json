@@ -504,6 +504,24 @@
    "edit_detail": "applied",
    "think_ok": true,
    "seconds": 46.5
+  },
+  {
+   "model": "lfm3:latest",
+   "params": "",
+   "size_gb": 1.7,
+   "thinking_capable": true,
+   "verdict": "ok",
+   "reason": "",
+   "load_seconds": 0.0,
+   "gen_tokens_per_s": 107.2,
+   "prompt_tokens_per_s": 401.3,
+   "memory_gb": 1.7,
+   "hello": "hello",
+   "hello_ok": true,
+   "edit_ok": true,
+   "edit_detail": "applied",
+   "think_ok": true,
+   "seconds": 8.6
   }
  ]
 }

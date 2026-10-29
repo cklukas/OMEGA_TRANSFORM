@@ -298,3 +298,4 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/tamme
 | Bored/GigaChat3.1-10B-A1.8B-q4_K_M:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 3.20136 | ×1.00 | - | 0 |
 | frob/sarvam:30b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 3.20136 | ×1.00 | - | 0 |
 | gemma4:12b-it-qat (think) | local | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 2 model requests failed: gemma4:12b-it-qat: answer … |
+| underdog-saluki-27b:iq2-mix (think) | local | Apple M1 Max | | | | failed: all 1 model requests failed: underdog-saluki-27b:iq2-mix … |

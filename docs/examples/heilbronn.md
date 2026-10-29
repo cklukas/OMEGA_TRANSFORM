@@ -234,3 +234,4 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/heilb
 | qwen3.6:27b-coding-mtp-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.00479 | ×1.00 | - | 0 |
 | frob/sarvam:30b (think) | local | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 3 model requests failed: frob/sarvam:30b: answer … |
 | underdog-saluki-27b:iq2-mix (no-think) | local | Apple M1 Max | 0.00479 | ×1.00 | - | 0 |
+| underdog-saluki-27b:iq2-mix (think) | local | Apple M1 Max | | | | failed: all 1 model requests failed: underdog-saluki-27b:iq2-mix … |

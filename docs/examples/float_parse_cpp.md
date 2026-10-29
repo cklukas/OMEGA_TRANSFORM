@@ -181,6 +181,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/float
 | underdog-saluki-27b:iq2-mix (no-think) | local | Apple M1 Max | 308.0020 | ×1.00 | - | 0 |
 | qwen3.6:27b-coding-mtp-q4_K_M (think) | local | Apple M1 Max | 307.5350 | ×1.00 | - | 0 |
 | gemma4:26b-a4b-it-qat (think) | local | Apple M1 Max | | | | failed: all 2 model requests failed: gemma4:26b-a4b-it-qat: answer … |
+| underdog-saluki-27b:iq2-mix (think) | local | Apple M1 Max | | | | failed: all 1 model requests failed: underdog-saluki-27b:iq2-mix … |
 | qwen3.8:27b-mtp-q4_K_M (think) | local | Apple M1 Max | 301.9280 | ×1.00 | - | 0 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | Apple M1 Max | 300.1980 | ×1.00 | - | 0 |
 | qwen3.8:27b-mtp-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 104.7890 | ×1.36 | 41.2 | 1 |

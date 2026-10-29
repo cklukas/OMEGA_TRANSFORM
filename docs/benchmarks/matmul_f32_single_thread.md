@@ -4,9 +4,9 @@
 
 # matmul_f32_single_thread
 
-53 models, 15 minutes each, one run per model. The [overall ranking](../benchmarks.md#overall-ranking) compares the models over all examples.
+54 models, 15 minutes each, one run per model. The [overall ranking](../benchmarks.md#overall-ranking) compares the models over all examples.
 
-Machines: **Apple M1 Max**: Apple M1 Max (Mac13,1), 10 cores, 32 GB, 52 runs; **i7-8700K + 2x GTX 1080 Ti**: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz (MS-7A98), 12 cores, 64 GB, 2x NVIDIA GeForce GTX 1080 Ti, 11264 MiB, 34 runs.
+Machines: **Apple M1 Max**: Apple M1 Max (Mac13,1), 10 cores, 32 GB, 53 runs; **i7-8700K + 2x GTX 1080 Ti**: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz (MS-7A98), 12 cores, 64 GB, 2x NVIDIA GeForce GTX 1080 Ti, 11264 MiB, 34 runs.
 
 ## Local models on Apple M1 Max
 
@@ -40,6 +40,7 @@ Ollama on this machine.
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 27.3B | 1.75879 | **21.3526** | ×12.14 | 8 | 120 | 25% | 2 | 13.8 |
 | nemotron-3-nano:30b-a3b-mlx (think) |  | 1.71642 | **9.98314** | ×5.82 | 11 | 91 | 9% | 1 | 14.1 |
 | qwen2.5-coder:7b (no-think) | 7.6B | 1.75104 | **6.93427** | ×3.96 | 44 | 20 | 14% | 5 | 10.6 |
+| underdog-saluki-27b:iq2-mix (think) | 26.9B | | | | | | | | failed: all 1 model requests failed: underdog-saluki-27b:iq2-mix: an |
 | qwen3-coder:30b (no-think) | 30.5B | 1.76048 | **1.76048** | ×1.00 | 34 | 26 | 0% | 0 | - |
 | underdog-saluki-27b:iq2-mix (no-think) | 26.9B | 1.75933 | **1.75933** | ×1.00 | 6 | 154 | 0% | 0 | - |
 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 8.1B | 1.74731 | **1.74731** | ×1.00 | 40 | 22 | 5% | 0 | - |

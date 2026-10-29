@@ -254,6 +254,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/sort_
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | Apple M1 Max | 25.8331 | ×1.15 | 5.4 | 4 |
 | nemotron-3.5-lightning:30b-mlx (think) | local | Apple M1 Max | | | | failed: all 4 model requests failed … |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | Apple M1 Max | 23.3623 | ×1.01 | 5.1 | 1 |
+| underdog-saluki-27b:iq2-mix (think) | local | Apple M1 Max | | | | failed: all 1 model requests failed: underdog-saluki-27b:iq2-mix … |
 | nemotron-3-nano:4b (no-think) | local | Apple M1 Max | 23.2840 | ×1.01 | 5.5 | 1 |
 | nemotron-3-nano:30b-a3b-mlx (no-think) | local | Apple M1 Max | 23.2628 | ×1.00 | - | 0 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 23.1804 | ×1.04 | 9.3 | 1 |

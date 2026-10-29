@@ -4,9 +4,9 @@
 
 # matmul_f32
 
-45 models, 15 minutes each, one run per model. The [overall ranking](../benchmarks.md#overall-ranking) compares the models over all examples.
+46 models, 15 minutes each, one run per model. The [overall ranking](../benchmarks.md#overall-ranking) compares the models over all examples.
 
-Machines: **Apple M1 Max**: Apple M1 Max (Mac13,1), 10 cores, 32 GB, 44 runs; **i7-8700K + 2x GTX 1080 Ti**: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz (MS-7A98), 12 cores, 64 GB, 2x NVIDIA GeForce GTX 1080 Ti, 11264 MiB, 34 runs.
+Machines: **Apple M1 Max**: Apple M1 Max (Mac13,1), 10 cores, 32 GB, 45 runs; **i7-8700K + 2x GTX 1080 Ti**: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz (MS-7A98), 12 cores, 64 GB, 2x NVIDIA GeForce GTX 1080 Ti, 11264 MiB, 34 runs.
 
 ## Local models on Apple M1 Max
 
@@ -38,6 +38,7 @@ Ollama on this machine.
 | qwen3-coder:30b (no-think) | 30.5B | 1.66293 | **8.45239** | ×5.08 | 23 | 40 | 9% | 2 | 16.7 |
 | glm-4.7-flash:latest (no-think) | 29.9B | 1.69493 | **2.49095** | ×1.47 | 32 | 27 | 12% | 2 | 10.5 |
 | nemotron-3-nano:4b (no-think) |  | 1.68739 | **1.70706** | ×1.01 | 72 | 12 | 1% | 2 | 16.4 |
+| underdog-saluki-27b:iq2-mix (think) | 26.9B | | | | | | | | failed: all 1 model requests failed: underdog-saluki-27b:iq2-mix: an |
 | nemotron-3-nano:30b-a3b-mlx (no-think) |  | 1.70481 | **1.70481** | ×1.00 | 38 | 24 | 3% | 0 | - |
 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 8.0B | 1.69102 | **1.70226** | ×1.01 | 41 | 20 | 15% | 1 | 16.4 |
 | llm-jp-4-8b-omega:q4_k_m (no-think) | 8.6B | 1.69985 | **1.69985** | ×1.00 | 19 | 48 | 0% | 0 | - |
