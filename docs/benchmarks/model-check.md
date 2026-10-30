@@ -4,4 +4,49 @@
 
 # Model check
 
-No model check has been recorded.
+Before benchmarking, `omega models` loads every installed model, greets it, asks for a three-line edit in the engine's SEARCH/REPLACE format, and tries its reasoning mode. Only models marked ok are benchmarked. Checked 2026-10-30.
+
+| Model | Params | Size GB | Verdict | Load s | Gen tok/s | RAM GB | Hello | Edit | Think | Note |
+|---|---|--:|---|--:|--:|--:|---|---|---|---|
+| cohere/north-mini-code:free |  | 0.0 | ok | 0 | 255.6 | - | yes | yes | yes |  |
+| nvidia/nemotron-3.5-super-vl:free |  | 0.0 | ok | 0 | 205.0 | - | yes | yes | yes |  |
+| nvidia/nemotron-3-ultra-550b-a55b:free |  | 0.0 | ok | 0 | 23.7 | - | yes | yes | yes |  |
+| poolside/laguna-s-2.1:free |  | 0.0 | ok | 0 | 20.1 | - | yes | yes | yes |  |
+| recursive/flint-v1.0:free |  | 0.0 | unavailable | - | - | - | no | no | - | recursive/flint-v1.0:free: HTTP 400: {"error":{"message":"Reasoning is mandatory |
+| xingchen-agi/xing4.0-29b-a4b:free |  | 0.0 | rate limited | - | - | - | no | no | - | xingchen-agi/xing4.0-29b-a4b:free: rate limited (HTTP 429); try again later |
+| dots-studio/dots-3-note-preview:free |  | 0.0 | ok | 0 | 2936.0 | - | yes | yes | yes |  |
+| nvidia/nemotron-3.5-lightning:free |  | 0.0 | ok | 0 | 131.7 | - | yes | yes | yes |  |
+| thinkingmachines/inkling-small:free |  | 0.0 | unavailable | - | - | - | no | no | - | thinkingmachines/inkling-small:free: HTTP 403: {"error":{"message":"thinkingmach |
+| thinkingmachines/inkling:free |  | 0.0 | unavailable | - | - | - | no | no | - | thinkingmachines/inkling:free: HTTP 403: {"error":{"message":"thinkingmachines/i |
+| poolside/laguna-xs-2.1:free |  | 0.0 | ok | 0 | 11.4 | - | yes | yes | yes |  |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free |  | 0.0 | ok | 0 | 128.3 | - | yes | yes | yes |  |
+| google/gemma-4-26b-a4b-it:free |  | 0.0 | rate limited | - | - | - | no | no | - | google/gemma-4-26b-a4b-it:free: rate limited (HTTP 429); try again later |
+| google/gemma-4-31b-it:free |  | 0.0 | rate limited | - | - | - | no | no | - | google/gemma-4-31b-it:free: rate limited (HTTP 429); try again later |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M | 1.73B | 1.1 | ok | 6 | 1000000.0 | 1.5 | yes | no | yes | edit format not followed (benchmarked anyway) |
+| nemotron-3-nano:4b | 4.0B | 2.8 | ok | 11 | 79.6 | 3.9 | yes | yes | yes |  |
+| richardyoung/frognano-4b-2609:latest | 4.3B | 3.5 | ok | 13 | 62.6 | 4.8 | yes | yes | yes |  |
+| gemma4:e2b | 4.6B | 4.6 | ok | 19 | 138.7 | 0.9 | yes | yes | yes |  |
+| qwen2.5-coder:7b | 7.6B | 4.7 | ok | 14 | 54.7 | 6.6 | yes | yes | - |  |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest | 8.0B | 4.9 | ok | 16 | 49.1 | 10.2 | yes | no | - | edit format not followed (benchmarked anyway) |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m | 8.1B | 5.1 | ok | 16 | 47.3 | 12.6 | yes | yes | - |  |
+| llm-jp-4-8b-omega:q4_k_m | 8.6B | 5.3 | ok | 17 | 44.7 | 13.0 | yes | yes | - |  |
+| ki-krugle-jp/llm-jp-4-8b-thinking:q4_k_m | 8.6B | 5.3 | failed to load | - | - | - | no | no | - | ki-krugle-jp/llm-jp-4-8b-thinking:q4_k_m: request failed after retries: HTTP Err |
+| gemma4:e4b-it-qat | 7.5B | 6.1 | ok | 23 | 47.4 | 6.1 | yes | yes | yes |  |
+| Bored/GigaChat3.1-10B-A1.8B-q4_K_M:latest | 10.7B | 6.5 | broken | 24 | 88.9 | 7.9 | no | no | - | unexpected answers, e.g. 'hi' |
+| qwen3.5:latest | 9.0B | 6.6 | ok | 34 | 39.4 | 9.4 | yes | yes | yes |  |
+| gemma4:latest | 7.5B | 6.6 | ok | 25 | 77.9 | 3.3 | yes | yes | yes |  |
+| gemma4:12b-it-qat | 11.9B | 7.2 | ok | 22 | 31.7 | 11.0 | yes | yes | yes |  |
+| underdog-saluki-27b:iq2-mix | 26.9B | 7.9 | ok | 23 | 17.0 | 11.2 | yes | yes | yes |  |
+| gpt-oss:20b | 20.9B | 13.8 | ok | 51 | 54.5 | 13.9 | yes | yes | yes |  |
+| devstral-small-2:24b | 24.0B | 15.2 | slow | 51 | 4.2 | 21.9 | no | yes | - | 4.2 tokens/s < 8 |
+| gemma4:26b-a4b-it-qat | 25.2B | 15.6 | ok | 56 | 40.5 | 16.1 | yes | yes | yes |  |
+| qwen3.5:27b | 26.9B | 17.5 | slow | 56 | 4.8 | 20.2 | yes | yes | yes | 4.8 tokens/s < 8 |
+| granite4.2:30b | 29.3B | 17.7 | slow | 52 | 2.8 | 29.2 | yes | yes | no | 2.8 tokens/s < 8 |
+| qwen3.8:27b-mtp-q4_K_M | 27.3B | 17.7 | slow | 55 | 7.4 | 20.5 | yes | yes | yes | 7.4 tokens/s < 8 |
+| qwen3.6:27b-coding-mtp-q4_K_M | 27.3B | 17.8 | ok | 56 | 8.2 | 20.4 | yes | yes | yes |  |
+| muse-glimmer:30b | 27.9B | 18.2 | slow | 55 | 5.3 | 17.7 | yes | yes | yes | 5.3 tokens/s < 8 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M | 30.5B | 18.6 | ok | 55 | 34.7 | 23.0 | yes | yes | yes |  |
+| qwen3-coder:30b | 30.5B | 18.6 | ok | 53 | 33.6 | 23.0 | yes | yes | - |  |
+| glm-4.7-flash:latest | 29.9B | 19.0 | ok | 56 | 31.0 | 21.6 | yes | yes | yes |  |
+| ingu627/exaone4.0:32b | 32.0B | 19.3 | slow | 54 | 4.2 | 21.0 | yes | yes | yes | 4.2 tokens/s < 8 |
+| frob/sarvam:30b | 32.2B | 19.6 | ok | 60 | 50.6 | 21.2 | yes | no | yes | edit format not followed (benchmarked anyway) |

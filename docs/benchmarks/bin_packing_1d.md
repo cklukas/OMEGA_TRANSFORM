@@ -4,4 +4,88 @@
 
 # bin_packing_1d
 
-No benchmark results have been committed yet; this page fills in as the runs come in.
+3 models, each run at most 60 minutes, ended earlier after 15 answers in a row without progress; one run per model. The [overall ranking](../benchmarks.md#overall-ranking) compares the models over all examples.
+
+Machine: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz (MS-7A98), 12 cores, 64 GB, 2x NVIDIA GeForce GTX 1080 Ti, 11264 MiB.
+
+## Local models
+
+Ollama on this machine.
+
+| Model | Params | Initial | Best | Gain | LLM calls | s/call | Valid | New bests | Min to best | Minutes | Stopped by |
+|---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|---|
+| richardyoung/frognano-4b-2609:latest (no-think) | 4.3B | 0.79426 | **0.95128** | ×1.20 | 18 | 20 | 39% | 1 | 0.6 | 6.4 | no progress |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | 1.73B | 0.79426 | **0.79587** | ×1.00 | 24 | 18 | 25% | 1 | 2.9 | 7.7 | no progress |
+| nemotron-3-nano:4b (no-think) | 4.0B | 0.79426 | **0.79426** | ×1.00 | 16 | 10 | 0% | 0 | - | 2.9 | no progress |
+
+```mermaid
+xychart-beta
+    title "bin_packing_1d, local: best score"
+    x-axis ["frognano-4b-2609 (no-think)", "LFM3-1.7B-GGUF:Q4_K_M (no-think)", "nemotron-3-nano:4b (no-think)"]
+    y-axis "score" 0 --> 1.046
+    bar [0.9513, 0.7959, 0.7943]
+```
+
+```mermaid
+xychart-beta
+    title "bin_packing_1d, local: valid answers (%)"
+    x-axis ["frognano-4b-2609 (no-think)", "LFM3-1.7B-GGUF:Q4_K_M (no-think)", "nemotron-3-nano:4b (no-think)"]
+    y-axis "% of answers" 0 --> 42.78
+    bar [38.89, 25, 0]
+```
+
+```mermaid
+xychart-beta
+    title "bin_packing_1d, local: seconds per LLM call"
+    x-axis ["frognano-4b-2609 (no-think)", "LFM3-1.7B-GGUF:Q4_K_M (no-think)", "nemotron-3-nano:4b (no-think)"]
+    y-axis "seconds" 0 --> 22.55
+    bar [20.5, 18.2, 10]
+```
+
+### Inference speed and memory
+
+RAM is what Ollama reports for the loaded model (weights, context cache and buffers; on Apple silicon this is shared memory). Load is the time to bring the model into memory. Prompt and generation speeds are tokens per second over all calls of the run.
+
+| Model | Params | RAM GB | Load s | Prompt tok/s | Gen tok/s | Median s/call | p90 s/call | Tokens/answer | Stopped |
+|---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | 1.73B | 1.5 | 0 | 4102 | 113.0 | 20 | 28 | 991 | 13 |
+| nemotron-3-nano:4b (no-think) | 4.0B | 3.9 | 10 | 1756 | 77.8 | 9 | 14 | 460 | 0 |
+| richardyoung/frognano-4b-2609:latest (no-think) | 4.3B | 4.8 | 12 | 1861 | 61.8 | 19 | 44 | 835 | 4 |
+
+```mermaid
+xychart-beta
+    title "bin_packing_1d, local: generation speed (tokens/s)"
+    x-axis ["LFM3-1.7B-GGUF:Q4_K_M (no-think)", "nemotron-3-nano:4b (no-think)", "frognano-4b-2609 (no-think)"]
+    y-axis "tokens/s" 0 --> 124.3
+    bar [113, 77.8, 61.8]
+```
+
+```mermaid
+xychart-beta
+    title "bin_packing_1d, local: model memory (GB)"
+    x-axis ["LFM3-1.7B-GGUF:Q4_K_M (no-think)", "nemotron-3-nano:4b (no-think)", "frognano-4b-2609 (no-think)"]
+    y-axis "GB" 0 --> 5.28
+    bar [1.5, 3.9, 4.8]
+```
+
+### Best score over time
+
+| Model | 15 min | 30 min | 45 min | 60 min |
+|---|--:|--:|--:|--:|
+| richardyoung/frognano-4b-2609:latest (no-think) | 0.95128 | 0.95128 | 0.95128 | 0.95128 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | 0.79587 | 0.79587 | 0.79587 | 0.79587 |
+| nemotron-3-nano:4b (no-think) | 0.79426 | 0.79426 | 0.79426 | 0.79426 |
+
+### Outcome of the LLM answers
+
+| Model | edit error | invalid | llm error | ok |
+|---|--:|--:|--:|--:|
+| richardyoung/frognano-4b-2609:latest (no-think) | 1 | 6 | 4 | 7 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | 2 | 3 | 13 | 6 |
+| nemotron-3-nano:4b (no-think) | 12 | 4 | 0 | 0 |
+
+### Best idea per model
+
+- **richardyoung/frognano-4b-2609:latest (no-think)**: Replace the slow Next-Fit heuristic with First-Fit Decreasing (FFD) by sorting items descending and using a simple O(N*M) scan to place items, which significantly reduces bins for …
+- **hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think)**: edit: # Copyright (c) 2026 by C. Klukas / # SPDX-License-Identifier: MIT
+- **nemotron-3-nano:4b (no-think)**: initial program

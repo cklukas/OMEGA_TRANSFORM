@@ -4,4 +4,42 @@
 
 # Models by developer
 
-No benchmark results have been committed yet; this page fills in as the runs come in.
+The models of the [overall ranking](../benchmarks.md#overall-ranking), grouped by the company that develops them. A model's **share** is its gain over the starting program as a fraction of the best gain on each example, averaged over the examples (100% = the best model everywhere); released is the model's original publication on Hugging Face, or OpenRouter's listing date. See also [Models by country](countries.md).
+
+## Who develops which model
+
+Every benchmarked model and the company that develops it, which the comparisons below group by.
+
+| Developer | Local models (Ollama) | Cloud models (OpenRouter) |
+|---|---|---|
+| Liquid AI | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M | – |
+| Microsoft | richardyoung/frognano-4b-2609:latest | – |
+| NVIDIA | nemotron-3-nano:4b | – |
+
+**About the developers** (as of October 2026; many of these companies and their open models are only a few years old):
+
+- **Liquid AI** (founded 2023, Cambridge, USA): A spin-off of MIT's computer science lab; its LFM models use a hybrid architecture built for running on devices. LFM3 (October 2026, LFM Open License) is a family of six open-weight models of about 2B parameters for text, vision, audio and both, which share one 1.7B backbone of short convolutions and attention with a 256K context.
+- **Microsoft** (founded 1975, Redmond, USA): Publishes small open models under the MIT license: the Phi family since 2023 and, in 2026, FrogNano, a 4B coding agent built on Qwen3.5-4B and trained with reinforcement learning on software-engineering tasks.
+- **NVIDIA** (founded 1993, Santa Clara, USA): The leading maker of AI accelerators. Its Nemotron models are open-weight, often with their training data published, and partly built on other open models.
+
+## Local models
+
+### Ranking by developer
+
+The developer's best single model, the mean share over all its models, and the mean share when its best model is picked for each example separately (which favours developers with many models).
+
+| Developer | Models | Best model | Released | Best model's share | Mean over its models | Best per example |
+|---|--:|---|---|--:|--:|--:|
+| Microsoft | 1 | richardyoung/frognano-4b-2609:latest (no-think) | 2026-09-17 | **100%** | 100% | 100% |
+| Liquid AI | 1 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | 2026-10-23 | **1%** | 1% | 1% |
+| NVIDIA | 1 | nemotron-3-nano:4b (no-think) | 2026-03-07 | **0%** | 0% | 0% |
+
+### Progress over time
+
+Each developer's ranked models by release date (the original publication on Hugging Face, or OpenRouter's listing date), with the share of the better of their two modes. Models are compared only within a size class (total parameters, under 15B, 15B and up), so that a newer but smaller model does not read as a step back; mixture-of-experts models use only part of their parameters per token. Variants of one release share its date. A chart is drawn where a developer has three or more release dates in one size class.
+
+| Developer | Size class | Released | Model | Parameters | Share |
+|---|---|---|---|--:|--:|
+| Liquid AI | under 15B | 2026-10-23 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | 1.7B | 1% |
+| Microsoft | under 15B | 2026-09-17 | richardyoung/frognano-4b-2609:latest (no-think) | 4.3B | 100% |
+| NVIDIA | under 15B | 2026-03-07 | nemotron-3-nano:4b (no-think) | 4B | 0% |

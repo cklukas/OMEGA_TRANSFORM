@@ -71,4 +71,65 @@ def pack(sizes, capacity):
 
 ## Benchmark results
 
-This example has not been benchmarked yet. See [Benchmarking models](../benchmarking.md) for how to run it.
+The best result so far comes from **richardyoung/frognano-4b-2609:latest (no-think)**, run locally with Ollama on 2026-10-30: a score of **0.95128** (×1.20 the starting program's 0.79426), reached after 0.55 of 60 minutes with 18 model requests.
+
+What the starting program produces (left) and what the best program by richardyoung/frognano-4b-2609:latest (no-think) produces (right), drawn for the instance `u300`:
+
+![bin_packing: the starting program's solution and the best one](../assets/examples/bin_packing.svg)
+
+### How it got there
+
+The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.
+
+| Step | Minute | Score | Kind | Idea |
+|--:|--:|--:|---|---|
+| 0 | 0.0 | 0.79426 | start | initial program |
+| 1 | 0.6 | 0.95128 | edit | Replace the slow Next-Fit heuristic with First-Fit Decreasing (FFD) by sorting items descending and using a simple O(N*M) scan to place items, which significantly reduces bins for the hard instances. |
+
+### The best program
+
+What changed compared with the starting program:
+
+```diff
+--- initial
++++ best
+@@ -21,15 +21,19 @@
+ 
+     Current method: next fit (open a new bin whenever the next item does not fit).
+     """
++    # Sort indices by size descending for First-Fit Decreasing
++    sorted_indices = sorted(range(len(sizes)), key=lambda i: sizes[i], reverse=True)
+     bins = []
+-    current, load = [], 0
+-    for i, s in enumerate(sizes):
+-        if load + s > capacity:
+-            bins.append(current)
+-            current, load = [], 0
+-        current.append(i)
+-        load += s
+-    if current:
+-        bins.append(current)
++    for idx in sorted_indices:
++        s = sizes[idx]
++        placed = False
++        for bin_idx, bin_items in enumerate(bins):
++            bin_load = sum(sizes[i] for i in bin_items)
++            if bin_load + s <= capacity:
++                bin_items.append(idx)
++                placed = True
++                break
++        if not placed:
++            bins.append([idx])
+     return bins
+ # OMEGA-BLOCK-END
+```
+
+### All models
+
+One run per model and reasoning mode; the [model benchmarks](../benchmarks/bin_packing_1d.md) page has speed, memory and progress over time.
+
+| Model | Where | Best | Gain | Minutes to best | New bests |
+|---|---|--:|--:|--:|--:|
+| richardyoung/frognano-4b-2609:latest (no-think) | local | 0.95128 | ×1.20 | 0.6 | 1 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | 0.79587 | ×1.00 | 2.9 | 1 |
+| nemotron-3-nano:4b (no-think) | local | 0.79426 | ×1.00 | - | 0 |

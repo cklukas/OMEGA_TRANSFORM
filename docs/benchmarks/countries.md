@@ -4,4 +4,6 @@
 
 # Models by country
 
-No benchmark results have been committed yet; this page fills in as the runs come in.
+Each country is represented by its best model in the [overall ranking](../benchmarks.md#overall-ranking); the country of a model is that of its developer's headquarters (see [Models by developer](developers.md)). The lag is how far its share falls short of the leading country's, relative to that share. Released is the model's original publication on Hugging Face, or OpenRouter's listing date.
+
+No group has ranked models from more than one country yet.

@@ -17,4 +17,33 @@ show their mean and spread, and the ranking ties models whose ranges overlap.
 Timing-based scores (the C++ examples) depend on the machine and on what else
 it was doing, so machines are compared through their own shares only.
 
-No benchmark results have been committed yet.
+## Pages
+
+| Page | What it shows |
+|---|---|
+| [Models by developer](benchmarks/developers.md) | who develops each model, the ranking grouped by developer, and each developer's progress over time |
+| [Models by country](benchmarks/countries.md) | the best model of each country |
+| [Model check](benchmarks/model-check.md) | which installed models were usable before the benchmark |
+| [bin_packing_1d](benchmarks/bin_packing_1d.md) | 3 models on this example: scores, speed, memory and progress over time |
+
+Machine: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz (MS-7A98), 12 cores, 64 GB, 2x NVIDIA GeForce GTX 1080 Ti, 11264 MiB.
+
+## Overall ranking
+
+Scores of different examples cannot be added up (a matrix multiply gains ×80, a route heuristic ×1.1), so every example is weighted equally: per example, each run's gain over the starting program is divided by the best **mean** gain of any model of its group there, so that one lucky run does not set the bar. A model's **share** is the mean over its runs and then over the examples (100% = the best model on every example, 0% = no gain; a run whose model never answered counts as 0%). Where models were run more than once, ± is the standard error of the share from the spread between repeated runs; in the table of all machines, a model's results on several machines count as such repeats. Ties: going down the table, a model whose range (share ± standard error) reaches the range of the first model of the current tie group gets that model's rank, marked =; without repeated runs only equal shares tie. The geometric mean of the improvement factors, the examples won, the examples without any gain and the number of runs (failed ones in brackets) are shown alongside. Only models with results on at least three quarters of the examples are ranked; the others follow without a rank. The same ranking is grouped [by developer](benchmarks/developers.md) and [by country](benchmarks/countries.md) on pages of their own. Released is the model's original publication on Hugging Face, or OpenRouter's listing date.
+
+### Local models
+
+| # | Model | Released | Share of best gain | Geometric-mean gain | Wins | No gain | Runs | Examples |
+|--:|---|---|--:|--:|--:|--:|--:|--:|
+| 1 | richardyoung/frognano-4b-2609:latest (no-think) | 2026-09-17 | **100%** | ×1.20 | 1 | 0 | 1 | 1 |
+| 2 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | 2026-10-23 | **1%** | ×1.00 | 0 | 0 | 1 | 1 |
+| 3 | nemotron-3-nano:4b (no-think) | 2026-03-07 | **0%** | ×1.00 | 0 | 1 | 1 | 1 |
+
+```mermaid
+xychart-beta
+    title "Overall, local: mean share of the best gain (%)"
+    x-axis ["frognano-4b-2609:latest (no-think)", "LFM3-1.7B-GGUF:Q4_K_M (no-think)", "nemotron-3-nano:4b (no-think)"]
+    y-axis "% of the best gain" 0 --> 110
+    bar [100, 1.025, 0]
+```
