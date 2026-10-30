@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .blocks import EditError, apply_answer, parse_response
+from .config import ANSWER_ROOM
 from .database import Database
 from .llm import LLM, LLMError
 
@@ -62,7 +63,7 @@ def replay(run_dir: Path, db: Database, llm: LLM, n: int, max_chars: int = 0,
         if parent is None:
             continue
         messages, _ = read_log(path)
-        budget = max_chars or 2 * len(parent.code) + 8000
+        budget = max_chars or 2 * len(parent.code) + ANSWER_ROOM
         t0 = time.monotonic()
         try:
             text, _ = llm.complete(messages, rng, max_chars=budget)

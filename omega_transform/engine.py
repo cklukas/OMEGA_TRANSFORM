@@ -23,7 +23,7 @@ from typing import Callable
 
 from .blocks import (EditError, apply_answer, editable_text, parse_response, strip_thinking,
                      unified_diff)
-from .config import ProblemConfig
+from .config import ANSWER_ROOM, ProblemConfig
 from .database import Database, Program, code_hash, new_id
 from .evaluator import Evaluator
 from .llm import LLM, Ensemble, LLMError
@@ -146,7 +146,7 @@ class Engine:
         for edits; anything much longer is a model talking to itself."""
         if self.cfg.llm.max_answer_chars:
             return self.cfg.llm.max_answer_chars
-        return 2 * len(parent.code) + 8000
+        return 2 * len(parent.code) + ANSWER_ROOM
 
     def _replay_policy(self) -> None:
         """Rebuild the strategy statistics from a resumed run's history."""

@@ -30,7 +30,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from . import __version__
-from .config import ModelSpec, load_config
+from .config import ANSWER_ROOM, ModelSpec, load_config
 from .database import Database
 from .memory import wait_until_fits
 from .modelcheck import unload
@@ -393,6 +393,8 @@ def run_bench(examples: list[Path], models: list[dict], minutes: float, out_dir:
                           "temperature": cfg.llm.temperature,
                           "min_gain": cfg.search.min_gain,
                           "num_ctx": cfg.llm.num_ctx, "max_tokens": cfg.llm.max_tokens,
+                          "max_answer_chars": cfg.llm.max_answer_chars,
+                          "answer_room": ANSWER_ROOM,
                           "max_reasoning_factor": cfg.llm.max_reasoning_factor})
             t0 = time.monotonic()
             eng = None

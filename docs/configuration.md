@@ -70,7 +70,7 @@ The model server and models.
 | `temperature` | float | `0.8` | sampling temperature (per-model override possible) |
 | `num_ctx` | int | `40960` | context window in tokens; the prompt gets what max_tokens leaves of it |
 | `max_tokens` | int | `24576` | tokens one answer may generate, reasoning included, with or without thinking |
-| `max_answer_chars` | int | `0` | stop longer answers early; 0 = auto (2 x program + 8000) |
+| `max_answer_chars` | int | `0` | stop longer answers early; 0 = auto (2 x program + 24000) |
 | `max_reasoning_factor` | float | `8.0` | stop an answer whose reasoning grows beyond this many times the answer limit |
 | `timeout` | float | `900.0` | seconds without data before a request fails |
 | `concurrency` | int | `1` | parallel requests; match OLLAMA_NUM_PARALLEL |

@@ -21,6 +21,10 @@ class ModelSpec:
     base_url: str | None = None  # server of this model; None: the provider's default
 
 
+#: characters an answer may use beyond twice the program, when max_answer_chars is 0
+ANSWER_ROOM = 24000
+
+
 @dataclass
 class LLMConfig:
     #: "ollama" (local), "openai" (any OpenAI-compatible server at base_url) or
@@ -34,7 +38,7 @@ class LLMConfig:
     num_ctx: int = 40960
     #: tokens one answer may generate, reasoning included, with or without thinking
     max_tokens: int = 24576
-    max_answer_chars: int = 0  # stop longer answers early; 0 = auto (2 x program + 8000)
+    max_answer_chars: int = 0  # stop longer answers early; 0 = auto (2 x program + 24000)
     #: stop an answer whose reasoning grows beyond this many times the answer limit
     max_reasoning_factor: float = 8.0
     timeout: float = 900.0  # seconds without data before a request fails

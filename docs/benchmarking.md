@@ -20,6 +20,7 @@ Every run, local or cloud, with or without reasoning, gets the same budget:
 | Early stop | after 15 model answers in a row without progress | `--patience` |
 | Progress | a new best that beats the previous best by at least 0.1% | `search.min_gain` |
 | Tokens per answer | 24,576, reasoning included, in both modes | `llm.max_tokens` |
+| Answer length | twice the program plus 24,000 characters | `llm.max_answer_chars` |
 | Reasoning | at most 8 times the answer's character limit | `llm.max_reasoning_factor` |
 | Context window | 40,960 tokens; the prompt gets what the answer leaves | `llm.num_ctx` |
 | Cost (OpenRouter) | at most $1 of requests per run | `--max-cost-usd` |
@@ -28,7 +29,7 @@ A model that keeps improving gets the full hour; a model that is stuck stops
 early, so the benchmark spends its time where it changes a result. Small
 gains do not count as progress: the timing examples measure run time, whose
 noise alone would otherwise produce tiny "new bests" that keep a stuck search
-going. The answer's character limit is twice the program plus 8,000
+going. The answer's character limit is twice the program plus 24,000
 characters; a reasoning model may think for eight times that before its answer
 counts as a runaway and is stopped.
 

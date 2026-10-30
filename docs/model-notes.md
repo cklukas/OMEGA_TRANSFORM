@@ -191,8 +191,10 @@ answer whose reasoning exceeded four times the answer limit (about 41,000
 characters in these examples): with reasoning, this stopped every call of the
 run on most examples, so the model never wrote an edit there. The same applied,
 less often, to Sarvam 30B, Underdog Saluki 27B and LFM3. The current budget
-allows eight times the answer limit (about 84,000 characters) and 24,576 tokens
-per answer, so that these models can finish their reasoning.
+allows 24,576 tokens per answer, and reasoning of eight times the answer limit,
+which is now twice the program plus 24,000 characters (about 210,000 characters
+in these examples, so the token limit is reached first). These models can
+therefore finish their reasoning.
 
 ## LFM3 1.7B (Liquid AI, USA)
 
