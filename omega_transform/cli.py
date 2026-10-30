@@ -247,8 +247,9 @@ def cmd_bench(a) -> int:
               f"${a.max_cost_usd:g} per run): {', '.join(a.openrouter)}")
     examples = [Path(e) for e in a.examples]
     hours = len(models) * len(examples) * a.minutes / 60
-    print(f"{len(models)} models x {len(examples)} examples x {a.minutes:g} min = about "
-          f"{hours:.1f} h:\n  " + "\n  ".join(m["name"] for m in models))
+    print(f"{len(models)} models x {len(examples)} examples x at most {a.minutes:g} min "
+          f"(patience {a.patience}) = at most {hours:.1f} h:\n  "
+          + "\n  ".join(m["name"] for m in models))
     if a.dry_run:
         return 0
     out = Path(a.out)
@@ -269,6 +270,7 @@ def cmd_bench(a) -> int:
                 log(f"=== skipping {m['name']} on {name}: a result exists in {out}")
                 continue
             run_bench([ex], [m], a.minutes, out, Path(a.runs), log=log, think=a.think,
+                      patience=a.patience,
                       reserve_gb=a.reserve_gb, measured=measured, max_cost_usd=a.max_cost_usd,
                       wait_ram_minutes=a.wait_ram_minutes)
             if a.report:
@@ -324,22 +326,6 @@ def cmd_sandbox(a) -> int:
     return 0 if sandbox_available() else 1
 
 
-def cmd_bench_details(a) -> int:
-    """Add the best program's lineage and diff to older benchmark result files."""
-    from .bench import add_details
-    changed = add_details(Path(a.results), Path(a.runs))
-    print(f"updated {len(changed)} result file(s); regenerate the pages with: omega docs")
-    return 0
-
-
-def cmd_bench_solutions(a) -> int:
-    """Add the initial and best program's drawable solutions to older result files."""
-    from .bench import add_solutions
-    changed = add_solutions(Path(a.results), Path(a.runs), Path(a.examples))
-    print(f"updated {len(changed)} result file(s); regenerate the pages with: omega docs")
-    return 0
-
-
 def cmd_model_releases(a) -> int:
     """Fill in the release dates of the benchmarked models."""
     from .releases import load, refresh, save
@@ -359,14 +345,14 @@ def cmd_model_releases(a) -> int:
 
 def cmd_report(a) -> int:
     from .report import write_report
-    dirs = [Path(d) for d in a.results or ["bench/results"]]
-    path = write_report(dirs, Path(a.output))
+    results = Path(a.results)
+    path = write_report(results, Path(a.output))
     print(f"wrote {path}")
     from .landscape import latest_snapshot, render
     snap = latest_snapshot(Path(a.openrouter_snapshots))
     if snap is not None:
         from .report import load_results
-        benchmarked = {r["model"] for r in load_results(dirs)}
+        benchmarked = {r["model"] for r in load_results(results)}
         page = Path(a.output).parent / "openrouter-models.md"
         page.write_text(render(snap, benchmarked), encoding="utf-8", newline="\n")
         print(f"wrote {page}")
@@ -519,7 +505,11 @@ def build_parser() -> argparse.ArgumentParser:
     bn.add_argument("--exclude", nargs="+", help="model names to leave out")
     bn.add_argument("--max-size-gb", type=float, default=22.0,
                     help="skip models whose weights exceed this size (default 22)")
-    bn.add_argument("--minutes", type=float, default=15.0, help="search budget per run")
+    bn.add_argument("--minutes", type=float, default=60.0,
+                    help="time limit per run (default 60)")
+    bn.add_argument("--patience", type=int, default=15,
+                    help="end a run after this many model answers in a row without a new "
+                         "best at least 0.1%% better (default 15; 0 = only the time limit)")
     bn.add_argument("--think", action=argparse.BooleanOptionalAction, default=False,
                     help="enable/disable model reasoning")
     bn.add_argument("--out", default="bench/results", help="result JSON directory (commit it)")
@@ -547,19 +537,6 @@ def build_parser() -> argparse.ArgumentParser:
     bn.add_argument("--dry-run", action="store_true", help="only list what would run")
     bn.set_defaults(fn=cmd_bench)
 
-    bd = sub.add_parser("bench-details", help="add the best program's lineage and diff to "
-                        "benchmark result files written before they were recorded")
-    bd.add_argument("--results", default="bench/results", help="result JSON directory")
-    bd.add_argument("--runs", default="bench/runs", help="the run directories behind them")
-    bd.set_defaults(fn=cmd_bench_details)
-
-    bs = sub.add_parser("bench-solutions", help="add the drawable solutions of the initial "
-                        "and best program to each example's best benchmark result, by "
-                        "evaluating both again (for results written before they were recorded)")
-    bs.add_argument("--results", default="bench/results", help="result JSON directory")
-    bs.add_argument("--runs", default="bench/runs", help="the run directories behind them")
-    bs.add_argument("--examples", default="examples", help="the example problems")
-    bs.set_defaults(fn=cmd_bench_solutions)
 
     mc = sub.add_parser("models", help="quick check whether installed models load and work")
     mc.add_argument("--models", nargs="+", help="only these models (default: all installed)")
@@ -587,9 +564,8 @@ def build_parser() -> argparse.ArgumentParser:
     sb.set_defaults(fn=cmd_sandbox)
 
     rpt = sub.add_parser("report", help="render bench results into the docs page")
-    rpt.add_argument("--results", action="append", metavar="DIR",
-                     help="result JSON directory (default: bench/results); repeat it to "
-                          "combine the runs of several directories, e.g. another machine's")
+    rpt.add_argument("--results", default="bench/results", metavar="DIR",
+                     help="result JSON directory (default: bench/results)")
     rpt.add_argument("-o", "--output", default="docs/benchmarks.md",
                      help="overview page to write; its sub-pages go to the directory "
                           "of the same name")

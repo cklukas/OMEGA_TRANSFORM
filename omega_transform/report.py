@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: GPL-3.0-only
 """Render committed benchmark results into documentation pages.
 
-Input: ``bench/results/*.json`` written by ``omega bench``, optionally with the
-result directories of other machines. All runs are kept: repeated runs of an
+Input: ``bench/results/*.json`` written by ``omega bench`` (result version
+``RESULT_SCHEMA``; other versions are ignored). All runs are kept: repeated runs of an
 example, model and reasoning mode are grouped per machine into means and
 deviations, and the rankings normalise shares per machine before they combine
 machines (see ``ranking`` and ``combined_ranking``). Output: an overview
@@ -28,9 +28,11 @@ HEADER = """<!-- Copyright (c) 2026 by C. Klukas -->
 
 # Model benchmarks
 
-Each row is one time-boxed OMEGA TRANSFORM search: the same example, the same
-budget and the same settings, with only the Ollama model changed. The numbers
-come from the committed result files in `bench/results/`; rerun
+Each row is one OMEGA TRANSFORM search with the same budget and settings, with
+only the model changed: at most 60 minutes, ended earlier once 15 model answers
+in a row brought no new best that is at least 0.1% better, and the same token
+limits per answer with and without reasoning, for local and cloud models alike.
+The numbers come from the committed result files in `bench/results/`; rerun
 `omega bench` to add new ones (see [Benchmarking models](benchmarking.md)).
 
 Read the results with care: one run is a single sample of a stochastic
@@ -46,50 +48,22 @@ PAGE_HEADER = """<!-- Copyright (c) 2026 by C. Klukas -->
 """
 
 
-def load_results(results_dirs) -> list[dict]:
-    """All result files of one or more directories (``bench/results`` and, say, a
-    copy of another machine's). A file name seen twice is read once. Runs listed in
-    a ``superseded.txt`` next to a directory are kept but marked ``_superseded``:
-    they still count for the best program found, not for the statistics."""
-    dirs = [results_dirs] if isinstance(results_dirs, (str, Path)) else list(results_dirs)
-    out, seen, gone = [], set(), {}
-    for d in map(Path, dirs):
-        gone.update(superseded(d.parent / "superseded.txt"))
-        for p in sorted(d.glob("*.json")):
-            if p.name in seen:
-                continue
-            try:
-                r = json.loads(p.read_text(encoding="utf-8"))
-            except json.JSONDecodeError:
-                continue
-            if not isinstance(r, dict) or "example" not in r or "model" not in r:
-                continue
-            seen.add(p.name)
-            r["_file"] = p.name
-            out.append(r)
-    for r in out:
-        if r["_file"] in gone:
-            r["_superseded"] = gone[r["_file"]]
+def load_results(results_dir) -> list[dict]:
+    """The result files of the current version (``RESULT_SCHEMA``) in ``results_dir``;
+    files of other versions and anything that is not a result are ignored."""
+    from .bench import RESULT_SCHEMA
+    out = []
+    for p in sorted(Path(results_dir).glob("*.json")):
+        try:
+            r = json.loads(p.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(r, dict) or r.get("schema") != RESULT_SCHEMA \
+                or "example" not in r or "model" not in r:
+            continue
+        r["_file"] = p.name
+        out.append(r)
     return out
-
-
-def superseded(path: Path) -> dict[str, str]:
-    """{result file name: reason} from a list of runs that later runs replace: one
-    file name per line, optionally followed by the reason; ``#`` starts a comment."""
-    if not path.exists():
-        return {}
-    out = {}
-    for line in path.read_text(encoding="utf-8").splitlines():
-        line = line.split("#", 1)[0].strip()
-        if line:
-            name, _, why = line.partition(" ")
-            out[name] = why.strip() or "superseded"
-    return out
-
-
-def current(results: list[dict]) -> list[dict]:
-    """The runs the statistics are made of: all but the superseded ones."""
-    return [r for r in results if not r.get("_superseded")]
 
 
 def label(r: dict) -> str:
@@ -188,7 +162,7 @@ def mean_sd(values) -> tuple[float | None, float | None]:
 def run_groups(results: list[dict]) -> dict[str, dict[tuple[str, str], list[dict]]]:
     """{example: {(model and variant, machine): its current runs, oldest first}}"""
     table: dict[str, dict[tuple[str, str], list[dict]]] = defaultdict(lambda: defaultdict(list))
-    for r in sorted(current(results), key=lambda r: r.get("started", "")):
+    for r in sorted(results, key=lambda r: r.get("started", "")):
         table[r["example"]][(label(r), machine(r))].append(r)
     return table
 
@@ -197,7 +171,7 @@ def run_groups(results: list[dict]) -> dict[str, dict[tuple[str, str], list[dict
 MEAN_FIELDS = ("llm_calls", "mean_llm_seconds", "attempts", "ok", "improvements",
                "minutes_to_best", "model_memory_gb", "load_seconds", "prompt_tokens_per_s",
                "gen_tokens_per_s", "median_call_seconds", "p90_call_seconds",
-               "mean_gen_tokens", "stopped_calls", "cost_usd")
+               "mean_gen_tokens", "stopped_calls", "cost_usd", "wall_minutes")
 
 
 def aggregate(runs: list[dict]) -> dict:
@@ -213,7 +187,7 @@ def aggregate(runs: list[dict]) -> dict:
     done = [r for r in runs if not failed(r)]
     row = dict((done or runs)[-1])
     row.update(runs=len(runs), failed_runs=len(runs) - len(done), machine_key=machine(runs[-1]),
-               _runs=runs)
+               _runs=runs, stop_reasons=Counter(r.get("stop_reason") or "-" for r in runs))
     if not done:
         return row
     row.pop("error", None)
@@ -285,6 +259,15 @@ def fmt_count(v) -> str:
 def fmt_runs(row: dict) -> str:
     n, bad = row.get("runs", 1), row.get("failed_runs", 0)
     return f"{n}" + (f" ({bad} failed)" if bad else "")
+
+
+def stop_reasons(row: dict) -> str:
+    """Why a run, or the runs of a group, ended: "no progress", or "no progress 2,
+    time limit 1" for repeated runs."""
+    counts = row.get("stop_reasons") or Counter([row.get("stop_reason") or "-"])
+    if len(counts) == 1 and sum(counts.values()) == 1:
+        return next(iter(counts))
+    return ", ".join(f"{k} {n}" for k, n in counts.most_common())
 
 
 def score_at(progress: list, minute: float) -> float | None:
@@ -801,7 +784,7 @@ def _groups(results: list[dict]):
     their per-machine shares; with a single machine it is that machine's ranking."""
     for title, local in (("Local models", True), ("Cloud models (OpenRouter)", False)):
         by_machine: dict[str, dict[str, list[dict]]] = defaultdict(lambda: defaultdict(list))
-        for r in sorted(current(results), key=lambda r: r.get("started", "")):
+        for r in sorted(results, key=lambda r: r.get("started", "")):
             if _is_local(r) == local:
                 by_machine[machine(r)][r["example"]].append(r)
         by_machine = {m: {x: rows for x, rows in by_x.items() if len({label(r) for r in rows}) > 1}
@@ -1000,14 +983,25 @@ def _machine(runs: list[dict]) -> str:
         for k, rs in sorted(by.items())) + ".\n")
 
 
+def _placeholder(title: str) -> str:
+    return (PAGE_HEADER + f"\n# {title}\n\nNo benchmark results have been committed yet; "
+            "this page fills in as the runs come in.\n")
+
+
 def render(results: list[dict], check: dict | None = None,
-           releases: dict[str, dict] | None = None) -> dict[str, str]:
+           releases: dict[str, dict] | None = None, examples=()) -> dict[str, str]:
     """All benchmark pages: ``benchmarks.md`` (the overview and overall ranking) and the
-    sub-pages under ``benchmarks/``, keyed by their path relative to the docs directory."""
+    sub-pages under ``benchmarks/``, keyed by their path relative to the docs directory.
+    ``examples`` (benchmark names) get a page each, a placeholder until they have results,
+    so the site's navigation can list them all from the start."""
     pages = {"benchmarks/model-check.md": model_check_page(check)}
-    runs = current(results)
+    for ex in examples:
+        pages[f"benchmarks/{ex}.md"] = _placeholder(ex)
+    runs = results
     if not runs:
         pages["benchmarks.md"] = HEADER + "\nNo benchmark results have been committed yet.\n"
+        pages["benchmarks/developers.md"] = _placeholder("Models by developer")
+        pages["benchmarks/countries.md"] = _placeholder("Models by country")
         return pages
     groups = sorted(run_groups(results).items())
     parts = [HEADER, "\n## Pages\n\n| Page | What it shows |\n|---|---|\n"]
@@ -1028,9 +1022,12 @@ def render(results: list[dict], check: dict | None = None,
         rows = [aggregate(rs) for rs in by_group.values()]
         mine = [r for rs in by_group.values() for r in rs]
         budget = max(r.get("minutes_budget", 0) for r in mine)
+        patience = max(r.get("patience", 0) for r in mine)
         models = len({lbl for lbl, _ in by_group})
         repeated = any(r["runs"] > 1 for r in rows)
-        page = [PAGE_HEADER, f"\n# {example}\n\n{models} models, {budget:g} minutes each, "
+        page = [PAGE_HEADER, f"\n# {example}\n\n{models} models, each run at most {budget:g} "
+                "minutes" + (f", ended earlier after {patience} answers in a row without "
+                             "progress" if patience else "") + "; "
                 + ("all runs per model: numbers are means over a model's runs, ± their "
                    "standard deviation, and a run whose model never answered counts with "
                    "its starting program; error bars in the charts mark ± 1 sd. "
@@ -1064,13 +1061,13 @@ def group_section(example: str, title: str, intro: str, rows: list[dict], budget
     runs_col = " | Runs" if repeated else ""
     parts = [f"\n### {title}\n\n{intro}\n\n",
              f"| Model{runs_col} | Params | Initial | Best | Gain | LLM calls | s/call | Valid "
-             "| New bests | Min to best |\n|---|" + "--:|" * repeated
-             + "---|--:|--:|--:|--:|--:|--:|--:|--:|\n"]
+             "| New bests | Min to best | Minutes | Stopped by |\n|---|" + "--:|" * repeated
+             + "---|--:|--:|--:|--:|--:|--:|--:|--:|--:|---|\n"]
     for r in rows:
         runs = f" | {fmt_runs(r)}" if repeated else ""
         if r.get("error"):
             parts.append(f"| {label(r)}{runs} | {r.get('model_params', '')} | | | | | | | | "
-                         f"failed: {r['error'][:60]} |\n")
+                         f"| | failed: {r['error'][:60]} |\n")
             continue
         gain = f"×{r['improvement']:.2f}" if r.get("improvement") else "-"
         if r.get("improvement") and r.get("improvement_sd") is not None:
@@ -1082,7 +1079,8 @@ def group_section(example: str, title: str, intro: str, rows: list[dict], budget
             + (f" ± {fmt_score(r['best_score_sd'])}" if r.get("best_score_sd") is not None else "")
             + f" | {gain} | {fmt_count(r.get('llm_calls', 0))} "
             f"| {r.get('mean_llm_seconds', 0):.0f} | {_pct(r.get('ok', 0), r.get('attempts', 0))} "
-            f"| {fmt_count(r.get('improvements', 0))} | {mtb} |\n")
+            f"| {fmt_count(r.get('improvements', 0))} | {mtb} "
+            f"| {_num(r.get('wall_minutes'))} | {stop_reasons(r)} |\n")
     if not ok_rows:
         return "".join(parts)
     labels = [chart_label(r) for r in ok_rows]
@@ -1124,18 +1122,22 @@ def group_section(example: str, title: str, intro: str, rows: list[dict], budget
     return "".join(parts)
 
 
-def write_report(results_dirs, out: Path) -> Path:
+def write_report(results_dir, out: Path) -> Path:
     """Write the overview page ``out`` and its sub-pages in the directory of the same
     name (``docs/benchmarks.md`` and ``docs/benchmarks/``); stale sub-pages are removed.
-    ``results_dirs`` is one result directory or several (their runs are combined);
-    the model check and release dates are taken from next to the first."""
-    dirs = [Path(results_dirs)] if isinstance(results_dirs, (str, Path)) \
-        else [Path(d) for d in results_dirs]
-    check_file = dirs[0].parent / "model-check.json"
+    The model check and the release dates are taken from next to ``results_dir``."""
+    results_dir = Path(results_dir)
+    check_file = results_dir.parent / "model-check.json"
     check = json.loads(check_file.read_text(encoding="utf-8")) if check_file.exists() else None
     from .releases import load
-    releases = load(dirs[0].parent / "model-releases.json")
-    pages = render(load_results(dirs), check, releases)
+    releases = load(results_dir.parent / "model-releases.json")
+    examples = []
+    for toml in sorted((results_dir.parent.parent / "examples").glob("*/omega.toml")):
+        from .config import load_config
+        cfg = load_config(toml)
+        if cfg.category and cfg.category != "Testing":
+            examples.append(cfg.name)
+    pages = render(load_results(results_dir), check, releases, examples)
     sub = out.with_suffix("")
     sub.mkdir(parents=True, exist_ok=True)
     written = set()

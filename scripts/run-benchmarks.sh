@@ -18,7 +18,8 @@
 #   scripts/run-benchmarks.sh [extra omega bench options]
 #
 # Environment:
-#   MINUTES   search budget per run (default 15)
+#   MINUTES   time limit per run (default 60)
+#   PATIENCE  end a run after this many answers in a row without progress (default 15)
 #   MODES     reasoning modes to run, in order (default "no-think think")
 #   CHECK     0 to reuse the existing bench/model-check.json (default 1: recheck)
 #   WAIT_LOAD start only once the 1-minute load average is below this (default: start now)
@@ -42,7 +43,8 @@
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
-MINUTES="${MINUTES:-15}"
+MINUTES="${MINUTES:-60}"
+PATIENCE="${PATIENCE:-15}"
 MODES="${MODES:-no-think think}"
 CHECK="${CHECK:-1}"
 WAIT_LOAD="${WAIT_LOAD:-}"
@@ -113,6 +115,7 @@ fi
 for mode in $MODES; do
   echo "##### reasoning mode: $mode  ($(date))" | tee -a "$log"
   "${keep_awake[@]}" "$PYTHON" -u -m omega_transform bench --"$mode" --minutes "$MINUTES" \
+    --patience "$PATIENCE" \
     --feasible bench/model-check.json --reserve-gb "$RESERVE_GB" \
     --wait-ram-minutes "$wait_ram_minutes" "$@" 2>&1 | tee -a "$log"
 done

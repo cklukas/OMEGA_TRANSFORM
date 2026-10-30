@@ -4,25 +4,4 @@
 
 # Models by country
 
-Each country is represented by its best model in the [overall ranking](../benchmarks.md#overall-ranking); the country of a model is that of its developer's headquarters (see [Models by developer](developers.md)). The lag is how far its share falls short of the leading country's, relative to that share. Released is the model's original publication on Hugging Face, or OpenRouter's listing date.
-
-## Local models
-
-| # | Country | Best model | Released | Developer | Share | Lag behind #1 | Models |
-|--:|---|---|---|---|--:|--:|--:|
-| 1 | USA | gpt-oss:20b (think) | 2025-08-04 | OpenAI | **75%** | – | 28 |
-| 2 | China | qwen3.8:27b-mtp-q4_K_M (no-think) | 2026-08-05 | Alibaba (Qwen) | **57%** | −24% | 14 |
-| 3 | South Korea | ingu627/exaone4.0:32b (no-think) | 2025-07-11 | LG | **39%** | −49% | 1 |
-| 4 | France | devstral-small-2:24b (no-think) | 2025-11-28 | Mistral AI | **37%** | −50% | 1 |
-| 5 | Russia | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 2025-03-28 | Yandex | **24%** | −68% | 2 |
-| 6 | India | frob/sarvam:30b (no-think) | 2026-03-03 | Sarvam AI | **14%** | −81% | 2 |
-| 7 | Switzerland | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 2025-08-13 | Swiss AI Initiative | **11%** | −85% | 1 |
-| 8 | Japan | llm-jp-4-8b-omega:q4_k_m (no-think) | 2026-03-16 | NII (LLM-jp) | **5%** | −93% | 1 |
-
-## Cloud models (OpenRouter)
-
-| # | Country | Best model | Released | Developer | Share | Lag behind #1 | Models |
-|--:|---|---|---|---|--:|--:|--:|
-| 1 | USA | nvidia/nemotron-3-ultra-550b-a55b:free (think) | 2026-06-04 | NVIDIA | **85%** | – | 4 |
-| 2 | Canada | cohere/north-mini-code:free (no-think) | 2026-06-17 | Cohere | **40%** | −53% | 2 |
-| 3 | France | poolside/laguna-s-2.1:free (no-think) | 2026-07-21 | Poolside | **36%** | −58% | 2 |
+No benchmark results have been committed yet; this page fills in as the runs come in.

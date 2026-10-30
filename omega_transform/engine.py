@@ -86,6 +86,10 @@ class Engine:
         self.stats = RunStats(started=time.time())
         self._deadline: float | None = None
         self._llm_failures = 0
+        self._since_progress = 0  # answers since the last new best that counted as progress
+        #: why the last run ended: "time limit", "no progress", "iterations", "target score",
+        #: "cost limit", "model errors" or "interrupted"
+        self.stop_reason = ""
         s = self.s
         tune = s.tune_ratio if s.sweep_budget > 0 else 0.0
         self.policy = Policy(
@@ -202,9 +206,27 @@ class Engine:
             result = self._attempt(it, island, rng, fix=result) or result
         return result
 
+    def _halt(self, reason: str) -> None:
+        """End the run; the first reason given is the one recorded."""
+        if not self.stop_reason:
+            self.stop_reason = reason
+        self._stop.set()
+
     def _expired(self) -> bool:
-        return self._stop.is_set() or (self._deadline is not None
-                                       and time.monotonic() > self._deadline)
+        if self._stop.is_set():
+            return True
+        if self._deadline is not None and time.monotonic() > self._deadline:
+            self._halt("time limit")
+            return True
+        return False
+
+    def _progress(self, child: Program, best: Program | None) -> bool:
+        """Whether ``child`` beats ``best`` by enough to reset the patience count."""
+        if not child.ok or child.score is None:
+            return False
+        if best is None or best.score is None:
+            return True
+        return child.score - best.score >= self.s.min_gain * max(abs(best.score), 1e-12)
 
     def _attempt(self, it: int, island: int, rng: random.Random,
                  fix: Program | None = None) -> Program | None:
@@ -217,7 +239,9 @@ class Engine:
                 return None
             ctx = self.build_context(island, rng) if fix is None else self.fix_context(fix, rng)
             parent = ctx.parent
-            messages = build_messages(self.cfg, ctx, char_budget=int(self.cfg.llm.num_ctx * 2.8))
+            # The prompt gets what the answer leaves of the context window.
+            room = max(self.cfg.llm.num_ctx - self.cfg.llm.max_tokens, self.cfg.llm.num_ctx // 4)
+            messages = build_messages(self.cfg, ctx, char_budget=int(room * 2.8))
             child = Program(id=pid, code=parent.code, parent_id=parent.id, island=island,
                             generation=parent.generation + 1, iteration=it,
                             mode=f"{ctx.selection}/{ctx.edit}/{ctx.style}")
@@ -392,13 +416,20 @@ class Engine:
             spent = getattr(self.llm, "cost_usd", 0.0)
             if budget and spent >= budget and not self._stop.is_set():
                 self.log(f"stopping: model requests cost ${spent:.2f}, budget ${budget:.2f}")
-                self._stop.set()
+                self._halt("cost limit")
             limit = self.cfg.llm.max_consecutive_errors
             if limit and self._llm_failures >= limit and not self._stop.is_set():
                 self.log(f"stopping: {self._llm_failures} model requests failed in a row "
                          f"({child.feedback[:120]})")
-                self._stop.set()
+                self._halt("model errors")
             best_before = self.db.best()
+            self._since_progress = 0 if self._progress(child, best_before) \
+                else self._since_progress + 1
+            if self.s.patience and self._since_progress >= self.s.patience \
+                    and not self._stop.is_set():
+                self.log(f"stopping: {self._since_progress} answers in a row without a new "
+                         f"best that is at least {self.s.min_gain:.1%} better")
+                self._halt("no progress")
             self.db.add(child)
             done = self.stats.iterations_done = self.stats.iterations_done + 1
             new_best = child.ok and best_before is not None and child.score > best_before.score
@@ -423,7 +454,7 @@ class Engine:
         t = self.s.target_score
         if t is not None and child.ok and child.score >= t:
             self.log(f"target score {t} reached")
-            self._stop.set()
+            self._halt("target score")
         return child
 
     def _update_insights(self) -> None:
@@ -460,6 +491,9 @@ class Engine:
         end_it = start_it + total
         self.stats = RunStats(started=time.time())
         self._deadline = time.monotonic() + self.s.max_minutes * 60 if self.s.max_minutes else None
+        self._since_progress = 0
+        self.stop_reason = ""
+        self._stop.clear()
         counter = iter(range(start_it, end_it))
         counter_lock = threading.Lock()
 
@@ -492,21 +526,23 @@ class Engine:
                 time.sleep(0.2)
         except KeyboardInterrupt:
             self.log("stopping: waiting for in-flight iterations (Ctrl-C again to abort)")
-            self._stop.set()
+            self._halt("interrupted")
             try:
                 pool.shutdown(wait=True)
             except KeyboardInterrupt:
                 pool.shutdown(wait=False, cancel_futures=True)
                 raise
         pool.shutdown(wait=True)
+        if not self.stop_reason:
+            self.stop_reason = "iterations"
         best = self.db.best()
-        self.log(f"done: {self.stats.iterations_done} iterations, {self.stats.improvements} new "
-                 f"bests, best #{best.id[:6] if best else '-'} score "
+        self.log(f"done ({self.stop_reason}): {self.stats.iterations_done} iterations, "
+                 f"{self.stats.improvements} new bests, best #{best.id[:6] if best else '-'} score "
                  f"{fmt_score(best.score if best else None)}")
         return best
 
     def stop(self) -> None:
-        self._stop.set()
+        self._halt("interrupted")
 
     def close(self) -> None:
         """Close the run database; a benchmark creates one engine per run."""

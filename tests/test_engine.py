@@ -89,6 +89,51 @@ class FailingModelTest(unittest.TestCase):
         self.addCleanup(eng.close)
         eng.run()
         self.assertLess(eng.db.count("llm_error"), 20)
+        self.assertEqual(eng.stop_reason, "model errors")
+
+
+class StopReasonTest(unittest.TestCase):
+    def run_toy(self, answer, **search):
+        cfg = load_config(TOY)
+        cfg.evaluator.concurrency = 1
+        for k, v in search.items():
+            setattr(cfg.search, k, v)
+        tmp = self.enterContext(tempfile.TemporaryDirectory())
+        eng = Engine(cfg, Path(tmp), llm=ScriptedLLM(answer), log=lambda s: None)
+        self.addCleanup(eng.close)
+        eng.run()
+        return eng
+
+    def test_patience_ends_a_run_without_progress(self):
+        def unchanged(messages):
+            return "IDEA: nothing\n<<<<<<< SEARCH\nnot in program\n=======\nx\n>>>>>>> REPLACE"
+        eng = self.run_toy(unchanged, iterations=100, patience=4, sweep_budget=0,
+                           insights_interval=0)
+        self.assertEqual(eng.stop_reason, "no progress")
+        # one more answer may still be in flight when the fourth ends the run
+        self.assertIn(eng.stats.iterations_done, (4, 5))
+
+    def test_progress_resets_patience(self):
+        def improving(messages):
+            # every answer returns more than any answer before it: always a new best
+            cur = messages[-1]["content"].split("## CURRENT PROGRAM", 1)[1]
+            v = int(re.search(r"    return (-?\d+)", cur).group(1))
+            improving.top += 1
+            return (f"IDEA: return {improving.top}\n<<<<<<< SEARCH\n    return {v}\n"
+                    f"=======\n    return {improving.top}\n>>>>>>> REPLACE")
+        improving.top = 1
+        eng = self.run_toy(improving, iterations=12, patience=2, sweep_budget=0,
+                           insights_interval=0, islands=1)
+        self.assertEqual(eng.stop_reason, "iterations")
+
+    def test_small_gains_do_not_count_as_progress(self):
+        eng = self.run_toy(incrementer, iterations=1)
+        best = eng.db.best()
+        from omega_transform.database import Program
+        tiny = Program(id="x", code="", score=best.score * 1.0001, status="ok")
+        self.assertFalse(eng._progress(tiny, best))
+        self.assertTrue(eng._progress(Program(id="y", code="", score=best.score * 1.01,
+                                              status="ok"), best))
 
 
 class ConfirmTest(unittest.TestCase):

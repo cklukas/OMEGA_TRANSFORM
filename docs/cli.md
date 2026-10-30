@@ -90,7 +90,7 @@ omega replay [-h] [-n N] [--ids IDS [IDS ...]] [-m MODEL] [--think | --no-think]
 Compare Ollama models on the examples (long-running).
 
 ```text
-omega bench [-h] [--examples EXAMPLES [EXAMPLES ...]] [--models MODELS [MODELS ...]] [--exclude EXCLUDE [EXCLUDE ...]] [--max-size-gb MAX_SIZE_GB] [--minutes MINUTES] [--think | --no-think] [--out OUT] [--runs RUNS] [--report REPORT] [--base-url BASE_URL] [--wait-ram-minutes WAIT_RAM_MINUTES] [--reserve-gb RESERVE_GB] [--openrouter MODEL [MODEL ...]] [--no-local] [--max-cost-usd MAX_COST_USD] [--feasible FILE] [--skip-existing] [--dry-run]
+omega bench [-h] [--examples EXAMPLES [EXAMPLES ...]] [--models MODELS [MODELS ...]] [--exclude EXCLUDE [EXCLUDE ...]] [--max-size-gb MAX_SIZE_GB] [--minutes MINUTES] [--patience PATIENCE] [--think | --no-think] [--out OUT] [--runs RUNS] [--report REPORT] [--base-url BASE_URL] [--wait-ram-minutes WAIT_RAM_MINUTES] [--reserve-gb RESERVE_GB] [--openrouter MODEL [MODEL ...]] [--no-local] [--max-cost-usd MAX_COST_USD] [--feasible FILE] [--skip-existing] [--dry-run]
 ```
 
 | Argument | Meaning |
@@ -99,7 +99,8 @@ omega bench [-h] [--examples EXAMPLES [EXAMPLES ...]] [--models MODELS [MODELS .
 | `--models` | model names or 'all' Default: `all`. |
 | `--exclude` | model names to leave out |
 | `--max-size-gb` | skip models whose weights exceed this size (default 22) Default: `22.0`. |
-| `--minutes` | search budget per run Default: `15.0`. |
+| `--minutes` | time limit per run (default 60) Default: `60.0`. |
+| `--patience` | end a run after this many model answers in a row without a new best at least 0.1%% better (default 15; 0 = only the time limit) Default: `15`. |
 | `--think / --no-think` | enable/disable model reasoning |
 | `--out` | result JSON directory (commit it) Default: `bench/results`. |
 | `--runs` | full run directories (local) Default: `bench/runs`. |
@@ -113,33 +114,6 @@ omega bench [-h] [--examples EXAMPLES [EXAMPLES ...]] [--models MODELS [MODELS .
 | `--feasible` | only models marked ok in this `omega models` result file |
 | `--skip-existing` | do not run an example with a model again when --out already holds a result of it (in the same reasoning mode) that is not an error |
 | `--dry-run` | only list what would run |
-
-## `bench-details`
-
-Add the best program's lineage and diff to benchmark result files written before they were recorded.
-
-```text
-omega bench-details [-h] [--results RESULTS] [--runs RUNS]
-```
-
-| Argument | Meaning |
-|---|---|
-| `--results` | result JSON directory Default: `bench/results`. |
-| `--runs` | the run directories behind them Default: `bench/runs`. |
-
-## `bench-solutions`
-
-Add the drawable solutions of the initial and best program to each example's best benchmark result, by evaluating both again (for results written before they were recorded).
-
-```text
-omega bench-solutions [-h] [--results RESULTS] [--runs RUNS] [--examples EXAMPLES]
-```
-
-| Argument | Meaning |
-|---|---|
-| `--results` | result JSON directory Default: `bench/results`. |
-| `--runs` | the run directories behind them Default: `bench/runs`. |
-| `--examples` | the example problems Default: `examples`. |
 
 ## `models`
 
@@ -179,7 +153,7 @@ omega report [-h] [--results DIR] [-o OUTPUT] [--openrouter-snapshots OPENROUTER
 
 | Argument | Meaning |
 |---|---|
-| `--results` | result JSON directory (default: bench/results); repeat it to combine the runs of several directories, e.g. another machine's |
+| `--results` | result JSON directory (default: bench/results) Default: `bench/results`. |
 | `-o, --output` | overview page to write; its sub-pages go to the directory of the same name Default: `docs/benchmarks.md`. |
 | `--openrouter-snapshots` | OpenRouter snapshots; the newest becomes docs/openrouter-models.md Default: `bench/openrouter`. |
 

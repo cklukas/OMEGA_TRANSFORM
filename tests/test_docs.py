@@ -25,7 +25,9 @@ class DocsTest(unittest.TestCase):
         import json
         from omega_transform.report import load_results, render
         nav = (ROOT / "ckdocs.yml").read_text(encoding="utf-8")
-        check = json.loads((ROOT / "bench" / "model-check.json").read_text(encoding="utf-8"))
+        check_file = ROOT / "bench" / "model-check.json"
+        check = json.loads(check_file.read_text(encoding="utf-8")) if check_file.exists() \
+            else None
         for rel in render(load_results(ROOT / "bench" / "results"), check):
             with self.subTest(page=rel):
                 self.assertRegex(nav, rf"- (page: )?docs/{rel}\n",

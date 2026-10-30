@@ -48,31 +48,6 @@ class BenchTest(unittest.TestCase):
         self.assertTrue(s["best_diff"].startswith("--- initial\n+++ best\n"))
         self.assertIn("+", s["best_diff"])
 
-    def test_details_are_added_to_older_result_files(self):
-        import json
-        from omega_transform.bench import add_details, run_dir_of
-        cfg = load_config(TOY)
-        cfg.search.iterations = 6
-        with tempfile.TemporaryDirectory() as tmp:
-            results, runs = Path(tmp) / "results", Path(tmp) / "runs"
-            results.mkdir()
-            f = results / "20260101-000000_toy_m_no-think.json"
-            old = {"schema": 1, "example": cfg.name, "model": "m", "variant": "no-think",
-                   "best_score": 3}
-            f.write_text(json.dumps(old), encoding="utf-8", newline="\n")
-            run_dir = run_dir_of(f, runs, old)
-            self.assertEqual(run_dir, runs / "20260101-000000" / "toy" / "m_no-think")
-            with Engine(cfg, run_dir, llm=ScriptedLLM(incrementer), log=lambda s: None) as eng:
-                eng.run()
-                best = summarize(eng.db)["best_score"]
-            self.assertEqual(add_details(results, runs, log=lambda s: None), [f])
-            r = json.loads(f.read_text(encoding="utf-8"))
-            self.assertEqual(r["schema"], 2)
-            self.assertEqual(r["best_lineage"][-1]["score"], best)
-            self.assertTrue(r["best_diff"])
-            # Files that have them already are left alone.
-            self.assertEqual(add_details(results, runs, log=lambda s: None), [])
-
     def test_inference_summary(self):
         from omega_transform.bench import inference_summary
         calls = [dict(total_seconds=t, load_seconds=l, prompt_tokens=1000, prompt_seconds=1.0,
@@ -114,13 +89,15 @@ class BenchTest(unittest.TestCase):
 
     def test_write_report_removes_stale_sub_pages(self):
         import json
+        from omega_transform.bench import RESULT_SCHEMA
         from omega_transform.report import write_report
         with tempfile.TemporaryDirectory() as tmp:
             results = Path(tmp) / "bench" / "results"
             results.mkdir(parents=True)
             (results / "1.json").write_text(json.dumps(
-                {"example": "toy", "model": "m:1", "minutes_budget": 5, "best_score": 2.0,
-                 "initial_score": 1.0, "attempts": 1, "ok": 1, "started": "1"}),
+                {"schema": RESULT_SCHEMA, "example": "toy", "model": "m:1", "minutes_budget": 5,
+                 "best_score": 2.0, "initial_score": 1.0, "attempts": 1, "ok": 1,
+                 "started": "1"}),
                 encoding="utf-8", newline="\n")
             out = Path(tmp) / "docs" / "benchmarks.md"
             (out.parent / "benchmarks").mkdir(parents=True)
@@ -234,24 +211,18 @@ class BenchTest(unittest.TestCase):
                          "AMD Ryzen 9 5950X + RTX 4090")
         self.assertEqual(machine_key(None), "unknown machine")
 
-    def test_load_results_from_several_directories(self):
+    def test_load_results_reads_only_the_current_version(self):
         import json
-        from omega_transform.report import current, load_results
+        from omega_transform.bench import RESULT_SCHEMA
+        from omega_transform.report import load_results
         with tempfile.TemporaryDirectory() as tmp:
-            mac, win = Path(tmp) / "bench" / "results", Path(tmp) / "win" / "results"
-            for d in (mac, win):
-                d.mkdir(parents=True)
+            d = Path(tmp)
             run = {"example": "toy", "model": "m", "best_score": 2.0, "initial_score": 1.0}
-            for d, name in ((mac, "1_old.json"), (mac, "2_new.json"), (win, "3_win.json"),
-                            (win, "2_new.json")):  # the same file copied twice
-                (d / name).write_text(json.dumps(run), encoding="utf-8", newline="\n")
-            (mac / "notes.json").write_text("[]", encoding="utf-8", newline="\n")
-            (mac.parent / "superseded.txt").write_text(
-                "# spoiled\n1_old.json  server stalled\n", encoding="utf-8", newline="\n")
-            results = load_results([mac, win])
-        self.assertEqual([r["_file"] for r in results], ["1_old.json", "2_new.json", "3_win.json"])
-        self.assertEqual(results[0]["_superseded"], "server stalled")
-        self.assertEqual([r["_file"] for r in current(results)], ["2_new.json", "3_win.json"])
+            for name, schema in (("1_old.json", 3), ("2_new.json", RESULT_SCHEMA)):
+                (d / name).write_text(json.dumps(dict(run, schema=schema)), encoding="utf-8",
+                                      newline="\n")
+            (d / "notes.json").write_text("[]", encoding="utf-8", newline="\n")
+            self.assertEqual([r["_file"] for r in load_results(d)], ["2_new.json"])
 
     def test_repeated_runs_mean_and_deviation(self):
         from omega_transform.report import aggregate, mean_sd, run_groups
@@ -267,7 +238,7 @@ class BenchTest(unittest.TestCase):
                              llm_calls=10, attempts=10, ok=5, statuses={"ok": 5}), **kw)
         runs = [run(2.0, "1"), run(4.0, "2", llm_calls=20),
                 dict(run(1.0, "3"), error="answer stopped: reasoning exceeded"),
-                run(9.0, "4", where=win), dict(run(5.0, "0"), _superseded="pilot")]
+                run(9.0, "4", where=win)]
         groups = run_groups(runs)["toy"]
         self.assertEqual(sorted(groups), [("a (think)", "Apple M1 Max"), ("a (think)", "i7-8700K")])
         row = aggregate(groups[("a (think)", "Apple M1 Max")])

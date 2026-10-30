@@ -99,7 +99,7 @@ def _memory(base: str, name: str) -> float | None:
     return None
 
 
-def check_model(m: dict, base: str, num_ctx: int = 32768, timeout: float = 900.0,
+def check_model(m: dict, base: str, num_ctx: int | None = None, timeout: float = 900.0,
                 min_tokens_per_s: float = 8.0, reserve_gb: float = DEFAULT_RESERVE_GB,
                 wait_ram_minutes: float = 0.0, log=None) -> ModelCheck:
     details = m.get("details") or {}
@@ -114,7 +114,9 @@ def check_model(m: dict, base: str, num_ctx: int = 32768, timeout: float = 900.0
         return res
     t0 = time.monotonic()
     cfg = LLMConfig(base_url=base, models=[ModelSpec(m["name"], provider=m.get("provider"))],
-                    num_ctx=num_ctx,
+                    # the benchmark's context window, so the memory measured is the one
+                    # a benchmark run needs
+                    num_ctx=num_ctx or LLMConfig().num_ctx,
                     timeout=timeout, temperature=0.2, max_tokens=1024, think=False,
                     keep_alive="5m")
     llm = Ensemble(cfg)

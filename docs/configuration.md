@@ -68,9 +68,10 @@ The model server and models.
 | `base_url` | str | `"http://localhost:11434"` | Ollama or OpenAI-compatible server address |
 | `models` | list[model] | `qwen3.5:latest` | models to use: names, or tables with name, weight and temperature |
 | `temperature` | float | `0.8` | sampling temperature (per-model override possible) |
-| `num_ctx` | int | `32768` | context window in tokens; also sizes the prompt budget |
-| `max_tokens` | int | `8192` | answer token limit (doubled when thinking is on) |
+| `num_ctx` | int | `40960` | context window in tokens; the prompt gets what max_tokens leaves of it |
+| `max_tokens` | int | `24576` | tokens one answer may generate, reasoning included, with or without thinking |
 | `max_answer_chars` | int | `0` | stop longer answers early; 0 = auto (2 x program + 8000) |
+| `max_reasoning_factor` | float | `8.0` | stop an answer whose reasoning grows beyond this many times the answer limit |
 | `timeout` | float | `900.0` | seconds without data before a request fails |
 | `concurrency` | int | `1` | parallel requests; match OLLAMA_NUM_PARALLEL |
 | `think` | bool or none | none | ollama "think" flag for reasoning models; None = model default |
@@ -102,6 +103,8 @@ The evolutionary search.
 |---|---|---|---|
 | `iterations` | int | `200` | model answers per run (fix-up retries not counted) |
 | `max_minutes` | float | `0.0` | 0 = unlimited |
+| `patience` | int | `0` | stop after this many model answers in a row without a new best; 0 = never |
+| `min_gain` | float | `0.001` | a new best counts as progress for patience only if it beats the previous best by at least this fraction (timing noise must not keep a stuck search going) |
 | `target_score` | float or none | none | stop when a program reaches this score |
 | `islands` | int | `4` | independent sub-populations; iterations rotate over them |
 | `migration_interval` | int | `40` | completed evaluations between ring migrations |

@@ -4,11 +4,42 @@
 # Benchmarking models
 
 The examples double as a model benchmark: `omega bench` runs the same
-time-boxed search for every installed Ollama model on every example, and
-records one result file per run. The [Model benchmarks](benchmarks.md) page
+budgeted search for every installed Ollama model (and, optionally, OpenRouter
+models) on every example, and records one result file per run. The [Model benchmarks](benchmarks.md) page
 and its sub-pages, such as the comparisons
 [by developer](benchmarks/developers.md) and [by country](benchmarks/countries.md),
 are generated from those files.
+
+## The budget of a run
+
+Every run, local or cloud, with or without reasoning, gets the same budget:
+
+| Limit | Value | Option |
+|---|---|---|
+| Time | at most 60 minutes of search | `--minutes` |
+| Early stop | after 15 model answers in a row without progress | `--patience` |
+| Progress | a new best that beats the previous best by at least 0.1% | `search.min_gain` |
+| Tokens per answer | 24,576, reasoning included, in both modes | `llm.max_tokens` |
+| Reasoning | at most 8 times the answer's character limit | `llm.max_reasoning_factor` |
+| Context window | 40,960 tokens; the prompt gets what the answer leaves | `llm.num_ctx` |
+| Cost (OpenRouter) | at most $1 of requests per run | `--max-cost-usd` |
+
+A model that keeps improving gets the full hour; a model that is stuck stops
+early, so the benchmark spends its time where it changes a result. Small
+gains do not count as progress: the timing examples measure run time, whose
+noise alone would otherwise produce tiny "new bests" that keep a stuck search
+going. The answer's character limit is twice the program plus 8,000
+characters; a reasoning model may think for eight times that before its answer
+counts as a runaway and is stopped.
+
+Each result records why its run ended (`stop_reason`): `time limit`,
+`no progress`, `cost limit`, `model errors` (five failed requests in a row),
+`interrupted`, or `error` when the run failed as a whole. The example pages
+show it next to the minutes the run took.
+
+The result files carry a version (`schema`, now 4). The report reads only the
+current version: results made under an earlier budget are not comparable and
+are not shown.
 
 ## Checking which models work
 
@@ -52,9 +83,9 @@ models:
 scripts/run-benchmarks.sh
 ```
 
-With the default 15 minutes per run this takes several hours; on macOS the
-script keeps the machine awake. `MINUTES` and `MODES` change the budget and
-the reasoning modes, and any `omega bench` option can be appended:
+With up to an hour per run this takes days for many models; on macOS the
+script keeps the machine awake. `MINUTES`, `PATIENCE` and `MODES` change the
+budget and the reasoning modes, and any `omega bench` option can be appended:
 
 ```bash
 MINUTES=5 MODES=think scripts/run-benchmarks.sh --models qwen3.5:latest --dry-run
@@ -74,13 +105,13 @@ WAIT_LOAD=32 WAIT_RAM_GB=14 RESERVE_GB=4 WAIT_HOURS=24 scripts/run-benchmarks.sh
 
 ## Running a benchmark by hand
 
-List what would run, and the expected duration:
+List what would run, and the longest it could take:
 
 ```bash
 python3 -m omega_transform bench --dry-run
 ```
 
-Run all models on both examples, 15 minutes each:
+Run all models on both examples, at most an hour each:
 
 ```bash
 python3 -m omega_transform bench
@@ -93,7 +124,8 @@ Useful options:
 | `--models A B` | Only these models (default: all installed) |
 | `--exclude A B` | Leave these out |
 | `--max-size-gb 22` | Skip models whose weights exceed this size; they would not fit next to the evaluator in memory |
-| `--minutes 15` | Search budget per run; the first call includes loading the model |
+| `--minutes 60` | Time limit per run; the first call includes loading the model |
+| `--patience 15` | End a run after this many answers in a row without progress; 0 = time limit only |
 | `--examples DIR …` | Problem directories (default: circle packing and the single-threaded matmul, whose CPU-time score stays comparable on a busy machine) |
 | `--think` | Enable the reasoning mode of models that support it |
 
@@ -105,6 +137,8 @@ fails to load is recorded as failed and the benchmark continues.
 Each run writes `bench/results/<time>_<example>_<model>.json` with:
 
 - the initial and best score, and their ratio;
+- why the run ended (`stop_reason`) and the minutes it took (`wall_minutes`),
+  with the time limit and the patience;
 - the number of model calls and their duration (mean, median, 90th percentile);
 - the model's inference speed: load time, prompt and generation tokens per
   second, and tokens per answer, as reported by Ollama for every call;
@@ -116,7 +150,8 @@ Each run writes `bench/results/<time>_<example>_<model>.json` with:
 - how the best program came about: its ancestry from the initial program on
   (minute, score, outcome, kind of change and idea per step), and its diff
   to the initial program;
-- the settings, the OMEGA TRANSFORM version and commit, and the machine.
+- the settings (including the token limits), the OMEGA TRANSFORM version and
+  commit, and the machine.
 
 The full run directories go to `bench/runs/`, which is not committed. They
 can be inspected with the usual commands (`status`, `lineage`, `stats`).
@@ -184,8 +219,7 @@ speed and memory over the completed runs, and error bars of ± 1 standard
 deviation on the score, valid-answer, call-time and speed charts (the ranking
 chart shows ± the standard error of the share). An error bar is cut off where
 the chart's range ends: at 0, and at 100 for percentages. Memory has no error
-bars, and a single run shows no deviation, so pages made only of single runs
-look as before.
+bars, and a single run shows no deviation.
 
 The error bars use the `error` line of ckdocs' XY charts (ckdocs 0.9.0 and
 later), an extension of Mermaid's `xychart-beta`: GitHub's own Markdown
@@ -194,7 +228,7 @@ preview cannot render a chart that uses it, the published site can.
 Machines are never pooled blindly. Raw scores of the timing examples
 (`sort_u32`, `prefix_sum`, `float_parse`, the matrix multiplies) depend on the
 CPU and its C library (Windows' `strtod` is about 3.9 times slower than
-macOS's), and a faster machine gets more model calls into the same 15 minutes
+macOS's), and a faster machine gets more model calls into the same time
 (about 1.4 times more on an M1 Max than on an i7-8700K with two GTX 1080 Ti).
 So each example page has one section per machine, shares are computed per
 machine against that machine's own best mean gain, and with results from more
@@ -212,28 +246,12 @@ To merge another machine's results, copy its result files into
 example and model, so they do not collide:
 
 ```bash
-scp 'workstation:V:/omega_transform/bench-win-20261021/results/*.json' bench/results/
+scp 'workstation:V:/omega_transform/bench-v4/results/*.json' bench/results/
 python3 -m omega_transform report
 python3 -m omega_transform docs
 ```
 
-Commit the copied files with the pages, as with any new results. To look at
-a combination without copying, point the report at several directories; a
-file present in more than one of them is read once, and the model check and
-release dates come from next to the first:
-
-```bash
-python3 -m omega_transform report --results bench/results --results ../win/results \
-  -o /Volumes/S8T/tmp/omega_transform/preview/benchmarks.md
-```
-
-A run that a later run replaces, because it was spoiled (the Ollama server
-stalled, the model could not be loaded) or made with an earlier engine
-before a full benchmark pass, belongs in `bench/superseded.txt`: one result
-file name per line, optionally followed by the reason. Such runs stay in
-`bench/results/` and still count for the best program found per example, but
-not for the means, deviations and rankings. Valid repetitions must not be
-listed there.
+Commit the copied files with the pages, as with any new results.
 
 ## Progress over time
 
@@ -276,21 +294,6 @@ them after committing new results:
 
 ```bash
 python3 -m omega_transform docs
-```
-
-Result files written before the ancestry and the diff were recorded can get
-them from their run directories, as long as `bench/runs/` still holds them:
-
-```bash
-python3 -m omega_transform bench-details
-```
-
-Likewise, result files written before the solutions were recorded (schema 3)
-get them by evaluating the initial and the best program of each example's best
-result again, taken from its run database:
-
-```bash
-python3 -m omega_transform bench-solutions
 ```
 
 ## Comparing settings without a full run

@@ -1,6 +1,12 @@
 # Copyright (c) 2026 by C. Klukas
 # SPDX-License-Identifier: GPL-3.0-only
-"""Model benchmark: the same time-boxed search per (model, example).
+"""Model benchmark: the same budgeted search per (model, example).
+
+Every run gets the same budget: at most ``--minutes`` (60) of search, ended earlier
+once ``--patience`` (15) model answers in a row brought no new best that is at
+least 0.1% better, and the same token limits per answer with and without
+reasoning, for local and OpenRouter models alike. Each result records why its run
+stopped.
 
 Each run's summary is written as one JSON file (``bench/results/``) meant to
 be committed: the documentation's benchmark pages are rendered from these files
@@ -29,7 +35,9 @@ from .database import Database
 from .memory import wait_until_fits
 from .modelcheck import unload
 
-RESULT_SCHEMA = 3  # 2: best_lineage and best_diff; 3: initial_solution and best_solution
+#: Version of the result files. 4: budgeted runs (time limit, patience, larger token
+#: limits) with their stop reason; the report reads no other version.
+RESULT_SCHEMA = 4
 # The best program's diff is cut after this many lines (a rewrite can be long).
 MAX_DIFF_LINES = 400
 
@@ -218,7 +226,8 @@ class BenchResult:
     model_size_gb: float
     model_params: str
     started: str
-    minutes_budget: float
+    minutes_budget: float  # the time limit
+    patience: int  # answers in a row without progress that end the run; 0 = none
     wall_minutes: float
     omega_version: str
     omega_commit: str
@@ -247,6 +256,9 @@ class BenchResult:
     initial_solution: dict | None = None
     best_solution: dict | None = None
     error: str = ""
+    #: why the run ended: "time limit", "no progress", "cost limit", "model errors",
+    #: "iterations", "interrupted" or "error" (the run failed; see ``error``)
+    stop_reason: str = ""
     # inference: how fast the model is and what it costs in memory
     model_memory_gb: float | None = None
     model_gpu_memory_gb: float | None = None
@@ -323,92 +335,12 @@ def best_details(db: Database, best, root, t0: float) -> dict:
     return {"best_lineage": steps, "best_diff": diff}
 
 
-def run_dir_of(result_file: Path, runs_dir: Path, result: dict) -> Path:
-    """Where ``run_bench`` kept the full run behind a result file."""
-    stamp = result_file.name.split("_", 1)[0]
-    return (runs_dir / stamp / slug(result["example"])
-            / f"{slug(result['model'])}_{result.get('variant', 'default')}")
-
-
-def add_details(results_dir: Path, runs_dir: Path, log=print) -> list[Path]:
-    """Give result files from before schema 2 the best program's lineage and diff,
-    from the run databases that are still there; returns the files changed."""
-    changed = []
-    for path in sorted(results_dir.glob("*.json")):
-        r = json.loads(path.read_text(encoding="utf-8"))
-        if "best_lineage" in r:
-            continue
-        db_path = run_dir_of(path, runs_dir, r) / "omega.sqlite"
-        if not db_path.exists():
-            log(f"  {path.name}: no run database at {db_path}")
-            continue
-        with Database(db_path, islands=1, features=[]) as db:
-            s = summarize(db)
-        r["best_lineage"], r["best_diff"] = s["best_lineage"], s["best_diff"]
-        r["schema"] = max(r.get("schema", 1), 2)
-        path.write_text(json.dumps(r, indent=1) + "\n", encoding="utf-8", newline="\n")
-        changed.append(path)
-        log(f"  {path.name}: {len(r['best_lineage'])} steps, "
-            f"{r['best_diff'].count(chr(10))} diff lines")
-    return changed
-
-
-def add_solutions(results_dir: Path, runs_dir: Path, examples_dir: Path,
-                  log=print) -> list[Path]:
-    """Give the best result of every example the drawable solutions of its initial and
-    best program, for results from before schema 3: both programs are taken from the
-    run database and evaluated again. Returns the files changed."""
-    import shutil
-    import tempfile
-
-    from .evaluator import Evaluator
-    from .report import best_run, load_results
-    results = load_results(results_dir)
-    changed = []
-    for toml in sorted(examples_dir.glob("*/omega.toml")):
-        cfg = load_config(toml)
-        r = best_run(results, cfg.name)
-        if r is None or (r.get("best_solution") and r.get("initial_solution")):
-            continue
-        path = results_dir / r["_file"]
-        db_path = run_dir_of(path, runs_dir, r) / "omega.sqlite"
-        if not db_path.exists():
-            log(f"  {path.name}: no run database at {db_path}")
-            continue
-        with Database(db_path, islands=1, features=[]) as db:
-            root = next((p for p in db.all_programs() if p.mode == "initial"), None)
-            best = db.best()
-        jobs = Path(tempfile.mkdtemp(prefix="solutions-", dir=runs_dir))
-        try:
-            ev = Evaluator(cfg, jobs)
-            found = {}
-            for key, prog in (("initial_solution", root), ("best_solution", best)):
-                res = ev.evaluate(prog.code, key) if prog is not None else None
-                found[key] = res.solution if res is not None and res.status == "ok" else None
-                log(f"  {path.name}: {key} " + (
-                    "none" if res is None else
-                    f"{res.status}, score {res.score}" + ("" if found[key] else ", no solution")))
-                if key == "initial_solution" and res is not None and res.status == "ok" \
-                        and not found[key]:
-                    break  # this evaluator reports no solution at all
-        finally:
-            shutil.rmtree(jobs, ignore_errors=True)
-        if not any(found.values()):
-            continue
-        d = json.loads(path.read_text(encoding="utf-8"))
-        d.update(found)
-        d["schema"] = max(d.get("schema", 1), RESULT_SCHEMA)
-        path.write_text(json.dumps(d, indent=1) + "\n", encoding="utf-8", newline="\n")
-        changed.append(path)
-    return changed
-
-
 def slug(text: str) -> str:
     return re.sub(r"[^A-Za-z0-9._-]+", "-", text).strip("-")
 
 
 def run_bench(examples: list[Path], models: list[dict], minutes: float, out_dir: Path,
-              runs_dir: Path, log=print, think: bool | None = False,
+              runs_dir: Path, log=print, think: bool | None = False, patience: int = 15,
               reserve_gb: float = 6.0, measured: dict[str, float] | None = None,
               max_cost_usd: float = 1.0, wait_ram_minutes: float = 0.0) -> list[Path]:
     from .engine import Engine
@@ -440,9 +372,11 @@ def run_bench(examples: list[Path], models: list[dict], minutes: float, out_dir:
             cfg.llm.insights_model = None
             cfg.llm.think = think
             cfg.search.max_minutes = minutes
+            cfg.search.patience = patience
             cfg.search.iterations = 100_000
             run_dir = runs_dir / stamp / slug(cfg.name) / f"{slug(m['name'])}_{variant}"
-            log(f"=== {cfg.name} with {m['name']} ({variant}) for {minutes:g} min -> {run_dir}")
+            log(f"=== {cfg.name} with {m['name']} ({variant}), at most {minutes:g} min, "
+                f"patience {patience} -> {run_dir}")
             details = m.get("details") or {}
             res = BenchResult(
                 schema=RESULT_SCHEMA, example=cfg.name, model=m["name"], variant=variant,
@@ -450,13 +384,16 @@ def run_bench(examples: list[Path], models: list[dict], minutes: float, out_dir:
                 model_size_gb=round(m.get("size", 0) / 1e9, 1),
                 model_params=details.get("parameter_size", ""),
                 started=time.strftime("%Y-%m-%dT%H:%M:%S"), minutes_budget=minutes,
-                wall_minutes=0.0, omega_version=__version__,
+                patience=patience, wall_minutes=0.0, omega_version=__version__,
                 omega_commit=git_commit(Path(__file__).parent), machine=machine_info(),
                 settings={"think": think, "islands": cfg.search.islands,
                           "llm_concurrency": cfg.llm.concurrency,
                           "eval_concurrency": cfg.evaluator.concurrency,
                           "sweep_budget": cfg.search.sweep_budget,
-                          "temperature": cfg.llm.temperature})
+                          "temperature": cfg.llm.temperature,
+                          "min_gain": cfg.search.min_gain,
+                          "num_ctx": cfg.llm.num_ctx, "max_tokens": cfg.llm.max_tokens,
+                          "max_reasoning_factor": cfg.llm.max_reasoning_factor})
             t0 = time.monotonic()
             eng = None
             try:
@@ -465,6 +402,7 @@ def run_bench(examples: list[Path], models: list[dict], minutes: float, out_dir:
                 if problems:
                     raise RuntimeError("; ".join(problems))
                 eng.run()
+                res.stop_reason = eng.stop_reason
                 memory = {} if remote else loaded_model_memory(cfg.llm.base_url, m["name"])
                 for k, v in {**summarize(eng.db), **inference_summary(eng.db.calls()),
                              **memory}.items():
@@ -477,6 +415,7 @@ def run_bench(examples: list[Path], models: list[dict], minutes: float, out_dir:
                     res.error = f"all {failed} model requests failed: {reason}"[:300]
             except Exception as e:  # noqa: BLE001 - one failing model must not stop the bench
                 res.error = f"{type(e).__name__}: {e}"[:500]
+                res.stop_reason = "error"
                 log(f"  failed: {res.error}")
             finally:
                 if eng is not None:
@@ -490,6 +429,7 @@ def run_bench(examples: list[Path], models: list[dict], minutes: float, out_dir:
                             newline="\n")
             written.append(path)
             log(f"  -> {path.name}: best {res.best_score} (x{(res.improvement or 0):.2f}), "
+                f"stopped by {res.stop_reason or '-'} after {res.wall_minutes:g} min, "
                 f"{res.llm_calls} LLM calls, {res.gen_tokens_per_s} tok/s, "
                 f"{res.model_memory_gb} GB")
     return written

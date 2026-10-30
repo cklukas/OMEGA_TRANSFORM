@@ -165,11 +165,11 @@ expect many of its answers to end as edit errors.
 `frob/sarvam-30b` passes the model check and is benchmarked, but it reasons
 before every answer even when reasoning is switched off (`think: false`).
 Ollama passes the flag on, yet the model writes a long reasoning text anyway
-and spends most of each answer on it: in the pass without reasoning, its answers
-averaged 7,500 to 8,200 generated tokens, close to or at the limit of 8,192 per
-answer. At 40 to 65 tokens per second, one model call takes two to four
-minutes, so a 15-minute run gets only five to eight calls. Its results in the
-pass without reasoning are therefore, in effect, results with reasoning.
+and spends most of each answer on it: in the earlier benchmark version (8,192
+tokens per answer without reasoning), its answers without reasoning averaged
+7,500 to 8,200 generated tokens, close to or at that limit, at 40 to 65 tokens
+per second. Its results without reasoning are therefore, in effect, results
+with reasoning; the current budget gives both modes the same 24,576 tokens.
 
 ## EXAONE 4.0 32B (LG AI Research, South Korea)
 
@@ -186,12 +186,13 @@ is therefore benchmarked only without reasoning.
 
 `nemotron-3.5-lightning:30b-mlx` works well without reasoning, but with
 reasoning switched on, its reasoning is usually longer than OMEGA TRANSFORM
-allows. The runaway guard stops an answer whose reasoning exceeds four times the
-answer limit (about 41,000 characters in these examples). In the benchmark pass
-with reasoning, this stopped every call of the run on most examples, so the
-model never wrote an edit there. Its results with reasoning therefore show the
-guard's limit more than the model's ability; its results without reasoning are
-the meaningful ones. The same applies, less often, to Sarvam 30B.
+allowed in the earlier benchmark version, where the runaway guard stopped an
+answer whose reasoning exceeded four times the answer limit (about 41,000
+characters in these examples): with reasoning, this stopped every call of the
+run on most examples, so the model never wrote an edit there. The same applied,
+less often, to Sarvam 30B, Underdog Saluki 27B and LFM3. The current budget
+allows eight times the answer limit (about 84,000 characters) and 24,576 tokens
+per answer, so that these models can finish their reasoning.
 
 ## LFM3 1.7B (Liquid AI, USA)
 

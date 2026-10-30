@@ -277,6 +277,10 @@ class Ensemble:
                 time.sleep(2 * (attempt + 1))
         raise LLMError(f"{name}: request failed after retries: {last}")
 
+    def _reasoning_limit(self, max_chars: int) -> int:
+        """Characters of reasoning allowed before an answer counts as a runaway."""
+        return int(self.cfg.max_reasoning_factor * max_chars)
+
     def _guard(self, parts: list[str], max_chars: int) -> None:
         text_len = sum(map(len, parts))
         if max_chars and text_len > max_chars:
@@ -289,9 +293,9 @@ class Ensemble:
         body = {
             "model": model, "messages": messages, "stream": True,
             "keep_alive": self.cfg.keep_alive,
-            # Reasoning tokens count against num_predict; leave room for the answer.
+            # Reasoning tokens count against num_predict: the same limit in both modes.
             "options": {"temperature": temp, "num_ctx": self.cfg.num_ctx,
-                        "num_predict": self.cfg.max_tokens * (2 if self.cfg.think else 1)},
+                        "num_predict": self.cfg.max_tokens},
         }
         if self.cfg.think is not None:
             body["think"] = self.cfg.think
@@ -307,8 +311,9 @@ class Ensemble:
                 self._guard(parts, max_chars)
             if msg.get("thinking"):
                 thinking += len(msg["thinking"])
-                if max_chars and thinking > 4 * max_chars:
-                    raise Runaway(f"reasoning exceeded {4 * max_chars} characters")
+                if max_chars and thinking > self._reasoning_limit(max_chars):
+                    raise Runaway(f"reasoning exceeded {self._reasoning_limit(max_chars)} "
+                                  "characters")
             if r.get("done"):
                 with self._lock:
                     self.tokens_in += r.get("prompt_eval_count", 0) or 0
@@ -337,7 +342,7 @@ class Ensemble:
         if not base.endswith("/v1"):
             base += "/v1"
         body = {"model": model, "messages": messages, "temperature": temp,
-                "max_tokens": self.cfg.max_tokens * (2 if self.cfg.think else 1), "stream": True,
+                "max_tokens": self.cfg.max_tokens, "stream": True,
                 "stream_options": {"include_usage": True}}
         if provider == "openrouter":
             headers["X-Title"] = "OMEGA TRANSFORM"
@@ -368,9 +373,9 @@ class Ensemble:
                     last = now
                 if think:
                     reasoning += len(think)
-                    if max_chars and reasoning > 4 * max_chars:
-                        raise Runaway(f"reasoning exceeded {4 * max_chars} characters",
-                                      "".join(parts))
+                    if max_chars and reasoning > self._reasoning_limit(max_chars):
+                        raise Runaway(f"reasoning exceeded {self._reasoning_limit(max_chars)} "
+                                      "characters", "".join(parts))
                 if piece:
                     parts.append(piece)
                     self._guard(parts, max_chars)
