@@ -25,6 +25,10 @@
    "source": "huggingface",
    "params_b": 24.0
   },
+  "dots-studio/dots-3-note-preview:free": {
+   "released": "2026-08-14",
+   "source": "openrouter"
+  },
   "frob/sarvam:30b": {
    "repo": "sarvamai/sarvam-30b",
    "released": "2026-03-03",
@@ -67,6 +71,16 @@
    "source": "huggingface",
    "params_b": 29.9
   },
+  "google/gemma-4-26b-a4b-it:free": {
+   "released": "2026-04-03",
+   "source": "openrouter",
+   "params_b": 26.0
+  },
+  "google/gemma-4-31b-it:free": {
+   "released": "2026-04-02",
+   "source": "openrouter",
+   "params_b": 31.0
+  },
   "gpt-oss:20b": {
    "repo": "openai/gpt-oss-20b",
    "released": "2025-08-04",
@@ -83,7 +97,7 @@
    "repo": "LiquidAI/LFM3-1.7B",
    "released": "2026-10-23",
    "source": "huggingface",
-   "params_b": 1.7,
+   "params_b": 1.73,
    "note": "Liquid AI's own GGUF, Q4_K_M, see docs/model-notes.md"
   },
   "ingu627/exaone4.0:32b": {
@@ -136,6 +150,11 @@
    "source": "huggingface",
    "params_b": 32.9
   },
+  "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free": {
+   "released": "2026-04-28",
+   "source": "openrouter",
+   "params_b": 30.0
+  },
   "nvidia/nemotron-3-super-120b-a12b:free": {
    "released": "2026-03-11",
    "source": "openrouter",
@@ -146,8 +165,20 @@
    "source": "openrouter",
    "params_b": 550.0
   },
+  "nvidia/nemotron-3.5-lightning:free": {
+   "released": "2026-08-11",
+   "source": "openrouter"
+  },
+  "nvidia/nemotron-3.5-super-vl:free": {
+   "released": "2026-10-15",
+   "source": "openrouter"
+  },
   "poolside/laguna-s-2.1:free": {
    "released": "2026-07-21",
+   "source": "openrouter"
+  },
+  "poolside/laguna-xs-2.1:free": {
+   "released": "2026-07-02",
    "source": "openrouter"
   },
   "qwen2.5-coder:7b": {
@@ -204,6 +235,11 @@
    "params_b": 26.9,
    "released": "2026-10-08",
    "source": "huggingface"
+  },
+  "xingchen-agi/xing4.0-29b-a4b:free": {
+   "released": "2026-10-16",
+   "source": "openrouter",
+   "params_b": 29.0
   },
   "yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest": {
    "repo": "yandex/YandexGPT-5-Lite-8B-instruct",

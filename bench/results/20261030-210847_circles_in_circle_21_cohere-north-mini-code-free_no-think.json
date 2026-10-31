@@ -1,0 +1,358 @@
+{
+ "schema": 4,
+ "example": "circles_in_circle_21",
+ "model": "cohere/north-mini-code:free",
+ "variant": "no-think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-10-30T21:08:47",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 8.7,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 3.1890454825108625,
+ "best_score": 3.96150482055081,
+ "improvement": 1.2422227410290052,
+ "llm_calls": 40,
+ "mean_llm_seconds": 12.5,
+ "attempts": 40,
+ "ok": 11,
+ "statuses": {
+  "invalid": 16,
+  "edit_error": 4,
+  "ok": 11,
+  "llm_error": 2,
+  "duplicate": 7
+ },
+ "sweeps": 5,
+ "sweep_variants": 44,
+ "improvements": 3,
+ "minutes_to_best": 6.09,
+ "best_idea": "tuned INNER_RING_RADIUS=0.45, INNER_RING_COUNT=7 on top of: Expose the inner ring radius and its count as sweepable constants to find a better inner\u2011ring configuration that maximizes sum of radii, lev",
+ "progress": [
+  [
+   0.0,
+   3.1890454825108625
+  ],
+  [
+   1.69,
+   3.566856139424064
+  ],
+  [
+   4.44,
+   3.921656413900705
+  ],
+  [
+   6.09,
+   3.96150482055081
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.1890454825108625,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 4.44,
+   "score": 3.566856139424064,
+   "model": "cohere/north-mini-code:free",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Improve sum of radii by optimizing radii iteratively with a relaxation that accounts for both wall and inter-circle constraints using a two-pass scheme, and expose ring radii as tunable constants."
+  },
+  {
+   "minutes": 5.04,
+   "score": 3.74149129216555,
+   "model": "cohere/north-mini-code:free",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Increase outer\u2011ring radius to reduce inter\u2011ring crowding and allow larger radii for both inner and outer circles, boosting total sum."
+  },
+  {
+   "minutes": 6.09,
+   "score": 3.74149129216555,
+   "model": "cohere/north-mini-code:free",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Expose the inner ring radius and its count as sweepable constants to find a better inner\u2011ring configuration that maximizes sum of radii, leveraging the proven benefit of tuning these parameters."
+  },
+  {
+   "minutes": 6.09,
+   "score": 3.96150482055081,
+   "model": "cohere/north-mini-code:free",
+   "mode": "sweep/exploit/diff/tune",
+   "status": "ok",
+   "idea": "tuned INNER_RING_RADIUS=0.45, INNER_RING_COUNT=7 on top of: Expose the inner ring radius and its count as sweepable constants to find a better inner\u2011ring configuration that maximizes sum of radii, leveraging the proven benefit of tuning these parameters."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -4,24 +4,63 @@\n import math\n \n # OMEGA-BLOCK-START\n+# Tunable radii for inner and outer rings\n+INNER_RING_RADIUS = 0.45\n+OUTER_RING_RADIUS = 0.8\n+# Number of circles on each ring (center + inner + outer)\n+INNER_RING_COUNT = 7\n+OUTER_RING_COUNT = 13\n+# Convergence and feasibility tolerances\n+EPS = 1e-12\n+MAX_ITER = 50\n+\n def construct(n=21):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit circle (center (0,0),\n     radius 1) without overlaps.\n \n-    This start places one circle at the center and two concentric rings of 7 and\n-    13 circles, all with the same radius: the largest one that keeps every pair\n-    apart and every circle inside the container.\n+    Two-stage approach:\n+      1. Place centers on two concentric rings (one at origin) with configurable radii.\n+      2. Iteratively tighten radii to respect wall and inter-circle constraints.\n     \"\"\"\n+    # Build centers: one at origin, then inner ring, then outer ring\n     centers = [(0.0, 0.0)]\n-    for count, ring in ((7, 0.35), (n - 8, 0.75)):\n-        centers += [(ring * math.cos(2 * math.pi * k / count),\n-                     ring * math.sin(2 * math.pi * k / count)) for k in range(count)]\n+    for count, radius in ((INNER_RING_COUNT, INNER_RING_RADIUS),\n+                          (OUTER_RING_COUNT, OUTER_RING_RADIUS)):\n+        centers += [(radius * math.cos(2 * math.pi * k / count),\n+                     radius * math.sin(2 * math.pi * k / count)) for k in range(count)]\n+\n+    # Initial uniform radius respecting wall and pairwise distances\n     r = min(1.0 - math.hypot(x, y) for x, y in centers)\n     for a in range(n):\n         for b in range(a + 1, n):\n             r = min(r, math.dist(centers[a], centers[b]) / 2)\n-    r *= 1 - 1e-12  # stay strictly feasible despite rounding\n-    return [(x, y, r) for x, y in centers]\n+    r = [r] * n  # convert to list for element access\n+\n+    # Iterative tightening: each pass computes new radii using current neighbours\n+    for _ in range(MAX_ITER):\n+        changed = False\n+        new_r = [0.0] * n\n+        for i in range(n):\n+            xi, yi = centers[i]\n+            # Wall limit\n+            ri = 1.0 - math.hypot(xi, yi)\n+            # Mutual distance limits with already updated neighbours and old ones\n+            for j in range(n):\n+                if i == j:\n+                    continue\n+                d = math.dist((xi, yi), (centers[j][0], centers[j][1]))\n+                ri = min(ri, d - new_r[j])\n+                ri = min(ri, d - r[j])\n+            # Apply epsilon shrink and enforce non\u2011negativity\n+            new_ri = max(ri * (1 - EPS), 0.0)\n+            if abs(new_ri - r[i]) > 1e-12:\n+                changed = True\n+            new_r[i] = new_ri\n+        r = new_r\n+        if not changed:\n+            break\n+\n+    return [(x, y, r[i]) for i, (x, y) in enumerate(centers)]\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.0,
+    0.0,
+    0.151859
+   ],
+   [
+    0.35,
+    0.0,
+    0.151859
+   ],
+   [
+    0.218221,
+    0.273641,
+    0.151859
+   ],
+   [
+    -0.077882,
+    0.341225,
+    0.151859
+   ],
+   [
+    -0.315339,
+    0.151859,
+    0.151859
+   ],
+   [
+    -0.315339,
+    -0.151859,
+    0.151859
+   ],
+   [
+    -0.077882,
+    -0.341225,
+    0.151859
+   ],
+   [
+    0.218221,
+    -0.273641,
+    0.151859
+   ],
+   [
+    0.75,
+    0.0,
+    0.151859
+   ],
+   [
+    0.664092,
+    0.348542,
+    0.151859
+   ],
+   [
+    0.426049,
+    0.617238,
+    0.151859
+   ],
+   [
+    0.090403,
+    0.744532,
+    0.151859
+   ],
+   [
+    -0.265954,
+    0.701262,
+    0.151859
+   ],
+   [
+    -0.561383,
+    0.497342,
+    0.151859
+   ],
+   [
+    -0.728206,
+    0.179487,
+    0.151859
+   ],
+   [
+    -0.728206,
+    -0.179487,
+    0.151859
+   ],
+   [
+    -0.561383,
+    -0.497342,
+    0.151859
+   ],
+   [
+    -0.265954,
+    -0.701262,
+    0.151859
+   ],
+   [
+    0.090403,
+    -0.744532,
+    0.151859
+   ],
+   [
+    0.426049,
+    -0.617238,
+    0.151859
+   ],
+   [
+    0.664092,
+    -0.348542,
+    0.151859
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.0,
+    0.0,
+    0.275
+   ],
+   [
+    0.45,
+    0.0,
+    0.175
+   ],
+   [
+    0.28057,
+    0.351824,
+    0.175
+   ],
+   [
+    -0.100134,
+    0.438718,
+    0.175
+   ],
+   [
+    -0.405436,
+    0.195248,
+    0.175
+   ],
+   [
+    -0.405436,
+    -0.195248,
+    0.175
+   ],
+   [
+    -0.100134,
+    -0.438718,
+    0.175
+   ],
+   [
+    0.28057,
+    -0.351824,
+    0.175
+   ],
+   [
+    0.8,
+    0.0,
+    0.175
+   ],
+   [
+    0.708365,
+    0.371779,
+    0.2
+   ],
+   [
+    0.454452,
+    0.658387,
+    0.177442
+   ],
+   [
+    0.096429,
+    0.794167,
+    0.2
+   ],
+   [
+    -0.283684,
+    0.748013,
+    0.182905
+   ],
+   [
+    -0.598809,
+    0.530498,
+    0.2
+   ],
+   [
+    -0.776753,
+    0.191453,
+    0.182905
+   ],
+   [
+    -0.776753,
+    -0.191453,
+    0.196337
+   ],
+   [
+    -0.598809,
+    -0.530498,
+    0.186568
+   ],
+   [
+    -0.283684,
+    -0.748013,
+    0.184658
+   ],
+   [
+    0.096429,
+    -0.794167,
+    0.198247
+   ],
+   [
+    0.454452,
+    -0.658387,
+    0.177442
+   ],
+   [
+    0.708365,
+    -0.371779,
+    0.2
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 10.3,
+ "p90_call_seconds": 22.2,
+ "prompt_tokens_per_s": 5335.4,
+ "gen_tokens_per_s": 101.5,
+ "mean_prompt_tokens": 3291,
+ "mean_gen_tokens": 1056,
+ "stopped_calls": 2,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

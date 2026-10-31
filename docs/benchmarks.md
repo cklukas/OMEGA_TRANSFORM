@@ -24,7 +24,13 @@ it was doing, so machines are compared through their own shares only.
 | [Models by developer](benchmarks/developers.md) | who develops each model, the ranking grouped by developer, and each developer's progress over time |
 | [Models by country](benchmarks/countries.md) | the best model of each country |
 | [Model check](benchmarks/model-check.md) | which installed models were usable before the benchmark |
-| [bin_packing_1d](benchmarks/bin_packing_1d.md) | 3 models on this example: scores, speed, memory and progress over time |
+| [bin_packing_1d](benchmarks/bin_packing_1d.md) | 31 models on this example: scores, speed, memory and progress over time |
+| [circles_in_circle_21](benchmarks/circles_in_circle_21.md) | 31 models on this example: scores, speed, memory and progress over time |
+| [feature_engineering](benchmarks/feature_engineering.md) | 23 models on this example: scores, speed, memory and progress over time |
+| [float_parse_single_thread](benchmarks/float_parse_single_thread.md) | 11 models on this example: scores, speed, memory and progress over time |
+| [heilbronn_13](benchmarks/heilbronn_13.md) | 11 models on this example: scores, speed, memory and progress over time |
+| [log_compressor](benchmarks/log_compressor.md) | 31 models on this example: scores, speed, memory and progress over time |
+| [max_cut](benchmarks/max_cut.md) | 5 models on this example: scores, speed, memory and progress over time |
 
 Machine: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz (MS-7A98), 12 cores, 64 GB, 2x NVIDIA GeForce GTX 1080 Ti, 11264 MiB.
 
@@ -36,14 +42,55 @@ Scores of different examples cannot be added up (a matrix multiply gains ×80, a
 
 | # | Model | Released | Share of best gain | Geometric-mean gain | Wins | No gain | Runs | Examples |
 |--:|---|---|--:|--:|--:|--:|--:|--:|
-| 1 | richardyoung/frognano-4b-2609:latest (no-think) | 2026-09-17 | **100%** | ×1.20 | 1 | 0 | 1 | 1 |
-| 2 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | 2026-10-23 | **1%** | ×1.00 | 0 | 0 | 1 | 1 |
-| 3 | nemotron-3-nano:4b (no-think) | 2026-03-07 | **0%** | ×1.00 | 0 | 1 | 1 | 1 |
+| 1 | gpt-oss:20b (no-think) | 2025-08-04 | **99%** | ×1.58 | 1 | 0 | 3 | 3 |
+| 2 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 2026-04-21 | **85%** | ×1.43 | 2 | 0 | 3 | 3 |
+| 3 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | 2025-07-28 | **80%** | ×1.38 | 0 | 0 | 3 | 3 |
+| 4 | gemma4:12b-it-qat (no-think) | 2026-05-23 | **78%** | ×1.36 | 0 | 0 | 4 | 4 |
+| 5 | glm-4.7-flash:latest (no-think) | 2026-01-19 | **74%** | ×1.39 | 0 | 0 | 3 | 3 |
+| 6 | gemma4:e2b (no-think) | 2026-03-02 | **72%** | ×1.37 | 0 | 0 | 4 | 4 |
+| 7 | gemma4:latest (no-think) | 2026-03-02 | **66%** | ×1.32 | 0 | 0 | 4 | 4 |
+| 8 | gemma4:26b-a4b-it-qat (no-think) | 2026-03-11 | **66%** | ×1.30 | 0 | 0 | 3 | 3 |
+| 9 | underdog-saluki-27b:iq2-mix (no-think) | 2026-10-08 | **58%** | ×1.28 | 0 | 0 | 3 | 3 |
+| 10 | qwen3.5:latest (no-think) | 2026-02-27 | **54%** | ×1.28 | 0 | 1 | 4 | 4 |
+| 11 | llm-jp-4-8b-omega:q4_k_m (no-think) | 2026-03-16 | **50%** | ×1.14 | 1 | 2 | 4 | 4 |
+| 12 | gemma4:e4b-it-qat (no-think) | 2026-03-02 | **50%** | ×1.24 | 0 | 1 | 4 | 4 |
+| 13 | frob/sarvam:30b (no-think) | 2026-03-03 | **43%** | ×1.09 | 0 | 1 | 3 | 3 |
+| 14 | richardyoung/frognano-4b-2609:latest (no-think) | 2026-09-17 | **38%** | ×1.25 | 0 | 0 | 4 | 4 |
+| 15 | qwen3-coder:30b (no-think) | 2025-07-31 | **33%** | ×1.06 | 0 | 2 | 3 | 3 |
+| 16 | qwen2.5-coder:7b (no-think) | 2024-09-17 | **33%** | ×1.09 | 0 | 2 | 4 | 4 |
+| 17 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 2025-08-13 | **30%** | ×1.25 | 0 | 2 | 4 | 4 |
+| 18 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 2025-03-28 | **17%** | ×1.06 | 0 | 2 | 4 | 4 |
+| 19 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | 2026-10-23 | **8%** | ×1.03 | 0 | 3 | 4 | 4 |
+| 20 | nemotron-3-nano:4b (no-think) | 2026-03-07 | **0%** | ×1.00 | 0 | 4 | 4 | 4 |
 
 ```mermaid
 xychart-beta
     title "Overall, local: mean share of the best gain (%)"
-    x-axis ["frognano-4b-2609:latest (no-think)", "LFM3-1.7B-GGUF:Q4_K_M (no-think)", "nemotron-3-nano:4b (no-think)"]
-    y-axis "% of the best gain" 0 --> 110
-    bar [100, 1.025, 0]
+    x-axis ["gpt-oss:20b (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "gemma4:12b-it-qat (no-think)", "glm-4.7-flash:latest (no-think)", "gemma4:e2b (no-think)", "gemma4:latest (no-think)", "gemma4:26b-a4b-it-qat (no-think)", "underdog-saluki-27b:iq2-mix (no-think)", "qwen3.5:latest (no-think)", "llm-jp-4-8b-omega:q4_k_m (no-think)", "gemma4:e4b-it-qat (no-think)", "sarvam:30b (no-think)", "frognano-4b-2609:latest (no-think)", "qwen3-coder:30b (no-think)", "qwen2.5-coder:7b (no-think)", "apertus:8b-instruct-2509-q4_k_m (no-think)", "YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think)", "LFM3-1.7B-GGUF:Q4_K_M (no-think)", "nemotron-3-nano:4b (no-think)"]
+    y-axis "% of the best gain" 0 --> 108.4
+    bar [98.56, 85.22, 79.81, 78.27, 74.01, 72.34, 65.64, 65.52, 58.44, 53.53, 49.72, 49.69, 42.5, 37.57, 32.96, 32.71, 30.42, 17.05, 7.812, 0]
+```
+
+### Cloud models (OpenRouter)
+
+| # | Model | Released | Share of best gain | Geometric-mean gain | Wins | No gain | Runs | Examples |
+|--:|---|---|--:|--:|--:|--:|--:|--:|
+| 1 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | 2026-06-04 | **85%** | ×1.54 | 4 | 1 | 7 | 7 |
+| 2 | dots-studio/dots-3-note-preview:free (no-think) | 2026-08-14 | **75%** | ×1.35 | 1 | 0 | 7 | 7 |
+| 3 | poolside/laguna-s-2.1:free (no-think) | 2026-07-21 | **65%** | ×1.28 | 2 | 2 | 7 | 7 |
+| 4 | poolside/laguna-xs-2.1:free (no-think) | 2026-07-02 | **63%** | ×1.26 | 0 | 2 | 6 | 6 |
+| 5 | cohere/north-mini-code:free (no-think) | 2026-06-17 | **60%** | ×1.36 | 0 | 2 | 7 | 7 |
+| 6 | nvidia/nemotron-3.5-super-vl:free (no-think) | 2026-10-15 | **57%** | ×1.40 | 0 | 1 | 7 (1 failed) | 7 |
+| 7 | nvidia/nemotron-3.5-lightning:free (no-think) | 2026-08-11 | **30%** | ×1.09 | 0 | 4 | 6 | 6 |
+| 8 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | 2026-04-28 | **24%** | ×1.07 | 0 | 4 | 6 | 6 |
+| 9 | xingchen-agi/xing4.0-29b-a4b:free (no-think) | 2026-10-16 | **3%** | ×1.01 | 0 | 5 | 6 (2 failed) | 6 |
+| 10= | google/gemma-4-26b-a4b-it:free (no-think) | 2026-04-03 | **0%** | ×1.00 | 0 | 6 | 6 (6 failed) | 6 |
+| 10= | google/gemma-4-31b-it:free (no-think) | 2026-04-02 | **0%** | ×1.00 | 0 | 6 | 6 (6 failed) | 6 |
+
+```mermaid
+xychart-beta
+    title "Overall, cloud: mean share of the best gain (%)"
+    x-axis ["nemotron-3-ultra-550b-a55b:free (no-think)", "dots-3-note-preview:free (no-think)", "laguna-s-2.1:free (no-think)", "laguna-xs-2.1:free (no-think)", "north-mini-code:free (no-think)", "nemotron-3.5-super-vl:free (no-think)", "nemotron-3.5-lightning:free (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think)", "xing4.0-29b-a4b:free (no-think)", "gemma-4-26b-a4b-it:free (no-think)", "gemma-4-31b-it:free (no-think)"]
+    y-axis "% of the best gain" 0 --> 93.25
+    bar [84.78, 75.21, 65.23, 62.64, 60, 57.18, 30.32, 24.41, 3.499, 0, 0]
 ```

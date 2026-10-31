@@ -1,0 +1,330 @@
+{
+ "schema": 4,
+ "example": "circles_in_circle_21",
+ "model": "gemma4:e2b",
+ "variant": "no-think",
+ "model_size_gb": 4.6,
+ "model_params": "4.6B",
+ "started": "2026-10-30T12:51:19",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 5.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "17e553b",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 3.1890454825108625,
+ "best_score": 3.6446234085838434,
+ "improvement": 1.142857142857143,
+ "llm_calls": 30,
+ "mean_llm_seconds": 9.5,
+ "attempts": 30,
+ "ok": 8,
+ "statuses": {
+  "invalid": 12,
+  "ok": 8,
+  "edit_error": 10
+ },
+ "sweeps": 2,
+ "sweep_variants": 12,
+ "improvements": 1,
+ "minutes_to_best": 2.71,
+ "best_idea": "tuned RING1_R_FACTOR=0.4, RING2_R_FACTOR=0.75 on top of: Introduce a sweep over the radius distribution parameters to explore better geometric configurations for the 21 circles.",
+ "progress": [
+  [
+   0.0,
+   3.1890454825108625
+  ],
+  [
+   2.71,
+   3.6446234085838434
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.1890454825108625,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.71,
+   "score": 3.1890454825108625,
+   "model": "gemma4:e2b",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Introduce a sweep over the radius distribution parameters to explore better geometric configurations for the 21 circles."
+  },
+  {
+   "minutes": 2.71,
+   "score": 3.6446234085838434,
+   "model": "gemma4:e2b",
+   "mode": "sweep/exploit/diff/tune",
+   "status": "ok",
+   "idea": "tuned RING1_R_FACTOR=0.4, RING2_R_FACTOR=0.75 on top of: Introduce a sweep over the radius distribution parameters to explore better geometric configurations for the 21 circles."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -12,10 +12,22 @@\n     13 circles, all with the same radius: the largest one that keeps every pair\n     apart and every circle inside the container.\n     \"\"\"\n+    # Define parameters for the two rings based on N=21 structure\n+    RING1_COUNT = 7\n+    RING1_R_FACTOR = 0.4\n+    RING2_COUNT = n - 8 # 13\n+    RING2_R_FACTOR = 0.75\n+\n+    # Attempt to place circles in a roughly circular pattern, aiming for larger radii first.\n+    # Start with the center circle, then distribute others to maximize separation.\n+    \n     centers = [(0.0, 0.0)]\n-    for count, ring in ((7, 0.35), (n - 8, 0.75)):\n-        centers += [(ring * math.cos(2 * math.pi * k / count),\n-                     ring * math.sin(2 * math.pi * k / count)) for k in range(count)]\n+    \n+    # Use the fixed distribution structure, but let the engine explore parameter sensitivity\n+    for count, ring_factor in [(RING1_COUNT, RING1_R_FACTOR), (RING2_COUNT, RING2_R_FACTOR)]:\n+        centers += [(ring_factor * math.cos(2 * math.pi * k / count),\n+                     ring_factor * math.sin(2 * math.pi * k / count)) for k in range(count)]\n+                     \n     r = min(1.0 - math.hypot(x, y) for x, y in centers)\n     for a in range(n):\n         for b in range(a + 1, n):\n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.0,
+    0.0,
+    0.151859
+   ],
+   [
+    0.35,
+    0.0,
+    0.151859
+   ],
+   [
+    0.218221,
+    0.273641,
+    0.151859
+   ],
+   [
+    -0.077882,
+    0.341225,
+    0.151859
+   ],
+   [
+    -0.315339,
+    0.151859,
+    0.151859
+   ],
+   [
+    -0.315339,
+    -0.151859,
+    0.151859
+   ],
+   [
+    -0.077882,
+    -0.341225,
+    0.151859
+   ],
+   [
+    0.218221,
+    -0.273641,
+    0.151859
+   ],
+   [
+    0.75,
+    0.0,
+    0.151859
+   ],
+   [
+    0.664092,
+    0.348542,
+    0.151859
+   ],
+   [
+    0.426049,
+    0.617238,
+    0.151859
+   ],
+   [
+    0.090403,
+    0.744532,
+    0.151859
+   ],
+   [
+    -0.265954,
+    0.701262,
+    0.151859
+   ],
+   [
+    -0.561383,
+    0.497342,
+    0.151859
+   ],
+   [
+    -0.728206,
+    0.179487,
+    0.151859
+   ],
+   [
+    -0.728206,
+    -0.179487,
+    0.151859
+   ],
+   [
+    -0.561383,
+    -0.497342,
+    0.151859
+   ],
+   [
+    -0.265954,
+    -0.701262,
+    0.151859
+   ],
+   [
+    0.090403,
+    -0.744532,
+    0.151859
+   ],
+   [
+    0.426049,
+    -0.617238,
+    0.151859
+   ],
+   [
+    0.664092,
+    -0.348542,
+    0.151859
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.0,
+    0.0,
+    0.173553
+   ],
+   [
+    0.4,
+    0.0,
+    0.173553
+   ],
+   [
+    0.249396,
+    0.312733,
+    0.173553
+   ],
+   [
+    -0.089008,
+    0.389971,
+    0.173553
+   ],
+   [
+    -0.360388,
+    0.173553,
+    0.173553
+   ],
+   [
+    -0.360388,
+    -0.173553,
+    0.173553
+   ],
+   [
+    -0.089008,
+    -0.389971,
+    0.173553
+   ],
+   [
+    0.249396,
+    -0.312733,
+    0.173553
+   ],
+   [
+    0.75,
+    0.0,
+    0.173553
+   ],
+   [
+    0.664092,
+    0.348542,
+    0.173553
+   ],
+   [
+    0.426049,
+    0.617238,
+    0.173553
+   ],
+   [
+    0.090403,
+    0.744532,
+    0.173553
+   ],
+   [
+    -0.265954,
+    0.701262,
+    0.173553
+   ],
+   [
+    -0.561383,
+    0.497342,
+    0.173553
+   ],
+   [
+    -0.728206,
+    0.179487,
+    0.173553
+   ],
+   [
+    -0.728206,
+    -0.179487,
+    0.173553
+   ],
+   [
+    -0.561383,
+    -0.497342,
+    0.173553
+   ],
+   [
+    -0.265954,
+    -0.701262,
+    0.173553
+   ],
+   [
+    0.090403,
+    -0.744532,
+    0.173553
+   ],
+   [
+    0.426049,
+    -0.617238,
+    0.173553
+   ],
+   [
+    0.664092,
+    -0.348542,
+    0.173553
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 0.9,
+ "model_gpu_memory_gb": 0.9,
+ "context_length": 40960,
+ "load_seconds": 16.5,
+ "median_call_seconds": 7.9,
+ "p90_call_seconds": 17.8,
+ "prompt_tokens_per_s": 2141.4,
+ "gen_tokens_per_s": 117.8,
+ "mean_prompt_tokens": 3204,
+ "mean_gen_tokens": 638,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -65,4 +65,206 @@ def run():
 
 ## Benchmark results
 
-This example has not been benchmarked yet. See [Benchmarking models](../benchmarking.md) for how to run it.
+The best result so far comes from **nvidia/nemotron-3-ultra-550b-a55b:free (no-think)**, run through OpenRouter on 2026-10-30: a score of **4.09612** (×1.28 the starting program's 3.18905), reached after 6.81 of 60 minutes with 22 model requests.
+
+What the starting program produces (left) and what the best program by nvidia/nemotron-3-ultra-550b-a55b:free (no-think) produces (right):
+
+![circles_in_circle: the starting program's solution and the best one](../assets/examples/circles_in_circle.svg)
+
+### How it got there
+
+The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.
+
+| Step | Minute | Score | Kind | Idea |
+|--:|--:|--:|---|---|
+| 0 | 0.0 | 3.18905 | start | initial program |
+| 1 | 1.8 | invalid | edit | Replace the static ring construction with a physics-based simulation that starts from a dense hexagonal packing, then iteratively resolves overlaps and boundary violations while gradually increasing radii to maximize the sum. |
+| 2 | 6.8 | 4.09612 | fix-up | Add the missing `import random` statement at the top of the OMEGA-BLOCK to fix the NameError and allow the physics simulation to run correctly. |
+
+### The best program
+
+What changed compared with the starting program:
+
+```diff
+--- initial
++++ best
+@@ -4,24 +4,126 @@
+ import math
+ 
+ # OMEGA-BLOCK-START
++# Physics simulation parameters
++N_STEPS = 2000
++INITIAL_RADIUS = 0.15
++RADIUS_GROWTH_RATE = 0.0005
++REPULSION_STRENGTH = 0.5
++BOUNDARY_STRENGTH = 1.0
++DAMPING = 0.9
++RANDOM_SEED = 42
++
++import random
++
+ def construct(n=21):
+-    """Return a list of n circles (x, y, r) inside the unit circle (center (0,0),
+-    radius 1) without overlaps.
++    """Return a list of n circles (x, y, r) inside the unit circle using physics simulation."""
++    random.seed(RANDOM_SEED)
++    
++    # Initialize circles in a hexagonal grid pattern inside the unit circle
++    circles = []
++    r = INITIAL_RADIUS
++    spacing = 2.2 * r
++    
++    # Generate hexagonal grid positions
++    positions = []
++    y = -0.9
++    row = 0
++    while y <= 0.9 and len(positions) < n:
++        x_start = -0.9 + (spacing * 0.5 if row % 2 == 1 else 0)
++        x = x_start
++        while x <= 0.9 and len(positions) < n:
++            if x*x + y*y <= (1 - r)**2:
++                positions.append([x, y])
++            x += spacing
++        y += spacing * 0.866  # sqrt(3)/2
++        row += 1
++    
++    # If not enough positions, fill randomly
++    while len(positions) < n:
++        angle = random.random() * 2 * math.pi
++        radius = random.random() * (1 - r)
++        positions.append([radius * math.cos(angle), radius * math.sin(angle)])
++    
++    # Initialize circles with positions and velocities
++    circles = [[pos[0], pos[1], r, 0.0, 0.0] for pos in positions[:n]]  # x, y, r, vx, vy
++    
++    # Physics simulation loop
++    for step in range(N_STEPS):
++        # Grow radii gradually
++        growth = RADIUS_GROWTH_RATE * (1.0 - step / N_STEPS * 0.5)
++        for c in circles:
++            c[2] += growth
++        
++        # Compute forces
++        for i in range(n):
++            xi, yi, ri, vxi, vyi = circles[i]
++            fx, fy = 0.0, 0.0
++            
++            # Boundary repulsion
++            dist_center = math.hypot(xi, yi)
++            max_r = 1.0 - dist_center
++            if ri > max_r:
++                # Push toward center
++                if dist_center > 1e-6:
++                    fx -= BOUNDARY_STRENGTH * (ri - max_r) * xi / dist_center
++                    fy -= BOUNDARY_STRENGTH * (ri - max_r) * yi / dist_center
++                else:
++                    fx -= BOUNDARY_STRENGTH * (ri - max_r) * random.uniform(-1, 1)
++                    fy -= BOUNDARY_STRENGTH * (ri - max_r) * random.uniform(-1, 1)
++            
++            # Circle-circle repulsion
++            for j in range(i + 1, n):
++                xj, yj, rj, _, _ = circles[j]
++                dx = xj - xi
++                dy = yj - yi
++                dist = math.hypot(dx, dy)
++                min_dist = ri + rj
++                
++                if dist < min_dist and dist > 1e-6:
++                    overlap = min_dist - dist
++                    force = REPULSION_STRENGTH * overlap / dist
++                    fx -= force * dx
++                    fy -= force * dy
++                    circles[j][3] += force * dx
++                    circles[j][4] += force * dy
++            
++            # Update velocity and position
++            circles[i][3] = (vxi + fx) * DAMPING
++            circles[i][4] = (vyi + fy) * DAMPING
++            circles[i][0] += circles[i][3]
++            circles[i][1] += circles[i][4]
++        
++        # Shrink radii that violate constraints
++        for i in range(n):
++            xi, yi, ri = circles[i][0], circles[i][1], circles[i][2]
++            # Boundary constraint
++            max_r = 1.0 - math.hypot(xi, yi)
++            if ri > max_r:
++                circles[i][2] = max_r * 0.999
++            
++            # Pairwise constraints
++            for j in range(i + 1, n):
++                xj, yj, rj = circles[j][0], circles[j][1], circles[j][2]
++                dist = math.hypot(xj - xi, yj - yi)
++                max_ri = dist - rj
++                if ri > max_ri:
++                    circles[i][2] = max(max_ri * 0.999, 0.0)
++    
++    # Final feasibility pass: ensure all constraints satisfied
++    for _ in range(10):
++        for i in range(n):
++            xi, yi, ri = circles[i][0], circles[i][1], circles[i][2]
++            max_r = 1.0 - math.hypot(xi, yi)
++            for j in range(n):
++                if i == j:
++                    continue
++                xj, yj, rj = circles[j][0], circles[j][1], circles[j][2]
++                dist = math.hypot(xj - xi, yj - yi)
++                max_r = min(max_r, dist - rj)
++            circles[i][2] = max(max_r * 0.999999, 0.0)
++    
++    return [(c[0], c[1], c[2]) for c in circles]
+ 
+-    This start places one circle at the center and two concentric rings of 7 and
+-    13 circles, all with the same radius: the largest one that keeps every pair
+-    apart and every circle inside the container.
+-    """
+-    centers = [(0.0, 0.0)]
+-    for count, ring in ((7, 0.35), (n - 8, 0.75)):
+-        centers += [(ring * math.cos(2 * math.pi * k / count),
+-                     ring * math.sin(2 * math.pi * k / count)) for k in range(count)]
+-    r = min(1.0 - math.hypot(x, y) for x, y in centers)
+-    for a in range(n):
+-        for b in range(a + 1, n):
+-            r = min(r, math.dist(centers[a], centers[b]) / 2)
+-    r *= 1 - 1e-12  # stay strictly feasible despite rounding
+-    return [(x, y, r) for x, y in centers]
+ # OMEGA-BLOCK-END
+```
+
+### All models
+
+One run per model and reasoning mode; the [model benchmarks](../benchmarks/circles_in_circle_21.md) page has speed, memory and progress over time.
+
+| Model | Where | Best | Gain | Minutes to best | New bests |
+|---|---|--:|--:|--:|--:|
+| nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 4.09612 | ×1.28 | 6.8 | 1 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 4.06244 | ×1.27 | 55.5 | 3 |
+| dots-studio/dots-3-note-preview:free (no-think) | cloud | 4.03488 | ×1.27 | 12.0 | 8 |
+| gpt-oss:20b (no-think) | local | 4.03445 | ×1.27 | 22.1 | 6 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 4.01734 | ×1.26 | 6.6 | 6 |
+| poolside/laguna-xs-2.1:free (no-think) | cloud | 3.96887 | ×1.24 | 13.1 | 3 |
+| cohere/north-mini-code:free (no-think) | cloud | 3.9615 | ×1.24 | 6.1 | 3 |
+| gemma4:12b-it-qat (no-think) | local | 3.95426 | ×1.24 | 9.4 | 2 |
+| poolside/laguna-s-2.1:free (no-think) | cloud | 3.95262 | ×1.24 | 20.3 | 3 |
+| glm-4.7-flash:latest (no-think) | local | 3.78 | ×1.19 | 8.6 | 3 |
+| gemma4:26b-a4b-it-qat (no-think) | local | 3.73964 | ×1.17 | 2.6 | 1 |
+| gemma4:e2b (no-think) | local | 3.64462 | ×1.14 | 2.7 | 1 |
+| nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | 3.58559 | ×1.12 | 29.4 | 6 |
+| gemma4:latest (no-think) | local | 3.57134 | ×1.12 | 1.7 | 1 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | 3.55408 | ×1.11 | 53.7 | 9 |
+| richardyoung/frognano-4b-2609:latest (no-think) | local | 3.46239 | ×1.09 | 5.4 | 2 |
+| frob/sarvam:30b (no-think) | local | 3.43893 | ×1.08 | 16.9 | 1 |
+| nemotron-3-nano:4b (no-think) | local | 3.18905 | ×1.00 | - | 0 |
+| qwen2.5-coder:7b (no-think) | local | 3.18905 | ×1.00 | - | 0 |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | 3.18905 | ×1.00 | - | 0 |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | 3.18905 | ×1.00 | - | 0 |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | local | 3.18905 | ×1.00 | - | 0 |
+| gemma4:e4b-it-qat (no-think) | local | 3.18905 | ×1.00 | - | 0 |
+| qwen3-coder:30b (no-think) | local | 3.18905 | ×1.00 | - | 0 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | 3.18905 | ×1.00 | - | 0 |
+| qwen3.5:latest (no-think) | local | 3.18905 | ×1.00 | - | 0 |
+| nvidia/nemotron-3.5-lightning:free (no-think) | cloud | 3.18905 | ×1.00 | - | 0 |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | 3.18905 | ×1.00 | - | 0 |
+| xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
+| google/gemma-4-26b-a4b-it:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
+| google/gemma-4-31b-it:free (no-think) | cloud | | | | failed: all 6 model requests failed: google/gemma-4-31b-it:free … |

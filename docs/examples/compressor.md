@@ -71,4 +71,277 @@ def roundtrip(data: bytes) -> tuple[bytes, bytes]:
 
 ## Benchmark results
 
-This example has not been benchmarked yet. See [Benchmarking models](../benchmarking.md) for how to run it.
+The best result so far comes from **gpt-oss:20b (no-think)**, run locally with Ollama on 2026-10-31: a score of **29.6153** (×2.62 the starting program's 11.2861), reached after 18.28 of 60 minutes with 26 model requests.
+
+What the starting program produces (left) and what the best program by gpt-oss:20b (no-think) produces (right):
+
+![compressor: the starting program's solution and the best one](../assets/examples/compressor.svg)
+
+### How it got there
+
+The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.
+
+| Step | Minute | Score | Kind | Idea |
+|--:|--:|--:|---|---|
+| 0 | 0.0 | 11.2861 | start | initial program |
+| 1 | 3.5 | 26.1073 | edit | Replace the plain zlib compressor with a field‑aware log compressor that parses Apache log lines into columns, compresses each column separately with LZMA, and falls back to raw LZMA when parsing fails, guaranteeing a higher compression ratio while preserving … |
+| 2 | 18.3 | 29.6153 | edit | Use dictionary encoding for the highly repetitive IP, referer, and user‑agent fields, compress each dictionary and index list with raw‑format LZMA, and store a bitmask to describe which fields use dictionary encoding. This removes the per‑column LZMA header … |
+
+### The best program
+
+What changed compared with the starting program:
+
+```diff
+--- initial
++++ best
+@@ -10,23 +10,199 @@
+ import zlib
+ 
+ # OMEGA-BLOCK-START
++import re
++import lzma
++
++# LZMA preset – can be swept by the evaluator
++LZMA_PRESET = lzma.PRESET_EXTREME
++
++# Varint helpers for compact length encoding
++def _varint_encode(n: int) -> bytes:
++    out = bytearray()
++    while n >= 0x80:
++        out.append((n & 0x7F) | 0x80)
++        n >>= 7
++    out.append(n)
++    return bytes(out)
++
++def _varint_decode(data: bytes, pos: int):
++    n = 0
++    shift = 0
++    while True:
++        b = data[pos]
++        pos += 1
++        n |= (b & 0x7F) << shift
++        if not (b & 0x80):
++            break
++        shift += 7
++    return n, pos
++
++def _raw_lzma_compress(data: bytes) -> bytes:
++    return lzma.compress(data, format=lzma.FORMAT_RAW,
++                         filters=[{"id": lzma.FILTER_LZMA2, "preset": LZMA_PRESET}])
++
++def _raw_lzma_decompress(data: bytes) -> bytes:
++    return lzma.decompress(data, format=lzma.FORMAT_RAW,
++                           filters=[{"id": lzma.FILTER_LZMA2, "preset": LZMA_PRESET}])
++
++def _decode_varint_list(data: bytes, N: int) -> list[int]:
++    pos = 0
++    res = []
++    for _ in range(N):
++        n, pos = _varint_decode(data, pos)
++        res.append(n)
++    return res
++
++# Helper: join byte strings with NUL and LZMA‑compress
++def _join_and_lzma(lst):
++    joined = b'\x00'.join(lst)
++    return lzma.compress(joined, format=lzma.FORMAT_RAW,
++                        filters=[{"id": lzma.FILTER_LZMA2, "preset": LZMA_PRESET}])
++
++# Structured compressor for Apache access logs
+ def compress(data: bytes) -> bytes:
+-    """Compress arbitrary bytes losslessly and return the compressed blob.
+-
+-    decompress(compress(data)) must equal data exactly for EVERY input, including
+-    b"" and non-text bytes. The main input is an access log, one request per line:
+-      IP - - [DD/Mon/YYYY:HH:MM:SS +0000] "METHOD PATH HTTP/1.1" STATUS SIZE "REFERER" "USER-AGENT"
+-    Only the Python standard library may be used (zlib, lzma, bz2, struct, re, ...).
+-    Compress plus decompress of the main input must stay within 20 CPU seconds.
+-
+-    Current method: plain zlib at level 1.
+-    """
+-    return zlib.compress(data, 1)
+-
++    """Lossless compressor with field‑aware encoding for Apache access logs."""
++    try:
++        lines = data.splitlines()
++        N = len(lines)
++
++        # Detect newline type and trailing newline
++        if b'\r\n' in data:
++            newline_type = 2
++            newline = b'\r\n'
++        else:
++            newline_type = 1
++            newline = b'\n'
++        last_line_has_newline = data.endswith(b'\n') or data.endswith(b'\r\n')
++
++        pat = re.compile(
++            r'(?P<ip>\S+) - - \[(?P<time>[^]]+)\] "(?P<request>[^"]*)" '
++            r'(?P<status>\d{3}) (?P<size>\S+) "(?P<referer>[^"]*)" "(?P<ua>[^"]*)"'
++        )
++
++        ips = []
++        times = []
++        requests = []
++        statuses = []
++        sizes = []
++        referers = []
++        uas = []
++
++        for line in lines:
++            m = pat.match(line.decode('utf-8', errors='replace'))
++            if not m:
++                raise ValueError("Line parse failure")
++            ips.append(m.group('ip').encode('utf-8'))
++            times.append(m.group('time').encode('utf-8'))
++            requests.append(m.group('request').encode('utf-8'))
++            statuses.append(m.group('status').encode('utf-8'))
++            sizes.append(m.group('size').encode('utf-8'))
++            referers.append(m.group('referer').encode('utf-8'))
++            uas.append(m.group('ua').encode('utf-8'))
++
++        # Dictionary-encoded fields: IP, REFERER, USER-AGENT
++        dict_fields = {0, 5, 6}  # indices of fields to dict-encode
++        bitmask = 0
++        col_compressed_list = []
++
++        field_lists = [ips, times, requests, statuses, sizes, referers, uas]
++
++        for idx, values in enumerate(field_lists):
++            if idx in dict_fields:
++                bitmask |= (1 << idx)
++                # build dictionary and indices
++                dict_vals = []
++                dict_index = {}
++                indices = []
++                for v in values:
++                    if v not in dict_index:
++                        dict_index[v] = len(dict_vals)
++                        dict_vals.append(v)
++                    indices.append(dict_index[v])
++                dict_bytes = b'\x00'.join(dict_vals)
++                idx_bytes = bytearray()
++                for i in indices:
++                    idx_bytes += _varint_encode(i)
++                col_compressed_list.append(_raw_lzma_compress(dict_bytes))
++                col_compressed_list.append(_raw_lzma_compress(idx_bytes))
++            else:
++                col_compressed_list.append(_raw_lzma_compress(b'\x00'.join(values)))
++
++        # Build blob
++        blob = bytearray()
++        blob.append(0x01)  # structured mode flag
++        blob += _varint_encode(N)
++        blob.append(newline_type)
++        blob.append(1 if last_line_has_newline else 0)
++        blob.append(bitmask)
++        for col in col_compressed_list:
++            blob += _varint_encode(len(col))
++            blob += col
++        return bytes(blob)
++    except Exception:
++        return b'\x00' + lzma.compress(data, preset=LZMA_PRESET)
+ 
+ def decompress(blob: bytes) -> bytes:
+-    """Invert compress() exactly."""
+-    return zlib.decompress(blob)
++    """Inverse of compress, handling structured and raw modes."""
++    if not blob:
++        return b''
++    header = blob[0]
++    if header == 0x01:
++        try:
++            pos = 1
++            N, pos = _varint_decode(blob, pos)
++            newline_type = blob[pos]
++            pos += 1
++            last_line_flag = blob[pos]
++            pos += 1
++            bitmask = blob[pos]
++            pos += 1
++            newline = b'\r\n' if newline_type == 2 else b'\n'
++            last_line_has_newline = bool(last_line_flag)
++
++            field_lists = []
++            for idx in range(7):
++                if (bitmask >> idx) & 1:
++                    # dict encoded: read dict and indices
++                    l, pos = _varint_decode(blob, pos)
++                    dict_col = blob[pos:pos+l]
++                    pos += l
++                    l2, pos = _varint_decode(blob, pos)
++                    idx_col = blob[pos:pos+l2]
++                    pos += l2
++                    dict_vals = _raw_lzma_decompress(dict_col).split(b'\x00')
++                    idx_bytes = _raw_lzma_decompress(idx_col)
++                    indices = _decode_varint_list(idx_bytes, N)
++                    field_lists.append([dict_vals[i] for i in indices])
++                else:
++                    l, pos = _varint_decode(blob, pos)
++                    col_data = blob[pos:pos+l]
++                    pos += l
++                    field_lists.append(_raw_lzma_decompress(col_data).split(b'\x00'))
++
++            ips, times, requests, statuses, sizes, referers, uas = field_lists
++
++            out = bytearray()
++            for i in range(N):
++                line = (
++                    ips[i].decode('utf-8') + ' - - [' + times[i].decode('utf-8') + '] "' +
++                    requests[i].decode('utf-8') + '" ' + statuses[i].decode('utf-8') + ' ' +
++                    sizes[i].decode('utf-8') + ' "' + referers[i].decode('utf-8') + '" "' +
++                    uas[i].decode('utf-8') + '"'
++                )
++                out += line.encode('utf-8')
++                if i < N - 1:
++                    out += newline
++                else:
++                    if last_line_has_newline:
++                        out += newline
++            return bytes(out)
++        except Exception:
++            return lzma.decompress(blob[1:])
++    elif header == 0x00:
++        return lzma.decompress(blob[1:])
++    else:
++        return lzma.decompress(blob)
+ # OMEGA-BLOCK-END
+```
+
+### All models
+
+One run per model and reasoning mode; the [model benchmarks](../benchmarks/log_compressor.md) page has speed, memory and progress over time.
+
+| Model | Where | Best | Gain | Minutes to best | New bests |
+|---|---|--:|--:|--:|--:|
+| gpt-oss:20b (no-think) | local | 29.6153 | ×2.62 | 18.3 | 3 |
+| poolside/laguna-s-2.1:free (no-think) | cloud | 21.5508 | ×1.91 | 2.2 | 1 |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | 21.4903 | ×1.90 | 1.1 | 1 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 21.4903 | ×1.90 | 23.4 | 3 |
+| gemma4:e2b (no-think) | local | 21.4570 | ×1.90 | 1.4 | 2 |
+| poolside/laguna-xs-2.1:free (no-think) | cloud | 21.4570 | ×1.90 | 0.1 | 1 |
+| glm-4.7-flash:latest (no-think) | local | 21.4560 | ×1.90 | 19.2 | 2 |
+| richardyoung/frognano-4b-2609:latest (no-think) | local | 19.6626 | ×1.74 | 2.1 | 1 |
+| qwen3.5:latest (no-think) | local | 19.6626 | ×1.74 | 1.1 | 2 |
+| gemma4:12b-it-qat (no-think) | local | 19.6626 | ×1.74 | 6.6 | 1 |
+| gemma4:latest (no-think) | local | 19.6617 | ×1.74 | 1.1 | 1 |
+| dots-studio/dots-3-note-preview:free (no-think) | cloud | 19.6617 | ×1.74 | 4.6 | 1 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 19.6617 | ×1.74 | 4.5 | 1 |
+| gemma4:e4b-it-qat (no-think) | local | 17.6320 | ×1.56 | 1.4 | 1 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | 17.6320 | ×1.56 | 8.7 | 1 |
+| gemma4:26b-a4b-it-qat (no-think) | local | 17.6313 | ×1.56 | 11.0 | 1 |
+| nemotron-3-nano:4b (no-think) | local | 11.2861 | ×1.00 | - | 0 |
+| qwen2.5-coder:7b (no-think) | local | 11.2861 | ×1.00 | - | 0 |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | 11.2861 | ×1.00 | - | 0 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | 11.2861 | ×1.00 | - | 0 |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | local | 11.2861 | ×1.00 | - | 0 |
+| cohere/north-mini-code:free (no-think) | cloud | 11.2861 | ×1.00 | - | 0 |
+| nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | | | | failed: all 5 model requests failed … |
+| nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 11.2861 | ×1.00 | - | 0 |
+| nvidia/nemotron-3.5-lightning:free (no-think) | cloud | 11.2861 | ×1.00 | - | 0 |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | 11.2861 | ×1.00 | - | 0 |
+| xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 11.2861 | ×1.00 | - | 0 |
+| google/gemma-4-26b-a4b-it:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
+| google/gemma-4-31b-it:free (no-think) | cloud | | | | failed: all 6 model requests failed: google/gemma-4-31b-it:free … |
+| qwen3-coder:30b (no-think) | local | 11.2861 | ×1.00 | - | 0 |
+| frob/sarvam:30b (no-think) | local | 11.2861 | ×1.00 | - | 0 |

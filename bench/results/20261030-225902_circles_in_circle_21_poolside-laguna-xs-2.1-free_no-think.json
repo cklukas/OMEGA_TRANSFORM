@@ -1,0 +1,335 @@
+{
+ "schema": 4,
+ "example": "circles_in_circle_21",
+ "model": "poolside/laguna-xs-2.1:free",
+ "variant": "no-think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-10-30T22:59:02",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 24.8,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 3.1890454825108625,
+ "best_score": 3.9688677182621874,
+ "improvement": 1.2445315502798473,
+ "llm_calls": 33,
+ "mean_llm_seconds": 39.3,
+ "attempts": 33,
+ "ok": 19,
+ "statuses": {
+  "ok": 19,
+  "llm_error": 7,
+  "edit_error": 1,
+  "duplicate": 1,
+  "invalid": 4,
+  "timeout": 1
+ },
+ "sweeps": 2,
+ "sweep_variants": 31,
+ "improvements": 3,
+ "minutes_to_best": 13.14,
+ "best_idea": "Replace the equal-radius hexagonal pattern with a simulated annealing optimizer that starts from random centers and iteratively improves them using a feasible-radius projection step.",
+ "progress": [
+  [
+   0.0,
+   3.1890454825108625
+  ],
+  [
+   0.47,
+   3.4134527017922123
+  ],
+  [
+   5.37,
+   3.883545038489724
+  ],
+  [
+   13.14,
+   3.9688677182621874
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.1890454825108625,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 13.14,
+   "score": 3.9688677182621874,
+   "model": "poolside/laguna-xs-2.1:free",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Replace the equal-radius hexagonal pattern with a simulated annealing optimizer that starts from random centers and iteratively improves them using a feasible-radius projection step."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -4,24 +4,87 @@\n import math\n \n # OMEGA-BLOCK-START\n+import random\n+import math\n+\n+def compute_feasible_radii(centers, n):\n+    \"\"\"Compute max feasible radius for each circle given centers.\"\"\"\n+    radii = [1.0 - math.sqrt(xi*xi + yi*yi) for xi, yi in centers]\n+    for _ in range(100):\n+        changed = False\n+        for i in range(n):\n+            xi, yi = centers[i]\n+            max_r = 1.0 - math.sqrt(xi*xi + yi*yi)\n+            for j in range(n):\n+                if i != j and radii[j] > 0:\n+                    xj, yj = centers[j]\n+                    d = math.sqrt((xi-xj)**2 + (yi-yj)**2)\n+                    max_r = min(max_r, d - radii[j])\n+            max_r = max(0.0, max_r)\n+            if abs(radii[i] - max_r) > 1e-12:\n+                radii[i] = max_r\n+                changed = True\n+        if not changed:\n+            break\n+    return radii\n+\n def construct(n=21):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit circle (center (0,0),\n-    radius 1) without overlaps.\n-\n-    This start places one circle at the center and two concentric rings of 7 and\n-    13 circles, all with the same radius: the largest one that keeps every pair\n-    apart and every circle inside the container.\n-    \"\"\"\n+    radius 1) without overlaps.\"\"\"\n+    random.seed(42)\n+    \n+    # Initialize centers on two rings\n     centers = [(0.0, 0.0)]\n     for count, ring in ((7, 0.35), (n - 8, 0.75)):\n-        centers += [(ring * math.cos(2 * math.pi * k / count),\n-                     ring * math.sin(2 * math.pi * k / count)) for k in range(count)]\n-    r = min(1.0 - math.hypot(x, y) for x, y in centers)\n-    for a in range(n):\n-        for b in range(a + 1, n):\n-            r = min(r, math.dist(centers[a], centers[b]) / 2)\n-    r *= 1 - 1e-12  # stay strictly feasible despite rounding\n-    return [(x, y, r) for x, y in centers]\n+        for k in range(count):\n+            angle = 2 * math.pi * k / count\n+            centers.append((ring * math.cos(angle), ring * math.sin(angle)))\n+    \n+    best_centers = centers[:]\n+    best_radii = compute_feasible_radii(centers, n)\n+    best_sum = sum(best_radii)\n+    \n+    TEMP_START = 0.15\n+    TEMP_END = 1e-6\n+    N_ITER = 1500\n+    \n+    for iteration in range(N_ITER):\n+        t = iteration / N_ITER\n+        temp = TEMP_START * (1 - t) + TEMP_END * t\n+        \n+        # Copy best with some probability\n+        if random.random() < 0.3:\n+            centers = best_centers[:]\n+            radii = best_radii[:]\n+        else:\n+            centers = [(c[0] + random.gauss(0, temp*0.1), \n+                       c[1] + random.gauss(0, temp*0.1)) for c in best_centers]\n+            radii = compute_feasible_radii(centers, n)\n+        \n+        current_sum = sum(radii)\n+        \n+        if current_sum > best_sum:\n+            best_sum = current_sum\n+            best_centers = centers[:]\n+            best_radii = radii[:]\n+        \n+        # Perturb a random circle\n+        idx = random.randint(0, n-1)\n+        old_c = centers[idx]\n+        new_x = old_c[0] + random.gauss(0, temp * 0.05)\n+        new_y = old_c[1] + random.gauss(0, temp * 0.05)\n+        \n+        centers[idx] = (new_x, new_y)\n+        new_radii = compute_feasible_radii(centers, n)\n+        new_sum = sum(new_radii)\n+        \n+        if new_sum > current_sum or random.random() < math.exp((new_sum - current_sum) / max(temp, 1e-10)):\n+            radii = new_radii\n+        else:\n+            centers[idx] = old_c\n+    \n+    radii = compute_feasible_radii(best_centers, n)\n+    return [(best_centers[i][0], best_centers[i][1], radii[i] * (1 - 1e-10)) for i in range(n)]\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.0,
+    0.0,
+    0.151859
+   ],
+   [
+    0.35,
+    0.0,
+    0.151859
+   ],
+   [
+    0.218221,
+    0.273641,
+    0.151859
+   ],
+   [
+    -0.077882,
+    0.341225,
+    0.151859
+   ],
+   [
+    -0.315339,
+    0.151859,
+    0.151859
+   ],
+   [
+    -0.315339,
+    -0.151859,
+    0.151859
+   ],
+   [
+    -0.077882,
+    -0.341225,
+    0.151859
+   ],
+   [
+    0.218221,
+    -0.273641,
+    0.151859
+   ],
+   [
+    0.75,
+    0.0,
+    0.151859
+   ],
+   [
+    0.664092,
+    0.348542,
+    0.151859
+   ],
+   [
+    0.426049,
+    0.617238,
+    0.151859
+   ],
+   [
+    0.090403,
+    0.744532,
+    0.151859
+   ],
+   [
+    -0.265954,
+    0.701262,
+    0.151859
+   ],
+   [
+    -0.561383,
+    0.497342,
+    0.151859
+   ],
+   [
+    -0.728206,
+    0.179487,
+    0.151859
+   ],
+   [
+    -0.728206,
+    -0.179487,
+    0.151859
+   ],
+   [
+    -0.561383,
+    -0.497342,
+    0.151859
+   ],
+   [
+    -0.265954,
+    -0.701262,
+    0.151859
+   ],
+   [
+    0.090403,
+    -0.744532,
+    0.151859
+   ],
+   [
+    0.426049,
+    -0.617238,
+    0.151859
+   ],
+   [
+    0.664092,
+    -0.348542,
+    0.151859
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    -0.005984,
+    -0.019855,
+    0.227993
+   ],
+   [
+    0.388915,
+    -0.049318,
+    0.166955
+   ],
+   [
+    0.319898,
+    0.324335,
+    0.213019
+   ],
+   [
+    -0.093789,
+    0.410397,
+    0.209526
+   ],
+   [
+    -0.361973,
+    0.148223,
+    0.165518
+   ],
+   [
+    -0.377551,
+    -0.199989,
+    0.183041
+   ],
+   [
+    -0.113334,
+    -0.428832,
+    0.153964
+   ],
+   [
+    0.215877,
+    -0.364099,
+    0.181551
+   ],
+   [
+    0.790906,
+    0.031888,
+    0.182544
+   ],
+   [
+    0.719614,
+    0.369233,
+    0.162252
+   ],
+   [
+    0.531255,
+    0.635622,
+    0.163152
+   ],
+   [
+    0.165313,
+    0.755334,
+    0.221874
+   ],
+   [
+    -0.22774,
+    0.794857,
+    0.173161
+   ],
+   [
+    -0.536123,
+    0.55816,
+    0.215587
+   ],
+   [
+    -0.755189,
+    0.183238,
+    0.218644
+   ],
+   [
+    -0.741889,
+    -0.213305,
+    0.178122
+   ],
+   [
+    -0.566218,
+    -0.5074,
+    0.164444
+   ],
+   [
+    -0.325825,
+    -0.734853,
+    0.166412
+   ],
+   [
+    0.0518,
+    -0.774849,
+    0.213326
+   ],
+   [
+    0.41973,
+    -0.730813,
+    0.15723
+   ],
+   [
+    0.647791,
+    -0.376879,
+    0.250553
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 29.2,
+ "p90_call_seconds": 71.0,
+ "prompt_tokens_per_s": 4415.4,
+ "gen_tokens_per_s": 62.7,
+ "mean_prompt_tokens": 3562,
+ "mean_gen_tokens": 1021,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

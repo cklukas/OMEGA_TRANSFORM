@@ -16,7 +16,7 @@ Usage measures popularity, not quality: it also reflects price, free periods and
 | 4 | xiaomi/mimo-v2.6-flash | 10,931 | 132.5 | 0.14 | 0.28 | 0.142 | - | yes | 1050k |
 | 5 | tencent/hy4-preview | 7,963 | 71.4 | 0.83 | 2.50 | 0.850 | - | yes | 1048k |
 | 6 | openai/gpt-6-luna | 6,939 | 323.0 | 0.10 | 0.50 | 0.111 | - | yes | 1050k |
-| 7 | nvidia/nemotron-3-ultra-550b-a55b:free | 6,384 | 47.4 | 0.00 | 0.00 | 0.000 | yes | yes | 262k |
+| 7 | nvidia/nemotron-3-ultra-550b-a55b:free ★ | 6,384 | 47.4 | 0.00 | 0.00 | 0.000 | yes | yes | 262k |
 | 8 | deepseek/deepseek-v4-flash-0731 | 5,211 | 399.9 | 0.01 | 1.28 | 0.058 | - | yes | 1048k |
 | 9 | anthropic/claude-opus-5.5 | 4,316 | 39.2 | 4.00 | 20.00 | 4.176 | - | yes | 1000k |
 | 10 | z-ai/glm-5.3 | 3,422 | 68.6 | 0.04 | 4.80 | 0.119 | - | yes | 1048k |
@@ -30,6 +30,8 @@ Usage measures popularity, not quality: it also reflects price, free periods and
 | 18 | openai/gpt-6.1-sol | 1,846 | 38.5 | 2.00 | 10.00 | 2.118 | - | yes | 1050k |
 | 19 | meta/muse-spark-1.3-contributor | 1,796 | 42.4 | 0.10 | 0.20 | 0.102 | - | yes | 1048k |
 | 20 | anthropic/claude-sonnet-5.5 | 1,714 | 28.0 | 2.00 | 10.00 | 2.113 | - | yes | 1000k |
+
+★ benchmarked by OMEGA TRANSFORM, see [Model benchmarks](benchmarks.md).
 
 ```mermaid
 xychart-beta

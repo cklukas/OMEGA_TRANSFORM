@@ -1,0 +1,375 @@
+{
+ "schema": 4,
+ "example": "circles_in_circle_21",
+ "model": "gpt-oss:20b",
+ "variant": "no-think",
+ "model_size_gb": 13.8,
+ "model_params": "20.9B",
+ "started": "2026-10-30T14:41:43",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 36.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "17e553b",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 3.1890454825108625,
+ "best_score": 4.034452777009344,
+ "improvement": 1.265097283539794,
+ "llm_calls": 27,
+ "mean_llm_seconds": 78.2,
+ "attempts": 27,
+ "ok": 21,
+ "statuses": {
+  "edit_error": 2,
+  "ok": 21,
+  "duplicate": 3,
+  "llm_error": 1
+ },
+ "sweeps": 10,
+ "sweep_variants": 138,
+ "improvements": 6,
+ "minutes_to_best": 22.14,
+ "best_idea": "tuned HILL_ITER=30, HILL_TRIALS=15, STEP_SIZE=0.02 on top of: Increase the depth and breadth of hill\u2011climbing and use a larger step size to explore more center perturbations, improving the sum of radi",
+ "progress": [
+  [
+   0.0,
+   3.1890454825108625
+  ],
+  [
+   5.58,
+   3.4162577202148334
+  ],
+  [
+   6.46,
+   3.5713428876381323
+  ],
+  [
+   6.46,
+   3.903757378115858
+  ],
+  [
+   12.89,
+   4.010484572308815
+  ],
+  [
+   17.99,
+   4.020010553209666
+  ],
+  [
+   22.14,
+   4.034452777009344
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.1890454825108625,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 6.46,
+   "score": 3.5713428876381323,
+   "model": "gpt-oss:20b",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Compute a separate radius for each circle based on its distance to the wall and to its nearest neighbor, using tunable ring radii to increase the overall sum."
+  },
+  {
+   "minutes": 6.46,
+   "score": 3.903757378115858,
+   "model": "gpt-oss:20b",
+   "mode": "sweep/best/diff/refine",
+   "status": "ok",
+   "idea": "tuned INNER_RING_RADIUS=0.4, OUTER_RING_RADIUS=0.8 on top of: Compute a separate radius for each circle based on its distance to the wall and to its nearest neighbor, using tunable ring radii to increase the overall sum."
+  },
+  {
+   "minutes": 12.89,
+   "score": 4.010484572308815,
+   "model": "gpt-oss:20b",
+   "mode": "explore/diff/refine",
+   "status": "ok",
+   "idea": "Add a small hill\u2011climbing perturbation of circle centers to increase the sum of radii while keeping the solution feasible."
+  },
+  {
+   "minutes": 22.14,
+   "score": 4.020010553209666,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Increase the depth and breadth of hill\u2011climbing and use a larger step size to explore more center perturbations, improving the sum of radii while staying within the unit circle."
+  },
+  {
+   "minutes": 22.14,
+   "score": 4.034452777009344,
+   "model": "gpt-oss:20b",
+   "mode": "sweep/exploit/diff/refine",
+   "status": "ok",
+   "idea": "tuned HILL_ITER=30, HILL_TRIALS=15, STEP_SIZE=0.02 on top of: Increase the depth and breadth of hill\u2011climbing and use a larger step size to explore more center perturbations, improving the sum of radii while staying within the unit circle."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -4,24 +4,59 @@\n import math\n \n # OMEGA-BLOCK-START\n+import random\n+random.seed(42)\n+INNER_RING_RADIUS = 0.4\n+OUTER_RING_RADIUS = 0.8\n+HILL_ITER = 30\n+HILL_TRIALS = 15\n+STEP_SIZE = 0.02\n+\n+def compute_radii(centers):\n+    \"\"\"Compute maximum radii for fixed centers using pairwise limits.\"\"\"\n+    n = len(centers)\n+    r = [1.0 - math.hypot(x, y) for x, y in centers]\n+    for i in range(n):\n+        xi, yi = centers[i]\n+        for j in range(i + 1, n):\n+            xj, yj = centers[j]\n+            d = math.hypot(xi - xj, yi - yj)\n+            r[i] = min(r[i], d / 2)\n+            r[j] = min(r[j], d / 2)\n+    eps = 1e-12\n+    return [ri * (1 - eps) for ri in r]\n+\n def construct(n=21):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit circle (center (0,0),\n-    radius 1) without overlaps.\n-\n-    This start places one circle at the center and two concentric rings of 7 and\n-    13 circles, all with the same radius: the largest one that keeps every pair\n-    apart and every circle inside the container.\n+    radius 1) without overlaps.  Uses a small hill\u2011climbing perturbation\n+    of the centers after the initial concentric placement.\n     \"\"\"\n     centers = [(0.0, 0.0)]\n-    for count, ring in ((7, 0.35), (n - 8, 0.75)):\n-        centers += [(ring * math.cos(2 * math.pi * k / count),\n-                     ring * math.sin(2 * math.pi * k / count)) for k in range(count)]\n-    r = min(1.0 - math.hypot(x, y) for x, y in centers)\n-    for a in range(n):\n-        for b in range(a + 1, n):\n-            r = min(r, math.dist(centers[a], centers[b]) / 2)\n-    r *= 1 - 1e-12  # stay strictly feasible despite rounding\n-    return [(x, y, r) for x, y in centers]\n+    inner_count = 7\n+    outer_count = n - 1 - inner_count\n+    for count, ring_radius in ((inner_count, INNER_RING_RADIUS),\n+                               (outer_count, OUTER_RING_RADIUS)):\n+        centers += [(ring_radius * math.cos(2 * math.pi * k / count),\n+                     ring_radius * math.sin(2 * math.pi * k / count))\n+                    for k in range(count)]\n+    radii = compute_radii(centers)\n+    best_sum = sum(radii)\n+    # simple hill climbing on centers\n+    for _ in range(HILL_ITER):\n+        for i, (x, y) in enumerate(centers):\n+            for _ in range(HILL_TRIALS):\n+                dx = random.uniform(-STEP_SIZE, STEP_SIZE)\n+                dy = random.uniform(-STEP_SIZE, STEP_SIZE)\n+                nx, ny = x + dx, y + dy\n+                if math.hypot(nx, ny) >= 1.0:\n+                    continue\n+                new_centers = centers.copy()\n+                new_centers[i] = (nx, ny)\n+                new_radii = compute_radii(new_centers)\n+                new_sum = sum(new_radii)\n+                if new_sum > best_sum + 1e-12:\n+                    centers, radii, best_sum = new_centers, new_radii, new_sum\n+    return [(x, y, r) for (x, y), r in zip(centers, radii)]\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.0,
+    0.0,
+    0.151859
+   ],
+   [
+    0.35,
+    0.0,
+    0.151859
+   ],
+   [
+    0.218221,
+    0.273641,
+    0.151859
+   ],
+   [
+    -0.077882,
+    0.341225,
+    0.151859
+   ],
+   [
+    -0.315339,
+    0.151859,
+    0.151859
+   ],
+   [
+    -0.315339,
+    -0.151859,
+    0.151859
+   ],
+   [
+    -0.077882,
+    -0.341225,
+    0.151859
+   ],
+   [
+    0.218221,
+    -0.273641,
+    0.151859
+   ],
+   [
+    0.75,
+    0.0,
+    0.151859
+   ],
+   [
+    0.664092,
+    0.348542,
+    0.151859
+   ],
+   [
+    0.426049,
+    0.617238,
+    0.151859
+   ],
+   [
+    0.090403,
+    0.744532,
+    0.151859
+   ],
+   [
+    -0.265954,
+    0.701262,
+    0.151859
+   ],
+   [
+    -0.561383,
+    0.497342,
+    0.151859
+   ],
+   [
+    -0.728206,
+    0.179487,
+    0.151859
+   ],
+   [
+    -0.728206,
+    -0.179487,
+    0.151859
+   ],
+   [
+    -0.561383,
+    -0.497342,
+    0.151859
+   ],
+   [
+    -0.265954,
+    -0.701262,
+    0.151859
+   ],
+   [
+    0.090403,
+    -0.744532,
+    0.151859
+   ],
+   [
+    0.426049,
+    -0.617238,
+    0.151859
+   ],
+   [
+    0.664092,
+    -0.348542,
+    0.151859
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.00394,
+    0.002875,
+    0.21905
+   ],
+   [
+    0.443044,
+    0.001663,
+    0.185344
+   ],
+   [
+    0.285604,
+    0.338799,
+    0.186043
+   ],
+   [
+    -0.083237,
+    0.432377,
+    0.190263
+   ],
+   [
+    -0.395476,
+    0.199528,
+    0.194042
+   ],
+   [
+    -0.396314,
+    -0.188554,
+    0.193456
+   ],
+   [
+    -0.088343,
+    -0.425396,
+    0.19236
+   ],
+   [
+    0.285464,
+    -0.334419,
+    0.185596
+   ],
+   [
+    0.813676,
+    -0.004821,
+    0.185344
+   ],
+   [
+    0.710512,
+    0.373472,
+    0.196053
+   ],
+   [
+    0.455981,
+    0.672164,
+    0.18719
+   ],
+   [
+    0.097267,
+    0.803167,
+    0.190943
+   ],
+   [
+    -0.284149,
+    0.757183,
+    0.190961
+   ],
+   [
+    -0.601613,
+    0.533698,
+    0.193916
+   ],
+   [
+    -0.784496,
+    0.191693,
+    0.192424
+   ],
+   [
+    -0.783196,
+    -0.193313,
+    0.192504
+   ],
+   [
+    -0.602266,
+    -0.533776,
+    0.192777
+   ],
+   [
+    -0.286388,
+    -0.755293,
+    0.192234
+   ],
+   [
+    0.097965,
+    -0.800811,
+    0.193127
+   ],
+   [
+    0.460603,
+    -0.667822,
+    0.188302
+   ],
+   [
+    0.712648,
+    -0.376729,
+    0.192524
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 13.9,
+ "model_gpu_memory_gb": 13.9,
+ "context_length": 40960,
+ "load_seconds": 36.9,
+ "median_call_seconds": 53.1,
+ "p90_call_seconds": 172.6,
+ "prompt_tokens_per_s": 1749.2,
+ "gen_tokens_per_s": 51.9,
+ "mean_prompt_tokens": 3929,
+ "mean_gen_tokens": 3755,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

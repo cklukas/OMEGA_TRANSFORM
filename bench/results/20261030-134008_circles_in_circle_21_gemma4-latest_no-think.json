@@ -1,0 +1,322 @@
+{
+ "schema": 4,
+ "example": "circles_in_circle_21",
+ "model": "gemma4:latest",
+ "variant": "no-think",
+ "model_size_gb": 6.6,
+ "model_params": "7.5B",
+ "started": "2026-10-30T13:40:08",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 5.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "17e553b",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 3.1890454825108625,
+ "best_score": 3.5713428876381323,
+ "improvement": 1.1198783169521533,
+ "llm_calls": 21,
+ "mean_llm_seconds": 14.0,
+ "attempts": 21,
+ "ok": 11,
+ "statuses": {
+  "invalid": 8,
+  "ok": 11,
+  "duplicate": 2
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 1.72,
+ "best_idea": "Change the initial placement strategy from equal radii to allow for different radii based on the circle's distance from the origin to better utilize space.",
+ "progress": [
+  [
+   0.0,
+   3.1890454825108625
+  ],
+  [
+   1.72,
+   3.5713428876381323
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.1890454825108625,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.72,
+   "score": 3.5713428876381323,
+   "model": "gemma4:latest",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Change the initial placement strategy from equal radii to allow for different radii based on the circle's distance from the origin to better utilize space."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -13,15 +13,37 @@\n     apart and every circle inside the container.\n     \"\"\"\n     centers = [(0.0, 0.0)]\n-    for count, ring in ((7, 0.35), (n - 8, 0.75)):\n+    rings_data = [(7, 0.35), (n - 8, 0.75)]\n+    for count, ring in rings_data:\n         centers += [(ring * math.cos(2 * math.pi * k / count),\n                      ring * math.sin(2 * math.pi * k / count)) for k in range(count)]\n-    r = min(1.0 - math.hypot(x, y) for x, y in centers)\n-    for a in range(n):\n-        for b in range(a + 1, n):\n-            r = min(r, math.dist(centers[a], centers[b]) / 2)\n-    r *= 1 - 1e-12  # stay strictly feasible despite rounding\n-    return [(x, y, r) for x, y in centers]\n+    \n+    # Initial guess for radii: set r_i = 1 - distance from origin\n+    radii = [1.0 - math.hypot(x, y) for x, y in centers]\n+    \n+    # Iteratively reduce radii to satisfy non-overlapping constraints\n+    for _ in range(10): # Fixed number of passes for initial refinement\n+        # Constraint 1: Container boundary\n+        radii = [min(r, 1.0 - math.hypot(x, y)) for x, y, r in [(centers[i][0], centers[i][1], radii[i]) for i in range(n)]]\n+        \n+        # Constraint 2: Overlap between circles\n+        for a in range(n):\n+            for b in range(a + 1, n):\n+                min_dist = math.dist(centers[a], centers[b])\n+                required_separation = min_dist / 2.0\n+                \n+                # Adjust radii proportionally to maintain relative size if possible, \n+                # but here we enforce the maximum allowed by neighbors\n+                new_r_a = min(radii[a], required_separation)\n+                new_r_b = min(radii[b], required_separation)\n+                \n+                # Since we are iterating, we just update based on constraints\n+                radii[a] = min(radii[a], required_separation)\n+                radii[b] = min(radii[b], required_separation)\n+                \n+    # Final feasibility adjustment\n+    final_radii = [r * (1.0 - 1e-12) for r in radii]\n+    return [(centers[i][0], centers[i][1], final_radii[i]) for i in range(n)]\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.0,
+    0.0,
+    0.151859
+   ],
+   [
+    0.35,
+    0.0,
+    0.151859
+   ],
+   [
+    0.218221,
+    0.273641,
+    0.151859
+   ],
+   [
+    -0.077882,
+    0.341225,
+    0.151859
+   ],
+   [
+    -0.315339,
+    0.151859,
+    0.151859
+   ],
+   [
+    -0.315339,
+    -0.151859,
+    0.151859
+   ],
+   [
+    -0.077882,
+    -0.341225,
+    0.151859
+   ],
+   [
+    0.218221,
+    -0.273641,
+    0.151859
+   ],
+   [
+    0.75,
+    0.0,
+    0.151859
+   ],
+   [
+    0.664092,
+    0.348542,
+    0.151859
+   ],
+   [
+    0.426049,
+    0.617238,
+    0.151859
+   ],
+   [
+    0.090403,
+    0.744532,
+    0.151859
+   ],
+   [
+    -0.265954,
+    0.701262,
+    0.151859
+   ],
+   [
+    -0.561383,
+    0.497342,
+    0.151859
+   ],
+   [
+    -0.728206,
+    0.179487,
+    0.151859
+   ],
+   [
+    -0.728206,
+    -0.179487,
+    0.151859
+   ],
+   [
+    -0.561383,
+    -0.497342,
+    0.151859
+   ],
+   [
+    -0.265954,
+    -0.701262,
+    0.151859
+   ],
+   [
+    0.090403,
+    -0.744532,
+    0.151859
+   ],
+   [
+    0.426049,
+    -0.617238,
+    0.151859
+   ],
+   [
+    0.664092,
+    -0.348542,
+    0.151859
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.0,
+    0.0,
+    0.175
+   ],
+   [
+    0.35,
+    0.0,
+    0.151859
+   ],
+   [
+    0.218221,
+    0.273641,
+    0.151859
+   ],
+   [
+    -0.077882,
+    0.341225,
+    0.151859
+   ],
+   [
+    -0.315339,
+    0.151859,
+    0.151859
+   ],
+   [
+    -0.315339,
+    -0.151859,
+    0.151859
+   ],
+   [
+    -0.077882,
+    -0.341225,
+    0.151859
+   ],
+   [
+    0.218221,
+    -0.273641,
+    0.151859
+   ],
+   [
+    0.75,
+    0.0,
+    0.179487
+   ],
+   [
+    0.664092,
+    0.348542,
+    0.179487
+   ],
+   [
+    0.426049,
+    0.617238,
+    0.179487
+   ],
+   [
+    0.090403,
+    0.744532,
+    0.179487
+   ],
+   [
+    -0.265954,
+    0.701262,
+    0.179487
+   ],
+   [
+    -0.561383,
+    0.497342,
+    0.179487
+   ],
+   [
+    -0.728206,
+    0.179487,
+    0.179487
+   ],
+   [
+    -0.728206,
+    -0.179487,
+    0.179487
+   ],
+   [
+    -0.561383,
+    -0.497342,
+    0.179487
+   ],
+   [
+    -0.265954,
+    -0.701262,
+    0.179487
+   ],
+   [
+    0.090403,
+    -0.744532,
+    0.179487
+   ],
+   [
+    0.426049,
+    -0.617238,
+    0.179487
+   ],
+   [
+    0.664092,
+    -0.348542,
+    0.179487
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 3.3,
+ "model_gpu_memory_gb": 3.3,
+ "context_length": 40960,
+ "load_seconds": 23.1,
+ "median_call_seconds": 13.0,
+ "p90_call_seconds": 17.3,
+ "prompt_tokens_per_s": 1312.3,
+ "gen_tokens_per_s": 66.8,
+ "mean_prompt_tokens": 2871,
+ "mean_gen_tokens": 573,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

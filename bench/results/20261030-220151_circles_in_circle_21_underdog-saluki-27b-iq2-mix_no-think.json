@@ -1,0 +1,382 @@
+{
+ "schema": 4,
+ "example": "circles_in_circle_21",
+ "model": "underdog-saluki-27b:iq2-mix",
+ "variant": "no-think",
+ "model_size_gb": 7.9,
+ "model_params": "26.9B",
+ "started": "2026-10-30T22:01:51",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 62.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 3.1890454825108625,
+ "best_score": 3.5540815617925827,
+ "improvement": 1.1144656234235684,
+ "llm_calls": 36,
+ "mean_llm_seconds": 99.5,
+ "attempts": 36,
+ "ok": 24,
+ "statuses": {
+  "invalid": 4,
+  "ok": 24,
+  "edit_error": 6,
+  "timeout": 1,
+  "llm_error": 1
+ },
+ "sweeps": 15,
+ "sweep_variants": 225,
+ "improvements": 9,
+ "minutes_to_best": 53.67,
+ "best_idea": "tuned STARTS=6, REFINE_ITERS=100, REFINE_STEP=0.001, SA_STEPS=6000 on top of: Replace the slow, ineffective local-optimum repair with the proven fast coordinate-descent refinement on centers (from the",
+ "progress": [
+  [
+   0.0,
+   3.1890454825108625
+  ],
+  [
+   4.28,
+   3.4170265503121318
+  ],
+  [
+   4.28,
+   3.4745473567430447
+  ],
+  [
+   19.7,
+   3.4830208303272134
+  ],
+  [
+   25.25,
+   3.512479270457277
+  ],
+  [
+   25.25,
+   3.515539163278003
+  ],
+  [
+   28.63,
+   3.518521659254526
+  ],
+  [
+   35.0,
+   3.5270189082013674
+  ],
+  [
+   35.52,
+   3.548533437663014
+  ],
+  [
+   53.67,
+   3.5540815617925827
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.1890454825108625,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 4.28,
+   "score": 3.4170265503121318,
+   "model": "underdog-saluki-27b:iq2-mix",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the fixed symmetric layout with a random-restart simulated annealing on centers, deriving feasible radii each step, to find a higher-sum packing."
+  },
+  {
+   "minutes": 20.85,
+   "score": 3.4170265503121318,
+   "model": "underdog-saluki-27b:iq2-mix",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Add a deterministic local-optimum repair (random greedy reinsertion of displaced circles plus pairwise swaps and a single-coordinate hill-climb) after the simulated annealing pass to escape the local minima that currently cap the score at 3.417, since the unswept best in the leaderboard is 3.47455."
+  },
+  {
+   "minutes": 53.67,
+   "score": 3.548533437663014,
+   "model": "underdog-saluki-27b:iq2-mix",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Replace the slow, ineffective local-optimum repair with the proven fast coordinate-descent refinement on centers (from the leaderboard's best programs), and add tunable parameters for it while keeping the SA settings that produced 3.48+."
+  },
+  {
+   "minutes": 53.67,
+   "score": 3.5540815617925827,
+   "model": "underdog-saluki-27b:iq2-mix",
+   "mode": "sweep/exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "tuned STARTS=6, REFINE_ITERS=100, REFINE_STEP=0.001, SA_STEPS=6000 on top of: Replace the slow, ineffective local-optimum repair with the proven fast coordinate-descent refinement on centers (from the leaderboard's best programs), and add tunable parameters for it while keeping the SA settings that"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -4,24 +4,123 @@\n import math\n \n # OMEGA-BLOCK-START\n+import math\n+import random\n+\n+# Tunable constants for the optimization\n+RANDOM_SEED = 42\n+STARTS = 6\n+SA_STEPS = 6000\n+SA_TEMP_START = 0.02\n+SA_TEMP_END = 1e-7\n+PERTURB = 0.02\n+SHRINK = 1e-12\n+REFINE_ITERS = 100\n+REFINE_STEP = 0.001\n+\n+\n+def _feasible_radii(centers):\n+    \"\"\"Given fixed centers, compute the largest radii that keep circles\n+    non-overlapping and inside the unit circle, via repeated relaxation passes.\"\"\"\n+    n = len(centers)\n+    r = [1.0 - math.hypot(x, y) for x, y in centers]\n+    for _ in range(50):\n+        changed = False\n+        for i in range(n):\n+            cap = r[i]\n+            d = math.hypot(centers[i][0], centers[i][1])\n+            cap = min(cap, 1.0 - d)\n+            for j in range(n):\n+                if j == i:\n+                    continue\n+                dij = math.hypot(centers[i][0] - centers[j][0],\n+                                 centers[i][1] - centers[j][1])\n+                cap = min(cap, dij - r[j])\n+            if cap < r[i] - 1e-15:\n+                r[i] = max(0.0, cap)\n+                changed = True\n+        if not changed:\n+            break\n+    return r\n+\n+\n+def _total_radius(centers):\n+    return sum(_feasible_radii(centers))\n+\n+\n+def _refine(centers):\n+    \"\"\"Local coordinate-descent on centers: try small axis-aligned moves and\n+    keep them when the resulting feasible radius sum improves.\"\"\"\n+    n = len(centers)\n+    cur = [list(c) for c in centers]\n+    cur_val = _total_radius(cur)\n+    for it in range(REFINE_ITERS):\n+        improved = False\n+        for i in range(n):\n+            for dx in (REFINE_STEP, -REFINE_STEP, 0.0):\n+                for dy in (REFINE_STEP, -REFINE_STEP, 0.0):\n+                    if dx == 0.0 and dy == 0.0:\n+                        continue\n+                    trial = [list(c) for c in cur]\n+                    trial[i][0] += dx\n+                    trial[i][1] += dy\n+                    v = _total_radius(trial)\n+                    if v > cur_val + 1e-12:\n+                        cur = trial\n+                        cur_val = v\n+                        improved = True\n+        if not improved:\n+            break\n+    return cur, cur_val\n+\n+\n+def _anneal(centers, seed):\n+    rng = random.Random(seed)\n+    best = list(centers)\n+    best_val = _total_radius(best)\n+    n = len(centers)\n+    for step in range(SA_STEPS):\n+        t = SA_TEMP_START * (SA_TEMP_END / SA_TEMP_START) ** (step / (SA_STEPS - 1))\n+        c = list(best)\n+        # random perturbation: move a few centers\n+        for _ in range(3):\n+            i = rng.randrange(n)\n+            c[i] = (c[i][0] + rng.uniform(-PERTURB, PERTURB),\n+                    c[i][1] + rng.uniform(-PERTURB, PERTURB))\n+        val = _total_radius(c)\n+        delta = val - best_val\n+        if delta > 0 or rng.random() < math.exp(delta / t):\n+            best = c\n+            best_val = val\n+    return best, best_val\n+\n+\n def construct(n=21):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit circle (center (0,0),\n     radius 1) without overlaps.\n \n-    This start places one circle at the center and two concentric rings of 7 and\n-    13 circles, all with the same radius: the largest one that keeps every pair\n-    apart and every circle inside the container.\n+    Random-restart simulated annealing on the centers, followed by a local\n+    coordinate-descent refinement; radii are derived from the centers by a\n+    feasible-relaxation step.\n     \"\"\"\n-    centers = [(0.0, 0.0)]\n-    for count, ring in ((7, 0.35), (n - 8, 0.75)):\n-        centers += [(ring * math.cos(2 * math.pi * k / count),\n-                     ring * math.sin(2 * math.pi * k / count)) for k in range(count)]\n-    r = min(1.0 - math.hypot(x, y) for x, y in centers)\n-    for a in range(n):\n-        for b in range(a + 1, n):\n-            r = min(r, math.dist(centers[a], centers[b]) / 2)\n-    r *= 1 - 1e-12  # stay strictly feasible despite rounding\n-    return [(x, y, r) for x, y in centers]\n+    best_centers = None\n+    best_val = -1.0\n+    for s in range(STARTS):\n+        ring = n - 1\n+        rng = random.Random(RANDOM_SEED + s)\n+        centers = [(0.0, 0.0)] + [\n+            (rng.uniform(0.55, 0.95) * math.cos(2 * math.pi * k / ring),\n+             rng.uniform(0.55, 0.95) * math.sin(2 * math.pi * k / ring))\n+            for k in range(ring)\n+        ]\n+        c, v = _anneal(centers, RANDOM_SEED + 1000 * s + 7)\n+        c, v = _refine(c)\n+        if v > best_val:\n+            best_val = v\n+            best_centers = c\n+    radii = _feasible_radii(best_centers)\n+    radii = [max(0.0, x * (1.0 - SHRINK)) for x in radii]\n+    return [(x, y, r) for (x, y), r in zip(best_centers, radii)]\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.0,
+    0.0,
+    0.151859
+   ],
+   [
+    0.35,
+    0.0,
+    0.151859
+   ],
+   [
+    0.218221,
+    0.273641,
+    0.151859
+   ],
+   [
+    -0.077882,
+    0.341225,
+    0.151859
+   ],
+   [
+    -0.315339,
+    0.151859,
+    0.151859
+   ],
+   [
+    -0.315339,
+    -0.151859,
+    0.151859
+   ],
+   [
+    -0.077882,
+    -0.341225,
+    0.151859
+   ],
+   [
+    0.218221,
+    -0.273641,
+    0.151859
+   ],
+   [
+    0.75,
+    0.0,
+    0.151859
+   ],
+   [
+    0.664092,
+    0.348542,
+    0.151859
+   ],
+   [
+    0.426049,
+    0.617238,
+    0.151859
+   ],
+   [
+    0.090403,
+    0.744532,
+    0.151859
+   ],
+   [
+    -0.265954,
+    0.701262,
+    0.151859
+   ],
+   [
+    -0.561383,
+    0.497342,
+    0.151859
+   ],
+   [
+    -0.728206,
+    0.179487,
+    0.151859
+   ],
+   [
+    -0.728206,
+    -0.179487,
+    0.151859
+   ],
+   [
+    -0.561383,
+    -0.497342,
+    0.151859
+   ],
+   [
+    -0.265954,
+    -0.701262,
+    0.151859
+   ],
+   [
+    0.090403,
+    -0.744532,
+    0.151859
+   ],
+   [
+    0.426049,
+    -0.617238,
+    0.151859
+   ],
+   [
+    0.664092,
+    -0.348542,
+    0.151859
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.065375,
+    -0.005671,
+    0.531801
+   ],
+   [
+    0.938538,
+    -0.046142,
+    0.059405
+   ],
+   [
+    0.817526,
+    0.148141,
+    0.16916
+   ],
+   [
+    0.564791,
+    0.744194,
+    0.065755
+   ],
+   [
+    0.63104,
+    0.477281,
+    0.208793
+   ],
+   [
+    0.274095,
+    0.724505,
+    0.22538
+   ],
+   [
+    0.048976,
+    0.923856,
+    0.074739
+   ],
+   [
+    -0.20349,
+    0.726003,
+    0.246018
+   ],
+   [
+    -0.532014,
+    0.746766,
+    0.083104
+   ],
+   [
+    -0.612884,
+    0.409008,
+    0.263173
+   ],
+   [
+    -0.878651,
+    0.147488,
+    0.109056
+   ],
+   [
+    -0.953194,
+    0.009281,
+    0.04676
+   ],
+   [
+    -0.710702,
+    -0.186949,
+    0.265121
+   ],
+   [
+    -0.745524,
+    -0.533619,
+    0.083181
+   ],
+   [
+    -0.421477,
+    -0.61897,
+    0.251157
+   ],
+   [
+    -0.245878,
+    -0.893237,
+    0.073407
+   ],
+   [
+    0.02726,
+    -0.775491,
+    0.22403
+   ],
+   [
+    0.306167,
+    -0.876241,
+    0.071729
+   ],
+   [
+    0.461457,
+    -0.639758,
+    0.210824
+   ],
+   [
+    0.740785,
+    -0.529292,
+    0.08936
+   ],
+   [
+    0.761382,
+    -0.238534,
+    0.202127
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": 11.2,
+ "model_gpu_memory_gb": 11.2,
+ "context_length": 40960,
+ "load_seconds": 22.9,
+ "median_call_seconds": 96.6,
+ "p90_call_seconds": 153.5,
+ "prompt_tokens_per_s": 412.9,
+ "gen_tokens_per_s": 15.8,
+ "mean_prompt_tokens": 5624,
+ "mean_gen_tokens": 1318,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

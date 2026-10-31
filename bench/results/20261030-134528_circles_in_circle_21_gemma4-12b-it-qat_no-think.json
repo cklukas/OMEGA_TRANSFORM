@@ -1,0 +1,336 @@
+{
+ "schema": 4,
+ "example": "circles_in_circle_21",
+ "model": "gemma4:12b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 7.2,
+ "model_params": "11.9B",
+ "started": "2026-10-30T13:45:28",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 19.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "17e553b",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 3.1890454825108625,
+ "best_score": 3.9542577662111857,
+ "improvement": 1.2399502571841154,
+ "llm_calls": 28,
+ "mean_llm_seconds": 40.5,
+ "attempts": 28,
+ "ok": 19,
+ "statuses": {
+  "llm_error": 1,
+  "ok": 19,
+  "invalid": 5,
+  "edit_error": 2,
+  "duplicate": 1
+ },
+ "sweeps": 7,
+ "sweep_variants": 77,
+ "improvements": 2,
+ "minutes_to_best": 9.4,
+ "best_idea": "tuned r1=0.45, r2=0.8 on top of: Replace the rigid concentric ring layout with a flexible radius assignment that optimizes each circle's radius individually based on the fixed centers, allowing for no",
+ "progress": [
+  [
+   0.0,
+   3.1890454825108625
+  ],
+  [
+   5.94,
+   3.5221781952853553
+  ],
+  [
+   9.4,
+   3.9542577662111857
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.1890454825108625,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 9.4,
+   "score": 3.4127184160448194,
+   "model": "gemma4:12b-it-qat",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Replace the rigid concentric ring layout with a flexible radius assignment that optimizes each circle's radius individually based on the fixed centers, allowing for non-uniform radii which is better for maximizing the sum."
+  },
+  {
+   "minutes": 9.4,
+   "score": 3.9542577662111857,
+   "model": "gemma4:12b-it-qat",
+   "mode": "sweep/exploit/diff/tune",
+   "status": "ok",
+   "idea": "tuned r1=0.45, r2=0.8 on top of: Replace the rigid concentric ring layout with a flexible radius assignment that optimizes each circle's radius individually based on the fixed centers, allowing for non-uniform radii which is better for maximizing the sum."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -12,16 +12,44 @@\n     13 circles, all with the same radius: the largest one that keeps every pair\n     apart and every circle inside the container.\n     \"\"\"\n+    # Initial centers: one at center, two rings\n     centers = [(0.0, 0.0)]\n-    for count, ring in ((7, 0.35), (n - 8, 0.75)):\n-        centers += [(ring * math.cos(2 * math.pi * k / count),\n-                     ring * math.sin(2 * math.pi * k / count)) for k in range(count)]\n-    r = min(1.0 - math.hypot(x, y) for x, y in centers)\n-    for a in range(n):\n-        for b in range(a + 1, n):\n-            r = min(r, math.dist(centers[a], centers[b]) / 2)\n-    r *= 1 - 1e-12  # stay strictly feasible despite rounding\n-    return [(x, y, r) for x, y in centers]\n+    # Ring 1: 7 circles\n+    r1 = 0.45\n+    for k in range(7):\n+        centers.append((r1 * math.cos(2 * math.pi * k / 7),\n+                         r1 * math.sin(2 * math.pi * k / 7)))\n+    # Ring 2: 13 circles\n+    r2 = 0.8\n+    for k in range(n - 8):\n+        centers.append((r2 * math.cos(2 * math.pi * k / (n - 8) + 0.3),\n+                         r2 * math.sin(2 * math.pi * k / (n - 8) + 0.3)))\n+    \n+    # Iteratively maximize radii for fixed centers\n+    radii = [1.0 - math.hypot(x, y) for x, y in centers]\n+    for _ in range(100):\n+        for i in range(n):\n+            # Constraint 1: Container boundary\n+            max_r = 1.0 - math.hypot(centers[i][0], centers[i][1])\n+            # Constraint 2: Distance to other circles\n+            for j in range(n):\n+                if i == j: continue\n+                d = math.dist(centers[i], centers[j])\n+                max_r = min(max_r, d - radii[j])\n+            radii[i] = max(0.0, max_r)\n+    \n+    # Final refinement pass\n+    for _ in range(20):\n+        for i in range(n):\n+            for j in range(i + 1, n):\n+                d = math.dist(centers[i], centers[j])\n+                if radii[i] + radii[j] > d:\n+                    overlap = (radii[i] + radii[j] - d) / 2\n+                    radii[i] -= overlap\n+                    radii[j] -= overlap\n+                    \n+    margin = 1e-9\n+    return [(centers[i][0], centers[i][1], max(0.0, radii[i] * (1.0 - margin))) for i in range(n)]\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.0,
+    0.0,
+    0.151859
+   ],
+   [
+    0.35,
+    0.0,
+    0.151859
+   ],
+   [
+    0.218221,
+    0.273641,
+    0.151859
+   ],
+   [
+    -0.077882,
+    0.341225,
+    0.151859
+   ],
+   [
+    -0.315339,
+    0.151859,
+    0.151859
+   ],
+   [
+    -0.315339,
+    -0.151859,
+    0.151859
+   ],
+   [
+    -0.077882,
+    -0.341225,
+    0.151859
+   ],
+   [
+    0.218221,
+    -0.273641,
+    0.151859
+   ],
+   [
+    0.75,
+    0.0,
+    0.151859
+   ],
+   [
+    0.664092,
+    0.348542,
+    0.151859
+   ],
+   [
+    0.426049,
+    0.617238,
+    0.151859
+   ],
+   [
+    0.090403,
+    0.744532,
+    0.151859
+   ],
+   [
+    -0.265954,
+    0.701262,
+    0.151859
+   ],
+   [
+    -0.561383,
+    0.497342,
+    0.151859
+   ],
+   [
+    -0.728206,
+    0.179487,
+    0.151859
+   ],
+   [
+    -0.728206,
+    -0.179487,
+    0.151859
+   ],
+   [
+    -0.561383,
+    -0.497342,
+    0.151859
+   ],
+   [
+    -0.265954,
+    -0.701262,
+    0.151859
+   ],
+   [
+    0.090403,
+    -0.744532,
+    0.151859
+   ],
+   [
+    0.426049,
+    -0.617238,
+    0.151859
+   ],
+   [
+    0.664092,
+    -0.348542,
+    0.151859
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.0,
+    0.0,
+    0.27368
+   ],
+   [
+    0.45,
+    0.0,
+    0.166831
+   ],
+   [
+    0.28057,
+    0.351824,
+    0.173741
+   ],
+   [
+    -0.100134,
+    0.438718,
+    0.168145
+   ],
+   [
+    -0.405436,
+    0.195248,
+    0.167387
+   ],
+   [
+    -0.405436,
+    -0.195248,
+    0.171499
+   ],
+   [
+    -0.100134,
+    -0.438718,
+    0.17632
+   ],
+   [
+    0.28057,
+    -0.351824,
+    0.17632
+   ],
+   [
+    0.764269,
+    0.236416,
+    0.182905
+   ],
+   [
+    0.566859,
+    0.56451,
+    0.182905
+   ],
+   [
+    0.239588,
+    0.763281,
+    0.2
+   ],
+   [
+    -0.14257,
+    0.787194,
+    0.182905
+   ],
+   [
+    -0.492067,
+    0.63077,
+    0.2
+   ],
+   [
+    -0.728837,
+    0.329844,
+    0.182905
+   ],
+   [
+    -0.798639,
+    -0.046645,
+    0.2
+   ],
+   [
+    -0.685483,
+    -0.412448,
+    0.182905
+   ],
+   [
+    -0.415291,
+    -0.683764,
+    0.2
+   ],
+   [
+    -0.049961,
+    -0.798438,
+    0.182905
+   ],
+   [
+    0.326815,
+    -0.7302,
+    0.2
+   ],
+   [
+    0.628721,
+    -0.494682,
+    0.182905
+   ],
+   [
+    0.786595,
+    -0.145837,
+    0.2
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 11.0,
+ "model_gpu_memory_gb": 11.0,
+ "context_length": 40960,
+ "load_seconds": 0.0,
+ "median_call_seconds": 37.5,
+ "p90_call_seconds": 53.1,
+ "prompt_tokens_per_s": 583.7,
+ "gen_tokens_per_s": 28.5,
+ "mean_prompt_tokens": 3927,
+ "mean_gen_tokens": 820,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

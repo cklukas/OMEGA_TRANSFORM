@@ -1,0 +1,217 @@
+{
+ "schema": 4,
+ "example": "heilbronn_13",
+ "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+ "variant": "no-think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-10-31T05:46:36",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 9.7,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 0.004790811518724618,
+ "best_score": 0.021935794095954156,
+ "improvement": 4.578721999439831,
+ "llm_calls": 24,
+ "mean_llm_seconds": 23.8,
+ "attempts": 24,
+ "ok": 11,
+ "statuses": {
+  "ok": 11,
+  "invalid": 8,
+  "edit_error": 4,
+  "duplicate": 1
+ },
+ "sweeps": 1,
+ "sweep_variants": 16,
+ "improvements": 1,
+ "minutes_to_best": 2.78,
+ "best_idea": "Use a more sophisticated optimization approach with gradient-free coordinate descent on the soft-min objective, starting from a known good Heilbronn-like configuration and using multiple random restar",
+ "progress": [
+  [
+   0.0,
+   0.004790811518724618
+  ],
+  [
+   2.78,
+   0.021935794095954156
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.004790811518724618,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.78,
+   "score": 0.021935794095954156,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "explore/rewrite/bold",
+   "status": "ok",
+   "idea": "Use a more sophisticated optimization approach with gradient-free coordinate descent on the soft-min objective, starting from a known good Heilbronn-like configuration and using multiple random restarts with local search to find better configurations."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -5,17 +5,121 @@\n import math\n \n # OMEGA-BLOCK-START\n+import math\n+import random\n+\n+# Optimization constants\n+SOFTMIN_BETA = 500.0\n+LOCAL_SEARCH_STEPS = 5000\n+RESTART_COUNT = 20\n+STEP_SIZE_START = 0.05\n+STEP_SIZE_END = 1e-4\n+SEED = 12345\n+\n+def triangle_area(p1, p2, p3):\n+    \"\"\"Compute area of triangle formed by three points.\"\"\"\n+    return abs((p1[0]*(p2[1]-p3[1]) + p2[0]*(p3[1]-p1[1]) + p3[0]*(p1[1]-p2[1])) * 0.5)\n+\n+def min_triangle_area(points):\n+    \"\"\"Return minimum triangle area among all triples.\"\"\"\n+    n = len(points)\n+    min_area = float('inf')\n+    for i in range(n):\n+        for j in range(i+1, n):\n+            for k in range(j+1, n):\n+                area = triangle_area(points[i], points[j], points[k])\n+                if area < min_area:\n+                    min_area = area\n+    return min_area\n+\n+def soft_min_area(points, beta):\n+    \"\"\"Smooth approximation of minimum area using log-sum-exp.\"\"\"\n+    n = len(points)\n+    total = 0.0\n+    for i in range(n):\n+        for j in range(i+1, n):\n+            for k in range(j+1, n):\n+                area = triangle_area(points[i], points[j], points[k])\n+                total += math.exp(-beta * area)\n+    return -math.log(total) / beta\n+\n+def clamp_point(p):\n+    \"\"\"Clamp point coordinates to [0, 1].\"\"\"\n+    return (max(0.0, min(1.0, p[0])), max(0.0, min(1.0, p[1])))\n+\n+def get_initial_config():\n+    \"\"\"Return a known good starting configuration for 13 points.\"\"\"\n+    # Based on best-known Heilbronn configurations for n=13\n+    return [\n+        (0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0),  # 4 corners\n+        (0.5, 0.0), (1.0, 0.5), (0.5, 1.0), (0.0, 0.5),  # 4 edge midpoints\n+        (0.2113, 0.2113), (0.7887, 0.2113), (0.7887, 0.7887), (0.2113, 0.7887),  # 4 interior symmetric\n+        (0.5, 0.5)  # center\n+    ]\n+\n+def local_search(points, beta, steps, step_start, step_end):\n+    \"\"\"Perform local search on a single configuration.\"\"\"\n+    n = len(points)\n+    points = [list(p) for p in points]  # mutable\n+    best_points = [p[:] for p in points]\n+    best_soft = soft_min_area(points, beta)\n+    \n+    for step in range(steps):\n+        t = step / steps\n+        step_size = step_start * (step_end / step_start) ** t\n+        \n+        # Pick random point\n+        idx = random.randrange(n)\n+        old_x, old_y = points[idx]\n+        \n+        # Try random perturbation\n+        new_x = clamp_point((old_x + random.uniform(-step_size, step_size), 0))[0]\n+        new_y = clamp_point((0, old_y + random.uniform(-step_size, step_size)))[1]\n+        \n+        points[idx] = [new_x, new_y]\n+        new_soft = soft_min_area(points, beta)\n+        \n+        if new_soft > best_soft:\n+            best_soft = new_soft\n+            best_points = [p[:] for p in points]\n+        else:\n+            points[idx] = [old_x, old_y]\n+    \n+    return best_points, best_soft\n+\n def construct(n=13):\n-    \"\"\"Return a list of n points (x, y) inside the closed unit square [0,1]^2.\n-\n-    The score is the smallest area among all triangles with corners at three of\n-    the points, so no three points may be (nearly) collinear. This start puts\n-    the points on a regular polygon on a small circle around the center, which\n-    avoids collinear triples but wastes most of the square.\n-    \"\"\"\n-    radius = 0.3\n-    return [(0.5 + radius * math.cos(2 * math.pi * k / n),\n-             0.5 + radius * math.sin(2 * math.pi * k / n)) for k in range(n)]\n+    \"\"\"Return optimized 13 points maximizing minimum triangle area.\"\"\"\n+    random.seed(SEED)\n+    \n+    if n != 13:\n+        # Fallback for other n: regular polygon\n+        radius = 0.3\n+        return [(0.5 + radius * math.cos(2 * math.pi * k / n),\n+                 0.5 + radius * math.sin(2 * math.pi * k / n)) for k in range(n)]\n+    \n+    base_config = get_initial_config()\n+    best_overall = None\n+    best_min_area = 0.0\n+    \n+    for restart in range(RESTART_COUNT):\n+        # Perturb base config slightly for each restart\n+        points = []\n+        for x, y in base_config:\n+            px = clamp_point((x + random.uniform(-0.02, 0.02), 0))[0]\n+            py = clamp_point((0, y + random.uniform(-0.02, 0.02)))[1]\n+            points.append([px, py])\n+        \n+        # Local search\n+        optimized, _ = local_search(points, SOFTMIN_BETA, LOCAL_SEARCH_STEPS, \n+                                   STEP_SIZE_START, STEP_SIZE_END)\n+        \n+        # Evaluate with exact min area\n+        min_area = min_triangle_area(optimized)\n+        if min_area > best_min_area:\n+            best_min_area = min_area\n+            best_overall = optimized\n+    \n+    return [(float(x), float(y)) for x, y in best_overall]\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "heilbronn",
+  "points": [
+   [
+    0.8,
+    0.5
+   ],
+   [
+    0.765636807695963,
+    0.6394169516131305
+   ],
+   [
+    0.6704194240193467,
+    0.7468951597680968
+   ],
+   [
+    0.536161004076597,
+    0.7978126622294162
+   ],
+   [
+    0.3936185338872394,
+    0.7805048728056244
+   ],
+   [
+    0.27544677554866964,
+    0.6989367974722386
+   ],
+   [
+    0.2087174547721844,
+    0.5717946992862672
+   ],
+   [
+    0.2087174547721844,
+    0.42820530071373275
+   ],
+   [
+    0.2754467755486696,
+    0.30106320252776153
+   ],
+   [
+    0.3936185338872392,
+    0.21949512719437558
+   ],
+   [
+    0.536161004076597,
+    0.20218733777058384
+   ],
+   [
+    0.6704194240193464,
+    0.25310484023190294
+   ],
+   [
+    0.765636807695963,
+    0.3605830483868695
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "heilbronn",
+  "points": [
+   [
+    0.0,
+    0.0
+   ],
+   [
+    0.9704202041128432,
+    0.0
+   ],
+   [
+    1.0,
+    1.0
+   ],
+   [
+    0.0,
+    0.9919322260302131
+   ],
+   [
+    0.5523099273943135,
+    0.08393219356471131
+   ],
+   [
+    0.9379412164552231,
+    0.5140394460456639
+   ],
+   [
+    0.523852643059424,
+    0.9488797692327521
+   ],
+   [
+    0.05209536818339394,
+    0.5366659128977017
+   ],
+   [
+    0.20470543485801704,
+    0.2853661573525866
+   ],
+   [
+    0.8066812551613723,
+    0.24707294086332424
+   ],
+   [
+    0.7488115843925918,
+    0.8295524559232637
+   ],
+   [
+    0.25196258664156673,
+    0.814613412819763
+   ],
+   [
+    0.4846616361139245,
+    0.4363614195849013
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 19.3,
+ "p90_call_seconds": 37.8,
+ "prompt_tokens_per_s": 1256.6,
+ "gen_tokens_per_s": 66.2,
+ "mean_prompt_tokens": 3168,
+ "mean_gen_tokens": 1406,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

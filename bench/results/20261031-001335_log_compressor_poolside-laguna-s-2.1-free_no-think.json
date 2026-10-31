@@ -1,0 +1,140 @@
+{
+ "schema": 4,
+ "example": "log_compressor",
+ "model": "poolside/laguna-s-2.1:free",
+ "variant": "no-think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-10-31T00:13:35",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 21.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 11.28605206956168,
+ "best_score": 21.550781629284398,
+ "improvement": 1.9095057772599282,
+ "llm_calls": 18,
+ "mean_llm_seconds": 70.2,
+ "attempts": 18,
+ "ok": 3,
+ "statuses": {
+  "invalid": 8,
+  "ok": 3,
+  "edit_error": 2,
+  "llm_error": 4,
+  "duplicate": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 2.22,
+ "best_idea": "Replace the plain zlib level 1 compressor with a field-aware column-based compressor that parses each access-log line into fields, stores them as separate columns compressed individually, and falls ba",
+ "progress": [
+  [
+   0.0,
+   11.28605206956168
+  ],
+  [
+   2.22,
+   21.550781629284398
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 11.28605206956168,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.22,
+   "score": 21.550781629284398,
+   "model": "poolside/laguna-s-2.1:free",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the plain zlib level 1 compressor with a field-aware column-based compressor that parses each access-log line into fields, stores them as separate columns compressed individually, and falls back to generic lzma for any input that does not parse or round-trip."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -10,23 +10,370 @@\n import zlib\n \n # OMEGA-BLOCK-START\n+import struct\n+import re\n+import lzma\n+\n+# Regex matching one Apache \"combined\" log line into named fields.\n+_LINE_RE = re.compile(\n+    rb'^(?P<ip>\\S+) - - \\[(?P<ts>[^\\]]+)\\] '\n+    rb'\"(?P<method>\\S+) (?P<path>\\S+) (?P<proto>[^\"]+)\" '\n+    rb'(?P<status>\\d+) (?P<size>\\S+) '\n+    rb'\"(?P<ref>(?:[^\"\\\\]|\\\\.)*)\" '\n+    rb'\"(?P<ua>(?:[^\"\\\\]|\\\\.)*)\"\\r?$'\n+)\n+\n+# Precomputed month name -> numeric string for timestamp parsing.\n+_MONTH = {\n+    b'Jan': b'01', b'Feb': b'02', b'Mar': b'03', b'Apr': b'04',\n+    b'May': b'05', b'Jun': b'06', b'Jul': b'07', b'Aug': b'08',\n+    b'Sep': b'09', b'Oct': b'10', b'Nov': b'11', b'Dec': b'12',\n+}\n+\n+# LZMA filters for generic fallback mode (no container header).\n+_LZMA_FILTER = [{\"id\": lzma.FILTER_LZMA2, \"preset\": 9 | lzma.PRESET_EXTREME}]\n+\n+\n+def _varint(n: int) -> bytes:\n+    \"\"\"Encode a non-negative integer as an unsigned LEB128 varint.\"\"\"\n+    if n < 0:\n+        n = 0\n+    out = bytearray()\n+    while True:\n+        b = n & 0x7F\n+        n >>= 7\n+        if n:\n+            out.append(b | 0x80)\n+        else:\n+            out.append(b)\n+            break\n+    return bytes(out)\n+\n+\n+def _uvarint(buf: bytes, i: int) -> tuple[int, int]:\n+    \"\"\"Decode an unsigned LEB128 varint at index i; return (value, new_i).\"\"\"\n+    result = 0\n+    shift = 0\n+    while True:\n+        b = buf[i]\n+        i += 1\n+        result |= (b & 0x7F) << shift\n+        if not (b & 0x80):\n+            break\n+        shift += 7\n+    return result, i\n+\n+\n+def _parse_ts(ts: bytes) -> int:\n+    \"\"\"Parse a timestamp like DD/Mon/YYYY:HH:MM:SS +0000 into total seconds.\"\"\"\n+    d, mon, rest = ts.split(b'/', 2)\n+    rest = rest.split(b':')\n+    y = rest[0]\n+    h, mi, s = rest[1], rest[2], rest[3]\n+    # Approximate epoch seconds (monotonic for increasing timestamps).\n+    return (int(y) * 366 + int(_MONTH.get(mon, b'01')) * 31 + int(d)) * 86400 + int(h) * 3600 + int(mi) * 60 + int(s)\n+\n+\n+def _parse_path(path: bytes) -> bytes:\n+    \"\"\"Normalize a path: replace digits with a placeholder so similar templates compress together.\"\"\"\n+    out = bytearray()\n+    for b in path:\n+        if 48 <= b <= 57:  # ASCII digit\n+            out.append(0x30)  # '0' placeholder; lzma handles runs well\n+        else:\n+            out.append(b)\n+    return bytes(out)\n+\n+\n+def _encode_lines(lines: list) -> bytes:\n+    \"\"\"Encode parsed lines into a structured blob (columns).\"\"\"\n+    n = len(lines)\n+    # Build column dictionaries (shared across all lines).\n+    ips = []\n+    ip_idx = {}\n+    uas = []\n+    ua_idx = {}\n+    refs = []\n+    ref_idx = {}\n+    statuses = []\n+    paths = []\n+    sizes = []\n+    ts_prev = None\n+    ts_deltas = []\n+\n+    for ln in lines:\n+        ip = ln['ip']\n+        ua = ln['ua']\n+        ref = ln['ref']\n+        st = ln['status']\n+        sz = ln['size']\n+        ts = ln['ts']\n+        path = ln['path']\n+\n+        if ip not in ip_idx:\n+            ip_idx[ip] = len(ips)\n+            ips.append(ip)\n+        if ua not in ua_idx:\n+            ua_idx[ua] = len(uas)\n+            uas.append(ua)\n+        if ref not in ref_idx:\n+            ref_idx[ref] = len(refs)\n+            refs.append(ref)\n+\n+        statuses.append(st)\n+        paths.append(path)\n+        sizes.append(sz)\n+\n+        t = _parse_ts(ts)\n+        if ts_prev is None:\n+            ts_deltas.append(t)\n+        else:\n+            ts_deltas.append(t - ts_prev)\n+        ts_prev = t\n+\n+    # Serialize columns.\n+    out = bytearray()\n+    out += _varint(n)\n+\n+    # IP dictionary.\n+    out += _varint(len(ips))\n+    for ip in ips:\n+        out += _varint(len(ip)) + ip\n+\n+    # User-agent dictionary.\n+    out += _varint(len(uas))\n+    for ua in uas:\n+        out += _varint(len(ua)) + ua\n+\n+    # Referer dictionary.\n+    out += _varint(len(refs))\n+    for ref in refs:\n+        out += _varint(len(ref)) + ref\n+\n+    # Status codes (small integers 100-599).\n+    out += _varint(len(statuses))\n+    for st in statuses:\n+        out += _varint(int(st))\n+\n+    # Sizes: store as varint; \"-\" (no size) encoded as 0xFFFFFFFF marker.\n+    out += _varint(len(sizes))\n+    for sz in sizes:\n+        if sz == b'-':\n+            out += _varint(0xFFFFFFFF)\n+        else:\n+            out += _varint(int(sz))\n+\n+    # Timestamp deltas.\n+    out += _varint(len(ts_deltas))\n+    for d in ts_deltas:\n+        out += _varint(d if d >= 0 else 0)\n+\n+    # IP indices per line.\n+    out += _varint(len(lines))\n+    for ln in lines:\n+        out += _varint(ip_idx[ln['ip']])\n+\n+    # UA indices per line.\n+    out += _varint(len(lines))\n+    for ln in lines:\n+        out += _varint(ua_idx[ln['ua']])\n+\n+    # Referer indices per line.\n+    out += _varint(len(lines))\n+    for ln in lines:\n+        out += _varint(ref_idx[ln['ref']])\n+\n+    # Paths (raw, to preserve exact bytes).\n+    out += _varint(len(paths))\n+    for p in paths:\n+        out += _varint(len(p)) + p\n+\n+    return bytes(out)\n+\n+\n+def _decode_lines(buf: bytes) -> list:\n+    \"\"\"Decode the structured blob back into parsed line dicts.\"\"\"\n+    lines = []\n+    i = 0\n+    n, i = _uvarint(buf, i)\n+\n+    # IP dict.\n+    nip, i = _uvarint(buf, i)\n+    ips = []\n+    for _ in range(nip):\n+        l, i = _uvarint(buf, i)\n+        ips.append(buf[i:i + l])\n+        i += l\n+\n+    # UA dict.\n+    nua, i = _uvarint(buf, i)\n+    uas = []\n+    for _ in range(nua):\n+        l, i = _uvarint(buf, i)\n+        uas.append(buf[i:i + l])\n+        i += l\n+\n+    # Ref dict.\n+    nref, i = _uvarint(buf, i)\n+    refs = []\n+    for _ in range(nref):\n+        l, i = _uvarint(buf, i)\n+        refs.append(buf[i:i + l])\n+        i += l\n+\n+    # Statuses.\n+    ns, i = _uvarint(buf, i)\n+    statuses = []\n+    for _ in range(ns):\n+        v, i = _uvarint(buf, i)\n+        statuses.append(v)\n+\n+    # Sizes.\n+    nz, i = _uvarint(buf, i)\n+    sizes = []\n+    for _ in range(nz):\n+        v, i = _uvarint(buf, i)\n+        sizes.append(v)\n+\n+    # Timestamps.\n+    nt, i = _uvarint(buf, i)\n+    ts_deltas = []\n+    for _ in range(nt):\n+        v, i = _uvarint(buf, i)\n+        ts_deltas.append(v)\n+\n+    # IP indices.\n+    ni, i = _uvarint(buf, i)\n+    ip_indices = []\n+    for _ in range(ni):\n+        v, i = _uvarint(buf, i)\n+        ip_indices.append(v)\n+\n+    # UA indices.\n+    nui, i = _uvarint(buf, i)\n+    ua_indices = []\n+    for _ in range(nui):\n+        v, i = _uvarint(buf, i)\n+        ua_indices.append(v)\n+\n+    # Ref indices.\n+    nri, i = _uvarint(buf, i)\n+    ref_indices = []\n+    for _ in range(nri):\n+        v, i = _uvarint(buf, i)\n+        ref_indices.append(v)\n+\n+    # Paths.\n+    np_, i = _uvarint(buf, i)\n+    paths = []\n+    for _ in range(np_):\n+        l, i = _uvarint(buf, i)\n+        paths.append(buf[i:i + l])\n+        i += l\n+\n+    # Reconstruct lines.\n+    t = 0\n+    for k in range(n):\n+        st = statuses[k]\n+        sz_val = sizes[k]\n+        sz = b'-' if sz_val == 0xFFFFFFFF else str(sz_val).encode()\n+        d = ts_deltas[k]\n+        if k == 0:\n+            t = d\n+        else:\n+            t += d\n+        # Reconstruct timestamp text from epoch-ish seconds.\n+        days = t // 86400\n+        rem = t % 86400\n+        hh = rem // 3600\n+        rem %= 3600\n+        mm = rem // 60\n+        ss = rem % 60\n+        y = days // 366\n+        rem_days = days % 366\n+        mon = rem_days // 31\n+        dd = rem_days % 31 + 1\n+        # Find month name.\n+        mon_name = b'Jan'\n+        for k2, v2 in _MONTH.items():\n+            if v2 == str(mon + 1).encode().zfill(2):\n+                mon_name = k2\n+                break\n+        ts = b'%02d/%s/%04d:%02d:%02d:%02d +0000' % (dd, mon_name, y, hh, mm, ss)\n+\n+        ip = ips[ip_indices[k]]\n+        ua = uas[ua_indices[k]]\n+        ref = refs[ref_indices[k]]\n+        path = paths[k]\n+        lines.append({\n+            'ip': ip, 'ts': ts, 'status': str(st).encode(), 'size': sz,\n+            'ref': ref, 'ua': ua, 'path': path,\n+        })\n+    return lines\n+\n+\n+def _reconstruct_line(ln: dict) -> bytes:\n+    \"\"\"Rebuild the original log line from parsed fields.\"\"\"\n+    return (\n+        ln['ip'] + b' - - [' + ln['ts'] + b'] \"GET ' + ln['path'] +\n+        b' HTTP/1.1\" ' + ln['status'] + b' ' + ln['size'] +\n+        b' \"' + ln['ref'] + b'\" \"' + ln['ua'] + b'\"\\n'\n+    )\n+\n+\n+def _try_parse(data: bytes) -> list:\n+    \"\"\"Attempt to parse data as a combined log; return list of line dicts or None.\"\"\"\n+    if not data:\n+        return None\n+    lines = []\n+    pos = 0\n+    n = len(data)\n+    while pos < n:\n+        nl = data.find(b'\\n', pos)\n+        if nl == -1:\n+            line = data[pos:]\n+            pos = n\n+        else:\n+            line = data[pos:nl]\n+            pos = nl + 1\n+        if not line:\n+            continue\n+        m = _LINE_RE.match(line)\n+        if not m:\n+            return None\n+        lines.append(m.groupdict())\n+    return lines if lines else None\n+\n+\n def compress(data: bytes) -> bytes:\n-    \"\"\"Compress arbitrary bytes losslessly and return the compressed blob.\n-\n-    decompress(compress(data)) must equal data exactly for EVERY input, including\n-    b\"\" and non-text bytes. The main input is an access log, one request per line:\n-      IP - - [DD/Mon/YYYY:HH:MM:SS +0000] \"METHOD PATH HTTP/1.1\" STATUS SIZE \"REFERER\" \"USER-AGENT\"\n-    Only the Python standard library may be used (zlib, lzma, bz2, struct, re, ...).\n-    Compress plus decompress of the main input must stay within 20 CPU seconds.\n-\n-    Current method: plain zlib at level 1.\n+    \"\"\"Compress arbitrary bytes losslessly using field-aware columnar parsing.\n+\n+    Falls back to generic LZMA when the input does not parse as an access log.\n     \"\"\"\n-    return zlib.compress(data, 1)\n+    lines = _try_parse(data)\n+    if lines is not None:\n+        try:\n+            encoded = _encode_lines(lines)\n+            decoded_lines = _decode_lines(encoded)\n+            rebuilt = b''.join(_reconstruct_line(ln) for ln in decoded_lines)\n+            if rebuilt == data:\n+                blob = b'\\x01' + lzma.compress(encoded, format=lzma.FORMAT_RAW, filters=_LZMA_FILTER)\n+                return blob\n+        except Exception:\n+            pass\n+    # Generic fallback: flag byte 0x00 + raw lzma.\n+    blob = b'\\x00' + lzma.compress(data, format=lzma.FORMAT_RAW, filters=_LZMA_FILTER)\n+    return blob\n \n \n def decompress(blob: bytes) -> bytes:\n-    \"\"\"Invert compress() exactly.\"\"\"\n-    return zlib.decompress(blob)\n+    \"\"\"Invert compress() exactly for any previously compressed input.\"\"\"\n+    if blob[0:1] == b'\\x00':\n+        data = lzma.decompress(blob[1:], format=lzma.FORMAT_RAW, filters=_LZMA_FILTER)\n+        return data\n+    encoded = lzma.decompress(blob[1:], format=lzma.FORMAT_RAW, filters=_LZMA_FILTER)\n+    lines = _decode_lines(encoded)\n+    return b''.join(_reconstruct_line(ln) for ln in lines)\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "compression",
+  "input": "web server access log",
+  "head": [
+   "203.242.94.172 - - [04/Oct/2024:09:52:35 +0000] \"GET /search?q=novel&page=1 HTTP/1.1\" 200 13481 \"https://search.example.net/?q=shop\" \"Mozilla/5.0 (compatible; ExampleBot/2.1; +http://bot.example.org/info)\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/155 HTTP/1.1\" 200 23584 \"https://www.example.com/\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/books/203?ref=search HTTP/1.1\" 200 25206 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/106 HTTP/1.1\" 404 24868 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\""
+  ],
+  "lines": 2000,
+  "original_bytes": 443903,
+  "compressed_bytes": 39332,
+  "references": {
+   "zlib -9": 25176,
+   "bz2 -9": 16530,
+   "lzma -9e": 20656
+  }
+ },
+ "best_solution": {
+  "kind": "compression",
+  "input": "web server access log",
+  "head": [
+   "203.242.94.172 - - [04/Oct/2024:09:52:35 +0000] \"GET /search?q=novel&page=1 HTTP/1.1\" 200 13481 \"https://search.example.net/?q=shop\" \"Mozilla/5.0 (compatible; ExampleBot/2.1; +http://bot.example.org/info)\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/155 HTTP/1.1\" 200 23584 \"https://www.example.com/\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/books/203?ref=search HTTP/1.1\" 200 25206 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/106 HTTP/1.1\" 404 24868 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\""
+  ],
+  "lines": 2000,
+  "original_bytes": 443903,
+  "compressed_bytes": 20598,
+  "references": {
+   "zlib -9": 25176,
+   "bz2 -9": 16530,
+   "lzma -9e": 20656
+  }
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 74.8,
+ "p90_call_seconds": 160.6,
+ "prompt_tokens_per_s": 3722.7,
+ "gen_tokens_per_s": 49.3,
+ "mean_prompt_tokens": 3848,
+ "mean_gen_tokens": 2273,
+ "stopped_calls": 4,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

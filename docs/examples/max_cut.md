@@ -61,4 +61,243 @@ def cut(n, edges):
 
 ## Benchmark results
 
-This example has not been benchmarked yet. See [Benchmarking models](../benchmarking.md) for how to run it.
+The best result so far comes from **dots-studio/dots-3-note-preview:free (no-think)**, run through OpenRouter on 2026-10-31: a score of **0.76761** (×1.50 the starting program's 0.51218), reached after 3.64 of 60 minutes with 19 model requests.
+
+What the starting program produces (left) and what the best program by dots-studio/dots-3-note-preview:free (no-think) produces (right), drawn for the instance `g100`:
+
+![max_cut: the starting program's solution and the best one](../assets/examples/max_cut.svg)
+
+### How it got there
+
+The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.
+
+| Step | Minute | Score | Kind | Idea |
+|--:|--:|--:|---|---|
+| 0 | 0.0 | 0.51218 | start | initial program |
+| 1 | 2.3 | 0.72598 | edit | Replace the trivial alternating assignment with a greedy constructive heuristic followed by one-flip local search using incremental gain updates, which should lift the ratio from ~0.51 to ~0.72. |
+| 2 | 3.6 | 0.76761 | rewrite | Add a tabu search phase after the local search to escape local optima, using a dynamic tenure and periodic restarts with perturbation to improve the cut weight. |
+
+### The best program
+
+What changed compared with the starting program:
+
+```diff
+--- initial
++++ best
+@@ -19,7 +19,201 @@
+     time limit of 2.0 s (time.process_time(); more than 1.5 x the limit makes the program
+     invalid). Only the Python standard library may be used.
+ 
+-    Current method: alternate the sides by node index (ignores the edges entirely).
++    Current method: greedy construction + one-flip local search + tabu search with restarts.
+     """
+-    return [i % 2 for i in range(n)]
++    start_time = time.process_time()
++    time_limit = 1.8  # seconds, leave some buffer
++
++    # Build adjacency list: for each node, list of (neighbor, weight)
++    adj = [[] for _ in range(n)]
++    for u, v, w in edges:
++        adj[u].append((v, w))
++        adj[v].append((u, w))
++
++    # Initialize sides: all 0
++    side = [0] * n
++
++    # Greedy construction: place nodes one by one on the side that cuts more weight
++    # to already placed nodes. We'll process nodes in random order.
++    order = list(range(n))
++    random.shuffle(order)
++    placed = [False] * n
++    for u in order:
++        # Calculate gain if we put u on side 1 vs side 0 (relative to already placed neighbors)
++        gain0 = 0  # weight to side 1 neighbors if u is on 0 (cuts)
++        gain1 = 0  # weight to side 0 neighbors if u is on 1 (cuts)
++        for v, w in adj[u]:
++            if placed[v]:
++                if side[v] == 0:
++                    gain1 += w  # if u on 1, cuts to v on 0
++                else:
++                    gain0 += w  # if u on 0, cuts to v on 1
++        # Choose side with higher gain (if tie, random)
++        if gain1 > gain0:
++            side[u] = 1
++        elif gain0 > gain1:
++            side[u] = 0
++        else:
++            side[u] = random.randint(0, 1)
++        placed[u] = True
++
++    # Compute initial gains for all nodes
++    # gain[u] = (sum of w for neighbors with same side) - (sum for opposite)
++    # Flipping u adds gain[u] to the cut weight.
++    gain = [0] * n
++    for u in range(n):
++        same = 0
++        opp = 0
++        for v, w in adj[u]:
++            if side[u] == side[v]:
++                same += w
++            else:
++                opp += w
++        gain[u] = same - opp
++
++    # Compute current cut weight
++    current_cut = 0
++    for u in range(n):
++        for v, w in adj[u]:
++            if u < v and side[u] != side[v]:
++                current_cut += w
++
++    best_side = side[:]
++    best_cut = current_cut
++
++    # One-flip local search: repeatedly flip the node with the highest positive gain
++    # until no such node exists or time is up.
++    while True:
++        elapsed = time.process_time() - start_time
++        if elapsed > time_limit:
++            return best_side
++
++        # Find node with maximum gain (most beneficial to flip)
++        best_gain = 0
++        best_u = -1
++        for u in range(n):
++            if gain[u] > best_gain:
++                best_gain = gain[u]
++                best_u = u
++
++        if best_u == -1 or best_gain <= 0:
++            break  # local optimum reached
++
++        # Flip best_u
++        u = best_u
++        side[u] = 1 - side[u]
++        current_cut += gain[u]
++        # Update gain for u: after flip, its gain becomes -gain[u]
++        gain[u] = -gain[u]
++        # Update gains for neighbors
++        for v, w in adj[u]:
++            if side[u] == side[v]:
++                # Now same: before flip they were opposite
++                gain[v] += 2 * w
++            else:
++                # Now opposite: before flip they were same
++                gain[v] -= 2 * w
++
++        # Update best solution if improved
++        if current_cut > best_cut:
++            best_cut = current_cut
++            best_side = side[:]
++
++    # Tabu search parameters
++    tenure = max(1, n // 10)
++    tabu = [-1] * n  # tabu[u] = iteration until which flipping u is forbidden
++    iteration = 0
++    no_improve_count = 0
++    max_no_improve = 50  # restart if no improvement for this many iterations
++
++    while True:
++        elapsed = time.process_time() - start_time
++        if elapsed > time_limit:
++            break
++
++        # Find best candidate: highest gain, not tabu (or aspiration if beats best)
++        best_gain = -float('inf')
++        best_u = -1
++        for u in range(n):
++            if tabu[u] <= iteration or gain[u] > 0:
++                # Aspiration: if flipping beats best cut, allow even if tabu
++                if tabu[u] > iteration:
++                    new_cut_est = current_cut + gain[u]
++                    if new_cut_est <= best_cut:
++                        continue
++                if gain[u] > best_gain:
++                    best_gain = gain[u]
++                    best_u = u
++
++        if best_u == -1:
++            # No candidate found; pick the one with highest gain even if tabu (aspiration)
++            for u in range(n):
++                if gain[u] > best_gain:
++                    new_cut_est = current_cut + gain[u]
++                    if new_cut_est > best_cut:
++                        best_gain = gain[u]
++                        best_u = u
++            if best_u == -1:
++                # No move helps; restart
++                break
++
++        # Flip best_u
++        u = best_u
++        side[u] = 1 - side[u]
++        current_cut += gain[u]
++        gain[u] = -gain[u]
++        for v, w in adj[u]:
++            if side[u] == side[v]:
++                gain[v] += 2 * w
++            else:
++                gain[v] -= 2 * w
++
++        # Update tabu list
++        tabu[u] = iteration + tenure
++
++        # Update best solution
++        if current_cut > best_cut:
++            best_cut = current_cut
++            best_side = side[:]
++            no_improve_count = 0
++        else:
++            no_improve_count += 1
++
++        iteration += 1
++
++        # Restart if stuck
++        if no_improve_count >= max_no_improve:
++            # Perturb: flip 10% of nodes randomly
++            perturb_count = max(1, n // 10)
++            nodes = list(range(n))
++            random.shuffle(nodes)
++            for i in range(perturb_count):
++                u = nodes[i]
++                side[u] = 1 - side[u]
++                # Recompute gain for u
++                same = 0
++                opp = 0
++                for v, w in adj[u]:
++                    if side[u] == side[v]:
++                        same += w
++                    else:
++                        opp += w
++                gain[u] = same - opp
++                # Update neighbors' gains
++                for v, w in adj[u]:
++                    if side[u] == side[v]:
++                        gain[v] += 2 * w
++                    else:
++                        gain[v] -= 2 * w
++            # Recompute current cut after perturbation
++            current_cut = 0
++            for u in range(n):
++                for v, w in adj[u]:
++                    if u < v and side[u] != side[v]:
++                        current_cut += w
++            no_improve_count = 0
++            # Reset tabu list
++            tabu = [-1] * n
++
++    return best_side
+ # OMEGA-BLOCK-END
+```
+
+### All models
+
+One run per model and reasoning mode; the [model benchmarks](../benchmarks/max_cut.md) page has speed, memory and progress over time.
+
+| Model | Where | Best | Gain | Minutes to best | New bests |
+|---|---|--:|--:|--:|--:|
+| dots-studio/dots-3-note-preview:free (no-think) | cloud | 0.76761 | ×1.50 | 3.6 | 3 |
+| nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 0.76741 | ×1.50 | 8.2 | 5 |
+| poolside/laguna-s-2.1:free (no-think) | cloud | 0.76054 | ×1.48 | 15.1 | 7 |
+| cohere/north-mini-code:free (no-think) | cloud | 0.75332 | ×1.47 | 6.5 | 5 |
+| nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | 0.71534 | ×1.40 | 11.1 | 4 |

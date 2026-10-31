@@ -1,0 +1,225 @@
+{
+ "schema": 4,
+ "example": "heilbronn_13",
+ "model": "dots-studio/dots-3-note-preview:free",
+ "variant": "no-think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-10-31T06:04:24",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 4.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 0.004790811518724618,
+ "best_score": 0.00595243679177157,
+ "improvement": 1.2424694164040488,
+ "llm_calls": 21,
+ "mean_llm_seconds": 12.6,
+ "attempts": 21,
+ "ok": 10,
+ "statuses": {
+  "invalid": 3,
+  "edit_error": 6,
+  "ok": 10,
+  "duplicate": 2
+ },
+ "sweeps": 2,
+ "sweep_variants": 25,
+ "improvements": 1,
+ "minutes_to_best": 1.6,
+ "best_idea": "Fix the OverflowError by clamping the exponent argument in _softmin and improve the acceptance criterion to use a stable softmin comparison without recomputing the best softmin every step.",
+ "progress": [
+  [
+   0.0,
+   0.004790811518724618
+  ],
+  [
+   1.6,
+   0.00595243679177157
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.004790811518724618,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 0.28,
+   "score": null,
+   "model": "dots-studio/dots-3-note-preview:free",
+   "mode": "explore/diff/bold",
+   "status": "invalid",
+   "idea": "Replace the naive regular polygon seed with a physics-inspired simulated annealing optimizer that starts from a point-symmetric layout and iteratively maximizes the minimum triangle area using a soft-min surrogate and adaptive step decay."
+  },
+  {
+   "minutes": 1.6,
+   "score": 0.00595243679177157,
+   "model": "dots-studio/dots-3-note-preview:free",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Fix the OverflowError by clamping the exponent argument in _softmin and improve the acceptance criterion to use a stable softmin comparison without recomputing the best softmin every step."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -5,17 +5,131 @@\n import math\n \n # OMEGA-BLOCK-START\n+import random\n+import itertools\n+\n+def _area(p1, p2, p3):\n+    \"\"\"Signed area * 2 of triangle (p1, p2, p3).\"\"\"\n+    return abs((p2[0] - p1[0]) * (p3[1] - p1[1]) - (p3[0] - p1[0]) * (p2[1] - p1[1]))\n+\n+def _softmin(areas, beta):\n+    \"\"\"Soft-min surrogate: -1/beta * log(sum(exp(-beta * a))).\"\"\"\n+    if not areas:\n+        return 0.0\n+    m = max(areas)\n+    # Clamp exponent to avoid overflow; exp(-large) -> 0, exp(large) -> inf\n+    exps = []\n+    for a in areas:\n+        arg = -beta * (a - m)\n+        if arg > 700:   # exp(700) is near float limit\n+            exps.append(0.0)\n+        elif arg < -700:\n+            exps.append(math.exp(700))  # effectively inf, but we cap\n+        else:\n+            exps.append(math.exp(arg))\n+    return m - math.log(sum(exps)) / beta\n+\n def construct(n=13):\n     \"\"\"Return a list of n points (x, y) inside the closed unit square [0,1]^2.\n \n-    The score is the smallest area among all triangles with corners at three of\n-    the points, so no three points may be (nearly) collinear. This start puts\n-    the points on a regular polygon on a small circle around the center, which\n-    avoids collinear triples but wastes most of the square.\n+    Uses simulated annealing with a soft-min surrogate to maximize the smallest\n+    triangle area. Starts from a point-symmetric seed and perturbs coordinates\n+    while clamping to [0,1]. Uses a fixed random seed for reproducibility.\n     \"\"\"\n-    radius = 0.3\n-    return [(0.5 + radius * math.cos(2 * math.pi * k / n),\n-             0.5 + radius * math.sin(2 * math.pi * k / n)) for k in range(n)]\n+    random.seed(42)\n+    # Initial point-symmetric seed: corners and boundary points\n+    pts = [\n+        (0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (1.0, 1.0),\n+        (0.5, 0.0), (0.5, 1.0), (0.0, 0.5), (1.0, 0.5),\n+        (0.25, 0.25), (0.75, 0.25), (0.25, 0.75), (0.75, 0.75),\n+        (0.5, 0.5)\n+    ]\n+    if n != 13:\n+        pts = pts[:n]\n+    # Precompute all triplets\n+    triplets = list(itertools.combinations(range(n), 3))\n+    areas = [_area(pts[i], pts[j], pts[k]) for i, j, k in triplets]\n+    best_min = min(areas)\n+    best_pts = list(pts)\n+\n+    # Simulated annealing parameters\n+    T_start = 0.05\n+    T_end = 1e-6\n+    steps = 20000\n+    beta_start = 100.0\n+    beta_end = 1e6\n+    for step in range(steps):\n+        frac = step / steps\n+        T = T_start * (T_end / T_start) ** frac\n+        beta = beta_start * (beta_end / beta_start) ** frac\n+        # Pick a random point and perturb it\n+        idx = random.randrange(n)\n+        old_x, old_y = pts[idx]\n+        dx = random.gauss(0, T)\n+        dy = random.gauss(0, T)\n+        new_x = min(1.0, max(0.0, old_x + dx))\n+        new_y = min(1.0, max(0.0, old_y + dy))\n+        # Avoid duplicate points\n+        if any(abs(new_x - x) < 1e-9 and abs(new_y - y) < 1e-9 for x, y in pts):\n+            continue\n+        pts[idx] = (new_x, new_y)\n+        # Recompute affected areas (all triangles involving idx)\n+        new_areas = []\n+        for a, b, c in triplets:\n+            if idx in (a, b, c):\n+                new_areas.append(_area(pts[a], pts[b], pts[c]))\n+            else:\n+                # unchanged\n+                pass\n+        # Full recompute for simplicity (n=13 is small)\n+        areas = [_area(pts[a], pts[b], pts[c]) for a, b, c in triplets]\n+        current_softmin = _softmin(areas, beta)\n+        best_softmin = _softmin([_area(best_pts[a], best_pts[b], best_pts[c]) for a, b, c in triplets], beta)\n+        # Accept if softmin improves (always accept improvements to real min)\n+        current_min = min(areas)\n+        if current_min > best_min or random.random() < math.exp((current_softmin - best_softmin) / T):\n+            if current_min > best_min:\n+                best_min = current_min\n+                best_pts = list(pts)\n+        else:\n+            pts[idx] = (old_x, old_y)  # revert\n+        # Prevent T from becoming too small causing numerical issues\n+        if T < 1e-12:\n+            break\n+    # Final polish: greedy local search on the worst triangles\n+    for _ in range(5000):\n+        areas = [_area(pts[a], pts[b], pts[c]) for a, b, c in triplets]\n+        min_idx = areas.index(min(areas))\n+        a, b, c = triplets[min_idx]\n+        worst_pts = [a, b, c]\n+        # Try to move each of the three points slightly to increase the area\n+        improved = False\n+        for idx in worst_pts:\n+            old_x, old_y = pts[idx]\n+            best_local = areas[min_idx]\n+            best_move = None\n+            for _ in range(20):\n+                dx = random.gauss(0, 0.001)\n+                dy = random.gauss(0, 0.001)\n+                new_x = min(1.0, max(0.0, old_x + dx))\n+                new_y = min(1.0, max(0.0, old_y + dy))\n+                if any(abs(new_x - x) < 1e-9 and abs(new_y - y) < 1e-9 for x, y in pts):\n+                    continue\n+                pts[idx] = (new_x, new_y)\n+                new_areas = [_area(pts[i], pts[j], pts[k]) for i, j, k in triplets]\n+                new_min = min(new_areas)\n+                if new_min > best_local:\n+                    best_local = new_min\n+                    best_move = (new_x, new_y)\n+                pts[idx] = (old_x, old_y)\n+            if best_move:\n+                pts[idx] = best_move\n+                improved = True\n+                break\n+        if not improved:\n+            break\n+    return best_pts\n+    return best_pts\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "heilbronn",
+  "points": [
+   [
+    0.8,
+    0.5
+   ],
+   [
+    0.765636807695963,
+    0.6394169516131305
+   ],
+   [
+    0.6704194240193467,
+    0.7468951597680968
+   ],
+   [
+    0.536161004076597,
+    0.7978126622294162
+   ],
+   [
+    0.3936185338872394,
+    0.7805048728056244
+   ],
+   [
+    0.27544677554866964,
+    0.6989367974722386
+   ],
+   [
+    0.2087174547721844,
+    0.5717946992862672
+   ],
+   [
+    0.2087174547721844,
+    0.42820530071373275
+   ],
+   [
+    0.2754467755486696,
+    0.30106320252776153
+   ],
+   [
+    0.3936185338872392,
+    0.21949512719437558
+   ],
+   [
+    0.536161004076597,
+    0.20218733777058384
+   ],
+   [
+    0.6704194240193464,
+    0.25310484023190294
+   ],
+   [
+    0.765636807695963,
+    0.3605830483868695
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "heilbronn",
+  "points": [
+   [
+    0.3600635539488741,
+    0.017709760939221962
+   ],
+   [
+    0.7858091805003855,
+    0.45457785464572426
+   ],
+   [
+    0.17995537954694601,
+    0.6422001021798774
+   ],
+   [
+    0.7777599725612654,
+    0.9857756669309896
+   ],
+   [
+    0.43588339725190633,
+    0.00046897636351063795
+   ],
+   [
+    0.26817683885476085,
+    0.9283023172549303
+   ],
+   [
+    0.04312816719920544,
+    0.46658235969190487
+   ],
+   [
+    1.0,
+    0.43314571209975217
+   ],
+   [
+    0.0,
+    1.0
+   ],
+   [
+    0.9254641169983698,
+    0.49984462375552385
+   ],
+   [
+    0.5331860491548716,
+    0.6538389749596629
+   ],
+   [
+    1.0,
+    0.8612003255014222
+   ],
+   [
+    0.1734753597576813,
+    0.3563056313002653
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 12.6,
+ "p90_call_seconds": 15.9,
+ "prompt_tokens_per_s": 3249.6,
+ "gen_tokens_per_s": 114.2,
+ "mean_prompt_tokens": 3782,
+ "mean_gen_tokens": 1248,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

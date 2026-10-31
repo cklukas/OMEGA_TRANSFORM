@@ -81,4 +81,133 @@ extern "C" size_t parse_doubles(const char* buf, size_t len, double* out) {
 
 ## Benchmark results
 
-This example has not been benchmarked yet. See [Benchmarking models](../benchmarking.md) for how to run it.
+The best result so far comes from **nvidia/nemotron-3-ultra-550b-a55b:free (no-think)**, run through OpenRouter on 2026-10-31: a score of **80.4135** (×1.35 the starting program's 59.4591), reached after 2.98 of 60 minutes with 19 model requests.
+
+What the starting program produces (left) and what the best program by nvidia/nemotron-3-ultra-550b-a55b:free (no-think) produces (right):
+
+![float_parse_cpp: the starting program's solution and the best one](../assets/examples/float_parse_cpp.svg)
+
+### How it got there
+
+The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.
+
+| Step | Minute | Score | Kind | Idea |
+|--:|--:|--:|---|---|
+| 0 | 0.0 | 59.4591 | start | initial program |
+| 1 | 3.0 | 80.4135 | edit | Add a fast path for integers and simple decimals with <=19 significant digits using Clinger's fast path (exact multiply/divide by powers of 10) to avoid calling strtod for the common cases, while keeping strtod as fallback for complex cases. |
+
+### The best program
+
+What changed compared with the starting program:
+
+```diff
+--- initial
++++ best
+@@ -34,11 +34,85 @@
+     const char* p = buf;
+     const char* end = buf + len;
+     size_t count = 0;
++
++    // Powers of 10 exactly representable as double (10^0 to 10^22)
++    static constexpr double POW10[23] = {
++        1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11,
++        1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22
++    };
++
+     while (p < end) {
+-        char* next;
+-        out[count++] = std::strtod(p, &next);
+-        p = next;
++        const char* start = p;
++        bool negative = false;
++        if (*p == '-') {
++            negative = true;
++            ++p;
++        }
++
++        // Parse integer part
++        uint64_t mantissa = 0;
++        int num_digits = 0;
++        const char* digit_start = p;
++        while (p < end && *p >= '0' && *p <= '9') {
++            if (num_digits < 19) {
++                mantissa = mantissa * 10 + (*p - '0');
++            }
++            ++num_digits;
++            ++p;
++        }
++
++        // Parse fractional part
++        int frac_digits = 0;
++        if (p < end && *p == '.') {
++            ++p;
++            while (p < end && *p >= '0' && *p <= '9') {
++                if (num_digits < 19) {
++                    mantissa = mantissa * 10 + (*p - '0');
++                }
++                ++num_digits;
++                ++frac_digits;
++                ++p;
++            }
++        }
++
++        // Parse exponent
++        int exp = 0;
++        bool exp_negative = false;
++        if (p < end && (*p == 'e' || *p == 'E')) {
++            ++p;
++            if (p < end && (*p == '+' || *p == '-')) {
++                exp_negative = (*p == '-');
++                ++p;
++            }
++            while (p < end && *p >= '0' && *p <= '9') {
++                exp = exp * 10 + (*p - '0');
++                ++p;
++            }
++            if (exp_negative) exp = -exp;
++        }
++
++        // Skip newline
+         while (p < end && *p == '\n') ++p;
++
++        // Clinger's fast path: mantissa fits in 53 bits and |exp - frac_digits| <= 22
++        int decimal_exp = exp - frac_digits;
++        if (num_digits <= 19 && mantissa < (1ull << 53) && decimal_exp >= -22 && decimal_exp <= 22) {
++            double result;
++            if (decimal_exp >= 0) {
++                result = (double)mantissa * POW10[decimal_exp];
++            } else {
++                result = (double)mantissa / POW10[-decimal_exp];
++            }
++            if (negative) result = -result;
++            out[count++] = result;
++        } else {
++            // Fallback to strtod for complex cases
++            char* next;
++            out[count++] = std::strtod(start, &next);
++            // p should already be at the right position, but ensure we don't go backwards
++            p = start + (next - start);
++            while (p < end && *p == '\n') ++p;
++        }
+     }
+     return count;
+ }
+```
+
+### All models
+
+One run per model and reasoning mode; the [model benchmarks](../benchmarks/float_parse_single_thread.md) page has speed, memory and progress over time.
+
+| Model | Where | Best | Gain | Minutes to best | New bests |
+|---|---|--:|--:|--:|--:|
+| nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 80.4135 | ×1.35 | 3.0 | 1 |
+| dots-studio/dots-3-note-preview:free (no-think) | cloud | 78.6935 | ×1.31 | 0.8 | 1 |
+| cohere/north-mini-code:free (no-think) | cloud | 70.9674 | ×1.00 | - | 0 |
+| xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 60.8299 | ×1.00 | - | 0 |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | 59.6528 | ×1.00 | - | 0 |
+| google/gemma-4-31b-it:free (no-think) | cloud | | | | failed: all 6 model requests failed: google/gemma-4-31b-it:free … |
+| nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | 58.7018 | ×1.02 | 3.1 | 1 |
+| poolside/laguna-s-2.1:free (no-think) | cloud | 57.7235 | ×1.00 | - | 0 |
+| google/gemma-4-26b-a4b-it:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
+| poolside/laguna-xs-2.1:free (no-think) | cloud | 57.3424 | ×1.00 | - | 0 |
+| nvidia/nemotron-3.5-lightning:free (no-think) | cloud | 57.1109 | ×1.00 | - | 0 |

@@ -1,0 +1,336 @@
+{
+ "schema": 4,
+ "example": "circles_in_circle_21",
+ "model": "richardyoung/frognano-4b-2609:latest",
+ "variant": "no-think",
+ "model_size_gb": 3.5,
+ "model_params": "4.3B",
+ "started": "2026-10-30T12:38:22",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 12.9,
+ "omega_version": "0.1.0",
+ "omega_commit": "17e553b",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 3.1890454825108625,
+ "best_score": 3.462392238154651,
+ "improvement": 1.0857142857142859,
+ "llm_calls": 30,
+ "mean_llm_seconds": 24.9,
+ "attempts": 30,
+ "ok": 10,
+ "statuses": {
+  "invalid": 11,
+  "ok": 10,
+  "edit_error": 3,
+  "llm_error": 3,
+  "duplicate": 3
+ },
+ "sweeps": 2,
+ "sweep_variants": 32,
+ "improvements": 2,
+ "minutes_to_best": 5.41,
+ "best_idea": "tuned INNER_RING_R=0.38, OUTER_RING_R=0.71 on top of: Increase the initial radius estimate for the inner ring from 0.35 to 0.37 and the outer ring from 0.75 to 0.72 based on known optimal packing rati",
+ "progress": [
+  [
+   0.0,
+   3.1890454825108625
+  ],
+  [
+   5.41,
+   3.371276652940055
+  ],
+  [
+   5.41,
+   3.462392238154651
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.1890454825108625,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 5.41,
+   "score": 3.371276652940055,
+   "model": "richardyoung/frognano-4b-2609:latest",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Increase the initial radius estimate for the inner ring from 0.35 to 0.37 and the outer ring from 0.75 to 0.72 based on known optimal packing ratios for these counts, which should allow a slightly larger uniform radius without immediate overlap, boosting the sum of radii."
+  },
+  {
+   "minutes": 5.41,
+   "score": 3.462392238154651,
+   "model": "richardyoung/frognano-4b-2609:latest",
+   "mode": "sweep/exploit/diff/tune",
+   "status": "ok",
+   "idea": "tuned INNER_RING_R=0.38, OUTER_RING_R=0.71 on top of: Increase the initial radius estimate for the inner ring from 0.35 to 0.37 and the outer ring from 0.75 to 0.72 based on known optimal packing ratios for these counts, which should allow a slightly larger uniform radius without immediate overlap,"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -13,7 +13,9 @@\n     apart and every circle inside the container.\n     \"\"\"\n     centers = [(0.0, 0.0)]\n-    for count, ring in ((7, 0.35), (n - 8, 0.75)):\n+    INNER_RING_R = 0.38\n+    OUTER_RING_R = 0.71\n+    for count, ring in ((7, INNER_RING_R), (n - 8, OUTER_RING_R)):\n         centers += [(ring * math.cos(2 * math.pi * k / count),\n                      ring * math.sin(2 * math.pi * k / count)) for k in range(count)]\n     r = min(1.0 - math.hypot(x, y) for x, y in centers)\n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.0,
+    0.0,
+    0.151859
+   ],
+   [
+    0.35,
+    0.0,
+    0.151859
+   ],
+   [
+    0.218221,
+    0.273641,
+    0.151859
+   ],
+   [
+    -0.077882,
+    0.341225,
+    0.151859
+   ],
+   [
+    -0.315339,
+    0.151859,
+    0.151859
+   ],
+   [
+    -0.315339,
+    -0.151859,
+    0.151859
+   ],
+   [
+    -0.077882,
+    -0.341225,
+    0.151859
+   ],
+   [
+    0.218221,
+    -0.273641,
+    0.151859
+   ],
+   [
+    0.75,
+    0.0,
+    0.151859
+   ],
+   [
+    0.664092,
+    0.348542,
+    0.151859
+   ],
+   [
+    0.426049,
+    0.617238,
+    0.151859
+   ],
+   [
+    0.090403,
+    0.744532,
+    0.151859
+   ],
+   [
+    -0.265954,
+    0.701262,
+    0.151859
+   ],
+   [
+    -0.561383,
+    0.497342,
+    0.151859
+   ],
+   [
+    -0.728206,
+    0.179487,
+    0.151859
+   ],
+   [
+    -0.728206,
+    -0.179487,
+    0.151859
+   ],
+   [
+    -0.561383,
+    -0.497342,
+    0.151859
+   ],
+   [
+    -0.265954,
+    -0.701262,
+    0.151859
+   ],
+   [
+    0.090403,
+    -0.744532,
+    0.151859
+   ],
+   [
+    0.426049,
+    -0.617238,
+    0.151859
+   ],
+   [
+    0.664092,
+    -0.348542,
+    0.151859
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.0,
+    0.0,
+    0.164876
+   ],
+   [
+    0.38,
+    0.0,
+    0.164876
+   ],
+   [
+    0.236926,
+    0.297096,
+    0.164876
+   ],
+   [
+    -0.084558,
+    0.370473,
+    0.164876
+   ],
+   [
+    -0.342368,
+    0.164876,
+    0.164876
+   ],
+   [
+    -0.342368,
+    -0.164876,
+    0.164876
+   ],
+   [
+    -0.084558,
+    -0.370473,
+    0.164876
+   ],
+   [
+    0.236926,
+    -0.297096,
+    0.164876
+   ],
+   [
+    0.71,
+    0.0,
+    0.164876
+   ],
+   [
+    0.628674,
+    0.329953,
+    0.164876
+   ],
+   [
+    0.403326,
+    0.584319,
+    0.164876
+   ],
+   [
+    0.085581,
+    0.704823,
+    0.164876
+   ],
+   [
+    -0.251769,
+    0.663862,
+    0.164876
+   ],
+   [
+    -0.531443,
+    0.470817,
+    0.164876
+   ],
+   [
+    -0.689369,
+    0.169914,
+    0.164876
+   ],
+   [
+    -0.689369,
+    -0.169914,
+    0.164876
+   ],
+   [
+    -0.531443,
+    -0.470817,
+    0.164876
+   ],
+   [
+    -0.251769,
+    -0.663862,
+    0.164876
+   ],
+   [
+    0.085581,
+    -0.704823,
+    0.164876
+   ],
+   [
+    0.403326,
+    -0.584319,
+    0.164876
+   ],
+   [
+    0.628674,
+    -0.329953,
+    0.164876
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 4.8,
+ "model_gpu_memory_gb": 4.8,
+ "context_length": 40960,
+ "load_seconds": 11.6,
+ "median_call_seconds": 21.7,
+ "p90_call_seconds": 47.4,
+ "prompt_tokens_per_s": 1573.5,
+ "gen_tokens_per_s": 59.1,
+ "mean_prompt_tokens": 3057,
+ "mean_gen_tokens": 1060,
+ "stopped_calls": 3,
+ "provider": "ollama",
+ "cost_usd": 0
+}

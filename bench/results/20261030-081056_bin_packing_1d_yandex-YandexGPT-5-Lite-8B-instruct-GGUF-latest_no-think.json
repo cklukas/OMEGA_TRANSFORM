@@ -1,14 +1,14 @@
 {
  "schema": 4,
  "example": "bin_packing_1d",
- "model": "richardyoung/frognano-4b-2609:latest",
+ "model": "yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest",
  "variant": "no-think",
- "model_size_gb": 3.5,
- "model_params": "4.3B",
- "started": "2026-10-30T07:56:47",
+ "model_size_gb": 4.9,
+ "model_params": "8.0B",
+ "started": "2026-10-30T08:10:56",
  "minutes_budget": 60.0,
  "patience": 15,
- "wall_minutes": 6.4,
+ "wall_minutes": 6.0,
  "omega_version": "0.1.0",
  "omega_commit": "17e553b",
  "machine": {
@@ -37,31 +37,30 @@
   "max_reasoning_factor": 8.0
  },
  "initial_score": 0.7942635036246238,
- "best_score": 0.9512800819252432,
- "improvement": 1.1976882704342748,
- "llm_calls": 18,
- "mean_llm_seconds": 20.5,
- "attempts": 18,
- "ok": 7,
+ "best_score": 0.795872454551847,
+ "improvement": 1.0020257142873628,
+ "llm_calls": 21,
+ "mean_llm_seconds": 16.1,
+ "attempts": 21,
+ "ok": 5,
  "statuses": {
-  "invalid": 6,
-  "ok": 7,
-  "llm_error": 4,
-  "edit_error": 1
+  "invalid": 10,
+  "ok": 5,
+  "duplicate": 6
  },
- "sweeps": 0,
- "sweep_variants": 0,
+ "sweeps": 2,
+ "sweep_variants": 5,
  "improvements": 1,
- "minutes_to_best": 0.55,
- "best_idea": "Replace the slow Next-Fit heuristic with First-Fit Decreasing (FFD) by sorting items descending and using a simple O(N*M) scan to place items, which significantly reduces bins for the hard instances.",
+ "minutes_to_best": 1.32,
+ "best_idea": "Use Best Fit Decreasing (BFD) to reduce the number of bins compared to Next Fit.",
  "progress": [
   [
    0.0,
    0.7942635036246238
   ],
   [
-   0.55,
-   0.9512800819252432
+   1.32,
+   0.795872454551847
   ]
  ],
  "best_lineage": [
@@ -74,15 +73,15 @@
    "idea": "initial program"
   },
   {
-   "minutes": 0.55,
-   "score": 0.9512800819252432,
-   "model": "richardyoung/frognano-4b-2609:latest",
+   "minutes": 1.32,
+   "score": 0.795872454551847,
+   "model": "yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest",
    "mode": "exploit/diff/refine",
    "status": "ok",
-   "idea": "Replace the slow Next-Fit heuristic with First-Fit Decreasing (FFD) by sorting items descending and using a simple O(N*M) scan to place items, which significantly reduces bins for the hard instances."
+   "idea": "Use Best Fit Decreasing (BFD) to reduce the number of bins compared to Next Fit."
   }
  ],
- "best_diff": "--- initial\n+++ best\n@@ -21,15 +21,19 @@\n \n     Current method: next fit (open a new bin whenever the next item does not fit).\n     \"\"\"\n+    # Sort indices by size descending for First-Fit Decreasing\n+    sorted_indices = sorted(range(len(sizes)), key=lambda i: sizes[i], reverse=True)\n     bins = []\n-    current, load = [], 0\n-    for i, s in enumerate(sizes):\n-        if load + s > capacity:\n-            bins.append(current)\n-            current, load = [], 0\n-        current.append(i)\n-        load += s\n-    if current:\n-        bins.append(current)\n+    for idx in sorted_indices:\n+        s = sizes[idx]\n+        placed = False\n+        for bin_idx, bin_items in enumerate(bins):\n+            bin_load = sum(sizes[i] for i in bin_items)\n+            if bin_load + s <= capacity:\n+                bin_items.append(idx)\n+                placed = True\n+                break\n+        if not placed:\n+            bins.append([idx])\n     return bins\n # OMEGA-BLOCK-END\n",
+ "best_diff": "--- initial\n+++ best\n@@ -19,15 +19,17 @@\n     (time.process_time(); more than 1.5 x the limit makes the program invalid).\n     Only the Python standard library may be used.\n \n-    Current method: next fit (open a new bin whenever the next item does not fit).\n+    Current method: Best Fit Decreasing (BFD) to improve bin utilization.\n     \"\"\"\n+    sizes_with_idx = sorted(enumerate(sizes), key=lambda x: -x[1])\n     bins = []\n     current, load = [], 0\n-    for i, s in enumerate(sizes):\n+\n+    for i, (idx, s) in enumerate(sizes_with_idx):\n         if load + s > capacity:\n             bins.append(current)\n             current, load = [], 0\n-        current.append(i)\n+        current.append(idx)\n         load += s\n     if current:\n         bins.append(current)\n",
  "initial_solution": {
   "kind": "bins",
   "instance": "u300",
@@ -732,568 +731,670 @@
   "lower_bound": 123,
   "bins": [
    [
-    698,
-    298
+    698
    ],
    [
-    693,
-    305
+    693
    ],
    [
-    692,
-    305
+    692
    ],
    [
-    691,
-    304
+    691
    ],
    [
-    689,
-    310
+    689
    ],
    [
-    687,
-    310
+    687
    ],
    [
-    684,
-    314
+    684
    ],
    [
-    683,
-    317
+    683
    ],
    [
-    683,
-    314
+    683
    ],
    [
-    682,
-    318
+    682
    ],
    [
-    679,
-    321
+    679
    ],
    [
-    678,
-    322
+    678
    ],
    [
-    677,
-    318
+    677
    ],
    [
-    676,
-    324
+    676
    ],
    [
-    674,
-    325
+    674
    ],
    [
-    674,
-    304
+    674
    ],
    [
-    669,
-    330
+    669
    ],
    [
-    667,
-    332
+    667
    ],
    [
-    666,
-    334
+    666
    ],
    [
-    664,
-    336
+    664
    ],
    [
-    664,
-    335
+    664
    ],
    [
-    663,
-    337
+    663
    ],
    [
-    663,
-    329
+    663
    ],
    [
-    661,
-    338
+    661
    ],
    [
-    661,
-    328
+    661
    ],
    [
-    661,
-    327
+    661
    ],
    [
-    660,
-    340
+    660
    ],
    [
-    657,
-    340
+    657
    ],
    [
-    654,
-    294
+    654
    ],
    [
-    653,
-    292
+    653
    ],
    [
-    652,
-    348
+    652
    ],
    [
-    651,
-    290
+    651
    ],
    [
-    651,
-    289
+    651
    ],
    [
-    647,
-    285
+    647
    ],
    [
-    647,
-    281
+    647
    ],
    [
-    645,
-    355
+    645
    ],
    [
-    640,
-    359
+    640
    ],
    [
-    640,
-    358
+    640
    ],
    [
-    636,
-    364
+    636
    ],
    [
-    633,
-    361
+    633
    ],
    [
-    631,
-    361
+    631
    ],
    [
-    628,
-    372
+    628
    ],
    [
-    626,
-    374
+    626
    ],
    [
-    624,
-    375
+    624
    ],
    [
-    622,
-    375
+    622
    ],
    [
-    621,
-    379
+    621
    ],
    [
-    620,
-    373
+    620
    ],
    [
-    619,
-    372
+    619
    ],
    [
-    618,
-    361
+    618
    ],
    [
-    618,
-    361
+    618
    ],
    [
-    617,
-    383
+    617
    ],
    [
-    616,
-    277,
-    105
+    616
    ],
    [
-    616,
-    275,
-    109
+    616
    ],
    [
-    614,
-    274,
-    112
+    614
    ],
    [
-    612,
-    388
+    612
    ],
    [
-    611,
-    387
+    611
    ],
    [
-    611,
-    273,
-    114
+    611
    ],
    [
-    608,
-    390
+    608
    ],
    [
-    607,
-    272,
-    121
+    607
    ],
    [
-    607,
-    272,
-    118
+    607
    ],
    [
-    604,
-    396
+    604
    ],
    [
-    601,
-    398
+    601
    ],
    [
-    600,
-    397
+    600
    ],
    [
-    599,
-    401
+    599
    ],
    [
-    596,
-    403
+    596
    ],
    [
-    596,
-    403
+    596
    ],
    [
-    592,
-    405
+    592
    ],
    [
-    591,
-    405
+    591
    ],
    [
-    585,
-    415
+    585
    ],
    [
-    583,
-    417
+    583
    ],
    [
-    580,
-    419
+    580
    ],
    [
-    571,
-    429
+    571
    ],
    [
-    570,
-    428
+    570
    ],
    [
-    570,
-    428
+    570
    ],
    [
-    569,
-    425
+    569
    ],
    [
-    568,
-    413
+    568
    ],
    [
-    565,
-    435
+    565
    ],
    [
-    563,
-    433
+    563
    ],
    [
-    561,
-    439
+    561
    ],
    [
-    560,
-    440
+    560
    ],
    [
-    556,
-    440
+    556
    ],
    [
-    556,
-    410
+    556
    ],
    [
-    549,
-    451
+    549
    ],
    [
-    548,
-    452
+    548
    ],
    [
-    543,
-    455
+    543
    ],
    [
-    543,
-    454
+    543
    ],
    [
-    542,
-    453
+    542
    ],
    [
-    539,
-    461
+    539
    ],
    [
-    536,
-    452
+    536
    ],
    [
-    536,
-    452
+    536
    ],
    [
-    536,
-    449
+    536
    ],
    [
-    532,
-    465
+    532
    ],
    [
-    532,
-    448
+    532
    ],
    [
-    531,
-    447
+    531
    ],
    [
-    526,
-    473
+    526
    ],
    [
-    526,
-    473
+    526
    ],
    [
-    524,
-    476
+    524
    ],
    [
-    524,
-    475
+    524
    ],
    [
-    523,
-    446
+    523
    ],
    [
-    516,
-    483
+    516
    ],
    [
-    514,
-    479
+    514
    ],
    [
-    513,
-    487
+    513
    ],
    [
-    511,
-    489
+    511
    ],
    [
-    506,
-    492
+    506
    ],
    [
-    504,
-    495
+    504
    ],
    [
-    503,
-    490
+    503
    ],
    [
-    502,
-    488
+    502
    ],
    [
-    502,
-    488
+    502
    ],
    [
     499,
     499
    ],
    [
+    495,
+    492
+   ],
+   [
+    490,
+    489
+   ],
+   [
+    488,
+    488
+   ],
+   [
     487,
-    402,
-    108
+    487
    ],
    [
+    483,
+    479
+   ],
+   [
+    476,
+    475
+   ],
+   [
+    473,
+    473
+   ],
+   [
+    465,
+    461
+   ],
+   [
+    455,
+    454
+   ],
+   [
+    453,
+    452
+   ],
+   [
+    452,
+    452
+   ],
+   [
+    451,
+    449
+   ],
+   [
+    448,
+    447
+   ],
+   [
+    446,
+    440
+   ],
+   [
+    440,
+    439
+   ],
+   [
+    435,
+    433
+   ],
+   [
+    429,
+    428
+   ],
+   [
+    428,
+    425
+   ],
+   [
+    419,
+    417
+   ],
+   [
+    415,
+    413
+   ],
+   [
+    410,
+    405
+   ],
+   [
+    405,
+    403
+   ],
+   [
+    403,
+    402
+   ],
+   [
+    401,
+    398
+   ],
+   [
+    397,
+    396
+   ],
+   [
+    390,
+    388
+   ],
+   [
+    387,
+    383
+   ],
+   [
+    379,
+    375
+   ],
+   [
+    375,
+    374
+   ],
+   [
+    373,
+    372
+   ],
+   [
+    372,
+    364
+   ],
+   [
+    361,
+    361
+   ],
+   [
+    361,
+    361
+   ],
+   [
+    359,
+    358
+   ],
+   [
+    355,
+    348
+   ],
+   [
+    340,
+    340
+   ],
+   [
+    338,
+    337
+   ],
+   [
+    336,
+    335
+   ],
+   [
+    334,
+    332,
+    330
+   ],
+   [
+    329,
+    328,
+    327
+   ],
+   [
+    325,
+    324,
+    322
+   ],
+   [
+    321,
+    318,
+    318
+   ],
+   [
+    317,
+    314,
+    314
+   ],
+   [
+    310,
+    310,
+    305
+   ],
+   [
+    305,
+    304,
+    304
+   ],
+   [
+    298,
+    294,
+    292
+   ],
+   [
+    290,
+    289,
+    285
+   ],
+   [
+    281,
+    277,
+    275
+   ],
+   [
+    274,
+    273,
+    272
+   ],
+   [
+    272,
     271,
-    270,
+    270
+   ],
+   [
     267,
-    188
-   ],
-   [
     264,
-    263,
+    263
+   ],
+   [
     262,
-    211
-   ],
-   [
     260,
-    250,
+    250
+   ],
+   [
     249,
-    238
-   ],
-   [
     238,
-    237,
+    238,
+    237
+   ],
+   [
     236,
-    233
-   ],
-   [
+    233,
     232,
-    228,
-    228,
-    223
+    228
    ],
    [
+    228,
+    223,
     220,
-    217,
-    217,
-    216,
-    130
+    217
    ],
    [
+    217,
     216,
-    212,
-    210,
-    210,
-    148
+    216,
+    212
    ],
    [
-    206,
+    211,
+    210,
+    210,
+    206
+   ],
+   [
     206,
     204,
     202,
-    178
+    201
    ],
    [
-    201,
     198,
     196,
     193,
+    188,
     186
    ],
    [
     185,
     183,
     178,
-    174,
-    172,
-    102
+    178,
+    174
    ],
    [
+    172,
     172,
     171,
     166,
-    164,
-    160,
-    157
+    164
    ],
    [
+    160,
+    157,
+    148,
     144,
     141,
-    140,
+    140
+   ],
+   [
     138,
     138,
     136,
-    135
-   ],
-   [
+    135,
     133,
     131,
-    131,
+    131
+   ],
+   [
+    130,
     129,
     129,
     128,
-    126
+    126,
+    124,
+    122
    ],
    [
-    124,
     122,
-    122,
+    121,
+    118,
     118,
     117,
     117,
+    114,
+    112
+   ],
+   [
+    109,
+    108,
+    105,
+    102,
     101
    ]
   ]
  },
  "error": "",
  "stop_reason": "no progress",
- "model_memory_gb": 4.8,
- "model_gpu_memory_gb": 4.8,
- "context_length": 40960,
- "load_seconds": 12.3,
- "median_call_seconds": 18.9,
- "p90_call_seconds": 43.9,
- "prompt_tokens_per_s": 1860.7,
- "gen_tokens_per_s": 61.8,
- "mean_prompt_tokens": 2499,
- "mean_gen_tokens": 835,
- "stopped_calls": 4,
+ "model_memory_gb": 10.2,
+ "model_gpu_memory_gb": 10.2,
+ "context_length": 32768,
+ "load_seconds": 19.1,
+ "median_call_seconds": 15.4,
+ "p90_call_seconds": 22.3,
+ "prompt_tokens_per_s": 1651.0,
+ "gen_tokens_per_s": 46.5,
+ "mean_prompt_tokens": 2160,
+ "mean_gen_tokens": 541,
+ "stopped_calls": 0,
  "provider": "ollama",
  "cost_usd": 0
 }

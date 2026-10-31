@@ -71,9 +71,9 @@ def pack(sizes, capacity):
 
 ## Benchmark results
 
-The best result so far comes from **richardyoung/frognano-4b-2609:latest (no-think)**, run locally with Ollama on 2026-10-30: a score of **0.95128** (×1.20 the starting program's 0.79426), reached after 0.55 of 60 minutes with 18 model requests.
+The best result so far comes from **poolside/laguna-s-2.1:free (no-think)**, run through OpenRouter on 2026-10-30: a score of **0.9637** (×1.21 the starting program's 0.79426), reached after 3.9 of 60 minutes with 20 model requests.
 
-What the starting program produces (left) and what the best program by richardyoung/frognano-4b-2609:latest (no-think) produces (right), drawn for the instance `u300`:
+What the starting program produces (left) and what the best program by poolside/laguna-s-2.1:free (no-think) produces (right), drawn for the instance `u300`:
 
 ![bin_packing: the starting program's solution and the best one](../assets/examples/bin_packing.svg)
 
@@ -84,7 +84,8 @@ The best program's ancestry, from the starting program on. "Edit" and "rewrite" 
 | Step | Minute | Score | Kind | Idea |
 |--:|--:|--:|---|---|
 | 0 | 0.0 | 0.79426 | start | initial program |
-| 1 | 0.6 | 0.95128 | edit | Replace the slow Next-Fit heuristic with First-Fit Decreasing (FFD) by sorting items descending and using a simple O(N*M) scan to place items, which significantly reduces bins for the hard instances. |
+| 1 | 1.5 | 0.95128 | edit | Replace next-fit with first-fit decreasing (FFD), which sorts items largest-first and places each into the first bin that fits, dramatically reducing wasted space and bin count. |
+| 2 | 3.9 | 0.9637 | rewrite | Add a bounded local-search improvement phase after FFD that repeatedly empties the least-filled bin and re-inserts its items via best-fit, then performs 1-1 and 1-2 swaps to reduce wasted space and bin count. |
 
 ### The best program
 
@@ -93,13 +94,25 @@ What changed compared with the starting program:
 ```diff
 --- initial
 +++ best
-@@ -21,15 +21,19 @@
+@@ -10,6 +10,8 @@
+ import time
  
-     Current method: next fit (open a new bin whenever the next item does not fit).
+ # OMEGA-BLOCK-START
++MAX_IMPROVE_ITERS = 4000
++SWAP_GAIN = False
+ def pack(sizes, capacity):
+     """Return a list of bins; each bin is a list of item indices into sizes.
+ 
+@@ -19,17 +21,132 @@
+     (time.process_time(); more than 1.5 x the limit makes the program invalid).
+     Only the Python standard library may be used.
+ 
+-    Current method: next fit (open a new bin whenever the next item does not fit).
++    Method: first-fit decreasing (FFD) followed by a bounded local-search improvement
++    that empties the least-filled bin and re-inserts its items via best-fit, then
++    performs 1-1 and 1-2 swaps to reduce wasted space and bin count.
      """
-+    # Sort indices by size descending for First-Fit Decreasing
-+    sorted_indices = sorted(range(len(sizes)), key=lambda i: sizes[i], reverse=True)
-     bins = []
+-    bins = []
 -    current, load = [], 0
 -    for i, s in enumerate(sizes):
 -        if load + s > capacity:
@@ -109,18 +122,130 @@ What changed compared with the starting program:
 -        load += s
 -    if current:
 -        bins.append(current)
-+    for idx in sorted_indices:
-+        s = sizes[idx]
++    n = len(sizes)
++    order = sorted(range(n), key=lambda i: sizes[i], reverse=True)
++    bins, loads = [], []
++    for i in order:
++        s = sizes[i]
 +        placed = False
-+        for bin_idx, bin_items in enumerate(bins):
-+            bin_load = sum(sizes[i] for i in bin_items)
-+            if bin_load + s <= capacity:
-+                bin_items.append(idx)
++        for b in range(len(bins)):
++            if loads[b] + s <= capacity:
++                bins[b].append(i)
++                loads[b] += s
 +                placed = True
 +                break
 +        if not placed:
-+            bins.append([idx])
++            bins.append([i])
++            loads.append(s)
++    _improve(bins, loads, sizes, capacity)
      return bins
++
++def _best_fit_insert(item, bins, loads, capacity):
++    bi, bs = -1, capacity + 1
++    for b in range(len(bins)):
++        s = sizes_local[item]
++        if loads[b] + s <= capacity and loads[b] + s > capacity - bs:
++            bi, bs = b, loads[b] + s
++    return bi
++
++def _improve(bins, loads, sizes, capacity):
++    sizes_local = sizes
++    t0 = time.process_time()
++    iters = 0
++    while iters < MAX_IMPROVE_ITERS:
++        iters += 1
++        if time.process_time() - t0 > 1.5:
++            break
++        # find least-filled bin
++        m = len(loads)
++        if m <= 1:
++            break
++        lo = loads[0]
++        li = 0
++        for b in range(1, m):
++            if loads[b] < lo:
++                lo, li = loads[b], b
++        if lo == 0:
++            break
++        # empty least-filled bin
++        items = bins[li]
++        bins[li] = []
++        loads[li] = 0
++        # best-fit reinsert each item
++        ok = True
++        for it in items:
++            s = sizes[it]
++            bi, bl = -1, capacity + 1
++            for b in range(m):
++                if b == li:
++                    continue
++                if loads[b] + s <= capacity and loads[b] + s < bl:
++                    bl = loads[b] + s
++                    bi = b
++            if bi == -1:
++                # no existing bin fits; put back in emptied bin
++                bins[li].append(it)
++                loads[li] += s
++                if loads[li] > capacity:
++                    ok = False
++            else:
++                bins[bi].append(it)
++                loads[bi] += s
++        if not ok:
++            break
++        # if emptied bin now empty, remove it
++        if not bins[li]:
++            bins[li] = bins[-1]
++            loads[li] = loads[-1]
++            bins.pop()
++            loads.pop()
++            continue
++        # try to reduce bin count: move items to fill emptied bin or merge
++        # perform 1-1 swaps: move item from a bin into emptied bin if it reduces slack
++        # perform 1-2 swaps: two small items from different bins replace one large item
++        _swap_pass(bins, loads, sizes, capacity)
++    # remove any empty bins
++    new_bins = []
++    new_loads = []
++    for b in range(len(bins)):
++        if loads[b] > 0:
++            new_bins.append(bins[b])
++            new_loads.append(loads[b])
++    bins[:] = new_bins
++    loads[:] = new_loads
++
++def _swap_pass(bins, loads, sizes, capacity):
++    m = len(loads)
++    for a in range(m):
++        la = loads[a]
++        if la == 0:
++            continue
++        for x in bins[a]:
++            sx = sizes[x]
++            for c in range(m):
++                if c == a or loads[c] == 0:
++                    continue
++                for y in bins[c]:
++                    if y == x:
++                        continue
++                    sy = sizes[y]
++                    # 1-1 swap: item x (from a) into bin c, item y (from c) into bin a
++                    if la - sx + sy <= capacity and loads[c] - sy + sx <= capacity:
++                        if SWAP_GAIN and (la - sx + sy) > la:
++                            pass
++                        loads[a] = la - sx + sy
++                        loads[c] = loads[c] - sy + sx
++                        bins[a].remove(x)
++                        bins[a].append(y)
++                        bins[c].remove(y)
++                        bins[c].append(x)
++                        break
++                else:
++                    continue
++                break
++            else:
++                continue
++            break
  # OMEGA-BLOCK-END
 ```
 
@@ -130,6 +255,34 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/bin_p
 
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|
-| richardyoung/frognano-4b-2609:latest (no-think) | local | 0.95128 | ×1.20 | 0.6 | 1 |
-| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | 0.79587 | ×1.00 | 2.9 | 1 |
+| poolside/laguna-s-2.1:free (no-think) | cloud | 0.9637 | ×1.21 | 3.9 | 2 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 0.95304 | ×1.20 | 8.6 | 2 |
+| nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 0.95271 | ×1.20 | 5.3 | 3 |
+| gemma4:e2b (no-think) | local | 0.95128 | ×1.20 | 0.7 | 2 |
+| gemma4:e4b-it-qat (no-think) | local | 0.95128 | ×1.20 | 0.5 | 1 |
+| qwen3.5:latest (no-think) | local | 0.95128 | ×1.20 | 1.7 | 2 |
+| gemma4:latest (no-think) | local | 0.95128 | ×1.20 | 0.7 | 1 |
+| gemma4:12b-it-qat (no-think) | local | 0.95128 | ×1.20 | 0.6 | 1 |
+| gpt-oss:20b (no-think) | local | 0.95128 | ×1.20 | 1.6 | 1 |
+| gemma4:26b-a4b-it-qat (no-think) | local | 0.95128 | ×1.20 | 1.4 | 1 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 0.95128 | ×1.20 | 1.1 | 1 |
+| glm-4.7-flash:latest (no-think) | local | 0.95128 | ×1.20 | 1.7 | 1 |
+| cohere/north-mini-code:free (no-think) | cloud | 0.95128 | ×1.20 | 1.7 | 1 |
+| nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | 0.95128 | ×1.20 | 0.2 | 1 |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | local | 0.95128 | ×1.20 | 1.1 | 1 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | 0.95128 | ×1.20 | 2.1 | 1 |
+| dots-studio/dots-3-note-preview:free (no-think) | cloud | 0.95128 | ×1.20 | 0.1 | 1 |
+| qwen3-coder:30b (no-think) | local | 0.95128 | ×1.20 | 1.6 | 1 |
+| poolside/laguna-xs-2.1:free (no-think) | cloud | 0.95128 | ×1.20 | 2.4 | 1 |
+| frob/sarvam:30b (no-think) | local | 0.95128 | ×1.20 | 12.8 | 1 |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | 0.95128 | ×1.20 | 0.1 | 1 |
+| nvidia/nemotron-3.5-lightning:free (no-think) | cloud | 0.94863 | ×1.19 | 3.7 | 1 |
+| qwen2.5-coder:7b (no-think) | local | 0.92325 | ×1.16 | 1.3 | 1 |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | 0.79587 | ×1.00 | 1.3 | 1 |
+| richardyoung/frognano-4b-2609:latest (no-think) | local | 0.79587 | ×1.00 | 1.1 | 1 |
 | nemotron-3-nano:4b (no-think) | local | 0.79426 | ×1.00 | - | 0 |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | 0.79426 | ×1.00 | - | 0 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | 0.79426 | ×1.00 | - | 0 |
+| xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | | | | failed: all 7 model requests failed … |
+| google/gemma-4-26b-a4b-it:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
+| google/gemma-4-31b-it:free (no-think) | cloud | | | | failed: all 6 model requests failed: google/gemma-4-31b-it:free … |

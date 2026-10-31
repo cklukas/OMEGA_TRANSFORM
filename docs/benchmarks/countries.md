@@ -6,4 +6,22 @@
 
 Each country is represented by its best model in the [overall ranking](../benchmarks.md#overall-ranking); the country of a model is that of its developer's headquarters (see [Models by developer](developers.md)). The lag is how far its share falls short of the leading country's, relative to that share. Released is the model's original publication on Hugging Face, or OpenRouter's listing date.
 
-No group has ranked models from more than one country yet.
+## Local models
+
+| # | Country | Best model | Released | Developer | Share | Lag behind #1 | Models |
+|--:|---|---|---|---|--:|--:|--:|
+| 1 | USA | gpt-oss:20b (no-think) | 2025-08-04 | OpenAI | **99%** | – | 10 |
+| 2 | China | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 2026-04-21 | Alibaba (Qwen) | **85%** | −14% | 6 |
+| 3 | Japan | llm-jp-4-8b-omega:q4_k_m (no-think) | 2026-03-16 | NII (LLM-jp) | **50%** | −50% | 1 |
+| 4 | India | frob/sarvam:30b (no-think) | 2026-03-03 | Sarvam AI | **43%** | −57% | 1 |
+| 5 | Switzerland | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 2025-08-13 | Swiss AI Initiative | **30%** | −69% | 1 |
+| 6 | Russia | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 2025-03-28 | Yandex | **17%** | −83% | 1 |
+
+## Cloud models (OpenRouter)
+
+| # | Country | Best model | Released | Developer | Share | Lag behind #1 | Models |
+|--:|---|---|---|---|--:|--:|--:|
+| 1 | USA | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | 2026-06-04 | NVIDIA | **85%** | – | 6 |
+| 2 | unknown | dots-studio/dots-3-note-preview:free (no-think) | 2026-08-14 | other | **75%** | −11% | 2 |
+| 3 | France | poolside/laguna-s-2.1:free (no-think) | 2026-07-21 | Poolside | **65%** | −23% | 2 |
+| 4 | Canada | cohere/north-mini-code:free (no-think) | 2026-06-17 | Cohere | **60%** | −29% | 1 |

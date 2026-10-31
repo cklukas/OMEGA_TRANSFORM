@@ -59,4 +59,174 @@ def run():
 
 ## Benchmark results
 
-This example has not been benchmarked yet. See [Benchmarking models](../benchmarking.md) for how to run it.
+The best result so far comes from **nvidia/nemotron-3-ultra-550b-a55b:free (no-think)**, run through OpenRouter on 2026-10-31: a score of **0.02194** (×4.58 the starting program's 0.00479), reached after 2.78 of 60 minutes with 24 model requests.
+
+What the starting program produces (left) and what the best program by nvidia/nemotron-3-ultra-550b-a55b:free (no-think) produces (right):
+
+![heilbronn: the starting program's solution and the best one](../assets/examples/heilbronn.svg)
+
+### How it got there
+
+The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.
+
+| Step | Minute | Score | Kind | Idea |
+|--:|--:|--:|---|---|
+| 0 | 0.0 | 0.00479 | start | initial program |
+| 1 | 2.8 | 0.02194 | rewrite | Use a more sophisticated optimization approach with gradient-free coordinate descent on the soft-min objective, starting from a known good Heilbronn-like configuration and using multiple random restarts with local search to find better configurations. |
+
+### The best program
+
+What changed compared with the starting program:
+
+```diff
+--- initial
++++ best
+@@ -5,17 +5,121 @@
+ import math
+ 
+ # OMEGA-BLOCK-START
++import math
++import random
++
++# Optimization constants
++SOFTMIN_BETA = 500.0
++LOCAL_SEARCH_STEPS = 5000
++RESTART_COUNT = 20
++STEP_SIZE_START = 0.05
++STEP_SIZE_END = 1e-4
++SEED = 12345
++
++def triangle_area(p1, p2, p3):
++    """Compute area of triangle formed by three points."""
++    return abs((p1[0]*(p2[1]-p3[1]) + p2[0]*(p3[1]-p1[1]) + p3[0]*(p1[1]-p2[1])) * 0.5)
++
++def min_triangle_area(points):
++    """Return minimum triangle area among all triples."""
++    n = len(points)
++    min_area = float('inf')
++    for i in range(n):
++        for j in range(i+1, n):
++            for k in range(j+1, n):
++                area = triangle_area(points[i], points[j], points[k])
++                if area < min_area:
++                    min_area = area
++    return min_area
++
++def soft_min_area(points, beta):
++    """Smooth approximation of minimum area using log-sum-exp."""
++    n = len(points)
++    total = 0.0
++    for i in range(n):
++        for j in range(i+1, n):
++            for k in range(j+1, n):
++                area = triangle_area(points[i], points[j], points[k])
++                total += math.exp(-beta * area)
++    return -math.log(total) / beta
++
++def clamp_point(p):
++    """Clamp point coordinates to [0, 1]."""
++    return (max(0.0, min(1.0, p[0])), max(0.0, min(1.0, p[1])))
++
++def get_initial_config():
++    """Return a known good starting configuration for 13 points."""
++    # Based on best-known Heilbronn configurations for n=13
++    return [
++        (0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0),  # 4 corners
++        (0.5, 0.0), (1.0, 0.5), (0.5, 1.0), (0.0, 0.5),  # 4 edge midpoints
++        (0.2113, 0.2113), (0.7887, 0.2113), (0.7887, 0.7887), (0.2113, 0.7887),  # 4 interior symmetric
++        (0.5, 0.5)  # center
++    ]
++
++def local_search(points, beta, steps, step_start, step_end):
++    """Perform local search on a single configuration."""
++    n = len(points)
++    points = [list(p) for p in points]  # mutable
++    best_points = [p[:] for p in points]
++    best_soft = soft_min_area(points, beta)
++    
++    for step in range(steps):
++        t = step / steps
++        step_size = step_start * (step_end / step_start) ** t
++        
++        # Pick random point
++        idx = random.randrange(n)
++        old_x, old_y = points[idx]
++        
++        # Try random perturbation
++        new_x = clamp_point((old_x + random.uniform(-step_size, step_size), 0))[0]
++        new_y = clamp_point((0, old_y + random.uniform(-step_size, step_size)))[1]
++        
++        points[idx] = [new_x, new_y]
++        new_soft = soft_min_area(points, beta)
++        
++        if new_soft > best_soft:
++            best_soft = new_soft
++            best_points = [p[:] for p in points]
++        else:
++            points[idx] = [old_x, old_y]
++    
++    return best_points, best_soft
++
+ def construct(n=13):
+-    """Return a list of n points (x, y) inside the closed unit square [0,1]^2.
+-
+-    The score is the smallest area among all triangles with corners at three of
+-    the points, so no three points may be (nearly) collinear. This start puts
+-    the points on a regular polygon on a small circle around the center, which
+-    avoids collinear triples but wastes most of the square.
+-    """
+-    radius = 0.3
+-    return [(0.5 + radius * math.cos(2 * math.pi * k / n),
+-             0.5 + radius * math.sin(2 * math.pi * k / n)) for k in range(n)]
++    """Return optimized 13 points maximizing minimum triangle area."""
++    random.seed(SEED)
++    
++    if n != 13:
++        # Fallback for other n: regular polygon
++        radius = 0.3
++        return [(0.5 + radius * math.cos(2 * math.pi * k / n),
++                 0.5 + radius * math.sin(2 * math.pi * k / n)) for k in range(n)]
++    
++    base_config = get_initial_config()
++    best_overall = None
++    best_min_area = 0.0
++    
++    for restart in range(RESTART_COUNT):
++        # Perturb base config slightly for each restart
++        points = []
++        for x, y in base_config:
++            px = clamp_point((x + random.uniform(-0.02, 0.02), 0))[0]
++            py = clamp_point((0, y + random.uniform(-0.02, 0.02)))[1]
++            points.append([px, py])
++        
++        # Local search
++        optimized, _ = local_search(points, SOFTMIN_BETA, LOCAL_SEARCH_STEPS, 
++                                   STEP_SIZE_START, STEP_SIZE_END)
++        
++        # Evaluate with exact min area
++        min_area = min_triangle_area(optimized)
++        if min_area > best_min_area:
++            best_min_area = min_area
++            best_overall = optimized
++    
++    return [(float(x), float(y)) for x, y in best_overall]
+ # OMEGA-BLOCK-END
+```
+
+### All models
+
+One run per model and reasoning mode; the [model benchmarks](../benchmarks/heilbronn_13.md) page has speed, memory and progress over time.
+
+| Model | Where | Best | Gain | Minutes to best | New bests |
+|---|---|--:|--:|--:|--:|
+| nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 0.02194 | ×4.58 | 2.8 | 1 |
+| nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | 0.0186 | ×3.88 | 6.5 | 4 |
+| cohere/north-mini-code:free (no-think) | cloud | 0.01331 | ×2.78 | 3.0 | 3 |
+| dots-studio/dots-3-note-preview:free (no-think) | cloud | 0.00595 | ×1.24 | 1.6 | 1 |
+| poolside/laguna-s-2.1:free (no-think) | cloud | 0.00479 | ×1.00 | - | 0 |
+| nvidia/nemotron-3.5-lightning:free (no-think) | cloud | 0.00479 | ×1.00 | - | 0 |
+| poolside/laguna-xs-2.1:free (no-think) | cloud | 0.00479 | ×1.00 | - | 0 |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | 0.00479 | ×1.00 | - | 0 |
+| xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 0.00479 | ×1.00 | - | 0 |
+| google/gemma-4-26b-a4b-it:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
+| google/gemma-4-31b-it:free (no-think) | cloud | | | | failed: all 6 model requests failed: google/gemma-4-31b-it:free … |

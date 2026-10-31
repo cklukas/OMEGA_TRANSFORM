@@ -1,0 +1,224 @@
+{
+ "schema": 4,
+ "example": "feature_engineering",
+ "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+ "variant": "no-think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-10-31T03:00:01",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 9.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 0.623,
+ "best_score": 0.764,
+ "improvement": 1.2263242375601926,
+ "llm_calls": 27,
+ "mean_llm_seconds": 19.1,
+ "attempts": 27,
+ "ok": 11,
+ "statuses": {
+  "edit_error": 10,
+  "invalid": 3,
+  "ok": 11,
+  "duplicate": 1,
+  "llm_error": 2
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 2,
+ "minutes_to_best": 2.09,
+ "best_idea": "Add binarized quadrant indicators for all three input pairs (x1*x2, x1*x3, x2*x3) to capture XOR-like patterns while keeping feature count low and computation fast.",
+ "progress": [
+  [
+   0.0,
+   0.623
+  ],
+  [
+   1.68,
+   0.763
+  ],
+  [
+   2.09,
+   0.764
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.623,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.68,
+   "score": 0.763,
+   "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+   "mode": "explore/rewrite/bold",
+   "status": "ok",
+   "idea": "Introduce binarized quadrant indicators from x1*x2 and log-transformed x3 to capture hidden XOR and step-like patterns that a linear model can separate, while keeping feature count low and computation fast."
+  },
+  {
+   "minutes": 2.09,
+   "score": 0.764,
+   "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Add binarized quadrant indicators for all three input pairs (x1*x2, x1*x3, x2*x3) to capture XOR-like patterns while keeping feature count low and computation fast."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,7 +19,17 @@\n     features (they are standardized and a bias is added), so nonlinear structure only\n     helps if a feature expresses it. Only the Python standard library may be used.\n \n-    Current method: the raw inputs.\n+    New method: binarized quadrant indicators for all three input pairs (x1*x2, x1*x3, x2*x3) and log-transformed x3 to expose nonlinear decision boundaries while keeping features sparse and fast to compute.\n     \"\"\"\n-    return list(row)\n+    x1, x2, x3, x4, x5, x6 = row\n+    f = []\n+    # Binarized quadrant indicators for input pairs\n+    f.append(1.0 if x1 * x2 > 0 else 0.0)  # x1 and x2 quadrant\n+    f.append(1.0 if x1 * x3 > 0 else 0.0)  # x1 and x3 quadrant\n+    f.append(1.0 if x2 * x3 > 0 else 0.0)  # x2 and x3 quadrant\n+    # Log of x3 (positive by problem spec) to linearize right-skewed distribution\n+    f.append(math.log(x3) if x3 > 0 else 0.0)\n+    # Add raw inputs as features (total 8 now: 6 raw + 2 engineered)\n+    f.extend(row)\n+    return f\n # OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "classification",
+  "columns": [
+   "x1",
+   "x2",
+   "x3",
+   "x4",
+   "x5",
+   "x6"
+  ],
+  "head": [
+   [
+    0.14,
+    1.08,
+    1.79,
+    -0.66,
+    1.01,
+    -0.54
+   ],
+   [
+    -1.03,
+    -0.71,
+    0.47,
+    1.72,
+    0.77,
+    -0.69
+   ],
+   [
+    0.36,
+    -0.3,
+    0.1,
+    -2.0,
+    0.57,
+    -0.15
+   ],
+   [
+    1.13,
+    1.16,
+    1.34,
+    1.26,
+    1.29,
+    0.92
+   ]
+  ],
+  "head_labels": [
+   1,
+   1,
+   0,
+   1
+  ],
+  "train_rows": 1000,
+  "num_features": 6,
+  "test_correct": "1110101111000101011111011010101001101100111100110111111101011110101110011011001101101000011100011010111110110111011110000011111111011100100110111110101000001001110101111110101010111011101101000010010100000101110011000100110001010111011001101100110011110111111010101001011101111011110101110011100101100100011011010011101011000101100100110110111110100101101111110111101100011110111111110110111111101100010111110011111011001100001101010011101100101011010111110000111000010111111111100111110101010101111011001000111110111101110001011111011110011101010011011101111101001101110110101100001110001001101010001011011001111110111110101111110110110110101010111001011111101111111101101111001111001000101101001000000100100101111111111011011101110111110101111110001111001101111101111101011111111011111111111111111000111001001110010010010000110000101111110101001111101111000111011000111111101111101111000111011111010001001101100011000110110111000010111110110001111111111101001111101100011100101100101011101110111010"
+ },
+ "best_solution": {
+  "kind": "classification",
+  "columns": [
+   "x1",
+   "x2",
+   "x3",
+   "x4",
+   "x5",
+   "x6"
+  ],
+  "head": [
+   [
+    0.14,
+    1.08,
+    1.79,
+    -0.66,
+    1.01,
+    -0.54
+   ],
+   [
+    -1.03,
+    -0.71,
+    0.47,
+    1.72,
+    0.77,
+    -0.69
+   ],
+   [
+    0.36,
+    -0.3,
+    0.1,
+    -2.0,
+    0.57,
+    -0.15
+   ],
+   [
+    1.13,
+    1.16,
+    1.34,
+    1.26,
+    1.29,
+    0.92
+   ]
+  ],
+  "head_labels": [
+   1,
+   1,
+   0,
+   1
+  ],
+  "train_rows": 1000,
+  "num_features": 10,
+  "test_correct": "1111101110101111011111111101111011001111111001110001011110111111111110101101110111110101100011011010100101011110011111110111111111111111111111110110110110011111111111111011110111011011001111111100100101111111110111111101001101111001111111111011110111110110111101111001111011111100011111011000111111111110011100011101111111000001111110101110111111111101110111011111110101100111110010110011101111110111111111111110101011011011101111110111111011110011101111110100110111011111111111001111110101011101111011001011111100110100111111111110101011011111111111111110111110010110011011011011011001011101111111110111010001011011110010111001111001111111111011111101111110111101111111010111011111011010110100111100111110111011011111011111111111111101101111111111101111110011111111111101111111111001111111111111011010101101011110110111110110011001111111101111011111001111111111110111111111001111110111001011111111100110111111111111111111111110010111111101111011011111011101111101101111101000111111111111101100111010"
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 9.1,
+ "p90_call_seconds": 24.1,
+ "prompt_tokens_per_s": 5624.8,
+ "gen_tokens_per_s": 36.8,
+ "mean_prompt_tokens": 2902,
+ "mean_gen_tokens": 684,
+ "stopped_calls": 2,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

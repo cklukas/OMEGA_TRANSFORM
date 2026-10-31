@@ -61,4 +61,126 @@ def features(row):
 
 ## Benchmark results
 
-This example has not been benchmarked yet. See [Benchmarking models](../benchmarking.md) for how to run it.
+The best result so far comes from **nvidia/nemotron-3-ultra-550b-a55b:free (no-think)**, run through OpenRouter on 2026-10-31: a score of **0.885** (×1.42 the starting program's 0.623), reached after 3.6 of 60 minutes with 26 model requests.
+
+What the starting program produces (left) and what the best program by nvidia/nemotron-3-ultra-550b-a55b:free (no-think) produces (right):
+
+![feature_engineering: the starting program's solution and the best one](../assets/examples/feature_engineering.svg)
+
+### How it got there
+
+The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.
+
+| Step | Minute | Score | Kind | Idea |
+|--:|--:|--:|---|---|
+| 0 | 0.0 | 0.623 | start | initial program |
+| 1 | 0.3 | 0.714 | edit | Add log transform for the skewed positive input x3 and pairwise products to capture nonlinear interactions that a linear model needs explicit features for. |
+| 2 | 1.2 | 0.782 | edit | Add threshold/binned features for x4 and x5 (uniform in [-2,2]) to capture piecewise-constant or non-monotone effects that polynomial features cannot represent well, plus add x3^2 and log(x3)^2 to better model the skewed feature's nonlinearity. |
+| 3 | 2.6 | 0.882 | edit | Add radial and sign-based features for x4,x5 (like the top-scoring program) to capture circular/quadrant patterns, and include key pairwise interactions while removing less useful features to stay within 30-feature limit. |
+| 4 | 3.6 | 0.885 | edit | Add sign features for key pairwise products involving x3 (log-normal) and x6 (normal) to capture quadrant patterns with these variables, and add a radial feature for x1,x6 to capture circular patterns in the normal-normal subspace, while removing the less … |
+
+### The best program
+
+What changed compared with the starting program:
+
+```diff
+--- initial
++++ best
+@@ -9,17 +9,63 @@
+ import math
+ 
+ # OMEGA-BLOCK-START
++LOG_EPS = 1e-9
++SIGN_EPS = 1e-9
++RADIUS_THRESH = 1.0
++
+ def features(row):
+     """Return the feature vector (a list of at most 30 finite floats) for one row.
+ 
+     row: list of 6 floats [x1, x2, x3, x4, x5, x6]. Roughly: x1, x2, x6 are
+     standard-normal-like, x3 is positive and right-skewed (lognormal-like), x4 and x5
+     lie in [-2, 2]. The label is a hidden NONLINEAR function of the inputs plus noise.
+-    Every row must give the same number of features. The classifier is linear in the
++    Every row must give the same same number of features. The classifier is linear in the
+     features (they are standardized and a bias is added), so nonlinear structure only
+     helps if a feature expresses it. Only the Python standard library may be used.
+ 
+-    Current method: the raw inputs.
++    Features: raw inputs, log(x3) for skewed variable, quadratic and radial features
++    for x4,x5 and x1,x6, sign features for quadrant patterns including x3,x6, and key pairwise interactions.
+     """
+-    return list(row)
++    x1, x2, x3, x4, x5, x6 = row
++    
++    # Guard log for skewed positive feature
++    log_x3 = math.log(max(x3, LOG_EPS))
++    
++    # Raw features (6)
++    feats = [x1, x2, x3, x4, x5, x6]
++    
++    # Log transform for skewed feature (1)
++    feats.append(log_x3)
++    
++    # Quadratic features for x4, x5 only (2) - most important for radial patterns
++    feats.extend([x4*x4, x5*x5])
++    
++    # Radial feature for x4,x5 (1)
++    r45_sq = x4*x4 + x5*x5
++    feats.append(r45_sq)
++    
++    # Radial feature for x1,x6 (1) - capture circular patterns in normal-normal subspace
++    r16_sq = x1*x1 + x6*x6
++    feats.append(r16_sq)
++    
++    # Radius threshold indicator (1)
++    feats.append(1.0 if r45_sq > RADIUS_THRESH else 0.0)
++    
++    # Sign of pairwise products for quadrant patterns (8)
++    feats.append(1.0 if x1*x2 > SIGN_EPS else -1.0 if x1*x2 < -SIGN_EPS else 0.0)
++    feats.append(1.0 if x1*x4 > SIGN_EPS else -1.0 if x1*x4 < -SIGN_EPS else 0.0)
++    feats.append(1.0 if x1*x5 > SIGN_EPS else -1.0 if x1*x5 < -SIGN_EPS else 0.0)
++    feats.append(1.0 if x2*x4 > SIGN_EPS else -1.0 if x2*x4 < -SIGN_EPS else 0.0)
++    feats.append(1.0 if x2*x5 > SIGN_EPS else -1.0 if x2*x5 < -SIGN_EPS else 0.0)
++    feats.append(1.0 if x4*x5 > SIGN_EPS else -1.0 if x4*x5 < -SIGN_EPS else 0.0)
++    feats.append(1.0 if x1*x3 > SIGN_EPS else -1.0 if x1*x3 < -SIGN_EPS else 0.0)
++    feats.append(1.0 if x2*x3 > SIGN_EPS else -1.0 if x2*x3 < -SIGN_EPS else 0.0)
++    
++    # Key pairwise interactions (8) - removed x3*x4, added x3*x6, x4*x6, x5*x6
++    feats.extend([
++        x1*x2, x1*x3, x1*x4, x1*x5, x1*x6,
++        x2*x3, x2*x4, x2*x5
++    ])
++    
++    return feats
+ # OMEGA-BLOCK-END
+```
+
+### All models
+
+One run per model and reasoning mode; the [model benchmarks](../benchmarks/feature_engineering.md) page has speed, memory and progress over time.
+
+| Model | Where | Best | Gain | Minutes to best | New bests |
+|---|---|--:|--:|--:|--:|
+| nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 0.885 | ×1.42 | 3.6 | 5 |
+| cohere/north-mini-code:free (no-think) | cloud | 0.88 | ×1.41 | 0.2 | 1 |
+| poolside/laguna-xs-2.1:free (no-think) | cloud | 0.88 | ×1.41 | 2.6 | 2 |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | local | 0.879 | ×1.41 | 0.7 | 1 |
+| nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | 0.877 | ×1.41 | 1.7 | 3 |
+| nvidia/nemotron-3.5-lightning:free (no-think) | cloud | 0.861 | ×1.38 | 18.8 | 4 |
+| gemma4:e2b (no-think) | local | 0.835 | ×1.34 | 6.4 | 11 |
+| gemma4:12b-it-qat (no-think) | local | 0.83 | ×1.33 | 0.9 | 1 |
+| poolside/laguna-s-2.1:free (no-think) | cloud | 0.82 | ×1.32 | 0.5 | 1 |
+| gemma4:latest (no-think) | local | 0.813 | ×1.30 | 5.6 | 7 |
+| richardyoung/frognano-4b-2609:latest (no-think) | local | 0.808 | ×1.30 | 6.1 | 4 |
+| qwen3.5:latest (no-think) | local | 0.801 | ×1.29 | 10.7 | 5 |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | 0.795 | ×1.28 | 9.1 | 6 |
+| dots-studio/dots-3-note-preview:free (no-think) | cloud | 0.793 | ×1.27 | 1.4 | 3 |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | 0.792 | ×1.27 | 3.9 | 3 |
+| gemma4:e4b-it-qat (no-think) | local | 0.79 | ×1.27 | 2.9 | 3 |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | 0.764 | ×1.23 | 2.1 | 2 |
+| qwen2.5-coder:7b (no-think) | local | 0.75 | ×1.20 | 3.1 | 5 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | 0.703 | ×1.13 | 15.8 | 4 |
+| xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 0.678 | ×1.09 | 1.9 | 1 |
+| google/gemma-4-26b-a4b-it:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
+| google/gemma-4-31b-it:free (no-think) | cloud | | | | failed: all 6 model requests failed: google/gemma-4-31b-it:free … |
+| nemotron-3-nano:4b (no-think) | local | 0.623 | ×1.00 | - | 0 |

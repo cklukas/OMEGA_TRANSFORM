@@ -1,0 +1,139 @@
+{
+ "schema": 4,
+ "example": "log_compressor",
+ "model": "dots-studio/dots-3-note-preview:free",
+ "variant": "no-think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-10-31T00:34:41",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 9.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 11.28605206956168,
+ "best_score": 19.661735394427957,
+ "improvement": 1.7421269433494262,
+ "llm_calls": 29,
+ "mean_llm_seconds": 19.3,
+ "attempts": 29,
+ "ok": 11,
+ "statuses": {
+  "edit_error": 8,
+  "invalid": 8,
+  "ok": 11,
+  "llm_error": 2
+ },
+ "sweeps": 1,
+ "sweep_variants": 3,
+ "improvements": 1,
+ "minutes_to_best": 4.58,
+ "best_idea": "Implement a field-aware parser that splits Apache combined log lines into columns (IP, timestamp, path, status, size, referer, user-agent), encodes timestamps as deltas, uses dictionaries for repetiti",
+ "progress": [
+  [
+   0.0,
+   11.28605206956168
+  ],
+  [
+   4.58,
+   19.661735394427957
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 11.28605206956168,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 4.58,
+   "score": 19.661735394427957,
+   "model": "dots-studio/dots-3-note-preview:free",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Implement a field-aware parser that splits Apache combined log lines into columns (IP, timestamp, path, status, size, referer, user-agent), encodes timestamps as deltas, uses dictionaries for repetitive fields, and compresses each column separately with lzma, falling back to plain lzma on parse failure."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -10,26 +10,294 @@\n import zlib\n \n # OMEGA-BLOCK-START\n+import lzma\n+import re\n+import struct\n+from datetime import datetime\n+\n+# Regex to parse a combined log line\n+_LINE_RE = re.compile(\n+    r'^(\\S+) \\S+ \\S+ \\[([^\\]]+)\\] \"(\\S+) (\\S+) (\\S+)\" (\\d{3}) (\\S+) \"([^\"]*)\" \"([^\"]*)\"$'\n+)\n+\n+# Month name to number mapping\n+_MONTHS = {\n+    'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,\n+    'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12\n+}\n+\n+def _parse_ts(ts_str: str) -> int:\n+    \"\"\"Parse DD/Mon/YYYY:HH:MM:SS +0000 to Unix timestamp (seconds).\"\"\"\n+    day, mon, year, hh, mm, ss = (int(x) for x in re.split(r'[/:\\s]+', ts_str)[:6])\n+    mon = _MONTHS[mon[:3]]\n+    dt = datetime(year, mon, day, hh, mm, ss)\n+    return int(dt.timestamp())\n+\n+def _encode_varint(val: int, out: bytearray):\n+    \"\"\"Encode a non-negative integer as a varint (LEB128-like, 7 bits per byte).\"\"\"\n+    while val >= 0x80:\n+        out.append((val & 0x7F) | 0x80)\n+        val >>= 7\n+    out.append(val & 0x7F)\n+\n+def _decode_varint(data: bytes, pos: int) -> tuple[int, int]:\n+    \"\"\"Decode a varint from data starting at pos. Returns (value, new_pos).\"\"\"\n+    val = 0\n+    shift = 0\n+    while True:\n+        b = data[pos]\n+        pos += 1\n+        val |= (b & 0x7F) << shift\n+        if not (b & 0x80):\n+            break\n+        shift += 7\n+    return val, pos\n+\n+def _compress_col(data: bytes) -> bytes:\n+    \"\"\"Compress a single column's bytes with lzma.\"\"\"\n+    return lzma.compress(data, preset=9 | lzma.PRESET_EXTREME, format=lzma.FORMAT_RAW,\n+                         filters=[{'id': lzma.FILTER_LZMA2, 'preset': 9 | lzma.PRESET_EXTREME}])\n+\n+def _decompress_col(data: bytes) -> bytes:\n+    \"\"\"Decompress a single column's bytes.\"\"\"\n+    return lzma.decompress(data, format=lzma.FORMAT_RAW,\n+                           filters=[{'id': lzma.FILTER_LZMA2, 'preset': 9 | lzma.PRESET_EXTREME}])\n+\n+def _build_dict(values: list) -> tuple[dict, list]:\n+    \"\"\"Build a dictionary mapping value->index and return indices list.\"\"\"\n+    seen = {}\n+    indices = []\n+    for v in values:\n+        if v not in seen:\n+            seen[v] = len(seen)\n+        indices.append(seen[v])\n+    return seen, indices\n+\n def compress(data: bytes) -> bytes:\n-    \"\"\"Compress arbitrary bytes losslessly and return the compressed blob.\n-\n-    decompress(compress(data)) must equal data exactly for EVERY input, including\n-    b\"\" and non-text bytes. The main input is an access log, one request per line:\n-      IP - - [DD/Mon/YYYY:HH:MM:SS +0000] \"METHOD PATH HTTP/1.1\" STATUS SIZE \"REFERER\" \"USER-AGENT\"\n-    Only the Python standard library may be used (zlib, lzma, bz2, struct, re, ...).\n-    Compress plus decompress of the main input must stay within 20 CPU seconds.\n-\n-    Current method: plain zlib at level 1.\n-    \"\"\"\n-    return zlib.compress(data, 1)\n-\n+    \"\"\"Compress arbitrary bytes losslessly.\"\"\"\n+    try:\n+        text = data.decode('utf-8')\n+        lines = text.splitlines()\n+        parsed = []\n+        for line in lines:\n+            m = _LINE_RE.match(line)\n+            if not m:\n+                raise ValueError(\"parse failed\")\n+            ip, ts_str, method, path, proto, status, size_str, referer, ua = m.groups()\n+            ts = _parse_ts(ts_str)\n+            status_code = int(status)\n+            # Normalize size: '-' becomes 0, else int\n+            size = 0 if size_str == '-' else int(size_str)\n+            parsed.append((ip, ts, method, path, status_code, size, referer, ua))\n+    except Exception:\n+        # Fallback: plain lzma\n+        return b'\\x00' + lzma.compress(data)\n+\n+    if not parsed:\n+        return b'\\x01'  # empty log\n+\n+    # Separate columns\n+    n = len(parsed)\n+    ips = [p[0] for p in parsed]\n+    timestamps = [p[1] for p in parsed]\n+    methods = [p[2] for p in parsed]\n+    paths = [p[3] for p in parsed]\n+    statuses = [p[4] for p in parsed]\n+    sizes = [p[5] for p in parsed]\n+    referers = [p[6] for p in parsed]\n+    uas = [p[7] for p in parsed]\n+\n+    # Dictionaries for repetitive fields\n+    ip_dict, ip_idx = _build_dict(ips)\n+    method_dict, method_idx = _build_dict(methods)\n+    path_dict, path_idx = _build_dict(paths)\n+    referer_dict, referer_idx = _build_dict(referers)\n+    ua_dict, ua_idx = _build_dict(uas)\n+\n+    # Encode each column\n+    def encode_indices(indices: list, max_val: int) -> bytes:\n+        buf = bytearray()\n+        for idx in indices:\n+            _encode_varint(idx, buf)\n+        return bytes(buf)\n+\n+    def encode_ints(values: list, signed: bool = False) -> bytes:\n+        buf = bytearray()\n+        for v in values:\n+            if signed:\n+                # zigzag encode for deltas\n+                if v >= 0:\n+                    _encode_varint(v << 1, buf)\n+                else:\n+                    _encode_varint((~v << 1) | 1, buf)\n+            else:\n+                _encode_varint(v, buf)\n+        return bytes(buf)\n+\n+    def encode_strs(values: list) -> bytes:\n+        buf = bytearray()\n+        for s in values:\n+            b = s.encode('utf-8')\n+            _encode_varint(len(b), buf)\n+            buf.extend(b)\n+        return bytes(buf)\n+\n+    # Timestamps: delta encoding (signed)\n+    ts_deltas = [timestamps[0]] + [timestamps[i] - timestamps[i-1] for i in range(1, n)]\n+\n+    # Build payload\n+    payload = bytearray()\n+    # Header: number of lines\n+    _encode_varint(n, payload)\n+\n+    # Dictionaries (as strings)\n+    for d in (ip_dict, method_dict, path_dict, referer_dict, ua_dict):\n+        payload.append(len(d))\n+        for k in d:\n+            b = k.encode('utf-8')\n+            payload.append(len(b))\n+            payload.extend(b)\n+\n+    # Indices columns\n+    payload.extend(encode_indices(ip_idx, len(ip_dict)))\n+    payload.extend(encode_indices(method_idx, len(method_dict)))\n+    payload.extend(encode_indices(path_idx, len(path_dict)))\n+    payload.extend(encode_indices(referer_idx, len(referer_dict)))\n+    payload.extend(encode_indices(ua_idx, len(ua_dict)))\n+\n+    # Timestamps (deltas, signed varint)\n+    payload.extend(encode_ints(ts_deltas, signed=True))\n+\n+    # Status codes (0-599, but usually 200, 301, 302, 304, 404, 500)\n+    payload.extend(encode_ints(statuses))\n+\n+    # Sizes (0 or positive)\n+    payload.extend(encode_ints(sizes))\n+\n+    # Compress the payload\n+    compressed_payload = _compress_col(bytes(payload))\n+    return b'\\x02' + compressed_payload\n \n def decompress(blob: bytes) -> bytes:\n     \"\"\"Invert compress() exactly.\"\"\"\n-    return zlib.decompress(blob)\n-# OMEGA-BLOCK-END\n-\n+    if not blob:\n+        return b''\n+    flag = blob[0]\n+    if flag == 0:\n+        return lzma.decompress(blob[1:])\n+    if flag == 1:\n+        return b''\n+    if flag != 2:\n+        raise ValueError(f\"Unknown flag byte: {flag}\")\n+\n+    data = _decompress_col(blob[1:])\n+    pos = 0\n+\n+    n, pos = _decode_varint(data, pos)\n+\n+    # Read dictionaries\n+    dicts = []\n+    for _ in range(5):\n+        size = data[pos]\n+        pos += 1\n+        d = {}\n+        for _ in range(size):\n+            slen = data[pos]\n+            pos += 1\n+            s = data[pos:pos+slen].decode('utf-8')\n+            pos += slen\n+            d[s] = len(d)\n+        dicts.append(d)\n+\n+    ip_dict, method_dict, path_dict, referer_dict, ua_dict = dicts\n+\n+    # Read indices\n+    def read_indices(max_val: int) -> list:\n+        nonlocal pos\n+        indices = []\n+        for _ in range(n):\n+            idx, pos = _decode_varint(data, pos)\n+            indices.append(idx)\n+        return indices\n+\n+    ip_idx = read_indices(len(ip_dict))\n+    method_idx = read_indices(len(method_dict))\n+    path_idx = read_indices(len(path_dict))\n+    referer_idx = read_indices(len(referer_dict))\n+    ua_idx = read_indices(len(ua_dict))\n+\n+    # Read timestamps (deltas, signed)\n+    def read_signed_varints(count: int) -> list:\n+        nonlocal pos\n+        vals = []\n+        for _ in range(count):\n+            v, pos = _decode_varint(data, pos)\n+            if v & 1:\n+                v = ~(v >> 1)\n+            else:\n+                v = v >> 1\n+            vals.append(v)\n+        return vals\n+\n+    ts_deltas = read_signed_varints(n)\n+\n+    # Read statuses and sizes\n+    statuses = []\n+    for _ in range(n):\n+        v, pos = _decode_varint(data, pos)\n+        statuses.append(v)\n+\n+    sizes = []\n+    for _ in range(n):\n+        v, pos = _decode_varint(data, pos)\n+        sizes.append(v)\n+\n+    # Reconstruct lines\n+    lines = []\n+    ts_prev = 0\n+    for i in range(n):\n+        ip = list(ip_dict.keys())[ip_idx[i]]  # inefficient but simple\n+        # Actually we need reverse mapping\n+        # Build reverse dicts\n+        ip_rev = {v: k for k, v in ip_dict.items()}\n+        method_rev = {v: k for k, v in method_dict.items()}\n+        path_rev = {v: k for k, v in path_dict.items()}\n+        referer_rev = {v: k for k, v in referer_dict.items()}\n+        ua_rev = {v: k for k, v in ua_dict.items()}\n+\n+    # Build reverse mappings once\n+    ip_rev = {v: k for k, v in ip_dict.items()}\n+    method_rev = {v: k for k, v in method_dict.items()}\n+    path_rev = {v: k for k, v in path_dict.items()}\n+    referer_rev = {v: k for k, v in referer_dict.items()}\n+    ua_rev = {v: k for k, v in ua_dict.items()}\n+\n+    lines = []\n+    ts_prev = 0\n+    for i in range(n):\n+        ip = ip_rev[ip_idx[i]]\n+        ts_prev += ts_deltas[i]\n+        # Convert back to string\n+        dt = datetime.fromtimestamp(ts_prev)\n+        ts_str = dt.strftime('%d/%b/%Y:%H:%M:%S +0000')\n+        method = method_rev[method_idx[i]]\n+        path = path_rev[path_idx[i]]\n+        status = statuses[i]\n+        size = sizes[i]\n+        size_str = '-' if size == 0 else str(size)\n+        referer = referer_rev[referer_idx[i]]\n+        ua = ua_rev[ua_idx[i]]\n+        line = f'{ip} - - [{ts_str}] \"{method} {path} HTTP/1.1\" {status} {size_str} \"{referer}\" \"{ua}\"'\n+        lines.append(line)\n+\n+    return '\\n'.join(lines).encode('utf-8')\n \n def roundtrip(data: bytes) -> tuple[bytes, bytes]:\n     blob = compress(data)\n     return blob, decompress(blob)\n+# OMEGA-BLOCK-END\n+\n+\n+def roundtrip(data: bytes) -> tuple[bytes, bytes]:\n+    blob = compress(data)\n+    return blob, decompress(blob)\n",
+ "initial_solution": {
+  "kind": "compression",
+  "input": "web server access log",
+  "head": [
+   "203.242.94.172 - - [04/Oct/2024:09:52:35 +0000] \"GET /search?q=novel&page=1 HTTP/1.1\" 200 13481 \"https://search.example.net/?q=shop\" \"Mozilla/5.0 (compatible; ExampleBot/2.1; +http://bot.example.org/info)\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/155 HTTP/1.1\" 200 23584 \"https://www.example.com/\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/books/203?ref=search HTTP/1.1\" 200 25206 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/106 HTTP/1.1\" 404 24868 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\""
+  ],
+  "lines": 2000,
+  "original_bytes": 443903,
+  "compressed_bytes": 39332,
+  "references": {
+   "zlib -9": 25176,
+   "bz2 -9": 16530,
+   "lzma -9e": 20656
+  }
+ },
+ "best_solution": {
+  "kind": "compression",
+  "input": "web server access log",
+  "head": [
+   "203.242.94.172 - - [04/Oct/2024:09:52:35 +0000] \"GET /search?q=novel&page=1 HTTP/1.1\" 200 13481 \"https://search.example.net/?q=shop\" \"Mozilla/5.0 (compatible; ExampleBot/2.1; +http://bot.example.org/info)\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/155 HTTP/1.1\" 200 23584 \"https://www.example.com/\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/books/203?ref=search HTTP/1.1\" 200 25206 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/106 HTTP/1.1\" 404 24868 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\""
+  ],
+  "lines": 2000,
+  "original_bytes": 443903,
+  "compressed_bytes": 22577,
+  "references": {
+   "zlib -9": 25176,
+   "bz2 -9": 16530,
+   "lzma -9e": 20656
+  }
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 20.8,
+ "p90_call_seconds": 33.8,
+ "prompt_tokens_per_s": 4311.3,
+ "gen_tokens_per_s": 118.2,
+ "mean_prompt_tokens": 4903,
+ "mean_gen_tokens": 2158,
+ "stopped_calls": 2,
+ "provider": "openrouter",
+ "cost_usd": 0
+}
