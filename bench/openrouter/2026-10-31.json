@@ -1,0 +1,2613 @@
+{
+ "taken": "2026-10-31T13:02:56",
+ "source": "https://openrouter.ai/rankings",
+ "models": [
+  {
+   "id": "deepseek/deepseek-v4.1-flash-1017",
+   "variant": "standard",
+   "date": "2026-10-30",
+   "tokens": 45531764896971,
+   "prompt_tokens": 44888750994192,
+   "completion_tokens": 643013902779,
+   "requests": 736268192,
+   "price_in": 0.15,
+   "price_out": 0.6,
+   "price_cache_read": 0.003,
+   "price_in_paid": 0.010152,
+   "effective_price": 0.1564,
+   "free_variant": false,
+   "context": 1048576,
+   "reasoning": true,
+   "listed": true
+  },
+  {
+   "id": "z-ai/glm-5.3-flash",
+   "variant": "standard",
+   "date": "2026-10-30",
+   "tokens": 16097477537025,
+   "prompt_tokens": 15472827243038,
+   "completion_tokens": 624650293987,
+   "requests": 766598317,
+   "price_in": 0.0163,
+   "price_out": 0.1479,
+   "price_cache_read": 0.0163,
+   "price_in_paid": 0.041114,
+   "effective_price": 0.0214,
+   "free_variant": false,
+   "context": 1048576,
+   "reasoning": true,
+   "listed": true
+  },
+  {
+   "id": "deepseek/deepseek-v4.1-flash",
+   "variant": "standard",
+   "date": "2026-10-30",
+   "tokens": 15224581012072,
+   "prompt_tokens": 14848267559187,
+   "completion_tokens": 376313452885,
+   "requests": 479397575,
+   "price_in": 0.045,
+   "price_out": 0.5,
+   "price_cache_read": 0.006,
+   "price_in_paid": 0.022682,
+   "effective_price": 0.0562,
+   "free_variant": false,
+   "context": 1048576,
+   "reasoning": true,
+   "listed": true
+  },
+  {
+   "id": "openai/gpt-6-luna",
+   "variant": "standard",
+   "date": "2026-10-30",
+   "tokens": 10927140403524,
+   "prompt_tokens": 10645864893651,
+   "completion_tokens": 281275509873,
+   "requests": 545443809,
+   "price_in": 0.1,
+   "price_out": 0.5,
+   "price_cache_read": 0.01,
+   "price_in_paid": 0.039074,
+   "effective_price": 0.1103,
+   "free_variant": false,
+   "context": 1050000,
+   "reasoning": true,
+   "listed": true
+  },
+  {
+   "id": "tencent/hy4-preview",
+   "variant": "standard",
+   "date": "2026-10-30",
+   "tokens": 9328184117722,
+   "prompt_tokens": 9238542281223,
+   "completion_tokens": 89641836499,
+   "requests": 90222919,
+   "price_in": 0.834,
+   "price_out": 2.501,
+   "price_cache_read": 0.042,
+   "price_in_paid": 0.081424,
+   "effective_price": 0.85,
+   "free_variant": false,
+   "context": 1048576,
+   "reasoning": true,
+   "listed": true
+  },
+  {
+   "id": "anthropic/claude-opus-5.5",
+   "variant": "standard",
+   "date": "2026-10-30",
+   "tokens": 7310180584466,
+   "prompt_tokens": 7246324902925,
+   "completion_tokens": 63855681541,
+   "requests": 59596367,
+   "price_in": 4.0,
+   "price_out": 20.0,
+   "price_cache_read": 0.2,
+   "price_in_paid": 0.784583,
+   "effective_price": 4.1398,
+   "free_variant": false,
+   "context": 1000000,
+   "reasoning": true,
+   "listed": true
+  },
+  {
+   "id": "stepfun/step-5-preview",
+   "variant": "standard",
+   "date": "2026-10-30",
+   "tokens": 6300479507707,
+   "prompt_tokens": 6271332715153,
+   "completion_tokens": 29146792554,
+   "requests": 24485997,
+   "price_in": 1.0,
+   "price_out": 2.7,
+   "price_cache_read": 0.1,
+   "price_in_paid": 0.145033,
+   "effective_price": 1.0079,
+   "free_variant": false,
+   "context": 1048576,
+   "reasoning": true,
+   "listed": true
+  },
+  {
+   "id": "minimax/minimax-m3.1-flash",
+   "variant": "standard",
+   "date": "2026-10-30",
+   "tokens": 5043048014940,
+   "prompt_tokens": 4970985638226,
+   "completion_tokens": 72062376714,
+   "requests": 54375544,
+   "price_in": 0.15,
+   "price_out": 0.6,
+   "price_cache_read": 0.015,
+   "price_in_paid": 0.023429,
+   "effective_price": 0.1564,
+   "free_variant": false,
+   "context": 1048576,
+   "reasoning": true,
+   "listed": true
+  },
+  {
+   "id": "z-ai/glm-5.3",
+   "variant": "standard",
+   "date": "2026-10-30",
+   "tokens": 4624273953980,
+   "prompt_tokens": 4554847485540,
+   "completion_tokens": 69426468440,
+   "requests": 68713951,
+   "price_in": 0.0699,
+   "price_out": 1.4,
+   "price_cache_read": 0.0689,
+   "price_in_paid": 0.34555,
+   "effective_price": 0.0899,
+   "free_variant": false,
+   "context": 1048576,
+   "reasoning": true,
+   "listed": true
+  },
+  {
+   "id": "deepseek/deepseek-v4-flash-0731",
+   "variant": "standard",
+   "date": "2026-10-30",
+   "tokens": 3932024864270,
+   "prompt_tokens": 3763440966276,
+   "completion_tokens": 168583897994,
+   "requests": 322075975,
+   "price_in": 0.119,
+   "price_out": 0.238,
+   "price_cache_read": 0.0238,
+   "price_in_paid": 0.052221,
+   "effective_price": 0.1241,
+   "free_variant": false,
+   "context": 1048576,
+   "reasoning": true,
+   "listed": true
+  },
+  {
+   "id": "openai/gpt-6.1-sol",
+   "variant": "standard",
+   "date": "2026-10-30",
+   "tokens": 3725743701299,
+   "prompt_tokens": 3671080103641,
+   "completion_tokens": 54663597658,
+   "requests": 76912813,
+   "price_in": 2.0,
+   "price_out": 10.0,
+   "price_cache_read": 0.1,
+   "price_in_paid": 0.447232,
+   "effective_price": 2.1174,
+   "free_variant": false,
+   "context": 1050000,
+   "reasoning": true,
+   "listed": true
+  },
+  {
+   "id": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "variant": "free",
+   "date": "2026-10-30",
+   "tokens": 3445851634261,
+   "prompt_tokens": 3411990328246,
+   "completion_tokens": 33861306015,
+   "requests": 34621754,
+   "price_in": 0.0,
+   "price_out": 0.0,
+   "price_cache_read": null,
+   "price_in_paid": 0.0,
+   "effective_price": 0.0,
+   "free_variant": true,
+   "context": 262144,
+   "reasoning": true,
+   "listed": true
+  },
+  {
+   "id": "typesafe/jev-1.13",
+   "variant": "standard",
+   "date": "2026-10-30",
+   "tokens": 3163682021967,
+   "prompt_tokens": 2932362632520,
+   "completion_tokens": 231319389447,
+   "requests": 972157535,
+   "price_in": 0.0,
+   "price_out": 0.0,
+   "price_cache_read": null,
+   "price_in_paid": null,
+   "effective_price": 0.0,
+   "free_variant": false,
+   "context": null,
+   "reasoning": false,
+   "listed": false
+  },
+  {
+   "id": "xiaomi/mimo-v2.6-flash",
+   "variant": "standard",
+   "date": "2026-10-30",
+   "tokens": 3112844448487,
+   "prompt_tokens": 3071607546303,
+   "completion_tokens": 41236902184,
+   "requests": 55768336,
+   "price_in": 0.14,
+   "price_out": 0.28,
+   "price_cache_read": 0.0028,
+   "price_in_paid": 0.020895,
+   "effective_price": 0.1419,
+   "free_variant": false,
+   "context": 1050000,
+   "reasoning": true,
+   "listed": true
+  },
+  {
+   "id": "openai/gpt-5.6-luna",
+   "variant": "standard",
+   "date": "2026-10-30",
+   "tokens": 3112378477238,
+   "prompt_tokens": 3041104163835,
+   "completion_tokens": 71274313403,
+   "requests": 193178654,
+   "price_in": 0.2,
+   "price_out": 1.2,
+   "price_cache_read": 0.02,
+   "price_in_paid": 0.054036,
+   "effective_price": 0.2229,
+   "free_variant": false,
+   "context": 1050000,
+   "reasoning": true,
+   "listed": true
+  },
+  {
+   "id": "tencent/hy3",
+   "variant": "standard",
+   "date": "2026-10-30",
+   "tokens": 3042125311049,
+   "prompt_tokens": 2993376152741,
+   "completion_tokens": 48749158308,
+   "requests": 38250851,
+   "price_in": 0.132,
+   "price_out": 0.528,
+   "price_cache_read": 0.033,
+   "price_in_paid": 0.04304,
+   "effective_price": 0.1383,
+   "free_variant": false,
+   "context": 262144,
+   "reasoning": true,
+   "listed": true
+  },
+  {
+   "id": "deepseek/deepseek-v4-flash",
+   "variant": "standard",
+   "date": "2026-10-30",
+   "tokens": 2776281383629,
+   "prompt_tokens": 2619484378217,
+   "completion_tokens": 156797005412,
+   "requests": 367114966,
+   "price_in": 0.091,
+   "price_out": 0.182,
+   "price_cache_read": 0.0182,
+   "price_in_paid": 0.045793,
+   "effective_price": 0.0961,
+   "free_variant": false,
+   "context": 1048576,
+   "reasoning": true,
+   "listed": true
+  },
+  {
+   "id": "anthropic/claude-haiku-5.5",
+   "variant": "standard",
+   "date": "2026-10-30",
+   "tokens": 2661051794704,
+   "prompt_tokens": 2529569439287,
+   "completion_tokens": 131482355417,
+   "requests": 202446944,
+   "price_in": 0.1,
+   "price_out": 0.5,
+   "price_cache_read": 0.01,
+   "price_in_paid": 0.073413,
+   "effective_price": 0.1198,
+   "free_variant": false,
+   "context": 1000000,
+   "reasoning": true,
+   "listed": true
+  },
+  {
+   "id": "anthropic/claude-sonnet-5.5",
+   "variant": "standard",
+   "date": "2026-10-30",
+   "tokens": 2634610095492,
+   "prompt_tokens": 2579660068098,
+   "completion_tokens": 54950027394,
+   "requests": 53806560,
+   "price_in": 2.0,
+   "price_out": 10.0,
+   "price_cache_read": 0.1,
+   "price_in_paid": 0.548966,
+   "effective_price": 2.1669,
+   "free_variant": false,
+   "context": 1000000,
+   "reasoning": true,
+   "listed": true
+  },
+  {
+   "id": "meta/muse-spark-1.3-contributor",
+   "variant": "standard",
+   "date": "2026-10-30",
+   "tokens": 2631642396973,
+   "prompt_tokens": 2595673575745,
+   "completion_tokens": 35968821228,
+   "requests": 35920890,
+   "price_in": 0.1,
+   "price_out": 0.2,
+   "price_cache_read": 0.002,
+   "price_in_paid": null,
+   "effective_price": 0.1014,
+   "free_variant": false,
+   "context": 1048576,
+   "reasoning": true,
+   "listed": true
+  }
+ ],
+ "prices": {
+  "particle-ai/particle-1": [
+   0.05,
+   0.5,
+   0.003
+  ],
+  "openai/gpt-6.1-terra-pro": [
+   1.0,
+   5.0,
+   0.05
+  ],
+  "openai/gpt-6.1-terra-pro:batch": [
+   0.5,
+   2.5,
+   0.025
+  ],
+  "openai/gpt-6.1-terra": [
+   1.0,
+   5.0,
+   0.05
+  ],
+  "openai/gpt-6.1-terra:batch": [
+   0.5,
+   2.5,
+   0.025
+  ],
+  "moonshotai/kimi-k3.1-pro": [
+   2.0,
+   10.0,
+   0.2
+  ],
+  "recursive/flint-v1.0:free": [
+   0.0,
+   0.0,
+   null
+  ],
+  "minimax/minimax-m3.1-flash": [
+   0.15,
+   0.6,
+   0.015
+  ],
+  "deepseek/deepseek-v4.1-flash-1017": [
+   0.15,
+   0.6,
+   0.003
+  ],
+  "elorian/glimpse": [
+   0.6,
+   3.0,
+   0.06
+  ],
+  "xingchen-agi/xing4.0-29b-a4b:free": [
+   0.0,
+   0.0,
+   null
+  ],
+  "reflection/beam-1.0-501b-a23b": [
+   0.25,
+   1.0,
+   0.05
+  ],
+  "inception/mercury-3": [
+   0.1,
+   0.35,
+   0.01
+  ],
+  "prism-ml/ternary-bonsai-2-9b": [
+   0.08,
+   0.13,
+   0.04
+  ],
+  "moondream/moondream3-preview": [
+   0.3,
+   2.5,
+   null
+  ],
+  "moondream/moondream3.1-9b-a2b": [
+   0.3,
+   2.5,
+   null
+  ],
+  "meta/muse-spark-open": [
+   1.25,
+   4.25,
+   0.15
+  ],
+  "nvidia/nemotron-3.5-super-vl": [
+   0.15,
+   0.5,
+   0.02
+  ],
+  "nvidia/nemotron-3.5-super-vl:free": [
+   0.0,
+   0.0,
+   null
+  ],
+  "unbiased/pareto-26.10": [
+   0.8,
+   3.2,
+   0.03
+  ],
+  "~unbiased/pareto-latest": [
+   0.8,
+   3.2,
+   0.03
+  ],
+  "unbiased/pareto-26.9": [
+   2.5,
+   7.5,
+   0.25
+  ],
+  "liquid/lfm-2.5-24b-a2b": [
+   0.05,
+   0.7,
+   0.025
+  ],
+  "google/gemini-4-argon": [
+   2.0,
+   10.0,
+   0.1
+  ],
+  "google/gemini-4-argon:batch": [
+   1.0,
+   5.0,
+   0.05
+  ],
+  "scaledown/summarize": [
+   0.04,
+   0.0,
+   null
+  ],
+  "scaledown/extract": [
+   0.04,
+   0.0,
+   null
+  ],
+  "meta/muse-wonder": [
+   4.0,
+   20.0,
+   0.2
+  ],
+  "stepfun/step-5-preview": [
+   1.0,
+   2.7,
+   0.1
+  ],
+  "anthropic/claude-haiku-5.5": [
+   0.1,
+   0.5,
+   0.01
+  ],
+  "anthropic/claude-haiku-5.5:batch": [
+   0.05,
+   0.25,
+   0.005
+  ],
+  "google/gemini-nano-banana-2.1": [
+   1.5,
+   7.5,
+   null
+  ],
+  "mistralai/mistral-large-4-0": [
+   0.7,
+   2.1,
+   0.07
+  ],
+  "inclusionai/ling-3.1-flash": [
+   0.075,
+   0.225,
+   0.015
+  ],
+  "openai/gpt-6.1-sol-pro": [
+   2.0,
+   10.0,
+   0.1
+  ],
+  "openai/gpt-6.1-sol-pro:batch": [
+   1.0,
+   5.0,
+   0.05
+  ],
+  "openai/gpt-6.1-sol": [
+   2.0,
+   10.0,
+   0.1
+  ],
+  "openai/gpt-6.1-sol:batch": [
+   1.0,
+   5.0,
+   0.05
+  ],
+  "anthropic/claude-sonnet-5.5": [
+   2.0,
+   10.0,
+   0.1
+  ],
+  "anthropic/claude-sonnet-5.5:batch": [
+   1.0,
+   5.0,
+   0.05
+  ],
+  "perceptron/perceptron-mk1.5": [
+   0.15,
+   1.5,
+   null
+  ],
+  "fireworks/ember-1": [
+   3.0,
+   15.0,
+   0.3
+  ],
+  "z-ai/glm-5.3-prime": [
+   2.8,
+   8.8,
+   0.56
+  ],
+  "qwen/qwen3.8-max-prime": [
+   4.0,
+   12.0,
+   0.5
+  ],
+  "aion-labs/aion-3.5-mini": [
+   0.7,
+   1.4,
+   0.18
+  ],
+  "aion-labs/aion-3.5": [
+   3.0,
+   6.0,
+   0.75
+  ],
+  "upstage/solar-mini4": [
+   0.05,
+   0.2,
+   0.005
+  ],
+  "cohere/command-a-plus": [
+   0.3,
+   1.5,
+   0.15
+  ],
+  "openai/gpt-6-luna-pro": [
+   0.1,
+   0.5,
+   0.01
+  ],
+  "openai/gpt-6-luna-pro:batch": [
+   0.05,
+   0.25,
+   0.005
+  ],
+  "openai/gpt-6-luna": [
+   0.1,
+   0.5,
+   0.01
+  ],
+  "openai/gpt-6-luna:batch": [
+   0.05,
+   0.25,
+   0.005
+  ],
+  "openai/gpt-6-sol-pro": [
+   2.0,
+   10.0,
+   0.2
+  ],
+  "openai/gpt-6-sol-pro:batch": [
+   1.0,
+   5.0,
+   0.1
+  ],
+  "openai/gpt-6-sol": [
+   2.0,
+   10.0,
+   0.2
+  ],
+  "openai/gpt-6-sol:batch": [
+   1.0,
+   5.0,
+   0.1
+  ],
+  "anthropic/claude-opus-5.5": [
+   4.0,
+   20.0,
+   0.2
+  ],
+  "anthropic/claude-opus-5.5:batch": [
+   2.0,
+   10.0,
+   0.1
+  ],
+  "xiaomi/mimo-v2.6-pro-ultraspeed": [
+   4.35,
+   8.7,
+   0.036
+  ],
+  "xiaomi/mimo-v2.6-flash": [
+   0.14,
+   0.28,
+   0.0028
+  ],
+  "xiaomi/mimo-v2.6-pro": [
+   0.435,
+   0.87,
+   0.0036
+  ],
+  "x-ai/grok-4.7": [
+   2.0,
+   6.0,
+   0.5
+  ],
+  "qwen/qwen3.8-omni-flash": [
+   0.15,
+   0.47,
+   0.016
+  ],
+  "prism-ml/ternary-bonsai-2-27b": [
+   0.075,
+   0.5,
+   0.0375
+  ],
+  "z-ai/glm-5.3-flashx": [
+   0.37,
+   1.25,
+   0.09
+  ],
+  "~deepseek/deepseek-pro-latest": [
+   0.1035,
+   8.0,
+   0.1
+  ],
+  "~deepseek/deepseek-flash-latest": [
+   0.0141,
+   0.144,
+   0.013
+  ],
+  "inference-net/schematron-v2-turbo": [
+   0.03,
+   0.15,
+   0.03
+  ],
+  "inference-net/schematron-v2-small": [
+   0.05,
+   0.23,
+   0.05
+  ],
+  "~openai/gpt-astra-latest": [
+   10.0,
+   50.0,
+   1.0
+  ],
+  "~openai/gpt-sol-latest": [
+   2.0,
+   10.0,
+   0.1
+  ],
+  "~openai/gpt-terra-latest": [
+   1.0,
+   5.0,
+   0.05
+  ],
+  "~openai/gpt-luna-latest": [
+   0.1,
+   0.5,
+   0.01
+  ],
+  "sakana/fugu-ultra-v2": [
+   5.0,
+   30.0,
+   0.5
+  ],
+  "sakana/fugu-max": [
+   2.0,
+   6.0,
+   0.25
+  ],
+  "inclusionai/ling-3.0-flash-vl": [
+   0.06,
+   0.18,
+   0.012
+  ],
+  "deepseek/deepseek-v4.1-flash": [
+   0.045,
+   0.5,
+   0.006
+  ],
+  "deepseek/deepseek-v4.1-flash:batch": [
+   0.05,
+   0.15,
+   0.004
+  ],
+  "inception/mercury-2.5": [
+   0.04,
+   0.15,
+   0.004
+  ],
+  "nex-agi/nex-n2.5-mini": [
+   0.025,
+   0.1,
+   0.0025
+  ],
+  "nex-agi/nex-n2.5-pro": [
+   0.075,
+   0.25,
+   0.015
+  ],
+  "openai/gpt-6-astra": [
+   10.0,
+   50.0,
+   1.0
+  ],
+  "openai/gpt-6-astra:batch": [
+   5.0,
+   25.0,
+   0.5
+  ],
+  "openai/gpt-6-astra-pro": [
+   10.0,
+   50.0,
+   1.0
+  ],
+  "openai/gpt-6-astra-pro:batch": [
+   5.0,
+   25.0,
+   0.5
+  ],
+  "qwen/qwen3.8-max-0902": [
+   2.0,
+   6.0,
+   0.25
+  ],
+  "meta/muse-spark-1.3-contributor": [
+   0.1,
+   0.2,
+   0.002
+  ],
+  "meta/muse-spark-1.3": [
+   1.25,
+   4.25,
+   0.15
+  ],
+  "google/gemini-3.8-flash": [
+   0.825,
+   4.125,
+   0.0825
+  ],
+  "google/gemini-3.8-flash:batch": [
+   0.375,
+   1.875,
+   0.0375
+  ],
+  "anthropic/claude-fable-5.1": [
+   10.0,
+   50.0,
+   0.25
+  ],
+  "anthropic/claude-fable-5.1:batch": [
+   5.0,
+   25.0,
+   0.125
+  ],
+  "ibm-granite/granite-4.2-8b": [
+   0.06,
+   0.15,
+   0.015
+  ],
+  "tencent/hy4-preview": [
+   0.834,
+   2.501,
+   0.042
+  ],
+  "~z-ai/glm-flash-latest": [
+   0.0163,
+   0.1479,
+   0.0163
+  ],
+  "qwen/qwen3.8-flash": [
+   0.15,
+   0.47,
+   0.016
+  ],
+  "z-ai/glm-5.3-flash": [
+   0.0163,
+   0.1479,
+   0.0163
+  ],
+  "z-ai/glm-5.3-flash:batch": [
+   0.05,
+   0.18,
+   0.01
+  ],
+  "meta/muse-spark-1.2-contributor": [
+   0.1,
+   0.2,
+   0.002
+  ],
+  "deepseek/deepseek-v4-flash-vision-exp": [
+   0.2156,
+   0.6468,
+   0.0069
+  ],
+  "tencent/hy-mt2-1.8b": [
+   0.044,
+   0.177,
+   null
+  ],
+  "tencent/hy-mt2-30b-a3b": [
+   0.074,
+   0.295,
+   null
+  ],
+  "~z-ai/glm-latest": [
+   0.0699,
+   1.4,
+   0.0689
+  ],
+  "tencent/hy-mt2-7b": [
+   0.074,
+   0.295,
+   null
+  ],
+  "z-ai/glm-5.3": [
+   0.0699,
+   1.4,
+   0.0689
+  ],
+  "z-ai/glm-5.3:batch": [
+   0.45,
+   2.0,
+   0.1
+  ],
+  "qwen/qwen3.8-27b": [
+   0.04,
+   2.3,
+   0.02
+  ],
+  "dots-studio/dots-3-note-preview:free": [
+   0.0,
+   0.0,
+   null
+  ],
+  "google/gemini-3.7-flash": [
+   0.75,
+   3.75,
+   0.075
+  ],
+  "google/gemini-3.7-flash:batch": [
+   0.375,
+   1.875,
+   0.0375
+  ],
+  "bytedance-seed/seed-2-1-turbo": [
+   0.5,
+   2.5,
+   null
+  ],
+  "qwen/qwen3.8-2.4t-a95b": [
+   2.0,
+   6.0,
+   0.25
+  ],
+  "bytedance-seed/seed-2.0-code": [
+   0.5,
+   3.0,
+   null
+  ],
+  "deepseek/deepseek-v4-pro-0813": [
+   0.66,
+   1.98,
+   0.022
+  ],
+  "x-ai/grok-4.6": [
+   2.0,
+   6.0,
+   0.5
+  ],
+  "liquid/lfm-2.5-2.6b": [
+   0.35,
+   0.5,
+   0.04
+  ],
+  "liquid/lfm-2.5-2.6b:free": [
+   0.0,
+   0.0,
+   null
+  ],
+  "nvidia/nemotron-3.5-lightning": [
+   0.07,
+   0.2,
+   0.04
+  ],
+  "nvidia/nemotron-3.5-lightning:free": [
+   0.0,
+   0.0,
+   null
+  ],
+  "sakana/sakana-namazu": [
+   0.95,
+   4.0,
+   0.15
+  ],
+  "upstage/solar-pro4": [
+   0.15,
+   0.6,
+   0.03
+  ],
+  "meta/muse-glimmer-30b": [
+   0.3,
+   1.2,
+   0.04
+  ],
+  "meta/muse-spark-1.2": [
+   1.25,
+   4.25,
+   0.15
+  ],
+  "~deepseek/deepseek-v4-flash-latest": [
+   0.0576,
+   0.1729,
+   0.0018
+  ],
+  "deepseek/deepseek-v4-flash-0731": [
+   0.119,
+   0.238,
+   0.0238
+  ],
+  "thinkingmachines/inkling-small": [
+   0.45,
+   1.2,
+   0.1
+  ],
+  "thinkingmachines/inkling-small:free": [
+   0.0,
+   0.0,
+   null
+  ],
+  "qwen/qwen3.7-flash": [
+   0.03,
+   0.13,
+   0.006
+  ],
+  "anthropic/claude-opus-5": [
+   5.0,
+   25.0,
+   0.5
+  ],
+  "anthropic/claude-opus-5:batch": [
+   2.5,
+   12.5,
+   0.25
+  ],
+  "inclusionai/ling-3.0-flash": [
+   0.021,
+   0.063,
+   0.0042
+  ],
+  "poolside/laguna-s-2.1": [
+   0.09,
+   0.18,
+   0.009
+  ],
+  "poolside/laguna-s-2.1:free": [
+   0.0,
+   0.0,
+   null
+  ],
+  "google/gemini-3.6-flash": [
+   0.75,
+   3.75,
+   0.075
+  ],
+  "google/gemini-3.6-flash:batch": [
+   0.375,
+   1.875,
+   0.0375
+  ],
+  "google/gemini-3.5-flash-lite": [
+   0.3,
+   2.5,
+   0.03
+  ],
+  "google/gemini-3.5-flash-lite:batch": [
+   0.15,
+   1.25,
+   0.015
+  ],
+  "meituan/longcat-2.0": [
+   0.3,
+   1.2,
+   0.006
+  ],
+  "thinkingmachines/inkling": [
+   1.0,
+   4.05,
+   0.17
+  ],
+  "thinkingmachines/inkling:free": [
+   0.0,
+   0.0,
+   null
+  ],
+  "moonshotai/kimi-k3": [
+   0.192,
+   15.0,
+   0.182
+  ],
+  "moonshotai/kimi-k3:batch": [
+   2.28,
+   11.4,
+   0.228
+  ],
+  "meta/muse-spark-1.1": [
+   1.25,
+   4.25,
+   0.15
+  ],
+  "openai/gpt-5.6-luna-pro": [
+   0.2,
+   1.2,
+   0.02
+  ],
+  "openai/gpt-5.6-luna-pro:batch": [
+   0.1,
+   0.6,
+   0.01
+  ],
+  "openai/gpt-5.6-luna": [
+   0.2,
+   1.2,
+   0.02
+  ],
+  "openai/gpt-5.6-luna:batch": [
+   0.1,
+   0.6,
+   0.01
+  ],
+  "openai/gpt-5.6-terra-pro": [
+   2.0,
+   12.0,
+   0.2
+  ],
+  "openai/gpt-5.6-terra-pro:batch": [
+   1.0,
+   6.0,
+   0.1
+  ],
+  "openai/gpt-5.6-terra": [
+   2.0,
+   12.0,
+   0.2
+  ],
+  "openai/gpt-5.6-terra:batch": [
+   1.0,
+   6.0,
+   0.1
+  ],
+  "openai/gpt-5.6-sol-pro": [
+   4.0,
+   20.0,
+   0.4
+  ],
+  "openai/gpt-5.6-sol-pro:batch": [
+   2.0,
+   10.0,
+   0.2
+  ],
+  "openai/gpt-5.6-sol": [
+   4.0,
+   20.0,
+   0.4
+  ],
+  "openai/gpt-5.6-sol:batch": [
+   2.0,
+   10.0,
+   0.2
+  ],
+  "x-ai/grok-4.5": [
+   2.0,
+   6.0,
+   0.3
+  ],
+  "~x-ai/grok-latest": [
+   2.0,
+   6.0,
+   0.5
+  ],
+  "aion-labs/aion-3.0-mini": [
+   0.7,
+   1.4,
+   0.18
+  ],
+  "aion-labs/aion-3.0": [
+   3.0,
+   6.0,
+   0.75
+  ],
+  "tencent/hy3": [
+   0.132,
+   0.528,
+   0.033
+  ],
+  "poolside/laguna-xs-2.1": [
+   0.06,
+   0.12,
+   0.03
+  ],
+  "poolside/laguna-xs-2.1:free": [
+   0.0,
+   0.0,
+   null
+  ],
+  "anthropic/claude-sonnet-5": [
+   2.0,
+   10.0,
+   0.2
+  ],
+  "anthropic/claude-sonnet-5:batch": [
+   1.0,
+   5.0,
+   0.1
+  ],
+  "google/gemini-3.1-flash-lite-image": [
+   0.25,
+   1.5,
+   null
+  ],
+  "sakana/fugu-ultra": [
+   5.0,
+   30.0,
+   0.5
+  ],
+  "google/gemini-3.1-flash-image": [
+   0.5,
+   3.0,
+   null
+  ],
+  "google/gemini-3-pro-image": [
+   2.0,
+   12.0,
+   0.2
+  ],
+  "cohere/north-mini-code:free": [
+   0.0,
+   0.0,
+   null
+  ],
+  "z-ai/glm-5.2": [
+   0.006,
+   6.8,
+   0.005
+  ],
+  "moonshotai/kimi-k2.7-code": [
+   0.6,
+   3.5,
+   0.15
+  ],
+  "~anthropic/claude-fable-latest": [
+   10.0,
+   50.0,
+   0.25
+  ],
+  "anthropic/claude-fable-5": [
+   10.0,
+   50.0,
+   1.0
+  ],
+  "anthropic/claude-fable-5:batch": [
+   5.0,
+   25.0,
+   0.5
+  ],
+  "nvidia/nemotron-3.5-content-safety": [
+   0.2,
+   0.2,
+   null
+  ],
+  "nvidia/nemotron-3.5-content-safety:free": [
+   0.0,
+   0.0,
+   null
+  ],
+  "nvidia/nemotron-3-ultra-550b-a55b": [
+   0.6,
+   2.4,
+   0.12
+  ],
+  "nvidia/nemotron-3-ultra-550b-a55b:free": [
+   0.0,
+   0.0,
+   null
+  ],
+  "qwen/qwen3.7-plus": [
+   0.32,
+   1.28,
+   0.064
+  ],
+  "qwen/qwen3.7-plus:batch": [
+   0.23,
+   0.92,
+   null
+  ],
+  "minimax/minimax-m3": [
+   0.3,
+   1.2,
+   0.06
+  ],
+  "stepfun/step-3.7-flash": [
+   0.2,
+   1.15,
+   0.04
+  ],
+  "anthropic/claude-opus-4.8": [
+   5.0,
+   25.0,
+   0.5
+  ],
+  "anthropic/claude-opus-4.8:batch": [
+   2.5,
+   12.5,
+   0.25
+  ],
+  "qwen/qwen3.7-max": [
+   1.475,
+   4.425,
+   0.295
+  ],
+  "x-ai/grok-build-0.1": [
+   1.0,
+   2.0,
+   0.2
+  ],
+  "google/gemini-3.5-flash": [
+   1.5,
+   9.0,
+   0.15
+  ],
+  "google/gemini-3.5-flash:batch": [
+   0.75,
+   4.5,
+   0.075
+  ],
+  "perceptron/perceptron-mk1": [
+   0.15,
+   1.5,
+   null
+  ],
+  "google/gemini-3.1-flash-lite": [
+   0.25,
+   1.5,
+   0.025
+  ],
+  "google/gemini-3.1-flash-lite:batch": [
+   0.125,
+   0.75,
+   0.0125
+  ],
+  "openai/gpt-chat-latest": [
+   5.0,
+   30.0,
+   0.5
+  ],
+  "x-ai/grok-4.3": [
+   1.25,
+   2.5,
+   0.2
+  ],
+  "x-ai/grok-4.3:batch": [
+   1.0,
+   2.0,
+   0.16
+  ],
+  "mistralai/mistral-medium-3-5": [
+   1.5,
+   7.5,
+   null
+  ],
+  "mistralai/mistral-medium-3-5:batch": [
+   0.75,
+   3.75,
+   null
+  ],
+  "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free": [
+   0.0,
+   0.0,
+   null
+  ],
+  "~anthropic/claude-haiku-latest": [
+   0.1,
+   0.5,
+   0.01
+  ],
+  "~openai/gpt-mini-latest": [
+   0.75,
+   4.5,
+   0.075
+  ],
+  "~google/gemini-pro-latest": [
+   2.0,
+   10.0,
+   0.1
+  ],
+  "~moonshotai/kimi-latest": [
+   0.1495,
+   7.15,
+   0.0748
+  ],
+  "~google/gemini-flash-latest": [
+   0.75,
+   3.75,
+   0.075
+  ],
+  "~anthropic/claude-sonnet-latest": [
+   2.0,
+   10.0,
+   0.1
+  ],
+  "qwen/qwen3.5-plus-20260420": [
+   0.3,
+   1.8,
+   null
+  ],
+  "qwen/qwen3.6-flash": [
+   0.1875,
+   1.125,
+   null
+  ],
+  "qwen/qwen3.6-35b-a3b": [
+   0.1,
+   0.9,
+   0.025
+  ],
+  "qwen/qwen3.6-27b": [
+   0.45,
+   2.7,
+   null
+  ],
+  "openai/gpt-5.5-pro": [
+   30.0,
+   180.0,
+   null
+  ],
+  "openai/gpt-5.5-pro:batch": [
+   15.0,
+   90.0,
+   null
+  ],
+  "openai/gpt-5.5": [
+   5.0,
+   30.0,
+   0.5
+  ],
+  "openai/gpt-5.5:batch": [
+   2.5,
+   15.0,
+   0.25
+  ],
+  "deepseek/deepseek-v4-pro": [
+   1.6,
+   3.2,
+   0.135
+  ],
+  "deepseek/deepseek-v4-flash": [
+   0.091,
+   0.182,
+   0.0182
+  ],
+  "tencent/hy3-preview": [
+   0.18,
+   0.6,
+   0.06
+  ],
+  "xiaomi/mimo-v2.5-pro": [
+   0.48,
+   1.8,
+   0.096
+  ],
+  "xiaomi/mimo-v2.5": [
+   0.4,
+   2.0,
+   0.08
+  ],
+  "openai/gpt-5.4-image-2": [
+   8.0,
+   15.0,
+   2.0
+  ],
+  "~anthropic/claude-opus-latest": [
+   4.0,
+   20.0,
+   0.2
+  ],
+  "moonshotai/kimi-k2.6": [
+   0.65,
+   3.41,
+   0.15
+  ],
+  "anthropic/claude-opus-4.7": [
+   5.0,
+   25.0,
+   0.5
+  ],
+  "anthropic/claude-opus-4.7:batch": [
+   2.5,
+   12.5,
+   0.25
+  ],
+  "z-ai/glm-5.1": [
+   1.4,
+   4.4,
+   0.26
+  ],
+  "google/gemma-4-26b-a4b-it": [
+   0.0675,
+   0.225,
+   0.0375
+  ],
+  "google/gemma-4-26b-a4b-it:free": [
+   0.0,
+   0.0,
+   null
+  ],
+  "google/gemma-4-31b-it": [
+   0.2,
+   0.4,
+   null
+  ],
+  "google/gemma-4-31b-it:free": [
+   0.0,
+   0.0,
+   null
+  ],
+  "qwen/qwen3.6-plus": [
+   0.325,
+   1.95,
+   null
+  ],
+  "z-ai/glm-5v-turbo": [
+   1.2,
+   4.0,
+   0.24
+  ],
+  "x-ai/grok-4.20-multi-agent": [
+   1.25,
+   2.5,
+   0.2
+  ],
+  "x-ai/grok-4.20": [
+   1.25,
+   2.5,
+   0.2
+  ],
+  "google/lyria-3-pro-preview": [
+   0.0,
+   0.0,
+   null
+  ],
+  "google/lyria-3-clip-preview": [
+   0.0,
+   0.0,
+   null
+  ],
+  "rekaai/reka-edge": [
+   0.1,
+   0.1,
+   null
+  ],
+  "minimax/minimax-m2.7": [
+   0.3,
+   1.2,
+   0.06
+  ],
+  "openai/gpt-5.4-nano": [
+   0.2,
+   1.25,
+   0.02
+  ],
+  "openai/gpt-5.4-nano:batch": [
+   0.1,
+   0.625,
+   0.01
+  ],
+  "openai/gpt-5.4-mini": [
+   0.75,
+   4.5,
+   0.075
+  ],
+  "openai/gpt-5.4-mini:batch": [
+   0.375,
+   2.25,
+   0.0375
+  ],
+  "mistralai/mistral-small-2603": [
+   0.15,
+   0.6,
+   0.015
+  ],
+  "z-ai/glm-5-turbo": [
+   1.2,
+   4.0,
+   0.24
+  ],
+  "nvidia/nemotron-3-super-120b-a12b": [
+   0.3,
+   2.4,
+   0.15
+  ],
+  "bytedance-seed/seed-2.0-lite": [
+   0.25,
+   2.0,
+   null
+  ],
+  "qwen/qwen3.5-9b": [
+   0.17,
+   0.25,
+   null
+  ],
+  "openai/gpt-5.4-pro": [
+   30.0,
+   180.0,
+   null
+  ],
+  "openai/gpt-5.4-pro:batch": [
+   15.0,
+   90.0,
+   null
+  ],
+  "openai/gpt-5.4": [
+   2.5,
+   15.0,
+   0.25
+  ],
+  "openai/gpt-5.4:batch": [
+   1.25,
+   7.5,
+   0.125
+  ],
+  "inception/mercury-2": [
+   0.25,
+   0.75,
+   0.025
+  ],
+  "google/gemini-3.1-flash-lite-preview": [
+   0.25,
+   1.5,
+   0.025
+  ],
+  "bytedance-seed/seed-2.0-mini": [
+   0.1,
+   0.4,
+   null
+  ],
+  "google/gemini-3.1-flash-image-preview": [
+   0.5,
+   3.0,
+   null
+  ],
+  "qwen/qwen3.5-35b-a3b": [
+   0.14,
+   1.0,
+   0.05
+  ],
+  "qwen/qwen3.5-27b": [
+   0.26,
+   2.6,
+   null
+  ],
+  "qwen/qwen3.5-122b-a10b": [
+   0.26,
+   2.08,
+   null
+  ],
+  "qwen/qwen3.5-flash-02-23": [
+   0.065,
+   0.26,
+   null
+  ],
+  "google/gemini-3.1-pro-preview-customtools": [
+   2.0,
+   12.0,
+   0.2
+  ],
+  "openai/gpt-5.3-codex": [
+   1.75,
+   14.0,
+   0.175
+  ],
+  "aion-labs/aion-2.0": [
+   0.8,
+   1.6,
+   0.2
+  ],
+  "google/gemini-3.1-pro-preview": [
+   2.0,
+   12.0,
+   0.2
+  ],
+  "google/gemini-3.1-pro-preview:batch": [
+   1.0,
+   6.0,
+   null
+  ],
+  "anthropic/claude-sonnet-4.6": [
+   3.0,
+   15.0,
+   0.3
+  ],
+  "anthropic/claude-sonnet-4.6:batch": [
+   1.5,
+   7.5,
+   0.15
+  ],
+  "qwen/qwen3.5-plus-02-15": [
+   0.26,
+   1.56,
+   null
+  ],
+  "qwen/qwen3.5-397b-a17b": [
+   0.5,
+   3.6,
+   0.3
+  ],
+  "minimax/minimax-m2.5": [
+   0.27,
+   0.95,
+   0.03
+  ],
+  "z-ai/glm-5": [
+   1.0,
+   3.2,
+   0.2
+  ],
+  "anthropic/claude-opus-4.6": [
+   5.0,
+   25.0,
+   0.5
+  ],
+  "anthropic/claude-opus-4.6:batch": [
+   2.5,
+   12.5,
+   0.25
+  ],
+  "qwen/qwen3-coder-next": [
+   0.12,
+   0.8,
+   0.07
+  ],
+  "stepfun/step-3.5-flash": [
+   0.1,
+   0.3,
+   null
+  ],
+  "moonshotai/kimi-k2.5": [
+   0.5,
+   2.5,
+   0.15
+  ],
+  "minimax/minimax-m2-her": [
+   0.3,
+   1.2,
+   0.03
+  ],
+  "writer/palmyra-x5": [
+   0.6,
+   6.0,
+   null
+  ],
+  "openai/gpt-audio": [
+   2.5,
+   10.0,
+   null
+  ],
+  "openai/gpt-audio-mini": [
+   0.6,
+   2.4,
+   null
+  ],
+  "z-ai/glm-4.7-flash": [
+   0.0605,
+   0.4,
+   null
+  ],
+  "openai/gpt-5.2-codex": [
+   1.75,
+   14.0,
+   0.175
+  ],
+  "bytedance-seed/seed-1.6-flash": [
+   0.075,
+   0.3,
+   null
+  ],
+  "bytedance-seed/seed-1.6": [
+   0.25,
+   2.0,
+   null
+  ],
+  "minimax/minimax-m2.1": [
+   0.3,
+   1.2,
+   0.03
+  ],
+  "z-ai/glm-4.7": [
+   0.54,
+   1.98,
+   0.099
+  ],
+  "google/gemini-3-flash-preview": [
+   0.5,
+   3.0,
+   0.05
+  ],
+  "google/gemini-3-flash-preview:batch": [
+   0.25,
+   1.5,
+   null
+  ],
+  "nvidia/nemotron-3-nano-30b-a3b": [
+   0.06,
+   0.24,
+   0.012
+  ],
+  "openai/gpt-5.2-chat": [
+   1.75,
+   14.0,
+   0.175
+  ],
+  "openai/gpt-5.2-pro": [
+   21.0,
+   168.0,
+   null
+  ],
+  "openai/gpt-5.2-pro:batch": [
+   10.5,
+   84.0,
+   null
+  ],
+  "openai/gpt-5.2": [
+   1.75,
+   14.0,
+   0.175
+  ],
+  "openai/gpt-5.2:batch": [
+   0.875,
+   7.0,
+   0.0875
+  ],
+  "mistralai/devstral-2512": [
+   0.4,
+   2.0,
+   0.04
+  ],
+  "relace/relace-search": [
+   1.0,
+   3.0,
+   null
+  ],
+  "z-ai/glm-4.6v": [
+   0.3,
+   0.9,
+   0.055
+  ],
+  "openai/gpt-5.1-codex-max": [
+   1.25,
+   10.0,
+   0.125
+  ],
+  "amazon/nova-2-lite-v1": [
+   0.3,
+   2.5,
+   null
+  ],
+  "mistralai/ministral-14b-2512": [
+   0.2,
+   0.2,
+   0.02
+  ],
+  "mistralai/ministral-8b-2512": [
+   0.15,
+   0.15,
+   0.015
+  ],
+  "mistralai/ministral-3b-2512": [
+   0.1,
+   0.1,
+   0.01
+  ],
+  "mistralai/mistral-large-2512": [
+   0.5,
+   1.5,
+   0.05
+  ],
+  "deepseek/deepseek-v3.2": [
+   0.26,
+   0.38,
+   0.13
+  ],
+  "anthropic/claude-opus-4.5": [
+   5.0,
+   25.0,
+   0.5
+  ],
+  "anthropic/claude-opus-4.5:batch": [
+   2.5,
+   12.5,
+   0.25
+  ],
+  "google/gemini-3-pro-image-preview": [
+   2.0,
+   12.0,
+   0.2
+  ],
+  "openai/gpt-5.1": [
+   1.25,
+   10.0,
+   0.125
+  ],
+  "openai/gpt-5.1:batch": [
+   0.625,
+   5.0,
+   0.0625
+  ],
+  "openai/gpt-5.1-codex": [
+   1.25,
+   10.0,
+   0.13
+  ],
+  "openai/gpt-5.1-codex-mini": [
+   0.25,
+   2.0,
+   0.03
+  ],
+  "moonshotai/kimi-k2-thinking": [
+   0.6,
+   2.5,
+   0.15
+  ],
+  "amazon/nova-premier-v1": [
+   2.5,
+   12.5,
+   0.625
+  ],
+  "perplexity/sonar-pro-search": [
+   3.0,
+   15.0,
+   null
+  ],
+  "mistralai/voxtral-small-24b-2507": [
+   0.1,
+   0.3,
+   0.01
+  ],
+  "openai/gpt-oss-safeguard-20b": [
+   0.075,
+   0.3,
+   0.0375
+  ],
+  "minimax/minimax-m2": [
+   0.255,
+   1.02,
+   null
+  ],
+  "openai/gpt-5-image-mini": [
+   2.5,
+   2.0,
+   0.25
+  ],
+  "anthropic/claude-haiku-4.5": [
+   1.0,
+   5.0,
+   0.1
+  ],
+  "anthropic/claude-haiku-4.5:batch": [
+   0.5,
+   2.5,
+   0.05
+  ],
+  "qwen/qwen3-vl-8b-instruct": [
+   0.25,
+   0.75,
+   0.12
+  ],
+  "openai/gpt-5-image": [
+   10.0,
+   10.0,
+   1.25
+  ],
+  "google/gemini-2.5-flash-image": [
+   0.3,
+   2.5,
+   0.03
+  ],
+  "qwen/qwen3-vl-30b-a3b-thinking": [
+   0.29,
+   1.0,
+   null
+  ],
+  "qwen/qwen3-vl-30b-a3b-instruct": [
+   0.15,
+   0.6,
+   null
+  ],
+  "openai/gpt-5-pro": [
+   15.0,
+   120.0,
+   null
+  ],
+  "openai/gpt-5-pro:batch": [
+   7.5,
+   60.0,
+   null
+  ],
+  "z-ai/glm-4.6": [
+   0.5,
+   2.0,
+   0.1
+  ],
+  "anthropic/claude-sonnet-4.5": [
+   3.0,
+   15.0,
+   0.3
+  ],
+  "anthropic/claude-sonnet-4.5:batch": [
+   1.5,
+   7.5,
+   0.15
+  ],
+  "deepseek/deepseek-v3.2-exp": [
+   0.27,
+   0.41,
+   null
+  ],
+  "thedrummer/cydonia-24b-v4.1": [
+   0.3,
+   0.5,
+   0.15
+  ],
+  "relace/relace-apply-3": [
+   0.85,
+   1.25,
+   null
+  ],
+  "qwen/qwen3-vl-235b-a22b-instruct": [
+   0.21,
+   1.9,
+   0.1
+  ],
+  "deepseek/deepseek-v3.1-terminus": [
+   0.27,
+   1.0,
+   null
+  ],
+  "qwen/qwen3-coder-flash": [
+   0.195,
+   0.975,
+   0.039
+  ],
+  "qwen/qwen3-next-80b-a3b-instruct": [
+   0.09,
+   1.1,
+   null
+  ],
+  "moonshotai/kimi-k2-0905": [
+   0.6,
+   2.5,
+   null
+  ],
+  "nousresearch/hermes-4-405b": [
+   1.0,
+   3.0,
+   0.2
+  ],
+  "deepseek/deepseek-chat-v3.1": [
+   0.25,
+   0.95,
+   0.13
+  ],
+  "mistralai/mistral-medium-3.1": [
+   0.4,
+   2.0,
+   0.04
+  ],
+  "z-ai/glm-4.5v": [
+   0.6,
+   1.8,
+   0.11
+  ],
+  "openai/gpt-5": [
+   1.25,
+   10.0,
+   0.125
+  ],
+  "openai/gpt-5:batch": [
+   0.625,
+   5.0,
+   0.0625
+  ],
+  "openai/gpt-5-mini": [
+   0.25,
+   2.0,
+   0.025
+  ],
+  "openai/gpt-5-mini:batch": [
+   0.125,
+   1.0,
+   0.0125
+  ],
+  "openai/gpt-5-nano": [
+   0.05,
+   0.4,
+   0.005
+  ],
+  "openai/gpt-5-nano:batch": [
+   0.025,
+   0.2,
+   0.0025
+  ],
+  "openai/gpt-oss-120b": [
+   0.15,
+   0.6,
+   0.075
+  ],
+  "openai/gpt-oss-120b:batch": [
+   0.0296,
+   0.136,
+   null
+  ],
+  "openai/gpt-oss-20b": [
+   0.018,
+   0.09,
+   0.009
+  ],
+  "openai/gpt-oss-20b:batch": [
+   0.024,
+   0.112,
+   null
+  ],
+  "anthropic/claude-opus-4.1": [
+   15.0,
+   75.0,
+   1.5
+  ],
+  "anthropic/claude-opus-4.1:batch": [
+   7.5,
+   37.5,
+   0.75
+  ],
+  "mistralai/codestral-2508": [
+   0.3,
+   0.9,
+   0.03
+  ],
+  "qwen/qwen3-coder-30b-a3b-instruct": [
+   0.07,
+   0.28,
+   null
+  ],
+  "qwen/qwen3-30b-a3b-instruct-2507": [
+   0.1,
+   0.3,
+   0.1
+  ],
+  "z-ai/glm-4.5": [
+   0.6,
+   2.2,
+   0.11
+  ],
+  "z-ai/glm-4.5-air": [
+   0.13,
+   0.85,
+   0.025
+  ],
+  "qwen/qwen3-235b-a22b-thinking-2507": [
+   0.45,
+   3.5,
+   null
+  ],
+  "qwen/qwen3-coder": [
+   0.3,
+   1.0,
+   0.1
+  ],
+  "bytedance/ui-tars-1.5-7b": [
+   0.1,
+   0.2,
+   0.1
+  ],
+  "google/gemini-2.5-flash-lite": [
+   0.1,
+   0.4,
+   0.01
+  ],
+  "qwen/qwen3-235b-a22b-2507": [
+   0.09,
+   0.55,
+   null
+  ],
+  "moonshotai/kimi-k2": [
+   0.57,
+   2.3,
+   null
+  ],
+  "cognitivecomputations/dolphin-mistral-24b-venice-edition": [
+   0.2,
+   0.9,
+   null
+  ],
+  "tencent/hunyuan-a13b-instruct": [
+   0.14,
+   0.57,
+   null
+  ],
+  "morph/morph-v3-large": [
+   0.9,
+   1.9,
+   null
+  ],
+  "morph/morph-v3-fast": [
+   0.8,
+   1.2,
+   null
+  ],
+  "mistralai/mistral-small-3.2-24b-instruct": [
+   0.075,
+   0.2,
+   null
+  ],
+  "minimax/minimax-m1": [
+   0.55,
+   2.2,
+   null
+  ],
+  "google/gemini-2.5-flash": [
+   0.3,
+   2.5,
+   0.03
+  ],
+  "google/gemini-2.5-pro": [
+   1.25,
+   10.0,
+   0.125
+  ],
+  "openai/o3-pro": [
+   20.0,
+   80.0,
+   null
+  ],
+  "google/gemini-2.5-pro-preview": [
+   1.25,
+   10.0,
+   0.125
+  ],
+  "deepseek/deepseek-r1-0528": [
+   0.5,
+   2.15,
+   0.35
+  ],
+  "mistralai/mistral-medium-3": [
+   0.4,
+   2.0,
+   0.04
+  ],
+  "meta-llama/llama-guard-4-12b": [
+   0.18,
+   0.18,
+   null
+  ],
+  "qwen/qwen3-30b-a3b": [
+   0.12,
+   0.5,
+   null
+  ],
+  "qwen/qwen3-14b": [
+   0.12,
+   0.24,
+   null
+  ],
+  "qwen/qwen3-32b": [
+   0.08,
+   0.28,
+   null
+  ],
+  "openai/o3": [
+   2.0,
+   8.0,
+   0.5
+  ],
+  "openai/o3:batch": [
+   1.0,
+   4.0,
+   0.25
+  ],
+  "openai/o4-mini:batch": [
+   0.55,
+   2.2,
+   0.1375
+  ],
+  "openai/gpt-4.1": [
+   2.0,
+   8.0,
+   0.5
+  ],
+  "openai/gpt-4.1:batch": [
+   1.0,
+   4.0,
+   0.25
+  ],
+  "openai/gpt-4.1-mini": [
+   0.4,
+   1.6,
+   0.1
+  ],
+  "openai/gpt-4.1-mini:batch": [
+   0.2,
+   0.8,
+   0.05
+  ],
+  "openai/gpt-4.1-nano": [
+   0.1,
+   0.4,
+   0.03
+  ],
+  "openai/gpt-4.1-nano:batch": [
+   0.05,
+   0.2,
+   0.0125
+  ],
+  "meta-llama/llama-4-maverick": [
+   0.1875,
+   0.6525,
+   0.05
+  ],
+  "meta-llama/llama-4-scout": [
+   0.1,
+   0.3,
+   null
+  ],
+  "deepseek/deepseek-chat-v3-0324": [
+   0.29,
+   1.14,
+   0.11
+  ],
+  "mistralai/mistral-small-3.1-24b-instruct": [
+   0.351,
+   0.555,
+   null
+  ],
+  "google/gemma-3-4b-it": [
+   0.05,
+   0.1,
+   null
+  ],
+  "google/gemma-3-12b-it": [
+   0.05,
+   0.15,
+   null
+  ],
+  "cohere/command-a": [
+   2.5,
+   10.0,
+   null
+  ],
+  "rekaai/reka-flash-3": [
+   0.1,
+   0.2,
+   null
+  ],
+  "google/gemma-3-27b-it": [
+   0.08,
+   0.35,
+   0.04
+  ],
+  "thedrummer/skyfall-36b-v2": [
+   0.55,
+   0.8,
+   0.25
+  ],
+  "perplexity/sonar-reasoning-pro": [
+   2.0,
+   8.0,
+   null
+  ],
+  "perplexity/sonar-pro": [
+   3.0,
+   15.0,
+   null
+  ],
+  "perplexity/sonar-deep-research": [
+   2.0,
+   8.0,
+   null
+  ],
+  "mistralai/mistral-saba": [
+   0.2,
+   0.6,
+   0.02
+  ],
+  "aion-labs/aion-rp-llama-3.1-8b": [
+   0.8,
+   1.6,
+   null
+  ],
+  "qwen/qwen2.5-vl-72b-instruct": [
+   0.8,
+   1.0,
+   0.4
+  ],
+  "qwen/qwen-plus": [
+   0.26,
+   0.78,
+   0.052
+  ],
+  "openai/o3-mini:batch": [
+   0.55,
+   2.2,
+   0.275
+  ],
+  "mistralai/mistral-small-24b-instruct-2501": [
+   0.05,
+   0.08,
+   null
+  ],
+  "perplexity/sonar": [
+   1.0,
+   1.0,
+   null
+  ],
+  "minimax/minimax-01": [
+   0.2,
+   1.1,
+   null
+  ],
+  "microsoft/phi-4": [
+   0.07,
+   0.14,
+   null
+  ],
+  "deepseek/deepseek-chat": [
+   0.2574,
+   1.0287,
+   null
+  ],
+  "cohere/command-r7b-12-2024": [
+   0.0375,
+   0.15,
+   null
+  ],
+  "meta-llama/llama-3.3-70b-instruct": [
+   0.1,
+   0.32,
+   null
+  ],
+  "amazon/nova-lite-v1": [
+   0.06,
+   0.24,
+   null
+  ],
+  "amazon/nova-micro-v1": [
+   0.035,
+   0.14,
+   null
+  ],
+  "amazon/nova-pro-v1": [
+   0.8,
+   3.2,
+   null
+  ],
+  "openai/gpt-4o-2024-11-20": [
+   2.5,
+   10.0,
+   1.25
+  ],
+  "mistralai/mistral-large-2407": [
+   2.0,
+   6.0,
+   0.2
+  ],
+  "qwen/qwen-2.5-coder-32b-instruct": [
+   0.66,
+   1.0,
+   null
+  ],
+  "thedrummer/unslopnemo-12b": [
+   0.4,
+   0.4,
+   null
+  ],
+  "anthracite-org/magnum-v4-72b": [
+   2.5,
+   5.0,
+   null
+  ],
+  "qwen/qwen-2.5-7b-instruct": [
+   0.1,
+   0.2,
+   null
+  ],
+  "meta-llama/llama-3.2-1b-instruct": [
+   0.027,
+   0.201,
+   null
+  ],
+  "meta-llama/llama-3.2-3b-instruct": [
+   0.05,
+   0.33,
+   null
+  ],
+  "qwen/qwen-2.5-72b-instruct": [
+   0.36,
+   0.4,
+   null
+  ],
+  "cohere/command-r-08-2024": [
+   0.15,
+   0.6,
+   null
+  ],
+  "cohere/command-r-plus-08-2024": [
+   2.5,
+   10.0,
+   null
+  ],
+  "sao10k/l3.1-euryale-70b": [
+   0.85,
+   0.85,
+   null
+  ],
+  "nousresearch/hermes-3-llama-3.1-70b": [
+   0.7,
+   0.7,
+   null
+  ],
+  "nousresearch/hermes-3-llama-3.1-405b": [
+   1.0,
+   1.0,
+   null
+  ],
+  "sao10k/l3-lunaris-8b": [
+   0.04,
+   0.05,
+   null
+  ],
+  "openai/gpt-4o-2024-08-06": [
+   2.5,
+   10.0,
+   1.25
+  ],
+  "meta-llama/llama-3.1-70b-instruct": [
+   0.4,
+   0.4,
+   null
+  ],
+  "meta-llama/llama-3.1-8b-instruct": [
+   0.05,
+   0.08,
+   0.025
+  ],
+  "mistralai/mistral-nemo": [
+   0.029,
+   0.03,
+   null
+  ],
+  "openai/gpt-4o-mini": [
+   0.15,
+   0.6,
+   0.075
+  ],
+  "openai/gpt-4o-mini-2024-07-18": [
+   0.15,
+   0.6,
+   0.075
+  ],
+  "openai/gpt-4o-mini:batch": [
+   0.075,
+   0.3,
+   0.0375
+  ],
+  "google/gemma-2-27b-it": [
+   0.65,
+   0.65,
+   null
+  ],
+  "openai/gpt-4o": [
+   2.5,
+   10.0,
+   1.25
+  ],
+  "openai/gpt-4o-2024-05-13": [
+   5.0,
+   15.0,
+   null
+  ],
+  "openai/gpt-4o:batch": [
+   1.25,
+   5.0,
+   0.625
+  ],
+  "mistralai/mixtral-8x22b-instruct": [
+   2.0,
+   6.0,
+   0.2
+  ],
+  "openai/gpt-4-turbo:batch": [
+   5.0,
+   15.0,
+   null
+  ],
+  "mistralai/mistral-large": [
+   2.0,
+   6.0,
+   0.2
+  ],
+  "openai/gpt-3.5-turbo-0613": [
+   1.0,
+   2.0,
+   null
+  ],
+  "openai/gpt-3.5-turbo-16k": [
+   3.0,
+   4.0,
+   null
+  ],
+  "mancer/weaver": [
+   0.4,
+   0.75,
+   null
+  ],
+  "undi95/remm-slerp-l2-13b": [
+   0.35,
+   0.65,
+   null
+  ],
+  "gryphe/mythomax-l2-13b": [
+   0.08,
+   0.11,
+   null
+  ],
+  "openai/gpt-4": [
+   30.0,
+   60.0,
+   null
+  ],
+  "openrouter/free": [
+   0.0,
+   0.0,
+   null
+  ]
+ }
+}

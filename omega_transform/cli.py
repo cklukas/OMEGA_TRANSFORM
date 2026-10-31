@@ -348,13 +348,13 @@ def cmd_report(a) -> int:
     results = Path(a.results)
     path = write_report(results, Path(a.output))
     print(f"wrote {path}")
-    from .landscape import latest_snapshot, render
-    snap = latest_snapshot(Path(a.openrouter_snapshots))
-    if snap is not None:
+    from .landscape import load_snapshots, render
+    snaps = load_snapshots(Path(a.openrouter_snapshots))
+    if snaps:
         from .report import load_results
         benchmarked = {r["model"] for r in load_results(results)}
         page = Path(a.output).parent / "openrouter-models.md"
-        page.write_text(render(snap, benchmarked), encoding="utf-8", newline="\n")
+        page.write_text(render(snaps[-1], benchmarked, snaps), encoding="utf-8", newline="\n")
         print(f"wrote {page}")
     return 0
 
