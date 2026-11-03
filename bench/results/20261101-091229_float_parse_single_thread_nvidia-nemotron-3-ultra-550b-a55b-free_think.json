@@ -1,0 +1,162 @@
+{
+ "schema": 4,
+ "example": "float_parse_single_thread",
+ "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-01T09:12:29",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 64.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 32768,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 77.1492,
+ "best_score": 99.3127,
+ "improvement": 1.2872810087466884,
+ "llm_calls": 27,
+ "mean_llm_seconds": 137.5,
+ "attempts": 27,
+ "ok": 10,
+ "statuses": {
+  "invalid": 12,
+  "ok": 10,
+  "compile_error": 3,
+  "duplicate": 1,
+  "edit_error": 1
+ },
+ "sweeps": 4,
+ "sweep_variants": 51,
+ "improvements": 4,
+ "minutes_to_best": 63.57,
+ "best_idea": "Add chunked digit parsing (2 or 4 digits at a time) for the integer part in the fast path to reduce loop overhead, with a tunable chunk size parameter for sweeping.",
+ "progress": [
+  [
+   0.0,
+   77.1492
+  ],
+  [
+   10.17,
+   96.3649
+  ],
+  [
+   17.12,
+   97.2093
+  ],
+  [
+   37.49,
+   99.1283
+  ],
+  [
+   63.57,
+   99.3127
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 77.1492,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.1,
+   "score": null,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "explore/diff/bold",
+   "status": "invalid",
+   "idea": "Implement a fast path for integers and short decimals using direct parsing with uint64_t mantissa accumulation and exact power-of-10 scaling, falling back to std::strtod only for complex cases."
+  },
+  {
+   "minutes": 10.17,
+   "score": 96.3649,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "The fast path incorrectly truncates the mantissa to 19 digits while using the full decimal exponent, causing wrong results for numbers with leading zeros in the fractional part. Fix by tracking total digits parsed and only using the fast path when total digits \u2264 19 (so mantissa is exact)."
+  },
+  {
+   "minutes": 63.57,
+   "score": 99.3127,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Add chunked digit parsing (2 or 4 digits at a time) for the integer part in the fast path to reduce loop overhead, with a tunable chunk size parameter for sweeping."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -30,15 +30,177 @@\n // optionally 'e' or 'E', an optional '+' or '-', and one or more digits. No\n // spaces, no '+' sign on the mantissa, no inf/nan/hex. Every value must be\n // bit-identical to std::strtod (correctly rounded, round-half-to-even).\n+#include <cctype>\n+#include <cinttypes>\n+\n+namespace {\n+\n+// Powers of 10 as double (exact up to 10^22)\n+constexpr double POW10[] = {\n+    1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9,\n+    1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19,\n+    1e20, 1e21, 1e22\n+};\n+\n+// Powers of 10 as uint64_t (exact up to 10^19)\n+constexpr uint64_t POW10_U64[] = {\n+    1ULL, 10ULL, 100ULL, 1000ULL, 10000ULL, 100000ULL, 1000000ULL, 10000000ULL,\n+    100000000ULL, 1000000000ULL, 10000000000ULL, 100000000000ULL,\n+    1000000000000ULL, 10000000000000ULL, 100000000000000ULL,\n+    1000000000000000ULL, 10000000000000000ULL, 100000000000000000ULL,\n+    1000000000000000000ULL, 10000000000000000000ULL\n+};\n+\n+// Chunk size for digit parsing (1 = scalar, 2 = pairs, 4 = quads)\n+constexpr int DIGIT_CHUNK_SIZE = 4;\n+\n+// Fast path: try to parse as integer or simple decimal with exponent within Clinger's fast path limits\n+// Returns true if successfully parsed, false if fallback needed\n+bool try_fast_path(const char*& p, const char* end, double& result) {\n+    const char* start = p;\n+    bool negative = false;\n+    \n+    // Sign\n+    if (p < end && *p == '-') {\n+        negative = true;\n+        ++p;\n+    }\n+    \n+    // Must have at least one digit\n+    if (p >= end || *p < '0' || *p > '9') return false;\n+    \n+    // Parse integer part with chunked digit processing\n+    uint64_t mantissa = 0;\n+    int digits = 0;\n+    int total_digits = 0;\n+    \n+    // Chunked parsing for integer part\n+    constexpr uint64_t CHUNK_MULT[] = {0, 10, 100, 0, 10000};\n+    constexpr int CHUNK_SIZE = DIGIT_CHUNK_SIZE;\n+    while (p + CHUNK_SIZE - 1 < end) {\n+        bool all_digits = true;\n+        uint64_t chunk_val = 0;\n+        for (int i = 0; i < CHUNK_SIZE; ++i) {\n+            char c = p[i];\n+            if (c < '0' || c > '9') { all_digits = false; break; }\n+            chunk_val = chunk_val * 10 + (c - '0');\n+        }\n+        if (!all_digits) break;\n+        if (digits + CHUNK_SIZE <= 19) {\n+            mantissa = mantissa * CHUNK_MULT[CHUNK_SIZE] + chunk_val;\n+            digits += CHUNK_SIZE;\n+        } else {\n+            break;\n+        }\n+        total_digits += CHUNK_SIZE;\n+        p += CHUNK_SIZE;\n+    }\n+    // Scalar cleanup\n+    while (p < end && *p >= '0' && *p <= '9') {\n+        if (digits < 19) {\n+            mantissa = mantissa * 10 + (*p - '0');\n+            ++digits;\n+        }\n+        ++total_digits;\n+        ++p;\n+    }\n+    \n+    int decimal_exponent = 0;\n+    bool has_decimal = false;\n+    \n+    // Parse fractional part\n+    if (p < end && *p == '.') {\n+        has_decimal = true;\n+        ++p;\n+        while (p < end && *p >= '0' && *p <= '9') {\n+            if (digits < 19) {\n+                mantissa = mantissa * 10 + (*p - '0');\n+                ++digits;\n+            }\n+            ++total_digits;\n+            --decimal_exponent;\n+            ++p;\n+        }\n+    }\n+    \n+    // Parse exponent\n+    int exp_value = 0;\n+    bool has_exponent = false;\n+    if (p < end && (*p == 'e' || *p == 'E')) {\n+        has_exponent = true;\n+        ++p;\n+        bool exp_negative = false;\n+        if (p < end && (*p == '+' || *p == '-')) {\n+            exp_negative = (*p == '-');\n+            ++p;\n+        }\n+        if (p >= end || *p < '0' || *p > '9') return false;\n+        while (p < end && *p >= '0' && *p <= '9') {\n+            exp_value = exp_value * 10 + (*p - '0');\n+            if (exp_value > 10000) return false;  // Too large for fast path\n+            ++p;\n+        }\n+        if (exp_negative) exp_value = -exp_value;\n+    }\n+    \n+    // Must end at newline or end of buffer\n+    if (p >= end || *p != '\\n') return false;\n+    \n+    // Must end at newline or end of buffer\n+    if (p >= end || *p != '\\n') return false;\n+    \n+    // Combine exponents\n+    decimal_exponent += exp_value;\n+    \n+    // Fast path only works if we have ALL digits exactly (total_digits <= 19)\n+    // and mantissa < 2^53 and |decimal_exponent| <= 22\n+    constexpr uint64_t MAX_EXACT_MANTISSA = 9007199254740991ULL; // 2^53 - 1\n+    \n+    if (total_digits <= 19 && mantissa <= MAX_EXACT_MANTISSA && decimal_exponent >= -22 && decimal_exponent <= 22) {\n+        // Exact computation possible\n+        double value;\n+        if (decimal_exponent >= 0) {\n+            value = double(mantissa) * POW10[decimal_exponent];\n+        } else {\n+            value = double(mantissa) / POW10[-decimal_exponent];\n+        }\n+        result = negative ? -value : value;\n+        ++p;  // Skip newline\n+        return true;\n+    }\n+    \n+    // Check if integer with no decimal/exponent and fits in 53 bits (all digits captured)\n+    if (!has_decimal && !has_exponent && total_digits <= 19 && mantissa <= MAX_EXACT_MANTISSA) {\n+        double value = double(mantissa);\n+        result = negative ? -value : value;\n+        ++p;  // Skip newline\n+        return true;\n+    }\n+    \n+    // Too complex for fast path, need fallback\n+    p = start;  // Reset for strtod\n+    return false;\n+}\n+\n+} // namespace\n+\n extern \"C\" size_t parse_doubles(const char* buf, size_t len, double* out) {\n     const char* p = buf;\n     const char* end = buf + len;\n     size_t count = 0;\n+    \n     while (p < end) {\n-        char* next;\n-        out[count++] = std::strtod(p, &next);\n-        p = next;\n-        while (p < end && *p == '\\n') ++p;\n+        double value;\n+        if (try_fast_path(p, end, value)) {\n+            out[count++] = value;\n+        } else {\n+            // Fallback to strtod\n+            char* next;\n+            value = std::strtod(p, &next);\n+            out[count++] = value;\n+            p = next;\n+            while (p < end && *p == '\\n') ++p;\n+        }\n     }\n     return count;\n }\n",
+ "initial_solution": {
+  "kind": "parse",
+  "count": 2000000,
+  "text_mb": 28.39,
+  "head": [
+   "0",
+   "-0",
+   "1",
+   "-1.5",
+   "0.1",
+   "1e23",
+   "9007199254740993",
+   "4.9e-324"
+  ]
+ },
+ "best_solution": {
+  "kind": "parse",
+  "count": 2000000,
+  "text_mb": 28.39,
+  "head": [
+   "0",
+   "-0",
+   "1",
+   "-1.5",
+   "0.1",
+   "1e23",
+   "9007199254740993",
+   "4.9e-324"
+  ]
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 91.7,
+ "p90_call_seconds": 385.2,
+ "prompt_tokens_per_s": 5382.2,
+ "gen_tokens_per_s": 32.2,
+ "mean_prompt_tokens": 7038,
+ "mean_gen_tokens": 4389,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

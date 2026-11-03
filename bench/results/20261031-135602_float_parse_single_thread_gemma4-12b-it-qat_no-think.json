@@ -1,0 +1,134 @@
+{
+ "schema": 4,
+ "example": "float_parse_single_thread",
+ "model": "gemma4:12b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 7.2,
+ "model_params": "11.9B",
+ "started": "2026-10-31T13:56:02",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 12.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 32768,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 77.0797,
+ "best_score": 80.3017,
+ "improvement": 1.0418008892094806,
+ "llm_calls": 16,
+ "mean_llm_seconds": 41.9,
+ "attempts": 16,
+ "ok": 5,
+ "statuses": {
+  "invalid": 5,
+  "ok": 5,
+  "compile_error": 3,
+  "llm_error": 2,
+  "edit_error": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 11.54,
+ "best_idea": "Implement a fast path for integers by manually parsing digits into a 64-bit integer and applying a power-of-ten multiplier, falling back to `std::strtod` for all other formats to ensure bit-identity.",
+ "progress": [
+  [
+   0.0,
+   77.0797
+  ],
+  [
+   11.54,
+   80.3017
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 77.0797,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 11.54,
+   "score": 80.3017,
+   "model": "gemma4:12b-it-qat",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Implement a fast path for integers by manually parsing digits into a 64-bit integer and applying a power-of-ten multiplier, falling back to `std::strtod` for all other formats to ensure bit-identity."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -36,6 +36,43 @@\n     size_t count = 0;\n     while (p < end) {\n         char* next;\n+        const char* start = p;\n+        bool is_int = true;\n+        \n+        // Scan for non-integer characters to decide whether to use fast path\n+        for (const char* q = p; q < end && *q != '\\n'; ++q) {\n+            if (*q == '.') { is_int = false; break; }\n+            if (*q == 'e' || *q == 'E') { is_int = false; break; }\n+        }\n+\n+        if (is_int) {\n+            int sign = 1;\n+            if (*p == '-') {\n+                sign = -1;\n+                p++;\n+            }\n+            \n+            uint64_t res = 0;\n+            int digits = 0;\n+            const char* q = p;\n+            while (q < end && *q != '\\n') {\n+                if (*q >= '0' && *q <= '9') digits++;\n+                q++;\n+            }\n+\n+            // Only use fast path for integers that fit in 18 digits (exact for double)\n+            // and don't look like they'll overflow uint64_t before conversion.\n+            if (digits <= 18) {\n+                while (p < end && *p >= '0' && *p <= '9') {\n+                    res = res * 10 + (*p - '0');\n+                    p++;\n+                }\n+                out[count++] = (double)res * sign;\n+                while (p < end && *p == '\\n') ++p;\n+                continue;\n+            }\n+        }\n+        \n         out[count++] = std::strtod(p, &next);\n         p = next;\n         while (p < end && *p == '\\n') ++p;\n",
+ "initial_solution": {
+  "kind": "parse",
+  "count": 2000000,
+  "text_mb": 28.39,
+  "head": [
+   "0",
+   "-0",
+   "1",
+   "-1.5",
+   "0.1",
+   "1e23",
+   "9007199254740993",
+   "4.9e-324"
+  ]
+ },
+ "best_solution": {
+  "kind": "parse",
+  "count": 2000000,
+  "text_mb": 28.39,
+  "head": [
+   "0",
+   "-0",
+   "1",
+   "-1.5",
+   "0.1",
+   "1e23",
+   "9007199254740993",
+   "4.9e-324"
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 9.0,
+ "model_gpu_memory_gb": 9.0,
+ "context_length": 32768,
+ "load_seconds": 21.1,
+ "median_call_seconds": 36.6,
+ "p90_call_seconds": 62.8,
+ "prompt_tokens_per_s": 759.1,
+ "gen_tokens_per_s": 27.9,
+ "mean_prompt_tokens": 6241,
+ "mean_gen_tokens": 633,
+ "stopped_calls": 2,
+ "provider": "ollama",
+ "cost_usd": 0
+}

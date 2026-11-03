@@ -227,6 +227,7 @@ def bar_chart(title: str, labels: list[str], values: list[float], y_label: str,
     top = max([v for v in values if v is not None] or [1.0])
     if errors is not None:
         top = max([top] + [(v or 0) + e[1] for v, e in zip(values, errors) if e is not None])
+    top = top or 1.0  # all zero: the axis still needs a range
     vals = ", ".join(f"{(v or 0):.4g}" for v in values)
     line = ""
     if errors is not None:

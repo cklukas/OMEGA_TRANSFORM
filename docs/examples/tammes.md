@@ -65,4 +65,324 @@ def run():
 
 ## Benchmark results
 
-This example has not been benchmarked yet. See [Benchmarking models](../benchmarking.md) for how to run it.
+The best result so far comes from **nvidia/nemotron-3.5-super-vl:free (think)**, run through OpenRouter on 2026-11-02: a score of **38.5034** (×12.03 the starting program's 3.20136), reached after 19.57 of 60 minutes with 15 model requests.
+
+What the starting program produces (left) and what the best program by nvidia/nemotron-3.5-super-vl:free (think) produces (right):
+
+![tammes: the starting program's solution and the best one](../assets/examples/tammes.svg)
+
+### How it got there
+
+The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.
+
+| Step | Minute | Score | Kind | Idea |
+|--:|--:|--:|---|---|
+| 0 | 0.0 | 3.20136 | start | initial program |
+| 1 | 6.8 | 12.0267 | edit | Replace the uniform-random initializer with a Fibonacci (golden-spiral) sphere start, then run multi-stage Thomson-style repulsion energy minimization with tangent-projected gradients and increasing exponent, followed by a shrinking-step max-min polish that … |
+| 2 | 6.8 | 31.9613 | parameter sweep | tuned STEP=0.1, POLISH=1000 on top of: Replace the uniform-random initializer with a Fibonacci (golden-spiral) sphere start, then run multi-stage Thomson-style repulsion energy minimization with tangent-projected gradients and increasing exponent, followed by … |
+| 3 | 13.4 | 35.7015 | edit | Tune the energy learning rate and polish initial step together, since the leaderboard shows LR_BASE=0.2 with STEP0=0.02 substantially outperforms the current STEP=0.1 with the hardcoded 0.06 polish step; expose both as constants and sweep them. |
+| 4 | 19.6 | 37.5846 | edit | Replace the greedy single-pair max-min polish with a simulated-annealing phase that directly minimizes the worst pairwise dot product (maximizes the minimum angle), using an incremental dot-matrix for O(n) proposed moves and geometric cooling, keeping the … |
+| 5 | 19.6 | 38.5034 | parameter sweep | tuned SA_ITERS=100000, SA_T0=0.001, SA_STEP0=0.05, SA_STEP_DECAY=1 on top of: Replace the greedy single-pair max-min polish with a simulated-annealing phase that directly minimizes the worst pairwise dot product (maximizes the minimum angle), using an … |
+
+### The best program
+
+What changed compared with the starting program:
+
+```diff
+--- initial
++++ best
+@@ -6,22 +6,232 @@
+ import random
+ 
+ # OMEGA-BLOCK-START
++STEP = 0.2
++SA_ITERS = 100000
++SA_T0 = 0.001
++SA_STEP0 = 0.05
++SA_STEP_DECAY = 0.99997
++
++def _unit(p):
++    x, y, z = p
++    m = math.sqrt(x*x + y*y + z*z)
++    if m <= 0.0:
++        return (1.0, 0.0, 0.0)
++    return (x/m, y/m, z/m)
++
++def _min_angle_deg(pts):
++    n = len(pts)
++    best = 1.0
++    for i in range(n):
++        pi = pts[i]
++        xi, yi, zi = pi
++        for j in range(i+1, n):
++            pj = pts[j]
++            d = xi*pj[0] + yi*pj[1] + zi*pj[2]
++            if d > best:
++                best = d
++    if best > 1.0:
++        best = 1.0
++    elif best < -1.0:
++        best = -1.0
++    return math.degrees(math.acos(best))
++
++def _fibonacci(n):
++    pts = []
++    phi = math.pi * (3.0 - math.sqrt(5.0))
++    for i in range(n):
++        z = 1.0 - 2.0 * (i + 0.5) / n
++        r = math.sqrt(1.0 - z*z)
++        t = phi * i
++        pts.append((r*math.cos(t), r*math.sin(t), z))
++    return pts
++
++def _energy_optimize(pts, schedule):
++    pts = [list(p) for p in pts]
++    n = len(pts)
++    for s, base_step, iters in schedule:
++        for _ in range(iters):
++            forces = [[0.0, 0.0, 0.0] for _ in range(n)]
++            maxf = 0.0
++            for i in range(n):
++                pi = pts[i]
++                xi, yi, zi = pi
++                fx = fy = fz = 0.0
++                for j in range(n):
++                    if i == j:
++                        continue
++                    pj = pts[j]
++                    dx = xi - pj[0]
++                    dy = yi - pj[1]
++                    dz = zi - pj[2]
++                    d2 = dx*dx + dy*dy + dz*dz
++                    if d2 < 1e-20:
++                        continue
++                    d = math.sqrt(d2)
++                    coef = s / (d ** (s + 2.0))
++                    fx += coef*dx
++                    fy += coef*dy
++                    fz += coef*dz
++                dotf = fx*xi + fy*yi + fz*zi
++                fx -= dotf*xi
++                fy -= dotf*yi
++                fz -= dotf*zi
++                f2 = fx*fx + fy*fy + fz*fz
++                if f2 > maxf:
++                    maxf = f2
++                forces[i] = (fx, fy, fz)
++            if maxf <= 0.0:
++                break
++            scale = base_step / math.sqrt(maxf)
++            for i in range(n):
++                fx, fy, fz = forces[i]
++                pi = pts[i]
++                pi[0] += scale*fx
++                pi[1] += scale*fy
++                pi[2] += scale*fz
++                m = math.sqrt(pi[0]*pi[0] + pi[1]*pi[1] + pi[2]*pi[2])
++                if m > 1e-12:
++                    pi[0] /= m
++                    pi[1] /= m
++                    pi[2] /= m
++    return [(p[0], p[1], p[2]) for p in pts]
++
++def _sa_polish(pts, iters, t0, step0, step_decay, seed):
++    pts = [list(p) for p in pts]
++    n = len(pts)
++    rng = random.Random(987654321 + seed)
++    D = [[0.0] * n for _ in range(n)]
++    row_max = [0.0] * n
++    for i in range(n):
++        pi = pts[i]
++        rmax = -2.0
++        for j in range(n):
++            if i == j:
++                continue
++            pj = pts[j]
++            d = pi[0] * pj[0] + pi[1] * pj[1] + pi[2] * pj[2]
++            D[i][j] = d
++            if d > rmax:
++                rmax = d
++        row_max[i] = rmax
++    cur = row_max[0]
++    for v in row_max[1:]:
++        if v > cur:
++            cur = v
++    best = cur
++    best_pts = [p[:] for p in pts]
++    t1 = t0 * 0.001
++    T = t0
++    step = step0
++    cooling = math.pow(t1 / t0, 1.0 / iters)
++    for _ in range(iters):
++        i = rng.randrange(n)
++        pi = pts[i]
++        ax = rng.gauss(0.0, 1.0)
++        ay = rng.gauss(0.0, 1.0)
++        az = rng.gauss(0.0, 1.0)
++        dot = ax * pi[0] + ay * pi[1] + az * pi[2]
++        ax -= dot * pi[0]
++        ay -= dot * pi[1]
++        az -= dot * pi[2]
++        nm = math.sqrt(ax * ax + ay * ay + az * az)
++        if nm < 1e-14:
++            T *= cooling
++            step *= step_decay
++            continue
++        inv = step / nm
++        nx = pi[0] + ax * inv
++        ny = pi[1] + ay * inv
++        nz = pi[2] + az * inv
++        nn = math.sqrt(nx * nx + ny * ny + nz * nz)
++        nx /= nn
++        ny /= nn
++        nz /= nn
++        new_row = [0.0] * n
++        nmax = -2.0
++        for j in range(n):
++            if j == i:
++                continue
++            pj = pts[j]
++            d = nx * pj[0] + ny * pj[1] + nz * pj[2]
++            new_row[j] = d
++            if d > nmax:
++                nmax = d
++        old_row = D[i]
++        D[i] = new_row
++        saved = row_max[:]
++        row_max[i] = nmax
++        for j in range(n):
++            if j == i:
++                continue
++            oj = old_row[j]
++            nj = new_row[j]
++            D[j][i] = nj
++            if nj > row_max[j]:
++                row_max[j] = nj
++            elif oj == row_max[j] and nj < oj:
++                rmax = -2.0
++                Dj = D[j]
++                for k in range(n):
++                    if k == j:
++                        continue
++                    d = Dj[k]
++                    if d > rmax:
++                        rmax = d
++                row_max[j] = rmax
++        newcur = row_max[0]
++        for v in row_max[1:]:
++            if v > newcur:
++                newcur = v
++        accept = False
++        if newcur <= cur:
++            accept = True
++        elif rng.random() < math.exp((cur - newcur) / T):
++            accept = True
++        if accept:
++            cur = newcur
++            pts[i] = (nx, ny, nz)
++            if cur < best:
++                best = cur
++                best_pts = [p[:] for p in pts]
++        else:
++            D[i] = old_row
++            row_max = saved
++            for j in range(n):
++                if j != i:
++                    D[j][i] = old_row[j]
++        T *= cooling
++        step *= step_decay
++        if T < 1e-15:
++            break
++    return [(p[0], p[1], p[2]) for p in best_pts]
++
+ def construct(n=30):
+-    """Return a list of n points (x, y, z) on the unit sphere.
+-
+-    Vectors need not be normalized (the evaluator normalizes them), but none may be
+-    zero. The score is the minimum angle in degrees between any two points. This
+-    start draws uniformly random points with a fixed seed, so some pairs end up
+-    close together.
+-    """
+-    rng = random.Random(1)
+-    points = []
+-    for _ in range(n):
+-        z = rng.uniform(-1.0, 1.0)
+-        phi = rng.uniform(0.0, 2 * math.pi)
+-        s = math.sqrt(1.0 - z * z)
+-        points.append((s * math.cos(phi), s * math.sin(phi), z))
+-    return points
++    schedule = [
++        (1.0, STEP, 80),
++        (2.0, STEP/2.0, 80),
++        (4.0, STEP/4.0, 100),
++        (8.0, STEP/10.0, 120),
++    ]
++    best_pts = None
++    best_score = -1.0
++    for seed in range(3):
++        pts = _fibonacci(n)
++        rng = random.Random(seed)
++        jit = 0.003
++        pts = [(
++            p[0] + rng.uniform(-jit, jit),
++            p[1] + rng.uniform(-jit, jit),
++            p[2] + rng.uniform(-jit, jit),
++        ) for p in pts]
++        pts = [_unit(p) for p in pts]
++        pts = _energy_optimize(pts, schedule)
++        pts = _sa_polish(pts, SA_ITERS, SA_T0, SA_STEP0, SA_STEP_DECAY, seed)
++        score = _min_angle_deg(pts)
++        if score > best_score:
++            best_score = score
++            best_pts = pts
++    return best_pts
+ # OMEGA-BLOCK-END
+```
+
+### All models
+
+One run per model and reasoning mode; the [model benchmarks](../benchmarks/tammes_30.md) page has speed, memory and progress over time.
+
+| Model | Where | Best | Gain | Minutes to best | New bests |
+|---|---|--:|--:|--:|--:|
+| nvidia/nemotron-3.5-super-vl:free (think) | cloud | 38.5034 | ×12.03 | 19.6 | 4 |
+| gemma4:26b-a4b-it-qat (no-think) | local | 38.3889 | ×11.99 | 15.1 | 4 |
+| cohere/north-mini-code:free (think) | cloud | 38.3608 | ×11.98 | 60.7 | 5 |
+| gpt-oss:20b (no-think) | local | 38.2397 | ×11.94 | 50.1 | 12 |
+| nvidia/nemotron-3-ultra-550b-a55b:free (think) | cloud | 37.1262 | ×11.60 | 26.6 | 5 |
+| gemma4:latest (no-think) | local | 36.8186 | ×11.50 | 8.7 | 7 |
+| nvidia/nemotron-3.5-lightning:free (think) | cloud | 36.3532 | ×11.36 | 23.0 | 5 |
+| xingchen-agi/xing4.0-29b-a4b:free (think) | cloud | 34.8992 | ×10.90 | 18.8 | 2 |
+| frob/sarvam:30b (no-think) | local | 34.5838 | ×10.80 | 32.4 | 2 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 32.7402 | ×10.23 | 6.2 | 2 |
+| qwen2.5-coder:7b (no-think) | local | 32.7402 | ×10.23 | 0.8 | 1 |
+| qwen3.5:latest (no-think) | local | 32.7402 | ×10.23 | 9.1 | 2 |
+| qwen3-coder:30b (no-think) | local | 30.2470 | ×9.45 | 14.4 | 5 |
+| dots-studio/dots-3-note-preview:free (think) | cloud | 22.1357 | ×6.91 | 51.0 | 4 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 21.4033 | ×6.69 | 1.6 | 2 |
+| richardyoung/frognano-4b-2609:latest (no-think) | local | 21.4033 | ×6.69 | 0.9 | 1 |
+| gemma4:12b-it-qat (no-think) | local | 21.4033 | ×6.69 | 1.2 | 1 |
+| glm-4.7-flash:latest (no-think) | local | 21.4033 | ×6.69 | 1.4 | 1 |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | cloud | 21.4033 | ×6.69 | 14.7 | 3 |
+| gemma4:e4b-it-qat (no-think) | local | 21.0395 | ×6.57 | 1.0 | 2 |
+| xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 17.2191 | ×5.38 | 17.9 | 1 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | 12.9182 | ×4.04 | 14.8 | 1 |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | 9.80576 | ×3.06 | 6.8 | 3 |
+| gemma4:e2b (no-think) | local | 9.55566 | ×2.98 | 1.0 | 3 |
+| nemotron-3-nano:4b (no-think) | local | 9.50191 | ×2.97 | 2.5 | 1 |
+| cohere/north-mini-code:free (no-think) | cloud | | | | failed: all 6 model requests failed: cohere/north-mini-code:free … |
+| nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
+| nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
+| dots-studio/dots-3-note-preview:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
+| nvidia/nemotron-3.5-lightning:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
+| google/gemma-4-26b-a4b-it:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
+| google/gemma-4-31b-it:free (no-think) | cloud | | | | failed: all 6 model requests failed: google/gemma-4-31b-it:free … |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | 3.20136 | ×1.00 | - | 0 |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | 3.20136 | ×1.00 | - | 0 |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | local | 3.20136 | ×1.00 | - | 0 |
+| google/gemma-4-26b-a4b-it:free (think) | cloud | | | | failed: all 6 model requests failed … |
+| google/gemma-4-31b-it:free (think) | cloud | | | | failed: all 6 model requests failed: google/gemma-4-31b-it:free … |
+| recursive/flint-v1.0:free (think) | cloud | | | | failed: all 6 model requests failed: recursive/flint-v1.0:free … |
+| poolside/laguna-s-2.1:free (no-think) | cloud | | | | failed: RuntimeError: OpenRouter has no model … |
+| poolside/laguna-xs-2.1:free (no-think) | cloud | | | | failed: RuntimeError: OpenRouter has no model … |

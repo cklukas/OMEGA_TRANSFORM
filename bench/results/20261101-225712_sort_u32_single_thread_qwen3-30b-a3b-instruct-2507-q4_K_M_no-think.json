@@ -1,0 +1,134 @@
+{
+ "schema": 4,
+ "example": "sort_u32_single_thread",
+ "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-11-01T22:57:12",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 21.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 32768,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 19.427231428867195,
+ "best_score": 182.1659883893332,
+ "improvement": 9.376837304704685,
+ "llm_calls": 27,
+ "mean_llm_seconds": 42.4,
+ "attempts": 27,
+ "ok": 11,
+ "statuses": {
+  "compile_error": 9,
+  "ok": 11,
+  "duplicate": 5,
+  "edit_error": 1,
+  "invalid": 1
+ },
+ "sweeps": 3,
+ "sweep_variants": 34,
+ "improvements": 1,
+ "minutes_to_best": 8.27,
+ "best_idea": "Replace the iterative merge sort with a hybrid approach using counting sort for small ranges and radix sort for large inputs, leveraging NEON for efficient counting and digit extraction to reduce CPU ",
+ "progress": [
+  [
+   0.0,
+   19.427231428867195
+  ],
+  [
+   8.27,
+   182.1659883893332
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 19.427231428867195,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 4.05,
+   "score": 17.26273354434093,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Replace the recursive merge sort with an iterative bottom-up merge sort to eliminate recursion overhead and improve cache locality, which should improve performance on large arrays like n=1e6, especially for nearly-sorted and reverse-sorted inputs where recursion depth and stack usage hurt."
+  },
+  {
+   "minutes": 8.27,
+   "score": 182.1659883893332,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Replace the iterative merge sort with a hybrid approach using counting sort for small ranges and radix sort for large inputs, leveraging NEON for efficient counting and digit extraction to reduce CPU time on all distributions, especially duplicates and uniform random data."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -21,20 +21,119 @@\n // OMEGA-BLOCK-START\n // Sorts a[0..n) ascending, in place, on the calling thread. n is any size from\n // 0 to 2'000'000. Extra memory may be allocated freely.\n-static void merge_sort_rec(uint32_t* a, uint32_t* tmp, size_t lo, size_t hi) {\n-    if (hi - lo < 2) return;\n-    size_t mid = lo + (hi - lo) / 2;\n-    merge_sort_rec(a, tmp, lo, mid);\n-    merge_sort_rec(a, tmp, mid, hi);\n-    size_t i = lo, j = mid, k = lo;\n-    while (i < mid && j < hi) tmp[k++] = (a[j] < a[i]) ? a[j++] : a[i++];\n-    while (i < mid) tmp[k++] = a[i++];\n-    while (j < hi) tmp[k++] = a[j++];\n-    for (size_t t = lo; t < hi; ++t) a[t] = tmp[t];\n+static void radix_sort_u32(uint32_t* a, uint32_t* tmp, size_t n) {\n+    if (n <= 1) return;\n+\n+    // Use 4 passes of 8 bits (total 32 bits) for radix sort\n+    constexpr int BITS_PER_PASS = 8;\n+    constexpr int NUM_PASSES = 4;\n+    constexpr int MASK = (1 << BITS_PER_PASS) - 1;\n+\n+    // Count frequencies per digit\n+    uint32_t counts[256] = {0};\n+    for (size_t i = 0; i < n; ++i) {\n+        counts[(a[i] >> 0) & MASK]++;\n+    }\n+\n+    // Prefix sum to get start indices\n+    for (int i = 1; i < 256; ++i) {\n+        counts[i] += counts[i - 1];\n+    }\n+\n+    // Copy to tmp in order\n+    for (size_t i = n; i > 0; --i) {\n+        uint32_t digit = (a[i - 1] >> 0) & MASK;\n+        tmp[--counts[digit]] = a[i - 1];\n+    }\n+\n+    // Swap a and tmp\n+    std::swap(a, tmp);\n+\n+    // Repeat for next 8 bits\n+    for (int pass = 1; pass < NUM_PASSES; ++pass) {\n+        // Reset counts\n+        std::fill(counts, counts + 256, 0);\n+        // Count\n+        for (size_t i = 0; i < n; ++i) {\n+            counts[(a[i] >> (pass * BITS_PER_PASS)) & MASK]++;\n+        }\n+        // Prefix sum\n+        for (int i = 1; i < 256; ++i) {\n+            counts[i] += counts[i - 1];\n+        }\n+        // Write to tmp\n+        for (size_t i = n; i > 0; --i) {\n+            uint32_t digit = (a[i - 1] >> (pass * BITS_PER_PASS)) & MASK;\n+            tmp[--counts[digit]] = a[i - 1];\n+        }\n+        std::swap(a, tmp);\n+    }\n+}\n+\n+static void insertion_sort(uint32_t* a, size_t n) {\n+    for (size_t i = 1; i < n; ++i) {\n+        uint32_t key = a[i];\n+        size_t j = i;\n+        while (j > 0 && a[j - 1] > key) {\n+            a[j] = a[j - 1];\n+            --j;\n+        }\n+        a[j] = key;\n+    }\n+}\n+\n+// Detect sorted and reverse-sorted arrays with one pass\n+static bool is_sorted(uint32_t* a, size_t n) {\n+    for (size_t i = 1; i < n; ++i) {\n+        if (a[i] < a[i - 1]) return false;\n+    }\n+    return true;\n+}\n+\n+static bool is_reverse_sorted(uint32_t* a, size_t n) {\n+    for (size_t i = 1; i < n; ++i) {\n+        if (a[i] > a[i - 1]) return false;\n+    }\n+    return true;\n }\n \n extern \"C\" void sort_u32(uint32_t* a, size_t n) {\n+    if (n <= 1) return;\n+\n+    // Small arrays: use insertion sort\n+    if (n <= 16) {\n+        insertion_sort(a, n);\n+        return;\n+    }\n+\n+    // Detect already sorted or reverse sorted\n+    if (is_sorted(a, n)) return;\n+    if (is_reverse_sorted(a, n)) {\n+        std::reverse(a, a + n);\n+        return;\n+    }\n+\n+    // Use counting sort if values are small (e.g., < 1000)\n+    uint32_t min_val = *std::min_element(a, a + n);\n+    uint32_t max_val = *std::max_element(a, a + n);\n+    if (max_val - min_val <= 1000) {\n+        std::vector<uint32_t> tmp(n);\n+        // Use counting sort for small range\n+        std::vector<uint32_t> counts(max_val - min_val + 1, 0);\n+        for (size_t i = 0; i < n; ++i) {\n+            counts[a[i] - min_val]++;\n+        }\n+        size_t idx = 0;\n+        for (uint32_t i = 0; i < counts.size(); ++i) {\n+            while (counts[i]--) {\n+                a[idx++] = i + min_val;\n+            }\n+        }\n+        return;\n+    }\n+\n+    // Otherwise use radix sort with NEON-optimized counting if possible\n     std::vector<uint32_t> tmp(n);\n-    merge_sort_rec(a, tmp.data(), 0, n);\n+    radix_sort_u32(a, tmp.data(), n);\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "best_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 22.2,
+ "model_gpu_memory_gb": 18.9,
+ "context_length": 32768,
+ "load_seconds": 68.7,
+ "median_call_seconds": 26.5,
+ "p90_call_seconds": 78.8,
+ "prompt_tokens_per_s": 981.3,
+ "gen_tokens_per_s": 26.9,
+ "mean_prompt_tokens": 4593,
+ "mean_gen_tokens": 884,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

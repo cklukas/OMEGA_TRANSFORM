@@ -1,0 +1,110 @@
+{
+ "schema": 4,
+ "example": "sort_u32_single_thread",
+ "model": "google/gemma-4-31b-it:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-02T12:16:40",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 7.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 32768,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 17.844396885565644,
+ "best_score": 17.844396885565644,
+ "improvement": 1.0,
+ "llm_calls": 5,
+ "mean_llm_seconds": 71.4,
+ "attempts": 5,
+ "ok": 0,
+ "statuses": {
+  "llm_error": 5
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 0,
+ "minutes_to_best": null,
+ "best_idea": "initial program",
+ "progress": [
+  [
+   0.0,
+   17.844396885565644
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 17.844396885565644,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  }
+ ],
+ "best_diff": "",
+ "initial_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "best_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "error": "all 5 model requests failed: google/gemma-4-31b-it:free: rate limited (HTTP 429); try again later",
+ "stop_reason": "model errors",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 71.4,
+ "p90_call_seconds": 72.2,
+ "prompt_tokens_per_s": null,
+ "gen_tokens_per_s": null,
+ "mean_prompt_tokens": 0,
+ "mean_gen_tokens": 0,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

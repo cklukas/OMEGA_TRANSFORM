@@ -61,9 +61,9 @@ def cut(n, edges):
 
 ## Benchmark results
 
-The best result so far comes from **dots-studio/dots-3-note-preview:free (no-think)**, run through OpenRouter on 2026-10-31: a score of **0.76761** (×1.50 the starting program's 0.51218), reached after 3.64 of 60 minutes with 19 model requests.
+The best result so far comes from **nvidia/nemotron-3-ultra-550b-a55b:free (think)**, run through OpenRouter on 2026-11-01: a score of **0.76768** (×1.50 the starting program's 0.51218), reached after 14.54 of 60 minutes with 16 model requests.
 
-What the starting program produces (left) and what the best program by dots-studio/dots-3-note-preview:free (no-think) produces (right), drawn for the instance `g100`:
+What the starting program produces (left) and what the best program by nvidia/nemotron-3-ultra-550b-a55b:free (think) produces (right), drawn for the instance `g100`:
 
 ![max_cut: the starting program's solution and the best one](../assets/examples/max_cut.svg)
 
@@ -74,8 +74,10 @@ The best program's ancestry, from the starting program on. "Edit" and "rewrite" 
 | Step | Minute | Score | Kind | Idea |
 |--:|--:|--:|---|---|
 | 0 | 0.0 | 0.51218 | start | initial program |
-| 1 | 2.3 | 0.72598 | edit | Replace the trivial alternating assignment with a greedy constructive heuristic followed by one-flip local search using incremental gain updates, which should lift the ratio from ~0.51 to ~0.72. |
-| 2 | 3.6 | 0.76761 | rewrite | Add a tabu search phase after the local search to escape local optima, using a dynamic tenure and periodic restarts with perturbation to improve the cut weight. |
+| 1 | 2.6 | 0 | rewrite | Implement greedy randomized construction followed by iterative one-flip local search with random restarts, using adjacency lists and incremental gain updates, all bounded by a per-graph CPU time limit. |
+| 2 | 5.4 | 0.7581 | rewrite | Fix the broken greedy construction by tracking placed nodes, replace simple local search with tabu search (proven in high-scoring program), and expose key parameters for sweeping to find optimal values. |
+| 3 | 14.5 | 0.76578 | edit | Fix the critical bug where best_side tracks the current solution instead of the global best, update parameters to the best sweep values (TABU_TENURE_BASE=0.05, PERTURB_FRACTION=0.15), and fix the aspiration criterion to use global best. |
+| 4 | 14.5 | 0.76768 | parameter sweep | tuned TABU_TENURE_BASE=0.07, TABU_RANDOM_RANGE=7, PERTURB_FRACTION=0.25, TIME_LIMIT=1.95 on top of: Fix the critical bug where best_side tracks the current solution instead of the global best, update parameters to the best sweep values (TABU_TENURE_BASE=0.05 … |
 
 ### The best program
 
@@ -84,209 +86,148 @@ What changed compared with the starting program:
 ```diff
 --- initial
 +++ best
-@@ -19,7 +19,201 @@
-     time limit of 2.0 s (time.process_time(); more than 1.5 x the limit makes the program
-     invalid). Only the Python standard library may be used.
+@@ -10,16 +10,134 @@
+ import time
  
+ # OMEGA-BLOCK-START
++# Tunable parameters (will be swept)
++TABU_TENURE_BASE = 0.07      # base tenure as fraction of n (best from sweep)
++TABU_RANDOM_RANGE = 7        # random addition to tenure
++PERTURB_FRACTION = 0.25      # fraction of nodes to flip during perturbation (best from sweep)
++TIME_LIMIT = 1.95            # safety margin under 2.0s
++
+ def cut(n, edges):
+     """Return a list of n values, side[i] in {0, 1} for node i.
+ 
+-    n: number of nodes (0..n-1); edges: list of (u, v, w) with 0 <= u < v < n, no
+-    duplicate pairs, integer weight 1 <= w <= 10. The cut weight is the sum of w over
+-    edges whose endpoints are on different sides; larger is better. The call has a CPU
+-    time limit of 2.0 s (time.process_time(); more than 1.5 x the limit makes the program
+-    invalid). Only the Python standard library may be used.
+-
 -    Current method: alternate the sides by node index (ignores the edges entirely).
-+    Current method: greedy construction + one-flip local search + tabu search with restarts.
++    Uses greedy construction + tabu search with random restarts.
      """
 -    return [i % 2 for i in range(n)]
 +    start_time = time.process_time()
-+    time_limit = 1.8  # seconds, leave some buffer
-+
-+    # Build adjacency list: for each node, list of (neighbor, weight)
++    
++    # Build adjacency list: adj[u] = list of (v, w)
 +    adj = [[] for _ in range(n)]
++    total_weight = 0
 +    for u, v, w in edges:
 +        adj[u].append((v, w))
 +        adj[v].append((u, w))
-+
-+    # Initialize sides: all 0
-+    side = [0] * n
-+
++        total_weight += w
++    
 +    # Greedy construction: place nodes one by one on the side that cuts more weight
-+    # to already placed nodes. We'll process nodes in random order.
++    side = [0] * n
++    placed = [False] * n
++    # Start with a random node on side 0
 +    order = list(range(n))
 +    random.shuffle(order)
-+    placed = [False] * n
-+    for u in order:
-+        # Calculate gain if we put u on side 1 vs side 0 (relative to already placed neighbors)
-+        gain0 = 0  # weight to side 1 neighbors if u is on 0 (cuts)
-+        gain1 = 0  # weight to side 0 neighbors if u is on 1 (cuts)
-+        for v, w in adj[u]:
-+            if placed[v]:
-+                if side[v] == 0:
-+                    gain1 += w  # if u on 1, cuts to v on 0
++    
++    for idx in order:
++        placed[idx] = True
++        gain0 = 0  # weight to side 0 (would be internal if we choose 0)
++        gain1 = 0  # weight to side 1 (would be internal if we choose 1)
++        for nb, w in adj[idx]:
++            if placed[nb]:
++                if side[nb] == 0:
++                    gain0 += w
 +                else:
-+                    gain0 += w  # if u on 0, cuts to v on 1
-+        # Choose side with higher gain (if tie, random)
-+        if gain1 > gain0:
-+            side[u] = 1
-+        elif gain0 > gain1:
-+            side[u] = 0
-+        else:
-+            side[u] = random.randint(0, 1)
-+        placed[u] = True
-+
-+    # Compute initial gains for all nodes
-+    # gain[u] = (sum of w for neighbors with same side) - (sum for opposite)
-+    # Flipping u adds gain[u] to the cut weight.
++                    gain1 += w
++        # Choose side that maximizes cut (minimizes internal weight)
++        side[idx] = 0 if gain0 <= gain1 else 1
++    
++    # Compute initial gains: gain[i] = weight to own side - weight to other side
++    # Positive gain means flipping improves the cut
 +    gain = [0] * n
 +    for u in range(n):
-+        same = 0
-+        opp = 0
 +        for v, w in adj[u]:
 +            if side[u] == side[v]:
-+                same += w
++                gain[u] += w
 +            else:
-+                opp += w
-+        gain[u] = same - opp
-+
-+    # Compute current cut weight
-+    current_cut = 0
-+    for u in range(n):
-+        for v, w in adj[u]:
-+            if u < v and side[u] != side[v]:
-+                current_cut += w
-+
++                gain[u] -= w
++    
++    def compute_cut_weight():
++        cw = 0
++        for u, v, w in edges:
++            if side[u] != side[v]:
++                cw += w
++        return cw
++    
 +    best_side = side[:]
-+    best_cut = current_cut
-+
-+    # One-flip local search: repeatedly flip the node with the highest positive gain
-+    # until no such node exists or time is up.
-+    while True:
-+        elapsed = time.process_time() - start_time
-+        if elapsed > time_limit:
-+            return best_side
-+
-+        # Find node with maximum gain (most beneficial to flip)
-+        best_gain = 0
-+        best_u = -1
-+        for u in range(n):
-+            if gain[u] > best_gain:
-+                best_gain = gain[u]
-+                best_u = u
-+
-+        if best_u == -1 or best_gain <= 0:
-+            break  # local optimum reached
-+
-+        # Flip best_u
-+        u = best_u
-+        side[u] = 1 - side[u]
-+        current_cut += gain[u]
-+        # Update gain for u: after flip, its gain becomes -gain[u]
-+        gain[u] = -gain[u]
-+        # Update gains for neighbors
-+        for v, w in adj[u]:
-+            if side[u] == side[v]:
-+                # Now same: before flip they were opposite
-+                gain[v] += 2 * w
-+            else:
-+                # Now opposite: before flip they were same
-+                gain[v] -= 2 * w
-+
-+        # Update best solution if improved
-+        if current_cut > best_cut:
-+            best_cut = current_cut
-+            best_side = side[:]
-+
-+    # Tabu search parameters
-+    tenure = max(1, n // 10)
-+    tabu = [-1] * n  # tabu[u] = iteration until which flipping u is forbidden
++    best_cut = compute_cut_weight()
++    global_best_side = side[:]
++    global_best_cut = best_cut
++    
++    # Tabu search with restarts
++    tabu = [0] * n  # iteration when node becomes free
 +    iteration = 0
-+    no_improve_count = 0
-+    max_no_improve = 50  # restart if no improvement for this many iterations
-+
++    tenure_base = max(1, int(n * TABU_TENURE_BASE))
++    
 +    while True:
-+        elapsed = time.process_time() - start_time
-+        if elapsed > time_limit:
++        # Check time
++        if time.process_time() - start_time > TIME_LIMIT:
 +            break
-+
-+        # Find best candidate: highest gain, not tabu (or aspiration if beats best)
-+        best_gain = -float('inf')
-+        best_u = -1
-+        for u in range(n):
-+            if tabu[u] <= iteration or gain[u] > 0:
-+                # Aspiration: if flipping beats best cut, allow even if tabu
-+                if tabu[u] > iteration:
-+                    new_cut_est = current_cut + gain[u]
-+                    if new_cut_est <= best_cut:
-+                        continue
-+                if gain[u] > best_gain:
-+                    best_gain = gain[u]
-+                    best_u = u
-+
-+        if best_u == -1:
-+            # No candidate found; pick the one with highest gain even if tabu (aspiration)
-+            for u in range(n):
-+                if gain[u] > best_gain:
-+                    new_cut_est = current_cut + gain[u]
-+                    if new_cut_est > best_cut:
-+                        best_gain = gain[u]
-+                        best_u = u
-+            if best_u == -1:
-+                # No move helps; restart
-+                break
-+
-+        # Flip best_u
-+        u = best_u
-+        side[u] = 1 - side[u]
-+        current_cut += gain[u]
-+        gain[u] = -gain[u]
-+        for v, w in adj[u]:
-+            if side[u] == side[v]:
-+                gain[v] += 2 * w
-+            else:
-+                gain[v] -= 2 * w
-+
-+        # Update tabu list
-+        tabu[u] = iteration + tenure
-+
-+        # Update best solution
-+        if current_cut > best_cut:
-+            best_cut = current_cut
-+            best_side = side[:]
-+            no_improve_count = 0
-+        else:
-+            no_improve_count += 1
-+
++        
++        # Find best non-tabu move (or aspirating move)
++        best_gain = -10**9
++        best_node = -1
++        for i in range(n):
++            # Aspiration: allow tabu move if it beats global best
++            if tabu[i] <= iteration or (gain[i] > 0 and best_cut + gain[i] > global_best_cut):
++                if gain[i] > best_gain:
++                    best_gain = gain[i]
++                    best_node = i
++        
++        if best_node == -1:
++            # All tabu, pick least tabu
++            best_node = min(range(n), key=lambda i: tabu[i])
++            best_gain = gain[best_node]
++        
++        # Flip best_node
++        side[best_node] ^= 1
++        # Update gains of neighbors
++        for nb, w in adj[best_node]:
++            if side[nb] == side[best_node]:  # now same side
++                gain[nb] += 2 * w
++            else:  # now opposite side
++                gain[nb] -= 2 * w
++        gain[best_node] = -gain[best_node]
++        
++        # Set tabu
++        tabu[best_node] = iteration + tenure_base + random.randint(0, TABU_RANDOM_RANGE)
 +        iteration += 1
-+
-+        # Restart if stuck
-+        if no_improve_count >= max_no_improve:
-+            # Perturb: flip 10% of nodes randomly
-+            perturb_count = max(1, n // 10)
-+            nodes = list(range(n))
-+            random.shuffle(nodes)
-+            for i in range(perturb_count):
-+                u = nodes[i]
-+                side[u] = 1 - side[u]
-+                # Recompute gain for u
-+                same = 0
-+                opp = 0
-+                for v, w in adj[u]:
-+                    if side[u] == side[v]:
-+                        same += w
++        
++        # Check current cut
++        current_cut = best_cut + best_gain
++        best_cut = current_cut
++        best_side = side[:]
++        
++        # Update global best
++        if current_cut > global_best_cut:
++            global_best_cut = current_cut
++            global_best_side = side[:]
++        
++        # Periodic perturbation to escape local optima
++        if iteration % (n * 2) == 0:
++            # Perturb: flip random fraction of nodes
++            num_flip = max(1, int(n * PERTURB_FRACTION))
++            flip_nodes = random.sample(range(n), num_flip)
++            for fn in flip_nodes:
++                side[fn] ^= 1
++                for nb, w in adj[fn]:
++                    if side[nb] == side[fn]:
++                        gain[nb] += 2 * w
 +                    else:
-+                        opp += w
-+                gain[u] = same - opp
-+                # Update neighbors' gains
-+                for v, w in adj[u]:
-+                    if side[u] == side[v]:
-+                        gain[v] += 2 * w
-+                    else:
-+                        gain[v] -= 2 * w
-+            # Recompute current cut after perturbation
-+            current_cut = 0
-+            for u in range(n):
-+                for v, w in adj[u]:
-+                    if u < v and side[u] != side[v]:
-+                        current_cut += w
-+            no_improve_count = 0
-+            # Reset tabu list
-+            tabu = [-1] * n
-+
-+    return best_side
++                        gain[nb] -= 2 * w
++                gain[fn] = -gain[fn]
++            # Recompute best_cut after perturbation
++            best_cut = compute_cut_weight()
++            best_side = side[:]
++    
++    return global_best_side
  # OMEGA-BLOCK-END
 ```
 
@@ -294,10 +235,46 @@ What changed compared with the starting program:
 
 One run per model and reasoning mode; the [model benchmarks](../benchmarks/max_cut.md) page has speed, memory and progress over time.
 
-| Model | Where | Best | Gain | Minutes to best | New bests |
-|---|---|--:|--:|--:|--:|
-| dots-studio/dots-3-note-preview:free (no-think) | cloud | 0.76761 | ×1.50 | 3.6 | 3 |
-| nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 0.76741 | ×1.50 | 8.2 | 5 |
-| poolside/laguna-s-2.1:free (no-think) | cloud | 0.76054 | ×1.48 | 15.1 | 7 |
-| cohere/north-mini-code:free (no-think) | cloud | 0.75332 | ×1.47 | 6.5 | 5 |
-| nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | 0.71534 | ×1.40 | 11.1 | 4 |
+| Model | Where | Machine | Best | Gain | Minutes to best | New bests |
+|---|---|---|--:|--:|--:|--:|
+| nvidia/nemotron-3-ultra-550b-a55b:free (think) | cloud | i7-8700K + 2x GTX 1080 Ti | 0.76768 | ×1.50 | 14.5 | 5 |
+| dots-studio/dots-3-note-preview:free (no-think) | cloud | i7-8700K + 2x GTX 1080 Ti | 0.76761 | ×1.50 | 3.6 | 3 |
+| dots-studio/dots-3-note-preview:free (think) | cloud | i7-8700K + 2x GTX 1080 Ti | 0.76752 | ×1.50 | 27.1 | 4 |
+| nvidia/nemotron-3.5-super-vl:free (think) | cloud | i7-8700K + 2x GTX 1080 Ti | 0.76745 | ×1.50 | 6.7 | 4 |
+| nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | i7-8700K + 2x GTX 1080 Ti | 0.76741 | ×1.50 | 8.2 | 5 |
+| gpt-oss:20b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.76574 | ×1.50 | 13.8 | 5 |
+| gemma4:e4b-it-qat (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.76471 | ×1.49 | 22.0 | 9 |
+| gemma4:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.76345 | ×1.49 | 11.1 | 6 |
+| nvidia/nemotron-3.5-lightning:free (no-think) | cloud | i7-8700K + 2x GTX 1080 Ti | 0.76162 | ×1.49 | 13.6 | 5 |
+| poolside/laguna-s-2.1:free (no-think) | cloud | i7-8700K + 2x GTX 1080 Ti | 0.76054 | ×1.48 | 15.1 | 7 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.76007 | ×1.48 | 12.3 | 7 |
+| cohere/north-mini-code:free (think) | cloud | i7-8700K + 2x GTX 1080 Ti | 0.75925 | ×1.48 | 7.6 | 4 |
+| cohere/north-mini-code:free (no-think) | cloud | i7-8700K + 2x GTX 1080 Ti | 0.75332 | ×1.47 | 6.5 | 5 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.74898 | ×1.46 | 54.1 | 6 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.74766 | ×1.46 | 31.3 | 6 |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | cloud | i7-8700K | 0.7393 | ×1.44 | 34.4 | 3 |
+| poolside/laguna-xs-2.1:free (no-think) | cloud | i7-8700K + 2x GTX 1080 Ti | 0.73495 | ×1.43 | 0.3 | 1 |
+| qwen3.5:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.73495 | ×1.43 | 2.0 | 2 |
+| glm-4.7-flash:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.73215 | ×1.43 | 14.7 | 6 |
+| gemma4:e2b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.73068 | ×1.43 | 0.9 | 2 |
+| frob/sarvam:30b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.72422 | ×1.41 | 9.1 | 1 |
+| nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | i7-8700K + 2x GTX 1080 Ti | 0.71534 | ×1.40 | 11.1 | 4 |
+| gemma4:12b-it-qat (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.70701 | ×1.38 | 4.5 | 1 |
+| qwen3-coder:30b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.70701 | ×1.38 | 5.6 | 1 |
+| qwen2.5-coder:7b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.6981 | ×1.36 | 3.2 | 3 |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |
+| xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |
+| google/gemma-4-26b-a4b-it:free (no-think) | cloud | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |
+| google/gemma-4-31b-it:free (no-think) | cloud | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 6 model requests failed: google/gemma-4-31b-it:free … |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |
+| nemotron-3-nano:4b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |
+| richardyoung/frognano-4b-2609:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |
+| gemma4:26b-a4b-it-qat (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |
+| xingchen-agi/xing4.0-29b-a4b:free (think) | cloud | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 11 model requests failed … |
+| google/gemma-4-26b-a4b-it:free (think) | cloud | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 6 model requests failed … |
+| recursive/flint-v1.0:free (think) | cloud | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 5 model requests failed: recursive/flint-v1.0:free … |
+| nvidia/nemotron-3.5-lightning:free (think) | cloud | i7-8700K + 2x GTX 1080 Ti | | | | failed: RuntimeError: the initial program does not pass the … |
+| google/gemma-4-31b-it:free (think) | cloud | i7-8700K + 2x GTX 1080 Ti | | | | failed: RuntimeError: the initial program does not pass the … |

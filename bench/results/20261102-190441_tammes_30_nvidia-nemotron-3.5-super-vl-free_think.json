@@ -1,0 +1,455 @@
+{
+ "schema": 4,
+ "example": "tammes_30",
+ "model": "nvidia/nemotron-3.5-super-vl:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-02T19:04:41",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 20.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 3.2013569883368893,
+ "best_score": 38.50337655272667,
+ "improvement": 12.027204929972287,
+ "llm_calls": 15,
+ "mean_llm_seconds": 80.5,
+ "attempts": 15,
+ "ok": 13,
+ "statuses": {
+  "ok": 13,
+  "edit_error": 2
+ },
+ "sweeps": 8,
+ "sweep_variants": 92,
+ "improvements": 4,
+ "minutes_to_best": 19.57,
+ "best_idea": "tuned SA_ITERS=100000, SA_T0=0.001, SA_STEP0=0.05, SA_STEP_DECAY=1 on top of: Replace the greedy single-pair max-min polish with a simulated-annealing phase that directly minimizes the worst pairwise ",
+ "progress": [
+  [
+   0.0,
+   3.2013569883368893
+  ],
+  [
+   5.23,
+   32.98154932975828
+  ],
+  [
+   6.8,
+   37.99232035285961
+  ],
+  [
+   6.8,
+   38.220134397596155
+  ],
+  [
+   19.57,
+   38.50337655272667
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.2013569883368893,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 6.81,
+   "score": 12.026698710975227,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the uniform-random initializer with a Fibonacci (golden-spiral) sphere start, then run multi-stage Thomson-style repulsion energy minimization with tangent-projected gradients and increasing exponent, followed by a shrinking-step max-min polish that repeatedly pushes the closest pair apart; keep the best of several seeded restarts."
+  },
+  {
+   "minutes": 6.81,
+   "score": 31.961307236810786,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "sweep/exploit/diff/refine",
+   "status": "ok",
+   "idea": "tuned STEP=0.1, POLISH=1000 on top of: Replace the uniform-random initializer with a Fibonacci (golden-spiral) sphere start, then run multi-stage Thomson-style repulsion energy minimization with tangent-projected gradients and increasing exponent, followed by a shrinking-step max-min polish that rep"
+  },
+  {
+   "minutes": 13.36,
+   "score": 35.701458594240655,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Tune the energy learning rate and polish initial step together, since the leaderboard shows LR_BASE=0.2 with STEP0=0.02 substantially outperforms the current STEP=0.1 with the hardcoded 0.06 polish step; expose both as constants and sweep them."
+  },
+  {
+   "minutes": 19.57,
+   "score": 37.584599961200674,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Replace the greedy single-pair max-min polish with a simulated-annealing phase that directly minimizes the worst pairwise dot product (maximizes the minimum angle), using an incremental dot-matrix for O(n) proposed moves and geometric cooling, keeping the best configuration seen."
+  },
+  {
+   "minutes": 19.57,
+   "score": 38.50337655272667,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "sweep/exploit/diff/bold",
+   "status": "ok",
+   "idea": "tuned SA_ITERS=100000, SA_T0=0.001, SA_STEP0=0.05, SA_STEP_DECAY=1 on top of: Replace the greedy single-pair max-min polish with a simulated-annealing phase that directly minimizes the worst pairwise dot product (maximizes the minimum angle), using an incremental dot-matrix for O(n) proposed moves a"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -6,22 +6,232 @@\n import random\n \n # OMEGA-BLOCK-START\n+STEP = 0.2\n+SA_ITERS = 100000\n+SA_T0 = 0.001\n+SA_STEP0 = 0.05\n+SA_STEP_DECAY = 0.99997\n+\n+def _unit(p):\n+    x, y, z = p\n+    m = math.sqrt(x*x + y*y + z*z)\n+    if m <= 0.0:\n+        return (1.0, 0.0, 0.0)\n+    return (x/m, y/m, z/m)\n+\n+def _min_angle_deg(pts):\n+    n = len(pts)\n+    best = 1.0\n+    for i in range(n):\n+        pi = pts[i]\n+        xi, yi, zi = pi\n+        for j in range(i+1, n):\n+            pj = pts[j]\n+            d = xi*pj[0] + yi*pj[1] + zi*pj[2]\n+            if d > best:\n+                best = d\n+    if best > 1.0:\n+        best = 1.0\n+    elif best < -1.0:\n+        best = -1.0\n+    return math.degrees(math.acos(best))\n+\n+def _fibonacci(n):\n+    pts = []\n+    phi = math.pi * (3.0 - math.sqrt(5.0))\n+    for i in range(n):\n+        z = 1.0 - 2.0 * (i + 0.5) / n\n+        r = math.sqrt(1.0 - z*z)\n+        t = phi * i\n+        pts.append((r*math.cos(t), r*math.sin(t), z))\n+    return pts\n+\n+def _energy_optimize(pts, schedule):\n+    pts = [list(p) for p in pts]\n+    n = len(pts)\n+    for s, base_step, iters in schedule:\n+        for _ in range(iters):\n+            forces = [[0.0, 0.0, 0.0] for _ in range(n)]\n+            maxf = 0.0\n+            for i in range(n):\n+                pi = pts[i]\n+                xi, yi, zi = pi\n+                fx = fy = fz = 0.0\n+                for j in range(n):\n+                    if i == j:\n+                        continue\n+                    pj = pts[j]\n+                    dx = xi - pj[0]\n+                    dy = yi - pj[1]\n+                    dz = zi - pj[2]\n+                    d2 = dx*dx + dy*dy + dz*dz\n+                    if d2 < 1e-20:\n+                        continue\n+                    d = math.sqrt(d2)\n+                    coef = s / (d ** (s + 2.0))\n+                    fx += coef*dx\n+                    fy += coef*dy\n+                    fz += coef*dz\n+                dotf = fx*xi + fy*yi + fz*zi\n+                fx -= dotf*xi\n+                fy -= dotf*yi\n+                fz -= dotf*zi\n+                f2 = fx*fx + fy*fy + fz*fz\n+                if f2 > maxf:\n+                    maxf = f2\n+                forces[i] = (fx, fy, fz)\n+            if maxf <= 0.0:\n+                break\n+            scale = base_step / math.sqrt(maxf)\n+            for i in range(n):\n+                fx, fy, fz = forces[i]\n+                pi = pts[i]\n+                pi[0] += scale*fx\n+                pi[1] += scale*fy\n+                pi[2] += scale*fz\n+                m = math.sqrt(pi[0]*pi[0] + pi[1]*pi[1] + pi[2]*pi[2])\n+                if m > 1e-12:\n+                    pi[0] /= m\n+                    pi[1] /= m\n+                    pi[2] /= m\n+    return [(p[0], p[1], p[2]) for p in pts]\n+\n+def _sa_polish(pts, iters, t0, step0, step_decay, seed):\n+    pts = [list(p) for p in pts]\n+    n = len(pts)\n+    rng = random.Random(987654321 + seed)\n+    D = [[0.0] * n for _ in range(n)]\n+    row_max = [0.0] * n\n+    for i in range(n):\n+        pi = pts[i]\n+        rmax = -2.0\n+        for j in range(n):\n+            if i == j:\n+                continue\n+            pj = pts[j]\n+            d = pi[0] * pj[0] + pi[1] * pj[1] + pi[2] * pj[2]\n+            D[i][j] = d\n+            if d > rmax:\n+                rmax = d\n+        row_max[i] = rmax\n+    cur = row_max[0]\n+    for v in row_max[1:]:\n+        if v > cur:\n+            cur = v\n+    best = cur\n+    best_pts = [p[:] for p in pts]\n+    t1 = t0 * 0.001\n+    T = t0\n+    step = step0\n+    cooling = math.pow(t1 / t0, 1.0 / iters)\n+    for _ in range(iters):\n+        i = rng.randrange(n)\n+        pi = pts[i]\n+        ax = rng.gauss(0.0, 1.0)\n+        ay = rng.gauss(0.0, 1.0)\n+        az = rng.gauss(0.0, 1.0)\n+        dot = ax * pi[0] + ay * pi[1] + az * pi[2]\n+        ax -= dot * pi[0]\n+        ay -= dot * pi[1]\n+        az -= dot * pi[2]\n+        nm = math.sqrt(ax * ax + ay * ay + az * az)\n+        if nm < 1e-14:\n+            T *= cooling\n+            step *= step_decay\n+            continue\n+        inv = step / nm\n+        nx = pi[0] + ax * inv\n+        ny = pi[1] + ay * inv\n+        nz = pi[2] + az * inv\n+        nn = math.sqrt(nx * nx + ny * ny + nz * nz)\n+        nx /= nn\n+        ny /= nn\n+        nz /= nn\n+        new_row = [0.0] * n\n+        nmax = -2.0\n+        for j in range(n):\n+            if j == i:\n+                continue\n+            pj = pts[j]\n+            d = nx * pj[0] + ny * pj[1] + nz * pj[2]\n+            new_row[j] = d\n+            if d > nmax:\n+                nmax = d\n+        old_row = D[i]\n+        D[i] = new_row\n+        saved = row_max[:]\n+        row_max[i] = nmax\n+        for j in range(n):\n+            if j == i:\n+                continue\n+            oj = old_row[j]\n+            nj = new_row[j]\n+            D[j][i] = nj\n+            if nj > row_max[j]:\n+                row_max[j] = nj\n+            elif oj == row_max[j] and nj < oj:\n+                rmax = -2.0\n+                Dj = D[j]\n+                for k in range(n):\n+                    if k == j:\n+                        continue\n+                    d = Dj[k]\n+                    if d > rmax:\n+                        rmax = d\n+                row_max[j] = rmax\n+        newcur = row_max[0]\n+        for v in row_max[1:]:\n+            if v > newcur:\n+                newcur = v\n+        accept = False\n+        if newcur <= cur:\n+            accept = True\n+        elif rng.random() < math.exp((cur - newcur) / T):\n+            accept = True\n+        if accept:\n+            cur = newcur\n+            pts[i] = (nx, ny, nz)\n+            if cur < best:\n+                best = cur\n+                best_pts = [p[:] for p in pts]\n+        else:\n+            D[i] = old_row\n+            row_max = saved\n+            for j in range(n):\n+                if j != i:\n+                    D[j][i] = old_row[j]\n+        T *= cooling\n+        step *= step_decay\n+        if T < 1e-15:\n+            break\n+    return [(p[0], p[1], p[2]) for p in best_pts]\n+\n def construct(n=30):\n-    \"\"\"Return a list of n points (x, y, z) on the unit sphere.\n-\n-    Vectors need not be normalized (the evaluator normalizes them), but none may be\n-    zero. The score is the minimum angle in degrees between any two points. This\n-    start draws uniformly random points with a fixed seed, so some pairs end up\n-    close together.\n-    \"\"\"\n-    rng = random.Random(1)\n-    points = []\n-    for _ in range(n):\n-        z = rng.uniform(-1.0, 1.0)\n-        phi = rng.uniform(0.0, 2 * math.pi)\n-        s = math.sqrt(1.0 - z * z)\n-        points.append((s * math.cos(phi), s * math.sin(phi), z))\n-    return points\n+    schedule = [\n+        (1.0, STEP, 80),\n+        (2.0, STEP/2.0, 80),\n+        (4.0, STEP/4.0, 100),\n+        (8.0, STEP/10.0, 120),\n+    ]\n+    best_pts = None\n+    best_score = -1.0\n+    for seed in range(3):\n+        pts = _fibonacci(n)\n+        rng = random.Random(seed)\n+        jit = 0.003\n+        pts = [(\n+            p[0] + rng.uniform(-jit, jit),\n+            p[1] + rng.uniform(-jit, jit),\n+            p[2] + rng.uniform(-jit, jit),\n+        ) for p in pts]\n+        pts = [_unit(p) for p in pts]\n+        pts = _energy_optimize(pts, schedule)\n+        pts = _sa_polish(pts, SA_ITERS, SA_T0, SA_STEP0, SA_STEP_DECAY, seed)\n+        score = _min_angle_deg(pts)\n+        if score > best_score:\n+            best_score = score\n+            best_pts = pts\n+    return best_pts\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "sphere_points",
+  "points": [
+   [
+    0.3919709387244532,
+    -0.5582121095618475,
+    -0.7312715117751976
+   ],
+   [
+    -0.027052463738772504,
+    0.8490936142385189,
+    0.5275492379532281
+   ],
+   [
+    -0.9500239047545286,
+    0.31204362944230385,
+    -0.009129825816118098
+   ],
+   [
+    0.22957314306547277,
+    -0.9248645600666849,
+    0.30318594544552596
+   ],
+   [
+    0.5740391880355756,
+    0.1033386161058686,
+    -0.8122808264515302
+   ],
+   [
+    -0.6758397496085636,
+    0.3037890926411783,
+    0.6715302078397394
+   ],
+   [
+    0.8512988419434201,
+    0.011265659732678564,
+    0.524560164915884
+   ],
+   [
+    -0.17680359044518373,
+    -0.9781667833824966,
+    -0.10922561189039716
+   ],
+   [
+    0.7908900515540614,
+    -0.28321934240489055,
+    -0.5424755574590947
+   ],
+   [
+    0.5851964340381928,
+    0.11388203849293084,
+    0.8028549152229673
+   ],
+   [
+    -0.30434810274742335,
+    -0.08102906244732802,
+    -0.9491082780130784
+   ],
+   [
+    -0.3509958145626131,
+    0.3246444046695718,
+    0.8782983255570211
+   ],
+   [
+    -0.7271635298854837,
+    0.3872590786250933,
+    -0.5668012057387734
+   ],
+   [
+    0.05942052898539893,
+    0.33054331283916893,
+    -0.9419184248502641
+   ],
+   [
+    -0.9919106268324059,
+    0.02610563707090374,
+    -0.12422481269885588
+   ],
+   [
+    0.10141148542176433,
+    0.8394879795728718,
+    -0.5338310994848547
+   ],
+   [
+    -0.800348025639128,
+    0.20762133322971385,
+    -0.5624379253246229
+   ],
+   [
+    0.8990635126271509,
+    0.12213812674917045,
+    -0.4204367708190289
+   ],
+   [
+    -0.6917519647168419,
+    -0.2562101885183855,
+    0.6751559513251457
+   ],
+   [
+    0.3757097440071294,
+    0.88195886829755,
+    0.28458872586489115
+   ],
+   [
+    0.10962933743537041,
+    -0.1326097917248836,
+    0.9850868243521302
+   ],
+   [
+    -0.32373272592570945,
+    0.5659500259391612,
+    -0.7582200803883872
+   ],
+   [
+    -0.2164510454505914,
+    -0.8700158468173443,
+    0.44296881516653674
+   ],
+   [
+    -0.43065317546221576,
+    0.22938243010501777,
+    0.8728811735989193
+   ],
+   [
+    -0.3606302208330362,
+    -0.6589776995328848,
+    0.660071386548654
+   ],
+   [
+    -0.7836961589264019,
+    -0.48079575758636983,
+    -0.3932629781341648
+   ],
+   [
+    0.3660243386758451,
+    -0.5299673944570227,
+    0.7649580016637154
+   ],
+   [
+    -0.8476230763315352,
+    -0.5304935866064687,
+    0.010567641159200837
+   ],
+   [
+    0.016650981414250473,
+    0.36477107016970456,
+    -0.9309483396973168
+   ],
+   [
+    -0.6901522939672605,
+    0.4121803795407587,
+    0.5948084951086057
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "sphere_points",
+  "points": [
+   [
+    0.3851669309505063,
+    0.01159473624956332,
+    0.9227740771139331
+   ],
+   [
+    -0.2711162664785994,
+    -0.07373066945183432,
+    0.9597185829361071
+   ],
+   [
+    0.0042259489638909195,
+    -0.642696958809593,
+    0.7661088437632443
+   ],
+   [
+    0.3392560305086311,
+    0.6412327842559564,
+    0.6882774601560631
+   ],
+   [
+    -0.6211117094583865,
+    -0.5074734330207301,
+    0.5972361000072213
+   ],
+   [
+    0.6270803811318982,
+    -0.5064956068985716,
+    0.5918043560095861
+   ],
+   [
+    -0.31031855691416305,
+    0.558948476056348,
+    0.7689466784823235
+   ],
+   [
+    -0.3808289034278937,
+    -0.9144844331305525,
+    0.1367024794061911
+   ],
+   [
+    0.8318279884012505,
+    0.24657057667740082,
+    0.49725762782415245
+   ],
+   [
+    -0.7870524214760154,
+    0.13153567622224627,
+    0.602699636410623
+   ],
+   [
+    0.27151771694120086,
+    -0.9330268378916868,
+    0.23609118823216982
+   ],
+   [
+    -0.09388470832690443,
+    0.9545662234734125,
+    0.282823242584621
+   ],
+   [
+    -0.8684900079593142,
+    -0.49521099704014354,
+    -0.022162456662955278
+   ],
+   [
+    0.9634335590439074,
+    -0.25525642613232097,
+    0.08148579155990777
+   ],
+   [
+    -0.6931278547439704,
+    0.6784883031234131,
+    0.24336680032973462
+   ],
+   [
+    0.028030217763001086,
+    -0.9236639320584953,
+    -0.3821769845325567
+   ],
+   [
+    0.5266236299936329,
+    0.8460824006283998,
+    0.08253559037902068
+   ],
+   [
+    -0.987746618441043,
+    0.15373994016653153,
+    -0.02684489813495473
+   ],
+   [
+    0.6440100486594383,
+    -0.7178066232640313,
+    -0.2645840297976373
+   ],
+   [
+    -0.09216771190924528,
+    0.9203034517863166,
+    -0.38019293721951924
+   ],
+   [
+    -0.5279050436310304,
+    -0.625350227410176,
+    -0.5746767421663777
+   ],
+   [
+    0.9196190633585366,
+    0.3644099693275818,
+    -0.14664976154852358
+   ],
+   [
+    -0.6859623517540774,
+    0.600083175120865,
+    -0.41152865624750473
+   ],
+   [
+    0.323395401860376,
+    -0.5045994537089545,
+    -0.8004965992258748
+   ],
+   [
+    0.49739684365313647,
+    0.6691907373078866,
+    -0.5520689603892114
+   ],
+   [
+    -0.7770545621751952,
+    -0.01723092825994415,
+    -0.6291973478281806
+   ],
+   [
+    0.8194098703641527,
+    -0.14641982972920897,
+    -0.5541919322868856
+   ],
+   [
+    -0.21115496055805896,
+    0.4744701858274119,
+    -0.8545710183434878
+   ],
+   [
+    -0.22769461623942827,
+    -0.17752279626541434,
+    -0.957413608918156
+   ],
+   [
+    0.35457006379104744,
+    0.14262884817131768,
+    -0.9240871612204856
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 72.2,
+ "p90_call_seconds": 118.3,
+ "prompt_tokens_per_s": 5824.8,
+ "gen_tokens_per_s": 149.1,
+ "mean_prompt_tokens": 5266,
+ "mean_gen_tokens": 11862,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

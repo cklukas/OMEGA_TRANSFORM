@@ -1,0 +1,134 @@
+{
+ "schema": 4,
+ "example": "float_parse_single_thread",
+ "model": "qwen3-coder:30b",
+ "variant": "no-think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-10-31T17:49:16",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 29.9,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 32768,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 77.4261,
+ "best_score": 97.5461,
+ "improvement": 1.259860692970458,
+ "llm_calls": 17,
+ "mean_llm_seconds": 103.1,
+ "attempts": 17,
+ "ok": 1,
+ "statuses": {
+  "compile_error": 3,
+  "invalid": 10,
+  "llm_error": 1,
+  "edit_error": 2,
+  "ok": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 28.79,
+ "best_idea": "Replace the simple strtod loop with a fast path that handles integers and short decimals using direct computation, falling back to strtod only for the rare cases that cannot be decided quickly, which ",
+ "progress": [
+  [
+   0.0,
+   77.4261
+  ],
+  [
+   28.79,
+   97.5461
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 77.4261,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 28.79,
+   "score": 97.5461,
+   "model": "qwen3-coder:30b",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Replace the simple strtod loop with a fast path that handles integers and short decimals using direct computation, falling back to strtod only for the rare cases that cannot be decided quickly, which should improve performance by avoiding expensive floating-point parsing for common cases."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -30,16 +30,128 @@\n // optionally 'e' or 'E', an optional '+' or '-', and one or more digits. No\n // spaces, no '+' sign on the mantissa, no inf/nan/hex. Every value must be\n // bit-identical to std::strtod (correctly rounded, round-half-to-even).\n+constexpr size_t CLINGER_MAX_MANTISSA = 9007199254740991ULL;  // 2^53 - 1\n+constexpr int CLINGER_MAX_EXPONENT = 22;\n+constexpr size_t FAST_PATH_THRESHOLD = 1000;\n+\n extern \"C\" size_t parse_doubles(const char* buf, size_t len, double* out) {\n     const char* p = buf;\n     const char* end = buf + len;\n     size_t count = 0;\n+    \n     while (p < end) {\n-        char* next;\n-        out[count++] = std::strtod(p, &next);\n-        p = next;\n+        // Skip any leading newlines\n+        while (p < end && *p == '\\n') ++p;\n+        if (p >= end) break;\n+        \n+        const char* num_start = p;\n+        bool negative = false;\n+        if (*p == '-') {\n+            negative = true;\n+            ++p;\n+        }\n+        \n+        // Parse integer part\n+        uint64_t mantissa = 0;\n+        int digit_count = 0;\n+        while (p < end && *p >= '0' && *p <= '9') {\n+            mantissa = mantissa * 10 + (*p - '0');\n+            ++digit_count;\n+            ++p;\n+        }\n+        \n+        // Check for decimal point\n+        bool has_decimal = false;\n+        int decimal_exponent = 0;\n+        if (p < end && *p == '.') {\n+            has_decimal = true;\n+            ++p;\n+            const char* decimal_start = p;\n+            while (p < end && *p >= '0' && *p <= '9') {\n+                mantissa = mantissa * 10 + (*p - '0');\n+                ++digit_count;\n+                ++p;\n+            }\n+            decimal_exponent = -(int)(p - decimal_start);\n+        }\n+        \n+        // Check for exponent\n+        int exp = 0;\n+        if (p < end && (*p == 'e' || *p == 'E')) {\n+            ++p;\n+            bool exp_negative = false;\n+            if (p < end && *p == '+') {\n+                ++p;\n+            } else if (p < end && *p == '-') {\n+                exp_negative = true;\n+                ++p;\n+            }\n+            \n+            while (p < end && *p >= '0' && *p <= '9') {\n+                exp = exp * 10 + (*p - '0');\n+                if (exp > 308) { // Exponent overflow\n+                    exp = 308;\n+                    break;\n+                }\n+                ++p;\n+            }\n+            \n+            if (exp_negative) {\n+                exp = -exp;\n+            }\n+        }\n+        \n+        // Compute final exponent\n+        int final_exponent = exp + decimal_exponent;\n+        \n+        // Fast path for small integers and decimals that fit within Clinger's limits\n+        if (digit_count <= 19 && \n+            mantissa <= CLINGER_MAX_MANTISSA && \n+            abs(final_exponent) <= CLINGER_MAX_EXPONENT) {\n+            \n+            double result = static_cast<double>(mantissa);\n+            if (final_exponent > 0) {\n+                // Multiply by powers of 10\n+                double power_of_10 = 1.0;\n+                int remaining = final_exponent;\n+                while (remaining >= 22) {\n+                    power_of_10 *= 1e22;\n+                    remaining -= 22;\n+                }\n+                if (remaining > 0) {\n+                    power_of_10 *= std::pow(10.0, remaining);\n+                }\n+                result *= power_of_10;\n+            } else if (final_exponent < 0) {\n+                // Divide by powers of 10\n+                double power_of_10 = 1.0;\n+                int remaining = -final_exponent;\n+                while (remaining >= 22) {\n+                    power_of_10 *= 1e22;\n+                    remaining -= 22;\n+                }\n+                if (remaining > 0) {\n+                    power_of_10 *= std::pow(10.0, remaining);\n+                }\n+                result /= power_of_10;\n+            }\n+            \n+            if (negative) {\n+                result = -result;\n+            }\n+            \n+            out[count++] = result;\n+        } else {\n+            // Fall back to std::strtod for complex cases\n+            char* next;\n+            out[count++] = std::strtod(num_start, &next);\n+            p = next;\n+        }\n+        \n+        // Skip any trailing newlines\n         while (p < end && *p == '\\n') ++p;\n     }\n+    \n     return count;\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "parse",
+  "count": 2000000,
+  "text_mb": 28.39,
+  "head": [
+   "0",
+   "-0",
+   "1",
+   "-1.5",
+   "0.1",
+   "1e23",
+   "9007199254740993",
+   "4.9e-324"
+  ]
+ },
+ "best_solution": {
+  "kind": "parse",
+  "count": 2000000,
+  "text_mb": 28.39,
+  "head": [
+   "0",
+   "-0",
+   "1",
+   "-1.5",
+   "0.1",
+   "1e23",
+   "9007199254740993",
+   "4.9e-324"
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 22.2,
+ "model_gpu_memory_gb": 18.9,
+ "context_length": 32768,
+ "load_seconds": 52.4,
+ "median_call_seconds": 50.1,
+ "p90_call_seconds": 137.9,
+ "prompt_tokens_per_s": 1372.6,
+ "gen_tokens_per_s": 29.7,
+ "mean_prompt_tokens": 5766,
+ "mean_gen_tokens": 2851,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -1,0 +1,466 @@
+{
+ "schema": 4,
+ "example": "tammes_30",
+ "model": "gpt-oss:20b",
+ "variant": "no-think",
+ "model_size_gb": 13.8,
+ "model_params": "20.9B",
+ "started": "2026-11-02T10:44:20",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 60.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 3.2013569883368893,
+ "best_score": 38.239663840278865,
+ "improvement": 11.944829639303812,
+ "llm_calls": 47,
+ "mean_llm_seconds": 76.1,
+ "attempts": 47,
+ "ok": 36,
+ "statuses": {
+  "ok": 36,
+  "edit_error": 6,
+  "duplicate": 1,
+  "llm_error": 1,
+  "invalid": 3
+ },
+ "sweeps": 11,
+ "sweep_variants": 145,
+ "improvements": 12,
+ "minutes_to_best": 50.07,
+ "best_idea": "Use a steeper 1/d\u00b3 repulsion (force \u221d1/d\u00b3) and add a brief polishing phase that pushes the closest pair apart, which better approximates the max\u2011min objective and improves the minimum angle.",
+ "progress": [
+  [
+   0.0,
+   3.2013569883368893
+  ],
+  [
+   1.23,
+   34.17470873455881
+  ],
+  [
+   6.41,
+   34.884963158253285
+  ],
+  [
+   11.99,
+   34.88496315825335
+  ],
+  [
+   28.01,
+   34.95288820578244
+  ],
+  [
+   28.01,
+   34.970402442986185
+  ],
+  [
+   30.89,
+   35.49900871280738
+  ],
+  [
+   30.89,
+   36.62220535441159
+  ],
+  [
+   32.04,
+   37.16310252109481
+  ],
+  [
+   42.92,
+   37.18494725023432
+  ],
+  [
+   44.33,
+   37.57197597174385
+  ],
+  [
+   48.51,
+   37.59707441889234
+  ],
+  [
+   50.07,
+   38.239663840278865
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.2013569883368893,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 14.29,
+   "score": 34.76613516065835,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Replace the naive random initialization with a deterministic Fibonacci sphere followed by a gradient\u2011descent repulsion loop and multiple restarts to search for a larger minimum angle."
+  },
+  {
+   "minutes": 50.07,
+   "score": 38.239663840278865,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Use a steeper 1/d\u00b3 repulsion (force \u221d1/d\u00b3) and add a brief polishing phase that pushes the closest pair apart, which better approximates the max\u2011min objective and improves the minimum angle."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -6,22 +6,113 @@\n import random\n \n # OMEGA-BLOCK-START\n+# Parameters for the gradient descent and restarts\n+ITERATIONS = 400\n+INITIAL_STEP = 0.05\n+DECAY = 0.97\n+NUM_RESTARTS = 5\n+POLISH_STEPS = 15\n+POLISH_STEP = 0.01\n+\n def construct(n=30):\n-    \"\"\"Return a list of n points (x, y, z) on the unit sphere.\n-\n-    Vectors need not be normalized (the evaluator normalizes them), but none may be\n-    zero. The score is the minimum angle in degrees between any two points. This\n-    start draws uniformly random points with a fixed seed, so some pairs end up\n-    close together.\n+    \"\"\"Return a list of n points on the unit sphere using Fibonacci initialization\n+    followed by gradient\u2011descent repulsion to maximize the minimum angle.\n     \"\"\"\n-    rng = random.Random(1)\n-    points = []\n-    for _ in range(n):\n-        z = rng.uniform(-1.0, 1.0)\n-        phi = rng.uniform(0.0, 2 * math.pi)\n-        s = math.sqrt(1.0 - z * z)\n-        points.append((s * math.cos(phi), s * math.sin(phi), z))\n-    return points\n+    rng = random.Random(42)\n+    best_points = None\n+    best_min_dot = -2.0\n+    phi = (1 + 5 ** 0.5) / 2\n+    golden_angle = 2 * math.pi * (1 - 1 / phi)\n+    for _ in range(NUM_RESTARTS):\n+        offset = rng.random() * 2 * math.pi\n+        points = []\n+        for i in range(n):\n+            z = 1 - 2 * (i + 0.5) / n\n+            r = math.sqrt(max(0.0, 1 - z * z))\n+            theta = golden_angle * i + offset\n+            x = r * math.cos(theta)\n+            y = r * math.sin(theta)\n+            points.append([x, y, z])\n+        step = INITIAL_STEP\n+        for _ in range(ITERATIONS):\n+            new_points = []\n+            for i, p in enumerate(points):\n+                fx = fy = fz = 0.0\n+                pi_x, pi_y, pi_z = p\n+                for j, q in enumerate(points):\n+                    if i == j:\n+                        continue\n+                    dx = pi_x - q[0]\n+                    dy = pi_y - q[1]\n+                    dz = pi_z - q[2]\n+                    dist2 = dx * dx + dy * dy + dz * dz\n+                    if dist2 == 0:\n+                        continue\n+                    inv = 1.0 / (dist2 * math.sqrt(dist2))\n+                    fx += dx * inv\n+                    fy += dy * inv\n+                    fz += dz * inv\n+                nx = pi_x + step * fx\n+                ny = pi_y + step * fy\n+                nz = pi_z + step * fz\n+                norm = math.sqrt(nx * nx + ny * ny + nz * nz)\n+                if norm == 0:\n+                    norm = 1.0\n+                new_points.append([nx / norm, ny / norm, nz / norm])\n+            points = new_points\n+            step *= DECAY\n+            # Polishing: push closest pair apart using steep force\n+            for _ in range(POLISH_STEPS):\n+                min_dist2 = None\n+                min_i = min_j = None\n+                for i in range(n):\n+                    pi = points[i]\n+                    for j in range(i + 1, n):\n+                        pj = points[j]\n+                        dx = pi[0] - pj[0]\n+                        dy = pi[1] - pj[1]\n+                        dz = pi[2] - pj[2]\n+                        d2 = dx * dx + dy * dy + dz * dz\n+                        if min_dist2 is None or d2 < min_dist2:\n+                            min_dist2 = d2\n+                            min_i = i\n+                            min_j = j\n+                if min_i is None:\n+                    break\n+                pi = points[min_i]\n+                pj = points[min_j]\n+                dx = pi[0] - pj[0]\n+                dy = pi[1] - pj[1]\n+                dz = pi[2] - pj[2]\n+                norm = math.sqrt(dx * dx + dy * dy + dz * dz)\n+                if norm == 0:\n+                    continue\n+                ux, uy, uz = dx / norm, dy / norm, dz / norm\n+                pi[0] += POLISH_STEP * ux\n+                pi[1] += POLISH_STEP * uy\n+                pi[2] += POLISH_STEP * uz\n+                pj[0] -= POLISH_STEP * ux\n+                pj[1] -= POLISH_STEP * uy\n+                pj[2] -= POLISH_STEP * uz\n+                for arr in (pi, pj):\n+                    nx, ny, nz = arr\n+                    norm2 = math.sqrt(nx * nx + ny * ny + nz * nz)\n+                    if norm2 == 0:\n+                        norm2 = 1.0\n+                    arr[0], arr[1], arr[2] = nx / norm2, ny / norm2, nz / norm2\n+            # compute min dot product (maximizes min angle)\n+            min_dot = -2.0\n+        for i in range(n):\n+            xi, yi, zi = points[i]\n+            for j in range(i + 1, n):\n+                xj, yj, zj = points[j]\n+                dot = xi * xj + yi * yj + zi * zj\n+                if dot > min_dot:\n+                    min_dot = dot\n+        if min_dot > best_min_dot:\n+            best_min_dot = min_dot\n+            best_points = [tuple(p) for p in points]\n+    return best_points\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "sphere_points",
+  "points": [
+   [
+    0.3919709387244532,
+    -0.5582121095618475,
+    -0.7312715117751976
+   ],
+   [
+    -0.027052463738772504,
+    0.8490936142385189,
+    0.5275492379532281
+   ],
+   [
+    -0.9500239047545286,
+    0.31204362944230385,
+    -0.009129825816118098
+   ],
+   [
+    0.22957314306547277,
+    -0.9248645600666849,
+    0.30318594544552596
+   ],
+   [
+    0.5740391880355756,
+    0.1033386161058686,
+    -0.8122808264515302
+   ],
+   [
+    -0.6758397496085636,
+    0.3037890926411783,
+    0.6715302078397394
+   ],
+   [
+    0.8512988419434201,
+    0.011265659732678564,
+    0.524560164915884
+   ],
+   [
+    -0.17680359044518373,
+    -0.9781667833824966,
+    -0.10922561189039716
+   ],
+   [
+    0.7908900515540614,
+    -0.28321934240489055,
+    -0.5424755574590947
+   ],
+   [
+    0.5851964340381928,
+    0.11388203849293084,
+    0.8028549152229673
+   ],
+   [
+    -0.30434810274742335,
+    -0.08102906244732802,
+    -0.9491082780130784
+   ],
+   [
+    -0.3509958145626131,
+    0.3246444046695718,
+    0.8782983255570211
+   ],
+   [
+    -0.7271635298854837,
+    0.3872590786250933,
+    -0.5668012057387734
+   ],
+   [
+    0.05942052898539893,
+    0.33054331283916893,
+    -0.9419184248502641
+   ],
+   [
+    -0.9919106268324059,
+    0.02610563707090374,
+    -0.12422481269885588
+   ],
+   [
+    0.10141148542176433,
+    0.8394879795728718,
+    -0.5338310994848547
+   ],
+   [
+    -0.800348025639128,
+    0.20762133322971385,
+    -0.5624379253246229
+   ],
+   [
+    0.8990635126271509,
+    0.12213812674917045,
+    -0.4204367708190289
+   ],
+   [
+    -0.6917519647168419,
+    -0.2562101885183855,
+    0.6751559513251457
+   ],
+   [
+    0.3757097440071294,
+    0.88195886829755,
+    0.28458872586489115
+   ],
+   [
+    0.10962933743537041,
+    -0.1326097917248836,
+    0.9850868243521302
+   ],
+   [
+    -0.32373272592570945,
+    0.5659500259391612,
+    -0.7582200803883872
+   ],
+   [
+    -0.2164510454505914,
+    -0.8700158468173443,
+    0.44296881516653674
+   ],
+   [
+    -0.43065317546221576,
+    0.22938243010501777,
+    0.8728811735989193
+   ],
+   [
+    -0.3606302208330362,
+    -0.6589776995328848,
+    0.660071386548654
+   ],
+   [
+    -0.7836961589264019,
+    -0.48079575758636983,
+    -0.3932629781341648
+   ],
+   [
+    0.3660243386758451,
+    -0.5299673944570227,
+    0.7649580016637154
+   ],
+   [
+    -0.8476230763315352,
+    -0.5304935866064687,
+    0.010567641159200837
+   ],
+   [
+    0.016650981414250473,
+    0.36477107016970456,
+    -0.9309483396973168
+   ],
+   [
+    -0.6901522939672605,
+    0.4121803795407587,
+    0.5948084951086057
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "sphere_points",
+  "points": [
+   [
+    0.3275427491203486,
+    0.14541546469198158,
+    0.9335791825694806
+   ],
+   [
+    -0.33461187753714067,
+    0.0897818127315093,
+    0.9380693564517039
+   ],
+   [
+    0.04112456536507464,
+    -0.4474799027581079,
+    0.8933479203261897
+   ],
+   [
+    0.3338792613910552,
+    0.7198718075588023,
+    0.6085303768054526
+   ],
+   [
+    -0.6927766737272597,
+    -0.37573759208864543,
+    0.6155337051947852
+   ],
+   [
+    0.7445380567092853,
+    -0.25535108547803764,
+    0.616813509301433
+   ],
+   [
+    -0.32442248536759555,
+    0.684677399052009,
+    0.6526614054893153
+   ],
+   [
+    -0.26083404104157354,
+    -0.8494067338814354,
+    0.4587742401996816
+   ],
+   [
+    0.8451092601959151,
+    0.3576966758673378,
+    0.3972951376553328
+   ],
+   [
+    -0.8144762689633998,
+    0.2667793540934961,
+    0.515225371585015
+   ],
+   [
+    0.40115984149436784,
+    -0.7924843925459893,
+    0.4593901056218213
+   ],
+   [
+    -0.041760947028172686,
+    0.9906621141814046,
+    0.12978674365642978
+   ],
+   [
+    -0.745179005820574,
+    -0.6662063097839985,
+    0.02962097378966553
+   ],
+   [
+    0.9880394715465591,
+    -0.15420107467902006,
+    -0.00017673095786916327
+   ],
+   [
+    -0.6612209543833705,
+    0.745005025350333,
+    0.08805885354179084
+   ],
+   [
+    0.07514922709960947,
+    -0.9935010335360633,
+    -0.08548853741353495
+   ],
+   [
+    0.5798938978873129,
+    0.8146847845510752,
+    -0.0034305996599809496
+   ],
+   [
+    -0.9978817615699516,
+    -0.05881434192285267,
+    -0.02780041564855007
+   ],
+   [
+    0.6793796778428592,
+    -0.7214250901912298,
+    -0.1341234229234728
+   ],
+   [
+    -0.29257553438292844,
+    0.840257526081994,
+    -0.45647217499329695
+   ],
+   [
+    -0.38035620010788496,
+    -0.7748204006741279,
+    -0.5049579267014972
+   ],
+   [
+    0.848817209064333,
+    0.3555168913120812,
+    -0.39130178326712284
+   ],
+   [
+    -0.7886302277917969,
+    0.403483674366297,
+    -0.46396474901971885
+   ],
+   [
+    0.2709196364544908,
+    -0.7082300590767873,
+    -0.6519300069819284
+   ],
+   [
+    0.3418018725753302,
+    0.7132302724834598,
+    -0.6119428554343678
+   ],
+   [
+    -0.7471675759382951,
+    -0.24039341513888005,
+    -0.6196382972544211
+   ],
+   [
+    0.7485620076647285,
+    -0.2619468789183795,
+    -0.6091295045438786
+   ],
+   [
+    -0.2876509526106318,
+    0.3491137635301586,
+    -0.891838836099889
+   ],
+   [
+    -0.17633059441158266,
+    -0.30368960062989525,
+    -0.9363119928441123
+   ],
+   [
+    0.33101111573540143,
+    0.1249409292094137,
+    -0.935318879028908
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": 13.9,
+ "model_gpu_memory_gb": 13.9,
+ "context_length": 40960,
+ "load_seconds": 39.8,
+ "median_call_seconds": 64.6,
+ "p90_call_seconds": 134.7,
+ "prompt_tokens_per_s": 1714.0,
+ "gen_tokens_per_s": 50.8,
+ "mean_prompt_tokens": 4892,
+ "mean_gen_tokens": 3547,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

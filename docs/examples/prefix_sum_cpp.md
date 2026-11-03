@@ -75,4 +75,160 @@ extern "C" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, ui
 
 ## Benchmark results
 
-This example has not been benchmarked yet. See [Benchmarking models](../benchmarking.md) for how to run it.
+The best result so far comes from **nvidia/nemotron-3-ultra-550b-a55b:free (think)**, run through OpenRouter on 2026-11-02: a score of **7.50181** (×1.35 the starting program's 5.54026), reached after 10.27 of 60 minutes with 22 model requests.
+
+What the starting program produces (left) and what the best program by nvidia/nemotron-3-ultra-550b-a55b:free (think) produces (right):
+
+![prefix_sum_cpp: the starting program's solution and the best one](../assets/examples/prefix_sum_cpp.svg)
+
+### How it got there
+
+The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.
+
+| Step | Minute | Score | Kind | Idea |
+|--:|--:|--:|---|---|
+| 0 | 0.0 | 5.54026 | start | initial program |
+| 1 | 5.8 | compile error | edit | Replace the scalar loop with 8x unrolling, 4 private sub-histograms to break hot-bin dependency chains, local prefix sums for ILP, and software prefetching; combine sub-histograms at the end. |
+| 2 | 10.3 | 7.50181 | fix-up | Fix compilation timeout by simplifying the unrolled loop structure while keeping 8x unrolling, 4 sub-histograms, prefetching, and local prefix sums for ILP. |
+
+### The best program
+
+What changed compared with the starting program:
+
+```diff
+--- initial
++++ best
+@@ -27,13 +27,82 @@
+ // hist[b] = number of i < n with (in[i] & 255) == b for b < 256. Neither out nor
+ // hist is zeroed by the caller. n is any size from 0 to 20'000'000; the sums
+ // never overflow int64.
++constexpr int NUM_SUB_HIST = 4;
++constexpr size_t UNROLL = 8;
++
+ extern "C" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, uint64_t* hist) {
+     for (int b = 0; b < 256; ++b) hist[b] = 0;
++    if (n == 0) return;
++
++    uint32_t sub_hist[NUM_SUB_HIST][256] = {};
++
+     int64_t sum = 0;
+-    for (size_t i = 0; i < n; ++i) {
++    size_t i = 0;
++
++    // Prefetch first cache lines
++    __builtin_prefetch(in, 0, 3);
++    __builtin_prefetch(out, 1, 3);
++
++    size_t n_main = n & ~(UNROLL - 1);
++    for (; i < n_main; i += UNROLL) {
++        if (i + 64 < n) {
++            __builtin_prefetch(in + i + 64, 0, 3);
++            __builtin_prefetch(out + i + 64, 1, 3);
++        }
++
++        // Load 8 values
++        int64_t v0 = in[i];
++        int64_t v1 = in[i + 1];
++        int64_t v2 = in[i + 2];
++        int64_t v3 = in[i + 3];
++        int64_t v4 = in[i + 4];
++        int64_t v5 = in[i + 5];
++        int64_t v6 = in[i + 6];
++        int64_t v7 = in[i + 7];
++
++        // Compute local prefix sums (independent chain for ILP)
++        int64_t s0 = v0;
++        int64_t s1 = s0 + v1;
++        int64_t s2 = s1 + v2;
++        int64_t s3 = s2 + v3;
++        int64_t s4 = s3 + v4;
++        int64_t s5 = s4 + v5;
++        int64_t s6 = s5 + v6;
++        int64_t s7 = s6 + v7;
++
++        // Write outputs with running sum
++        out[i]     = sum + s0;
++        out[i + 1] = sum + s1;
++        out[i + 2] = sum + s2;
++        out[i + 3] = sum + s3;
++        out[i + 4] = sum + s4;
++        out[i + 5] = sum + s5;
++        out[i + 6] = sum + s6;
++        out[i + 7] = sum + s7;
++
++        sum += s7;
++
++        // Distribute histogram updates across 4 sub-histograms
++        sub_hist[0][v0 & 255]++;
++        sub_hist[1][v1 & 255]++;
++        sub_hist[2][v2 & 255]++;
++        sub_hist[3][v3 & 255]++;
++        sub_hist[0][v4 & 255]++;
++        sub_hist[1][v5 & 255]++;
++        sub_hist[2][v6 & 255]++;
++        sub_hist[3][v7 & 255]++;
++    }
++
++    // Tail handling
++    for (; i < n; ++i) {
+         sum += in[i];
+         out[i] = sum;
+-        hist[in[i] & 255]++;
++        sub_hist[i % NUM_SUB_HIST][in[i] & 255]++;
++    }
++
++    // Combine sub-histograms
++    for (int b = 0; b < 256; ++b) {
++        hist[b] = (uint64_t)sub_hist[0][b] + sub_hist[1][b] + sub_hist[2][b] + sub_hist[3][b];
+     }
+ }
+ // OMEGA-BLOCK-END
+```
+
+### All models
+
+One run per model and reasoning mode; the [model benchmarks](../benchmarks/prefix_sum_histogram_single_thread.md) page has speed, memory and progress over time.
+
+| Model | Where | Machine | Best | Gain | Minutes to best | New bests |
+|---|---|---|--:|--:|--:|--:|
+| nvidia/nemotron-3-ultra-550b-a55b:free (think) | cloud | i7-8700K + 2x GTX 1080 Ti | 7.50181 | ×1.35 | 10.3 | 1 |
+| gpt-oss:20b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 6.74067 | ×1.16 | 45.4 | 6 |
+| gemma4:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 6.51811 | ×1.12 | 11.6 | 4 |
+| dots-studio/dots-3-note-preview:free (think) | cloud | i7-8700K + 2x GTX 1080 Ti | 6.4022 | ×1.56 | 8.7 | 1 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 6.38209 | ×1.09 | 37.4 | 1 |
+| gemma4:12b-it-qat (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 6.348 | ×1.09 | 22.8 | 6 |
+| nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | i7-8700K + 2x GTX 1080 Ti | 6.28423 | ×1.25 | 0.5 | 1 |
+| nvidia/nemotron-3.5-super-vl:free (think) | cloud | i7-8700K + 2x GTX 1080 Ti | 6.14197 | ×1.45 | 28.4 | 3 |
+| poolside/laguna-s-2.1:free (no-think) | cloud | i7-8700K + 2x GTX 1080 Ti | 6.12493 | ×1.23 | 6.5 | 3 |
+| dots-studio/dots-3-note-preview:free (no-think) | cloud | i7-8700K + 2x GTX 1080 Ti | 6.12226 | ×1.22 | 7.3 | 5 |
+| poolside/laguna-xs-2.1:free (no-think) | cloud | i7-8700K + 2x GTX 1080 Ti | 6.01417 | ×1.21 | 14.6 | 2 |
+| qwen2.5-coder:7b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.94451 | ×1.00 | - | 0 |
+| gemma4:e2b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.94377 | ×1.01 | 1.9 | 1 |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.92539 | ×1.00 | - | 0 |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.91493 | ×1.00 | - | 0 |
+| gemma4:26b-a4b-it-qat (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.89333 | ×1.31 | 14.8 | 6 |
+| gemma4:e4b-it-qat (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.89102 | ×1.00 | - | 0 |
+| qwen3.5:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.87234 | ×1.00 | - | 0 |
+| richardyoung/frognano-4b-2609:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.86256 | ×1.00 | - | 0 |
+| nemotron-3-nano:4b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.86222 | ×1.00 | - | 0 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.85283 | ×1.00 | - | 0 |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.82907 | ×1.53 | 21.4 | 6 |
+| nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | i7-8700K + 2x GTX 1080 Ti | 5.77102 | ×1.13 | 1.4 | 1 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.56419 | ×1.23 | 21.4 | 2 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 5.3974 | ×1.00 | - | 0 |
+| google/gemma-4-26b-a4b-it:free (think) | cloud | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 5 model requests failed … |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | cloud | i7-8700K + 2x GTX 1080 Ti | 5.24523 | ×1.05 | 47.2 | 3 |
+| google/gemma-4-26b-a4b-it:free (no-think) | cloud | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 6 model requests failed … |
+| xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | i7-8700K + 2x GTX 1080 Ti | 5.11627 | ×1.12 | 15.8 | 1 |
+| google/gemma-4-31b-it:free (no-think) | cloud | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 5 model requests failed: google/gemma-4-31b-it:free … |
+| google/gemma-4-31b-it:free (think) | cloud | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 5 model requests failed: google/gemma-4-31b-it:free … |
+| nvidia/nemotron-3.5-lightning:free (no-think) | cloud | i7-8700K + 2x GTX 1080 Ti | 4.98403 | ×1.00 | - | 0 |
+| cohere/north-mini-code:free (no-think) | cloud | i7-8700K + 2x GTX 1080 Ti | 4.85369 | ×1.00 | - | 0 |
+| xingchen-agi/xing4.0-29b-a4b:free (think) | cloud | i7-8700K + 2x GTX 1080 Ti | 4.83715 | ×1.00 | - | 0 |
+| nvidia/nemotron-3.5-lightning:free (think) | cloud | i7-8700K + 2x GTX 1080 Ti | 4.76522 | ×1.00 | - | 0 |
+| qwen3-coder:30b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 4.64757 | ×1.00 | - | 0 |
+| cohere/north-mini-code:free (think) | cloud | i7-8700K | 4.54575 | ×1.04 | 61.3 | 2 |
+| glm-4.7-flash:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 4.53881 | ×1.00 | - | 0 |
+| recursive/flint-v1.0:free (think) | cloud | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 5 model requests failed: recursive/flint-v1.0:free … |
+| frob/sarvam:30b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 4.40778 | ×1.00 | - | 0 |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | i7-8700K + 2x GTX 1080 Ti | 3.165 | ×1.00 | - | 0 |

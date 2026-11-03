@@ -1,0 +1,420 @@
+{
+ "schema": 4,
+ "example": "tammes_30",
+ "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-02T21:42:09",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 42.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 3.2013569883368893,
+ "best_score": 21.403349639406645,
+ "improvement": 6.685711627095272,
+ "llm_calls": 25,
+ "mean_llm_seconds": 101.0,
+ "attempts": 25,
+ "ok": 12,
+ "statuses": {
+  "ok": 12,
+  "edit_error": 12,
+  "invalid": 1
+ },
+ "sweeps": 8,
+ "sweep_variants": 86,
+ "improvements": 3,
+ "minutes_to_best": 14.7,
+ "best_idea": "Replace the random uniform generation with a deterministic Fibonacci sphere and add a short polishing loop that iteratively pushes apart the closest pair(s) with a decaying step size, which should mar",
+ "progress": [
+  [
+   0.0,
+   3.2013569883368893
+  ],
+  [
+   1.86,
+   6.498547570696504
+  ],
+  [
+   4.08,
+   21.03946978131723
+  ],
+  [
+   14.7,
+   21.403349639406645
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.2013569883368893,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 14.7,
+   "score": 21.403349639406645,
+   "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the random uniform generation with a deterministic Fibonacci sphere and add a short polishing loop that iteratively pushes apart the closest pair(s) with a decaying step size, which should markedly improve the minimal angle."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -14,13 +14,72 @@\n     start draws uniformly random points with a fixed seed, so some pairs end up\n     close together.\n     \"\"\"\n-    rng = random.Random(1)\n+    phi_golden = (math.sqrt(5) + 1) / 2.0\n     points = []\n-    for _ in range(n):\n-        z = rng.uniform(-1.0, 1.0)\n-        phi = rng.uniform(0.0, 2 * math.pi)\n-        s = math.sqrt(1.0 - z * z)\n-        points.append((s * math.cos(phi), s * math.sin(phi), z))\n+    for i in range(n):\n+        z = 1.0 - 2.0 * i / (n - 1) if n > 1 else 0.0\n+        r = math.sqrt(max(0.0, 1.0 - z * z))\n+        theta = 2.0 * math.pi * i / phi_golden\n+        x = r * math.cos(theta)\n+        y = r * math.sin(theta)\n+        points.append((x, y, z))\n+    # polishing\n+    step = 0.02\n+    decay = 0.95\n+    iters = 12\n+    for _ in range(iters):\n+        min_angle = 180.0\n+        pair = None\n+        for i1 in range(n):\n+            x1, y1, z1 = points[i1]\n+            for i2 in range(i1 + 1, n):\n+                x2, y2, z2 = points[i2]\n+                dot = x1 * x2 + y1 * y2 + z1 * z2\n+                dot = max(-1.0, min(1.0, dot))\n+                ang = math.acos(dot) * 180.0 / math.pi\n+                if ang < min_angle:\n+                    min_angle = ang\n+                    pair = (i1, i2)\n+        if pair is None or min_angle > 0.5:\n+            break\n+        i, j = pair\n+        # move i away from j\n+        vx = points[i][0] - points[j][0]\n+        vy = points[i][1] - points[j][1]\n+        vz = points[i][2] - points[j][2]\n+        dot_vi = vx * points[i][0] + vy * points[i][1] + vz * points[i][2]\n+        tx = vx - dot_vi * points[i][0]\n+        ty = vy - dot_vi * points[i][1]\n+        tz = vz - dot_vi * points[i][2]\n+        norm = math.sqrt(tx * tx + ty * ty + tz * tz)\n+        if norm > 0:\n+            tx /= norm\n+            ty /= norm\n+            tz /= norm\n+            nx = points[i][0] + step * tx\n+            ny = points[i][1] + step * ty\n+            nz = points[i][2] + step * tz\n+            nnorm = math.sqrt(nx * nx + ny * ny + nz * nz)\n+            points[i] = (nx / nnorm, ny / nnorm, nz / nnorm)\n+        # move j away from i\n+        vx = points[j][0] - points[i][0]\n+        vy = points[j][1] - points[i][1]\n+        vz = points[j][2] - points[i][2]\n+        dot_vj = vx * points[j][0] + vy * points[j][1] + vz * points[j][2]\n+        tx = vx - dot_vj * points[j][0]\n+        ty = vy - dot_vj * points[j][1]\n+        tz = vz - dot_vj * points[j][2]\n+        norm = math.sqrt(tx * tx + ty * ty + tz * tz)\n+        if norm > 0:\n+            tx /= norm\n+            ty /= norm\n+            tz /= norm\n+            nx = points[j][0] + step * tx\n+            ny = points[j][1] + step * ty\n+            nz = points[j][2] + step * tz\n+            nnorm = math.sqrt(nx * nx + ny * ny + nz * nz)\n+            points[j] = (nx / nnorm, ny / nnorm, nz / nnorm)\n+        step *= decay\n     return points\n # OMEGA-BLOCK-END\n \n",
+ "initial_solution": {
+  "kind": "sphere_points",
+  "points": [
+   [
+    0.3919709387244532,
+    -0.5582121095618475,
+    -0.7312715117751976
+   ],
+   [
+    -0.027052463738772504,
+    0.8490936142385189,
+    0.5275492379532281
+   ],
+   [
+    -0.9500239047545286,
+    0.31204362944230385,
+    -0.009129825816118098
+   ],
+   [
+    0.22957314306547277,
+    -0.9248645600666849,
+    0.30318594544552596
+   ],
+   [
+    0.5740391880355756,
+    0.1033386161058686,
+    -0.8122808264515302
+   ],
+   [
+    -0.6758397496085636,
+    0.3037890926411783,
+    0.6715302078397394
+   ],
+   [
+    0.8512988419434201,
+    0.011265659732678564,
+    0.524560164915884
+   ],
+   [
+    -0.17680359044518373,
+    -0.9781667833824966,
+    -0.10922561189039716
+   ],
+   [
+    0.7908900515540614,
+    -0.28321934240489055,
+    -0.5424755574590947
+   ],
+   [
+    0.5851964340381928,
+    0.11388203849293084,
+    0.8028549152229673
+   ],
+   [
+    -0.30434810274742335,
+    -0.08102906244732802,
+    -0.9491082780130784
+   ],
+   [
+    -0.3509958145626131,
+    0.3246444046695718,
+    0.8782983255570211
+   ],
+   [
+    -0.7271635298854837,
+    0.3872590786250933,
+    -0.5668012057387734
+   ],
+   [
+    0.05942052898539893,
+    0.33054331283916893,
+    -0.9419184248502641
+   ],
+   [
+    -0.9919106268324059,
+    0.02610563707090374,
+    -0.12422481269885588
+   ],
+   [
+    0.10141148542176433,
+    0.8394879795728718,
+    -0.5338310994848547
+   ],
+   [
+    -0.800348025639128,
+    0.20762133322971385,
+    -0.5624379253246229
+   ],
+   [
+    0.8990635126271509,
+    0.12213812674917045,
+    -0.4204367708190289
+   ],
+   [
+    -0.6917519647168419,
+    -0.2562101885183855,
+    0.6751559513251457
+   ],
+   [
+    0.3757097440071294,
+    0.88195886829755,
+    0.28458872586489115
+   ],
+   [
+    0.10962933743537041,
+    -0.1326097917248836,
+    0.9850868243521302
+   ],
+   [
+    -0.32373272592570945,
+    0.5659500259391612,
+    -0.7582200803883872
+   ],
+   [
+    -0.2164510454505914,
+    -0.8700158468173443,
+    0.44296881516653674
+   ],
+   [
+    -0.43065317546221576,
+    0.22938243010501777,
+    0.8728811735989193
+   ],
+   [
+    -0.3606302208330362,
+    -0.6589776995328848,
+    0.660071386548654
+   ],
+   [
+    -0.7836961589264019,
+    -0.48079575758636983,
+    -0.3932629781341648
+   ],
+   [
+    0.3660243386758451,
+    -0.5299673944570227,
+    0.7649580016637154
+   ],
+   [
+    -0.8476230763315352,
+    -0.5304935866064687,
+    0.010567641159200837
+   ],
+   [
+    0.016650981414250473,
+    0.36477107016970456,
+    -0.9309483396973168
+   ],
+   [
+    -0.6901522939672605,
+    0.4121803795407587,
+    0.5948084951086057
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "sphere_points",
+  "points": [
+   [
+    0.0,
+    0.0,
+    1.0
+   ],
+   [
+    -0.2690889208157161,
+    -0.24650749402121813,
+    0.9310344827586207
+   ],
+   [
+    0.04430656881715498,
+    0.5048504993081459,
+    0.8620689655172413
+   ],
+   [
+    0.37059217392732346,
+    -0.48337186612044075,
+    0.7931034482758621
+   ],
+   [
+    -0.6791127484933988,
+    0.12012548302021679,
+    0.7241379310344828
+   ],
+   [
+    0.6374397351492027,
+    0.40548698161276736,
+    0.6551724137931034
+   ],
+   [
+    -0.21032138396238947,
+    -0.7823850649669517,
+    0.5862068965517242
+   ],
+   [
+    -0.39446246605776114,
+    0.7595134747986778,
+    0.5172413793103449
+   ],
+   [
+    0.8396548626164041,
+    -0.3066406091354397,
+    0.4482758620689656
+   ],
+   [
+    -0.8552687578857879,
+    -0.35304251031749595,
+    0.37931034482758624
+   ],
+   [
+    0.40291819718059463,
+    0.8610127840927956,
+    0.31034482758620685
+   ],
+   [
+    0.2904342940247651,
+    -0.9259502953138423,
+    0.24137931034482762
+   ],
+   [
+    -0.8522543351759491,
+    0.4938988075724443,
+    0.1724137931034483
+   ],
+   [
+    0.9714357465709935,
+    0.21356742379216428,
+    0.10344827586206896
+   ],
+   [
+    -0.5747873955506805,
+    -0.8175759226359182,
+    0.03448275862068961
+   ],
+   [
+    -0.1284342635716992,
+    0.9911183477762394,
+    -0.03448275862068973
+   ],
+   [
+    0.7605465271306948,
+    -0.6409894182360615,
+    -0.10344827586206895
+   ],
+   [
+    -0.9841834530143474,
+    -0.0406990756705516,
+    -0.1724137931034482
+   ],
+   [
+    0.6878699288017678,
+    0.6845224536767996,
+    -0.24137931034482762
+   ],
+   [
+    -0.04391069950149446,
+    -0.9496093609794383,
+    -0.3103448275862069
+   ],
+   [
+    -0.5928286352874107,
+    0.7104068351937809,
+    -0.3793103448275863
+   ],
+   [
+    0.8859122590409619,
+    -0.11919824146045721,
+    -0.4482758620689656
+   ],
+   [
+    -0.7025230394025949,
+    -0.4887972326411763,
+    -0.5172413793103449
+   ],
+   [
+    0.17781533072565697,
+    0.790406972764108,
+    -0.5862068965517242
+   ],
+   [
+    0.3756099039705354,
+    -0.6554893654696189,
+    -0.6551724137931034
+   ],
+   [
+    -0.6570295015149564,
+    0.20961033127235576,
+    -0.7241379310344827
+   ],
+   [
+    0.5529237385096589,
+    0.2554647915573478,
+    -0.7931034482758621
+   ],
+   [
+    -0.1956522746788154,
+    -0.467501108132418,
+    -0.8620689655172413
+   ],
+   [
+    -0.12351180167630632,
+    0.34339427304639236,
+    -0.9310344827586208
+   ],
+   [
+    0.0,
+    -0.0,
+    -1.0
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 107.0,
+ "p90_call_seconds": 179.2,
+ "prompt_tokens_per_s": 4716.9,
+ "gen_tokens_per_s": 126.1,
+ "mean_prompt_tokens": 4271,
+ "mean_gen_tokens": 12616,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

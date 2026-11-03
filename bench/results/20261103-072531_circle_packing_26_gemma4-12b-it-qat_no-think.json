@@ -1,0 +1,406 @@
+{
+ "schema": 4,
+ "example": "circle_packing_26",
+ "model": "gemma4:12b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 7.2,
+ "model_params": "11.9B",
+ "started": "2026-11-03T07:25:31",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 12.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 32768,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 1.8343299948910508,
+ "improvement": 1.2310097008885088,
+ "llm_calls": 18,
+ "mean_llm_seconds": 38.1,
+ "attempts": 18,
+ "ok": 11,
+ "statuses": {
+  "edit_error": 5,
+  "ok": 11,
+  "invalid": 2
+ },
+ "sweeps": 5,
+ "sweep_variants": 30,
+ "improvements": 3,
+ "minutes_to_best": 10.74,
+ "best_idea": "tuned side=6 on top of: Use a denser initial layout by increasing the side count and using a more refined hexagonal packing to capture more of the unit square's area.",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   3.03,
+   1.7165141680757283
+  ],
+  [
+   5.4,
+   1.7165141691891967
+  ],
+  [
+   10.74,
+   1.8343299948910508
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.03,
+   "score": 1.7165141680757283,
+   "model": "gemma4:12b-it-qat",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "Improve the initial layout by using a hexagonal-like packing grid which is naturally denser than a square grid, and refine the radii calculation to handle the sum maximization better."
+  },
+  {
+   "minutes": 5.4,
+   "score": 1.7165141691891967,
+   "model": "gemma4:12b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Use a more aggressive iterative radius adjustment with multiple passes to better maximize the sum of radii by allowing smaller changes to propagate across the packing."
+  },
+  {
+   "minutes": 10.74,
+   "score": 1.4956868870675744,
+   "model": "gemma4:12b-it-qat",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Use a denser initial layout by increasing the side count and using a more refined hexagonal packing to capture more of the unit square's area."
+  },
+  {
+   "minutes": 10.74,
+   "score": 1.8343299948910508,
+   "model": "gemma4:12b-it-qat",
+   "mode": "sweep/best/diff/refine",
+   "status": "ok",
+   "idea": "tuned side=6 on top of: Use a denser initial layout by increasing the side count and using a more refined hexagonal packing to capture more of the unit square's area."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -7,28 +7,67 @@\n import math\n \n # OMEGA-BLOCK-START\n+import math\n+\n+# Grid constants to explore different packing densities\n+GRID_STRIDE = 0.15\n+HEX_OFFSET = 0.86602540378\n+\n def construct_packing(n=26):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n-    cols = math.ceil(math.sqrt(n))\n-    rows = math.ceil(n / cols)\n+    # Use a hexagonal-like grid for better density than a square grid\n     centers = []\n-    for k in range(n):\n-        i, j = k % cols, k // cols\n-        centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n+    # Use a larger number of potential points to find a better subset for n=26\n+    side = 6.0\n+    step = 1.0 / (side - 0.5)\n+    \n+    # Generate hexagonal-like points\n+    for row in range(int(side)):\n+        for col in range(int(side)):\n+            x = (col + 0.5) * step\n+            y = (row + 0.5) * step + (col % 2) * (step * HEX_OFFSET / 2)\n+            if 0 <= x <= 1.0 and 0 <= y <= 1.0:\n+                centers.append((x, y))\n+    \n+    # If we have too many, take the ones closest to the center\n+    # If too few, we'll pad with random/distributed points (fallback)\n+    if len(centers) > n:\n+        # Sort by distance from center of square (0.5, 0.5)\n+        centers.sort(key=lambda p: (p[0]-0.5)**2 + (p[1]-0.5)**2)\n+        centers = centers[:n]\n+    elif len(centers) < n:\n+        # Fallback: simple grid if hexagonal doesn't provide enough\n+        centers = []\n+        cols = math.ceil(math.sqrt(n))\n+        rows = math.ceil(n / cols)\n+        for k in range(n):\n+            centers.append(((k % cols + 0.5) / cols, (k // cols + 0.5) / rows))\n+\n     radii = max_radii(centers)\n     return [(x, y, r) for (x, y), r in zip(centers, radii)]\n \n \n def max_radii(centers):\n     \"\"\"Largest radii for fixed centers: limit by walls, then shrink overlapping pairs.\"\"\"\n+    # Initial radii based on distance to boundaries\n     radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n-    for a in range(len(centers)):\n-        for b in range(a + 1, len(centers)):\n-            d = math.dist(centers[a], centers[b])\n-            if radii[a] + radii[b] > d:\n-                s = d / (radii[a] + radii[b])\n-                radii[a] *= s\n-                radii[b] *= s\n+    \n+    # Iterative shrinking to resolve overlaps\n+    # More passes and a more stable adjustment to maximize sum\n+    for _ in range(10):\n+        changed = False\n+        for a in range(len(centers)):\n+            for b in range(a + 1, len(centers)):\n+                d = math.dist(centers[a], centers[b])\n+                if radii[a] + radii[b] > d + 1e-10:\n+                    # Shrink proportionally to the amount of overlap\n+                    # This helps find a balanced state for the sum\n+                    scale = d / (radii[a] + radii[b])\n+                    radii[a] *= scale\n+                    radii[b] *= scale\n+                    changed = True\n+        if not changed:\n+            break\n     return radii\n # OMEGA-BLOCK-END\n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.083333,
+    0.1,
+    0.060545
+   ],
+   [
+    0.25,
+    0.1,
+    0.039234
+   ],
+   [
+    0.416667,
+    0.1,
+    0.034262
+   ],
+   [
+    0.583333,
+    0.1,
+    0.040566
+   ],
+   [
+    0.75,
+    0.1,
+    0.05694
+   ],
+   [
+    0.916667,
+    0.1,
+    0.080973
+   ],
+   [
+    0.083333,
+    0.3,
+    0.047978
+   ],
+   [
+    0.25,
+    0.3,
+    0.032893
+   ],
+   [
+    0.416667,
+    0.3,
+    0.029299
+   ],
+   [
+    0.583333,
+    0.3,
+    0.040366
+   ],
+   [
+    0.75,
+    0.3,
+    0.058083
+   ],
+   [
+    0.916667,
+    0.3,
+    0.076636
+   ],
+   [
+    0.083333,
+    0.5,
+    0.05004
+   ],
+   [
+    0.25,
+    0.5,
+    0.036525
+   ],
+   [
+    0.416667,
+    0.5,
+    0.03396
+   ],
+   [
+    0.583333,
+    0.5,
+    0.041209
+   ],
+   [
+    0.75,
+    0.5,
+    0.058085
+   ],
+   [
+    0.916667,
+    0.5,
+    0.076976
+   ],
+   [
+    0.083333,
+    0.7,
+    0.059259
+   ],
+   [
+    0.25,
+    0.7,
+    0.06822
+   ],
+   [
+    0.416667,
+    0.7,
+    0.065257
+   ],
+   [
+    0.583333,
+    0.7,
+    0.069461
+   ],
+   [
+    0.75,
+    0.7,
+    0.089736
+   ],
+   [
+    0.916667,
+    0.7,
+    0.07693
+   ],
+   [
+    0.083333,
+    0.9,
+    0.075758
+   ],
+   [
+    0.25,
+    0.9,
+    0.090909
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.454545,
+    0.454545,
+    0.007044
+   ],
+   [
+    0.636364,
+    0.533275,
+    0.027532
+   ],
+   [
+    0.454545,
+    0.636364,
+    0.03356
+   ],
+   [
+    0.636364,
+    0.351457,
+    0.044431
+   ],
+   [
+    0.272727,
+    0.533275,
+    0.055405
+   ],
+   [
+    0.454545,
+    0.272727,
+    0.07294
+   ],
+   [
+    0.636364,
+    0.715093,
+    0.057305
+   ],
+   [
+    0.272727,
+    0.351457,
+    0.076387
+   ],
+   [
+    0.272727,
+    0.715093,
+    0.093316
+   ],
+   [
+    0.818182,
+    0.454545,
+    0.069215
+   ],
+   [
+    0.454545,
+    0.818182,
+    0.096823
+   ],
+   [
+    0.818182,
+    0.636364,
+    0.066431
+   ],
+   [
+    0.636364,
+    0.169639,
+    0.106984
+   ],
+   [
+    0.818182,
+    0.272727,
+    0.096147
+   ],
+   [
+    0.272727,
+    0.169639,
+    0.105431
+   ],
+   [
+    0.454545,
+    0.090909,
+    0.090909
+   ],
+   [
+    0.090909,
+    0.454545,
+    0.090909
+   ],
+   [
+    0.636364,
+    0.896911,
+    0.09263
+   ],
+   [
+    0.090909,
+    0.636364,
+    0.089436
+   ],
+   [
+    0.818182,
+    0.818182,
+    0.105502
+   ],
+   [
+    0.272727,
+    0.896911,
+    0.088502
+   ],
+   [
+    0.090909,
+    0.272727,
+    0.090909
+   ],
+   [
+    1.0,
+    0.533275,
+    0.0
+   ],
+   [
+    0.454545,
+    1.0,
+    0.0
+   ],
+   [
+    0.818182,
+    0.090909,
+    0.085671
+   ],
+   [
+    0.090909,
+    0.818182,
+    0.090909
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 9.0,
+ "model_gpu_memory_gb": 9.0,
+ "context_length": 32768,
+ "load_seconds": 23.8,
+ "median_call_seconds": 36.9,
+ "p90_call_seconds": 65.2,
+ "prompt_tokens_per_s": 691.9,
+ "gen_tokens_per_s": 28.5,
+ "mean_prompt_tokens": 3112,
+ "mean_gen_tokens": 845,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -1,0 +1,255 @@
+{
+ "schema": 4,
+ "example": "heilbronn_13",
+ "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-01T15:54:58",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 65.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 0.004790811518724618,
+ "best_score": 0.022400734121491208,
+ "improvement": 4.675770281076431,
+ "llm_calls": 35,
+ "mean_llm_seconds": 104.7,
+ "attempts": 35,
+ "ok": 11,
+ "statuses": {
+  "ok": 11,
+  "llm_error": 3,
+  "timeout": 12,
+  "invalid": 5,
+  "edit_error": 3,
+  "duplicate": 1
+ },
+ "sweeps": 5,
+ "sweep_variants": 80,
+ "improvements": 6,
+ "minutes_to_best": 38.54,
+ "best_idea": "tuned POP_SIZE=12, MAX_GENERATIONS=800, DE_F=0.6, BETA_END=5000 on top of: Replace simulated annealing with Differential Evolution (population-based evolutionary optimization) using a soft-min objecti",
+ "progress": [
+  [
+   0.0,
+   0.004790811518724618
+  ],
+  [
+   2.24,
+   0.006272344632753934
+  ],
+  [
+   2.78,
+   0.00755611134449842
+  ],
+  [
+   17.08,
+   0.011205297629460834
+  ],
+  [
+   17.16,
+   0.01279697739469695
+  ],
+  [
+   38.54,
+   0.012938498844907817
+  ],
+  [
+   38.54,
+   0.022400734121491208
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.004790811518724618,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.24,
+   "score": 0.006272344632753934,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the circle-based construction with a symmetric boundary-interior layout and add simulated annealing optimization to maximize the minimum triangle area."
+  },
+  {
+   "minutes": 38.54,
+   "score": 0.012938498844907817,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "exploit/rewrite/bold",
+   "status": "ok",
+   "idea": "Replace simulated annealing with Differential Evolution (population-based evolutionary optimization) using a soft-min objective with annealed sharpness, multiple restarts, and a final greedy polish on the worst triangles; this explores the search space more globally and avoids SA's single-trajectory limitations."
+  },
+  {
+   "minutes": 38.54,
+   "score": 0.022400734121491208,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "sweep/exploit/rewrite/bold",
+   "status": "ok",
+   "idea": "tuned POP_SIZE=12, MAX_GENERATIONS=800, DE_F=0.6, BETA_END=5000 on top of: Replace simulated annealing with Differential Evolution (population-based evolutionary optimization) using a soft-min objective with annealed sharpness, multiple restarts, and a final greedy polish on the worst triangles; thi"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -5,17 +5,238 @@\n import math\n \n # OMEGA-BLOCK-START\n+import random\n+\n+# Differential Evolution parameters\n+POP_SIZE = 12\n+MAX_GENERATIONS = 800\n+DE_F = 0.6          # mutation scale factor\n+DE_CR = 0.85        # crossover probability\n+NUM_RESTARTS = 6\n+\n+# Soft-min annealing schedule\n+BETA_START = 20.0\n+BETA_END = 5000\n+\n+# Polish phase\n+POLISH_ITERATIONS = 800\n+POLISH_STEP = 0.015\n+\n+# Triangle cache (indices of all 286 triangles for n=13)\n+TRIANGLES_13 = [(i, j, k) for i in range(13) for j in range(i+1, 13) for k in range(j+1, 13)]\n+\n+def triangle_area(p1, p2, p3):\n+    \"\"\"Return the absolute area of triangle formed by three points.\"\"\"\n+    return abs((p1[0]*(p2[1]-p3[1]) + p2[0]*(p3[1]-p1[1]) + p3[0]*(p1[1]-p2[1])) * 0.5)\n+\n+def all_areas(points):\n+    \"\"\"Return list of all triangle areas for given points.\"\"\"\n+    return [triangle_area(points[i], points[j], points[k]) for i, j, k in TRIANGLES_13]\n+\n+def softmin_objective(points, beta):\n+    \"\"\"Smooth approximation of min area: -1/beta * log(sum(exp(-beta * area))).\"\"\"\n+    areas = all_areas(points)\n+    # Log-sum-exp trick for numerical stability\n+    max_val = max(-beta * a for a in areas)\n+    s = sum(math.exp(-beta * a - max_val) for a in areas)\n+    return -(math.log(s) + max_val) / beta\n+\n+def min_area(points):\n+    \"\"\"Return the true minimum triangle area.\"\"\"\n+    return min(all_areas(points))\n+\n+def clamp_point(p):\n+    \"\"\"Clamp point coordinates to [0, 1].\"\"\"\n+    return (max(0.0, min(1.0, p[0])), max(0.0, min(1.0, p[1])))\n+\n+def clamp_points(pts):\n+    return [clamp_point(p) for p in pts]\n+\n+def initial_layout_13():\n+    \"\"\"Symmetric boundary-interior layout for 13 points (point-symmetric about center).\"\"\"\n+    pts = []\n+    # 4 corners\n+    pts += [(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)]\n+    # 4 edge midpoints\n+    pts += [(0.5, 0.0), (1.0, 0.5), (0.5, 1.0), (0.0, 0.5)]\n+    # 4 symmetric interior points (45-degree axes)\n+    r = 0.22\n+    for k in range(4):\n+        angle = math.pi/4 + k * math.pi/2\n+        pts.append((0.5 + r*math.cos(angle), 0.5 + r*math.sin(angle)))\n+    # 1 center point\n+    pts.append((0.5, 0.5))\n+    return pts\n+\n+def random_symmetric_config(seed):\n+    \"\"\"Generate a random point-symmetric configuration (pairs + center).\"\"\"\n+    random.seed(seed)\n+    pts = [(0.5, 0.5)]  # center fixed\n+    # 6 symmetric pairs\n+    for _ in range(6):\n+        x = random.random()\n+        y = random.random()\n+        pts.append((x, y))\n+        pts.append((1.0-x, 1.0-y))\n+    return pts\n+\n+def mutate_individual(target, a, b, c, f):\n+    \"\"\"DE/rand/1 mutation: a + F*(b - c).\"\"\"\n+    mutated = []\n+    for d in range(26):  # 13 points * 2 coordinates\n+        mutated.append(a[d] + f * (b[d] - c[d]))\n+    return mutated\n+\n+def crossover(target, mutant, cr):\n+    \"\"\"Binomial crossover.\"\"\"\n+    trial = []\n+    for d in range(26):\n+        if random.random() < cr or d == random.randrange(26):\n+            trial.append(mutant[d])\n+        else:\n+            trial.append(target[d])\n+    return trial\n+\n+def vector_to_points(vec):\n+    \"\"\"Flattened 26-vector -> list of 13 (x,y) tuples, clamped.\"\"\"\n+    pts = []\n+    for i in range(13):\n+        x = max(0.0, min(1.0, vec[2*i]))\n+        y = max(0.0, min(1.0, vec[2*i+1]))\n+        pts.append((x, y))\n+    return pts\n+\n+def points_to_vector(pts):\n+    \"\"\"List of 13 (x,y) tuples -> flattened 26-vector.\"\"\"\n+    vec = []\n+    for x, y in pts:\n+        vec.append(x)\n+        vec.append(y)\n+    return vec\n+\n+def differential_evolution_restart(seed):\n+    \"\"\"Run one DE restart, return best points and its soft-min score at final beta.\"\"\"\n+    random.seed(seed)\n+    \n+    # Initialize population\n+    pop = []\n+    # 1: symmetric boundary-interior layout + noise\n+    base = initial_layout_13()\n+    for _ in range(POP_SIZE // 3):\n+        noisy = [(x + random.uniform(-0.05, 0.05), y + random.uniform(-0.05, 0.05)) for x, y in base]\n+        pop.append(points_to_vector(clamp_points(noisy)))\n+    # 2: random symmetric configs\n+    for i in range(POP_SIZE // 3):\n+        pop.append(points_to_vector(random_symmetric_config(seed*100 + i)))\n+    # 3: fully random\n+    for _ in range(POP_SIZE - 2*(POP_SIZE//3)):\n+        pop.append(points_to_vector([(random.random(), random.random()) for _ in range(13)]))\n+    \n+    # Evaluate initial population at starting beta\n+    beta = BETA_START\n+    fitness = [softmin_objective(vector_to_points(ind), beta) for ind in pop]\n+    \n+    best_idx = max(range(POP_SIZE), key=lambda i: fitness[i])\n+    best_ind = pop[best_idx][:]\n+    best_fit = fitness[best_idx]\n+    \n+    for gen in range(MAX_GENERATIONS):\n+        # Anneal beta\n+        t = gen / MAX_GENERATIONS\n+        beta = BETA_START * (BETA_END / BETA_START) ** t\n+        \n+        for i in range(POP_SIZE):\n+            # Select 3 distinct individuals != i\n+            idxs = list(range(POP_SIZE))\n+            idxs.remove(i)\n+            a_idx, b_idx, c_idx = random.sample(idxs, 3)\n+            \n+            # Mutation\n+            mutant = mutate_individual(pop[i], pop[a_idx], pop[b_idx], pop[c_idx], DE_F)\n+            \n+            # Crossover\n+            trial = crossover(pop[i], mutant, DE_CR)\n+            \n+            # Selection\n+            trial_pts = vector_to_points(trial)\n+            trial_fit = softmin_objective(trial_pts, beta)\n+            \n+            if trial_fit > fitness[i]:\n+                pop[i] = trial\n+                fitness[i] = trial_fit\n+                if trial_fit > best_fit:\n+                    best_fit = trial_fit\n+                    best_ind = trial[:]\n+    \n+    best_pts = vector_to_points(best_ind)\n+    return best_pts, best_fit\n+\n+def greedy_polish(points):\n+    \"\"\"Local improvement: repeatedly move vertices of worst triangles to increase min area.\"\"\"\n+    pts = [list(p) for p in points]\n+    n = 13\n+    \n+    for _ in range(POLISH_ITERATIONS):\n+        areas = all_areas(pts)\n+        min_a = min(areas)\n+        # Collect triangles within 2% of minimum\n+        threshold = min_a * 1.02\n+        worst = []\n+        for idx, (i, j, k) in enumerate(TRIANGLES_13):\n+            if areas[idx] <= threshold:\n+                worst.append((i, j, k))\n+        if not worst:\n+            break\n+        \n+        # Pick a random worst triangle and a random vertex from it\n+        i, j, k = random.choice(worst)\n+        idx = random.choice([i, j, k])\n+        \n+        old_x, old_y = pts[idx]\n+        best_local_min = min_a\n+        best_move = (old_x, old_y)\n+        \n+        # Try several random moves, keep the best\n+        for _ in range(12):\n+            nx = max(0.0, min(1.0, old_x + random.uniform(-POLISH_STEP, POLISH_STEP)))\n+            ny = max(0.0, min(1.0, old_y + random.uniform(-POLISH_STEP, POLISH_STEP)))\n+            pts[idx] = [nx, ny]\n+            new_min = min(all_areas(pts))\n+            if new_min > best_local_min:\n+                best_local_min = new_min\n+                best_move = (nx, ny)\n+            pts[idx] = [old_x, old_y]\n+        \n+        if best_move != (old_x, old_y):\n+            pts[idx] = list(best_move)\n+        else:\n+            # No improvement found, try a tiny random nudge anyway (escape plateaus)\n+            nx = max(0.0, min(1.0, old_x + random.uniform(-POLISH_STEP*0.3, POLISH_STEP*0.3)))\n+            ny = max(0.0, min(1.0, old_y + random.uniform(-POLISH_STEP*0.3, POLISH_STEP*0.3)))\n+            pts[idx] = [nx, ny]\n+    \n+    return [(p[0], p[1]) for p in pts]\n+\n def construct(n=13):\n-    \"\"\"Return a list of n points (x, y) inside the closed unit square [0,1]^2.\n-\n-    The score is the smallest area among all triangles with corners at three of\n-    the points, so no three points may be (nearly) collinear. This start puts\n-    the points on a regular polygon on a small circle around the center, which\n-    avoids collinear triples but wastes most of the square.\n-    \"\"\"\n-    radius = 0.3\n-    return [(0.5 + radius * math.cos(2 * math.pi * k / n),\n-             0.5 + radius * math.sin(2 * math.pi * k / n)) for k in range(n)]\n+    \"\"\"Return optimized 13-point configuration for Heilbronn problem.\"\"\"\n+    if n != 13:\n+        radius = 0.3\n+        return [(0.5 + radius * math.cos(2 * math.pi * k / n),\n+                 0.5 + radius * math.sin(2 * math.pi * k / n)) for k in range(n)]\n+    \n+    best_overall = None\n+    best_score = -1.0\n+    \n+    for restart in range(NUM_RESTARTS):\n+        points, score = differential_evolution_restart(restart * 1000 + 42)\n+        # Polish the DE result\n+        points = greedy_polish(points)\n+        final_score = min_area(points)  # true min area for final ranking\n+        if final_score > best_score:\n+            best_score = final_score\n+            best_overall = points\n+    \n+    return best_overall\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "heilbronn",
+  "points": [
+   [
+    0.8,
+    0.5
+   ],
+   [
+    0.765636807695963,
+    0.6394169516131305
+   ],
+   [
+    0.6704194240193467,
+    0.7468951597680968
+   ],
+   [
+    0.536161004076597,
+    0.7978126622294162
+   ],
+   [
+    0.3936185338872394,
+    0.7805048728056244
+   ],
+   [
+    0.27544677554866964,
+    0.6989367974722386
+   ],
+   [
+    0.2087174547721844,
+    0.5717946992862672
+   ],
+   [
+    0.2087174547721844,
+    0.42820530071373275
+   ],
+   [
+    0.2754467755486696,
+    0.30106320252776153
+   ],
+   [
+    0.3936185338872392,
+    0.21949512719437558
+   ],
+   [
+    0.536161004076597,
+    0.20218733777058384
+   ],
+   [
+    0.6704194240193464,
+    0.25310484023190294
+   ],
+   [
+    0.765636807695963,
+    0.3605830483868695
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "heilbronn",
+  "points": [
+   [
+    0.4336179902643697,
+    0.5500935086480253
+   ],
+   [
+    0.9730633826516604,
+    0.07700722007142904
+   ],
+   [
+    0.434469784779137,
+    0.09624643026835744
+   ],
+   [
+    0.06194100073191943,
+    0.9675248535478491
+   ],
+   [
+    0.3269665852904816,
+    0.8892806201546509
+   ],
+   [
+    0.8598160808645084,
+    0.9138787022360778
+   ],
+   [
+    0.0922334369191427,
+    0.3706957936941475
+   ],
+   [
+    0.03396203870175798,
+    0.02732108845761859
+   ],
+   [
+    0.99536950565511,
+    0.30777748665895094
+   ],
+   [
+    0.7402783294762355,
+    0.0
+   ],
+   [
+    0.0008660501411725001,
+    0.656603451089063
+   ],
+   [
+    0.679240854861193,
+    0.9978802993475988
+   ],
+   [
+    0.7560447931212593,
+    0.5856354489616417
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 96.0,
+ "p90_call_seconds": 197.0,
+ "prompt_tokens_per_s": 2887.3,
+ "gen_tokens_per_s": 31.0,
+ "mean_prompt_tokens": 5250,
+ "mean_gen_tokens": 3085,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

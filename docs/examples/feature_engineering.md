@@ -61,9 +61,9 @@ def features(row):
 
 ## Benchmark results
 
-The best result so far comes from **nvidia/nemotron-3-ultra-550b-a55b:free (no-think)**, run through OpenRouter on 2026-10-31: a score of **0.885** (×1.42 the starting program's 0.623), reached after 3.6 of 60 minutes with 26 model requests.
+The best result so far comes from **nvidia/nemotron-3.5-super-vl:free (think)**, run through OpenRouter on 2026-11-01: a score of **0.957** (×1.54 the starting program's 0.623), reached after 8.41 of 60 minutes with 20 model requests.
 
-What the starting program produces (left) and what the best program by nvidia/nemotron-3-ultra-550b-a55b:free (no-think) produces (right):
+What the starting program produces (left) and what the best program by nvidia/nemotron-3.5-super-vl:free (think) produces (right):
 
 ![feature_engineering: the starting program's solution and the best one](../assets/examples/feature_engineering.svg)
 
@@ -74,10 +74,13 @@ The best program's ancestry, from the starting program on. "Edit" and "rewrite" 
 | Step | Minute | Score | Kind | Idea |
 |--:|--:|--:|---|---|
 | 0 | 0.0 | 0.623 | start | initial program |
-| 1 | 0.3 | 0.714 | edit | Add log transform for the skewed positive input x3 and pairwise products to capture nonlinear interactions that a linear model needs explicit features for. |
-| 2 | 1.2 | 0.782 | edit | Add threshold/binned features for x4 and x5 (uniform in [-2,2]) to capture piecewise-constant or non-monotone effects that polynomial features cannot represent well, plus add x3^2 and log(x3)^2 to better model the skewed feature's nonlinearity. |
-| 3 | 2.6 | 0.882 | edit | Add radial and sign-based features for x4,x5 (like the top-scoring program) to capture circular/quadrant patterns, and include key pairwise interactions while removing less useful features to stay within 30-feature limit. |
-| 4 | 3.6 | 0.885 | edit | Add sign features for key pairwise products involving x3 (log-normal) and x6 (normal) to capture quadrant patterns with these variables, and add a radial feature for x1,x6 to capture circular patterns in the normal-normal subspace, while removing the less … |
+| 1 | 0.5 | 0.788 | edit | Replace the raw inputs with a degree-2 polynomial expansion (all six linear terms, all six squares, and all fifteen pairwise products) plus a guarded log of the right-skewed x3, giving the fixed linear classifier a quadratic decision surface in the original … |
+| 2 | 3.9 | 0.93 | edit | Replace the noisy full degree-2 expansion with a small targeted set—raw inputs, guarded log(x3), the x1-x2 product plus its sign (quadrant), a single x4/x5 radius with product/sign, and tanh soft-thresholds—so the fixed linear model fits … |
+| 3 | 3.9 | 0.934 | parameter sweep | tuned RAD_C=2.5, RAD_S=0.5 on top of: Replace the noisy full degree-2 expansion with a small targeted set—raw inputs, guarded log(x3), the x1-x2 product plus its sign (quadrant), a single x4/x5 radius with product/sign, and tanh soft-thresholds—so the fixed … |
+| 4 | 6.8 | 0.932 | edit | Add two soft thresholds on guarded log(x3) at tunable edges so the linear model can form a preferred x3 band (difference of the two tanh steps), capturing any limited-range dependence on the skewed input that the single log and zero-centered threshold … |
+| 5 | 6.8 | 0.954 | parameter sweep | tuned LX3_LO=0, LX3_HI=1.198, LX3_S=0.25 on top of: Add two soft thresholds on guarded log(x3) at tunable edges so the linear model can form a preferred x3 band (difference of the two tanh steps), capturing any limited-range dependence on the skewed input … |
+| 6 | 8.4 | 0.951 | edit | Add two axis-aligned soft-threshold features on x4 and x5 so the linear model can fit rectangular regions in the uniform inputs that the circular radius term cannot capture, with sweepable center and scale for each threshold. |
+| 7 | 8.4 | 0.957 | parameter sweep | tuned X4_C=-0.8299, X4_S=0.3071, X5_C=-1.25, X5_S=0.5829 on top of: Add two axis-aligned soft-threshold features on x4 and x5 so the linear model can fit rectangular regions in the uniform inputs that the circular radius term cannot capture, with sweepable … |
 
 ### The best program
 
@@ -86,72 +89,65 @@ What changed compared with the starting program:
 ```diff
 --- initial
 +++ best
-@@ -9,17 +9,63 @@
+@@ -9,6 +9,20 @@
  import math
  
  # OMEGA-BLOCK-START
-+LOG_EPS = 1e-9
-+SIGN_EPS = 1e-9
-+RADIUS_THRESH = 1.0
++RAD_C = 2.5
++RAD_S = 0.5
++# Preferred band on guarded log(x3): two soft thresholds the linear model can
++# combine (difference) into a band indicator for the skewed positive input.
++LX3_LO = 0.0
++LX3_HI = 1.1983852429727422
++LX3_S = 0.25
++# Axis-aligned soft thresholds on the uniform x4/x5 inputs, complementing the
++# circular radius term so the linear model can fit rectangular regions.
++X4_C = -0.8298644600471178
++X4_S = 0.3070814292047526
++X5_C = -1.2499200641646209
++X5_S = 0.5828500872310207
 +
  def features(row):
      """Return the feature vector (a list of at most 30 finite floats) for one row.
  
-     row: list of 6 floats [x1, x2, x3, x4, x5, x6]. Roughly: x1, x2, x6 are
-     standard-normal-like, x3 is positive and right-skewed (lognormal-like), x4 and x5
-     lie in [-2, 2]. The label is a hidden NONLINEAR function of the inputs plus noise.
--    Every row must give the same number of features. The classifier is linear in the
-+    Every row must give the same same number of features. The classifier is linear in the
+@@ -19,7 +33,36 @@
      features (they are standardized and a bias is added), so nonlinear structure only
      helps if a feature expresses it. Only the Python standard library may be used.
  
 -    Current method: the raw inputs.
-+    Features: raw inputs, log(x3) for skewed variable, quadratic and radial features
-+    for x4,x5 and x1,x6, sign features for quadrant patterns including x3,x6, and key pairwise interactions.
++    Method: raw inputs plus a guarded log of the skewed x3, an x1-x2 interaction
++    (product and pure quadrant sign), a single x4/x5 radius (circular region) with
++    its product and sign, and tanh soft-thresholds so the linear model fits step
++    effects rather than only slopes. Fewer targeted features reduce overfitting
++    versus the full degree-2 expansion.
      """
 -    return list(row)
 +    x1, x2, x3, x4, x5, x6 = row
-+    
-+    # Guard log for skewed positive feature
-+    log_x3 = math.log(max(x3, LOG_EPS))
-+    
-+    # Raw features (6)
-+    feats = [x1, x2, x3, x4, x5, x6]
-+    
-+    # Log transform for skewed feature (1)
-+    feats.append(log_x3)
-+    
-+    # Quadratic features for x4, x5 only (2) - most important for radial patterns
-+    feats.extend([x4*x4, x5*x5])
-+    
-+    # Radial feature for x4,x5 (1)
-+    r45_sq = x4*x4 + x5*x5
-+    feats.append(r45_sq)
-+    
-+    # Radial feature for x1,x6 (1) - capture circular patterns in normal-normal subspace
-+    r16_sq = x1*x1 + x6*x6
-+    feats.append(r16_sq)
-+    
-+    # Radius threshold indicator (1)
-+    feats.append(1.0 if r45_sq > RADIUS_THRESH else 0.0)
-+    
-+    # Sign of pairwise products for quadrant patterns (8)
-+    feats.append(1.0 if x1*x2 > SIGN_EPS else -1.0 if x1*x2 < -SIGN_EPS else 0.0)
-+    feats.append(1.0 if x1*x4 > SIGN_EPS else -1.0 if x1*x4 < -SIGN_EPS else 0.0)
-+    feats.append(1.0 if x1*x5 > SIGN_EPS else -1.0 if x1*x5 < -SIGN_EPS else 0.0)
-+    feats.append(1.0 if x2*x4 > SIGN_EPS else -1.0 if x2*x4 < -SIGN_EPS else 0.0)
-+    feats.append(1.0 if x2*x5 > SIGN_EPS else -1.0 if x2*x5 < -SIGN_EPS else 0.0)
-+    feats.append(1.0 if x4*x5 > SIGN_EPS else -1.0 if x4*x5 < -SIGN_EPS else 0.0)
-+    feats.append(1.0 if x1*x3 > SIGN_EPS else -1.0 if x1*x3 < -SIGN_EPS else 0.0)
-+    feats.append(1.0 if x2*x3 > SIGN_EPS else -1.0 if x2*x3 < -SIGN_EPS else 0.0)
-+    
-+    # Key pairwise interactions (8) - removed x3*x4, added x3*x6, x4*x6, x5*x6
-+    feats.extend([
-+        x1*x2, x1*x3, x1*x4, x1*x5, x1*x6,
-+        x2*x3, x2*x4, x2*x5
-+    ])
-+    
-+    return feats
++    # Guarded log of the right-skewed positive input x3.
++    lx3 = math.log(x3) if x3 > 0.0 else 0.0
++    # x1-x2 interaction: magnitude-scaled product and pure quadrant sign.
++    p12 = x1 * x2
++    s12 = 1.0 if p12 > 0.0 else (-1.0 if p12 < 0.0 else 0.0)
++    # x4/x5: one circular radius term instead of two noisy squares, plus product/sign.
++    r2 = x4 * x4 + x5 * x5
++    p45 = x4 * x5
++    s45 = 1.0 if p45 > 0.0 else (-1.0 if p45 < 0.0 else 0.0)
++    # Soft thresholds: step-like features the linear model can combine.
++    tr = math.tanh((r2 - RAD_C) / RAD_S)
++    tl3 = math.tanh(lx3)
++    tb_lo = math.tanh((lx3 - LX3_LO) / LX3_S)
++    tb_hi = math.tanh((lx3 - LX3_HI) / LX3_S)
++    t4 = math.tanh((x4 - X4_C) / X4_S)
++    t5 = math.tanh((x5 - X5_C) / X5_S)
++    return [
++        x1, x2, x3, x4, x5, x6,
++        lx3,
++        p12, s12,
++        r2, p45, s45,
++        tr, tl3,
++        tb_lo, tb_hi,
++        t4, t5,
++    ]
  # OMEGA-BLOCK-END
 ```
 
@@ -161,26 +157,44 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/featu
 
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|
+| nvidia/nemotron-3.5-super-vl:free (think) | cloud | 0.957 | ×1.54 | 8.4 | 6 |
+| nvidia/nemotron-3-ultra-550b-a55b:free (think) | cloud | 0.936 | ×1.50 | 64.1 | 10 |
+| cohere/north-mini-code:free (think) | cloud | 0.934 | ×1.50 | 37.5 | 5 |
+| gpt-oss:20b (no-think) | local | 0.929 | ×1.49 | 15.6 | 4 |
+| frob/sarvam:30b (no-think) | local | 0.928 | ×1.49 | 30.4 | 3 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 0.885 | ×1.42 | 3.6 | 5 |
+| gemma4:26b-a4b-it-qat (no-think) | local | 0.882 | ×1.42 | 2.8 | 2 |
 | cohere/north-mini-code:free (no-think) | cloud | 0.88 | ×1.41 | 0.2 | 1 |
 | poolside/laguna-xs-2.1:free (no-think) | cloud | 0.88 | ×1.41 | 2.6 | 2 |
 | llm-jp-4-8b-omega:q4_k_m (no-think) | local | 0.879 | ×1.41 | 0.7 | 1 |
 | nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | 0.877 | ×1.41 | 1.7 | 3 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 0.874 | ×1.40 | 3.7 | 2 |
+| nvidia/nemotron-3.5-lightning:free (think) | cloud | 0.873 | ×1.40 | 5.6 | 2 |
 | nvidia/nemotron-3.5-lightning:free (no-think) | cloud | 0.861 | ×1.38 | 18.8 | 4 |
+| dots-studio/dots-3-note-preview:free (think) | cloud | 0.849 | ×1.36 | 52.3 | 9 |
 | gemma4:e2b (no-think) | local | 0.835 | ×1.34 | 6.4 | 11 |
 | gemma4:12b-it-qat (no-think) | local | 0.83 | ×1.33 | 0.9 | 1 |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | cloud | 0.821 | ×1.32 | 9.9 | 3 |
 | poolside/laguna-s-2.1:free (no-think) | cloud | 0.82 | ×1.32 | 0.5 | 1 |
 | gemma4:latest (no-think) | local | 0.813 | ×1.30 | 5.6 | 7 |
+| glm-4.7-flash:latest (no-think) | local | 0.813 | ×1.30 | 7.8 | 4 |
 | richardyoung/frognano-4b-2609:latest (no-think) | local | 0.808 | ×1.30 | 6.1 | 4 |
 | qwen3.5:latest (no-think) | local | 0.801 | ×1.29 | 10.7 | 5 |
 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | 0.795 | ×1.28 | 9.1 | 6 |
 | dots-studio/dots-3-note-preview:free (no-think) | cloud | 0.793 | ×1.27 | 1.4 | 3 |
 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | 0.792 | ×1.27 | 3.9 | 3 |
 | gemma4:e4b-it-qat (no-think) | local | 0.79 | ×1.27 | 2.9 | 3 |
+| xingchen-agi/xing4.0-29b-a4b:free (think) | cloud | 0.788 | ×1.26 | 1.6 | 1 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | 0.77 | ×1.24 | 15.1 | 6 |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | 0.764 | ×1.23 | 2.1 | 2 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 0.762 | ×1.22 | 41.5 | 6 |
+| qwen3-coder:30b (no-think) | local | 0.753 | ×1.21 | 1.5 | 1 |
 | qwen2.5-coder:7b (no-think) | local | 0.75 | ×1.20 | 3.1 | 5 |
 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | 0.703 | ×1.13 | 15.8 | 4 |
 | xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 0.678 | ×1.09 | 1.9 | 1 |
 | google/gemma-4-26b-a4b-it:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
 | google/gemma-4-31b-it:free (no-think) | cloud | | | | failed: all 6 model requests failed: google/gemma-4-31b-it:free … |
 | nemotron-3-nano:4b (no-think) | local | 0.623 | ×1.00 | - | 0 |
+| google/gemma-4-26b-a4b-it:free (think) | cloud | | | | failed: all 5 model requests failed … |
+| google/gemma-4-31b-it:free (think) | cloud | | | | failed: all 6 model requests failed: google/gemma-4-31b-it:free … |
+| recursive/flint-v1.0:free (think) | cloud | | | | failed: all 5 model requests failed: recursive/flint-v1.0:free … |

@@ -59,9 +59,9 @@ def run():
 
 ## Benchmark results
 
-The best result so far comes from **nvidia/nemotron-3-ultra-550b-a55b:free (no-think)**, run through OpenRouter on 2026-10-31: a score of **0.02194** (×4.58 the starting program's 0.00479), reached after 2.78 of 60 minutes with 24 model requests.
+The best result so far comes from **nvidia/nemotron-3.5-super-vl:free (think)**, run through OpenRouter on 2026-11-01: a score of **0.02296** (×4.79 the starting program's 0.00479), reached after 68.87 of 60 minutes with 25 model requests.
 
-What the starting program produces (left) and what the best program by nvidia/nemotron-3-ultra-550b-a55b:free (no-think) produces (right):
+What the starting program produces (left) and what the best program by nvidia/nemotron-3.5-super-vl:free (think) produces (right):
 
 ![heilbronn: the starting program's solution and the best one](../assets/examples/heilbronn.svg)
 
@@ -72,7 +72,10 @@ The best program's ancestry, from the starting program on. "Edit" and "rewrite" 
 | Step | Minute | Score | Kind | Idea |
 |--:|--:|--:|---|---|
 | 0 | 0.0 | 0.00479 | start | initial program |
-| 1 | 2.8 | 0.02194 | rewrite | Use a more sophisticated optimization approach with gradient-free coordinate descent on the soft-min objective, starting from a known good Heilbronn-like configuration and using multiple random restarts with local search to find better configurations. |
+| 1 | 8.4 | 0.01392 | edit | Replace the tiny-circle seed with a simulated-annealing / greedy local search that directly maximizes the minimum triangle area, using point-symmetric and boundary-biased restarts, incremental recomputation of only affected triangles, clamping to the square … |
+| 2 | 47.1 | 0.01812 | rewrite | Adopt the sweep-validated hyperparameters (STEP0=0.08, T0=0.002, COOL=0.995, ITERS=1800) that raised the score from 0.01392 to ~0.01812, exposed as named constants so the engine can sweep around them; the annealing/polish structure is unchanged. |
+| 3 | 68.9 | 0.00581 | edit | Replace simulated annealing with active-constraint projected ascent: at each step, identify the smallest triangles (within a tolerance of the current minimum), compute the analytic area-gradient push for each (moving each vertex away from its opposite edge) … |
+| 4 | 68.9 | 0.02296 | parameter sweep | tuned LR0=0.12, ACTIVE_TOL=0.05, ITERS=2000 on top of: Replace simulated annealing with active-constraint projected ascent: at each step, identify the smallest triangles (within a tolerance of the current minimum), compute the analytic area-gradient push for … |
 
 ### The best program
 
@@ -81,91 +84,23 @@ What changed compared with the starting program:
 ```diff
 --- initial
 +++ best
-@@ -5,17 +5,121 @@
+@@ -5,17 +5,222 @@
  import math
  
  # OMEGA-BLOCK-START
-+import math
 +import random
++import time
++import math
 +
-+# Optimization constants
-+SOFTMIN_BETA = 500.0
-+LOCAL_SEARCH_STEPS = 5000
-+RESTART_COUNT = 20
-+STEP_SIZE_START = 0.05
-+STEP_SIZE_END = 1e-4
-+SEED = 12345
-+
-+def triangle_area(p1, p2, p3):
-+    """Compute area of triangle formed by three points."""
-+    return abs((p1[0]*(p2[1]-p3[1]) + p2[0]*(p3[1]-p1[1]) + p3[0]*(p1[1]-p2[1])) * 0.5)
-+
-+def min_triangle_area(points):
-+    """Return minimum triangle area among all triples."""
-+    n = len(points)
-+    min_area = float('inf')
-+    for i in range(n):
-+        for j in range(i+1, n):
-+            for k in range(j+1, n):
-+                area = triangle_area(points[i], points[j], points[k])
-+                if area < min_area:
-+                    min_area = area
-+    return min_area
-+
-+def soft_min_area(points, beta):
-+    """Smooth approximation of minimum area using log-sum-exp."""
-+    n = len(points)
-+    total = 0.0
-+    for i in range(n):
-+        for j in range(i+1, n):
-+            for k in range(j+1, n):
-+                area = triangle_area(points[i], points[j], points[k])
-+                total += math.exp(-beta * area)
-+    return -math.log(total) / beta
-+
-+def clamp_point(p):
-+    """Clamp point coordinates to [0, 1]."""
-+    return (max(0.0, min(1.0, p[0])), max(0.0, min(1.0, p[1])))
-+
-+def get_initial_config():
-+    """Return a known good starting configuration for 13 points."""
-+    # Based on best-known Heilbronn configurations for n=13
-+    return [
-+        (0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0),  # 4 corners
-+        (0.5, 0.0), (1.0, 0.5), (0.5, 1.0), (0.0, 0.5),  # 4 edge midpoints
-+        (0.2113, 0.2113), (0.7887, 0.2113), (0.7887, 0.7887), (0.2113, 0.7887),  # 4 interior symmetric
-+        (0.5, 0.5)  # center
-+    ]
-+
-+def local_search(points, beta, steps, step_start, step_end):
-+    """Perform local search on a single configuration."""
-+    n = len(points)
-+    points = [list(p) for p in points]  # mutable
-+    best_points = [p[:] for p in points]
-+    best_soft = soft_min_area(points, beta)
-+    
-+    for step in range(steps):
-+        t = step / steps
-+        step_size = step_start * (step_end / step_start) ** t
-+        
-+        # Pick random point
-+        idx = random.randrange(n)
-+        old_x, old_y = points[idx]
-+        
-+        # Try random perturbation
-+        new_x = clamp_point((old_x + random.uniform(-step_size, step_size), 0))[0]
-+        new_y = clamp_point((0, old_y + random.uniform(-step_size, step_size)))[1]
-+        
-+        points[idx] = [new_x, new_y]
-+        new_soft = soft_min_area(points, beta)
-+        
-+        if new_soft > best_soft:
-+            best_soft = new_soft
-+            best_points = [p[:] for p in points]
-+        else:
-+            points[idx] = [old_x, old_y]
-+    
-+    return best_points, best_soft
++# Active-constraint projected ascent: push vertices of the currently smallest
++# triangles away from their opposite edges, with equal weight per constraint,
++# projecting back into the square after every step.
++LR0 = 0.12
++LR_DECAY = 0.999
++ACTIVE_TOL = 0.05
++ITERS = 2000
++TIME_LIMIT = 50.0
++SEED = 20240607
 +
  def construct(n=13):
 -    """Return a list of n points (x, y) inside the closed unit square [0,1]^2.
@@ -174,42 +109,210 @@ What changed compared with the starting program:
 -    the points, so no three points may be (nearly) collinear. This start puts
 -    the points on a regular polygon on a small circle around the center, which
 -    avoids collinear triples but wastes most of the square.
--    """
++    """Return n points in [0,1]^2 maximizing the smallest triangle area.
++
++    Repeatedly identifies the active (smallest) triangles, computes the analytic
++    gradient of each active triangle's area with respect to its three vertices,
++    normalizes each constraint to unit strength, averages the pushes at shared
++    vertices, and takes a clamped ascent step. A greedy polish refines the best
++    result. Runs under a fixed time budget.
+     """
 -    radius = 0.3
 -    return [(0.5 + radius * math.cos(2 * math.pi * k / n),
 -             0.5 + radius * math.sin(2 * math.pi * k / n)) for k in range(n)]
-+    """Return optimized 13 points maximizing minimum triangle area."""
-+    random.seed(SEED)
-+    
-+    if n != 13:
-+        # Fallback for other n: regular polygon
-+        radius = 0.3
-+        return [(0.5 + radius * math.cos(2 * math.pi * k / n),
-+                 0.5 + radius * math.sin(2 * math.pi * k / n)) for k in range(n)]
-+    
-+    base_config = get_initial_config()
-+    best_overall = None
-+    best_min_area = 0.0
-+    
-+    for restart in range(RESTART_COUNT):
-+        # Perturb base config slightly for each restart
-+        points = []
-+        for x, y in base_config:
-+            px = clamp_point((x + random.uniform(-0.02, 0.02), 0))[0]
-+            py = clamp_point((0, y + random.uniform(-0.02, 0.02)))[1]
-+            points.append([px, py])
-+        
-+        # Local search
-+        optimized, _ = local_search(points, SOFTMIN_BETA, LOCAL_SEARCH_STEPS, 
-+                                   STEP_SIZE_START, STEP_SIZE_END)
-+        
-+        # Evaluate with exact min area
-+        min_area = min_triangle_area(optimized)
-+        if min_area > best_min_area:
-+            best_min_area = min_area
-+            best_overall = optimized
-+    
-+    return [(float(x), float(y)) for x, y in best_overall]
++    tris = []
++    for i in range(n):
++        for j in range(i + 1, n):
++            for k in range(j + 1, n):
++                tris.append((i, j, k))
++    ntri = len(tris)
++    tri_of = [[] for _ in range(n)]
++    for t in range(ntri):
++        i, j, k = tris[t]
++        tri_of[i].append(t)
++        tri_of[j].append(t)
++        tri_of[k].append(t)
++
++    def all_areas(xs, ys):
++        a = [0.0] * ntri
++        for t in range(ntri):
++            i, j, k = tris[t]
++            a[t] = 0.5 * abs((xs[j] - xs[i]) * (ys[k] - ys[i])
++                             - (ys[j] - ys[i]) * (xs[k] - xs[i]))
++        return a
++
++    def clamp(v):
++        if v < 0.0:
++            return 0.0
++        if v > 1.0:
++            return 1.0
++        return v
++
++    rng = random.Random(SEED)
++    start = time.perf_counter()
++    deadline = start + TIME_LIMIT
++
++    best_xs = None
++    best_ys = None
++    best_val = 0.0
++
++    def note(xs, ys, arr):
++        nonlocal best_val, best_xs, best_ys
++        m = min(arr)
++        if m > best_val:
++            best_val = m
++            best_xs = list(xs)
++            best_ys = list(ys)
++
++    restart = 0
++    while time.perf_counter() < deadline:
++        xs = [0.0] * n
++        ys = [0.0] * n
++        kind = restart % 3
++        if kind == 0:
++            # Point-symmetric seed: centre plus 6 opposite pairs.
++            xs[n - 1] = 0.5
++            ys[n - 1] = 0.5
++            r = 0.42
++            for m in range(6):
++                ang = 2.0 * math.pi * m / 6.0 + 0.25
++                xs[m] = 0.5 + r * math.cos(ang)
++                ys[m] = 0.5 + r * math.sin(ang)
++                xs[6 + m] = 0.5 - r * math.cos(ang)
++                ys[6 + m] = 0.5 - r * math.sin(ang)
++        elif kind == 1:
++            # Boundary-biased seed: most points lie on the square edges.
++            for i in range(n):
++                if rng.random() < 0.7:
++                    e = rng.randrange(4)
++                    if e == 0:
++                        xs[i] = rng.random()
++                        ys[i] = 0.0
++                    elif e == 1:
++                        xs[i] = rng.random()
++                        ys[i] = 1.0
++                    elif e == 2:
++                        xs[i] = 0.0
++                        ys[i] = rng.random()
++                    else:
++                        xs[i] = 1.0
++                        ys[i] = rng.random()
++                else:
++                    xs[i] = rng.random()
++                    ys[i] = rng.random()
++        else:
++            for i in range(n):
++                xs[i] = rng.random()
++                ys[i] = rng.random()
++
++        arr = all_areas(xs, ys)
++        note(xs, ys, arr)
++        lr = LR0
++        for _ in range(ITERS):
++            if time.perf_counter() > deadline:
++                break
++            amin = min(arr)
++            # Active set: worst triangle plus every triangle within tolerance.
++            order = sorted(range(ntri), key=arr.__getitem__)
++            active = [order[0]]
++            tol_limit = amin * (1.0 + ACTIVE_TOL)
++            for t in order[1:]:
++                if arr[t] <= tol_limit:
++                    active.append(t)
++                else:
++                    break
++            gx = [0.0] * n
++            gy = [0.0] * n
++            cnt = [0] * n
++            for t in active:
++                i, j, k = tris[t]
++                c = (xs[j] - xs[i]) * (ys[k] - ys[i]) - (ys[j] - ys[i]) * (xs[k] - xs[i])
++                if c == 0.0:
++                    continue
++                sgn = 1.0 if c > 0.0 else -1.0
++                gi = (0.5 * sgn * (ys[j] - ys[k]), 0.5 * sgn * (xs[k] - xs[j]))
++                gj = (0.5 * sgn * (ys[k] - ys[i]), 0.5 * sgn * (xs[i] - xs[k]))
++                gk = (0.5 * sgn * (ys[i] - ys[j]), 0.5 * sgn * (xs[j] - xs[i]))
++                norm = math.sqrt(gi[0] * gi[0] + gi[1] * gi[1]
++                                 + gj[0] * gj[0] + gj[1] * gj[1]
++                                 + gk[0] * gk[0] + gk[1] * gk[1])
++                if norm == 0.0:
++                    continue
++                inv = 1.0 / norm
++                for v, g in ((i, gi), (j, gj), (k, gk)):
++                    gx[v] += g[0] * inv
++                    gy[v] += g[1] * inv
++                    cnt[v] += 1
++            for i in range(n):
++                if cnt[i]:
++                    xs[i] = clamp(xs[i] + lr * gx[i] / cnt[i])
++                    ys[i] = clamp(ys[i] + lr * gy[i] / cnt[i])
++            arr = all_areas(xs, ys)
++            note(xs, ys, arr)
++            lr *= LR_DECAY
++
++        # Greedy polish: accept only moves that do not lower the minimum area.
++        step = 0.02
++        cur = min(arr)
++        for _ in range(1500):
++            if time.perf_counter() > deadline:
++                break
++            p = rng.randrange(n)
++            ox = xs[p]
++            oy = ys[p]
++            nx = clamp(ox + rng.uniform(-step, step))
++            ny = clamp(oy + rng.uniform(-step, step))
++            xs[p] = nx
++            ys[p] = ny
++            new_arr = list(arr)
++            for ti in tri_of[p]:
++                i, j, k = tris[ti]
++                new_arr[ti] = 0.5 * abs((xs[j] - xs[i]) * (ys[k] - ys[i])
++                                        - (ys[j] - ys[i]) * (xs[k] - xs[i]))
++            new_min = min(new_arr)
++            if new_min >= cur:
++                arr = new_arr
++                cur = new_min
++                note(xs, ys, arr)
++            else:
++                xs[p] = ox
++                ys[p] = oy
++            step *= 0.999
++        restart += 1
++
++    # Final dedicated polish of the best solution found.
++    if best_xs is not None:
++        xs = list(best_xs)
++        ys = list(best_ys)
++        arr = all_areas(xs, ys)
++        cur = min(arr)
++        step = 0.01
++        for _ in range(4000):
++            if time.perf_counter() > deadline:
++                break
++            p = rng.randrange(n)
++            ox = xs[p]
++            oy = ys[p]
++            nx = clamp(ox + rng.uniform(-step, step))
++            ny = clamp(oy + rng.uniform(-step, step))
++            xs[p] = nx
++            ys[p] = ny
++            new_arr = list(arr)
++            for ti in tri_of[p]:
++                i, j, k = tris[ti]
++                new_arr[ti] = 0.5 * abs((xs[j] - xs[i]) * (ys[k] - ys[i])
++                                        - (ys[j] - ys[i]) * (xs[k] - xs[i]))
++            new_min = min(new_arr)
++            if new_min >= cur:
++                arr = new_arr
++                cur = new_min
++                note(xs, ys, arr)
++            else:
++                xs[p] = ox
++                ys[p] = oy
++            step *= 0.999
++
++    return [(best_xs[i], best_ys[i]) for i in range(n)]
  # OMEGA-BLOCK-END
 ```
 
@@ -219,9 +322,29 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/heilb
 
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|
+| nvidia/nemotron-3.5-super-vl:free (think) | cloud | 0.02296 | ×4.79 | 68.9 | 7 |
+| nvidia/nemotron-3-ultra-550b-a55b:free (think) | cloud | 0.0224 | ×4.68 | 38.5 | 6 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 0.02194 | ×4.58 | 2.8 | 1 |
+| dots-studio/dots-3-note-preview:free (think) | cloud | 0.02114 | ×4.41 | 23.1 | 2 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 0.01957 | ×4.09 | 18.7 | 6 |
 | nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | 0.0186 | ×3.88 | 6.5 | 4 |
+| gemma4:12b-it-qat (no-think) | local | 0.01815 | ×3.79 | 14.8 | 6 |
+| gemma4:26b-a4b-it-qat (no-think) | local | 0.01517 | ×3.17 | 15.0 | 6 |
+| cohere/north-mini-code:free (think) | cloud | 0.0137 | ×2.86 | 20.9 | 2 |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | 0.01331 | ×2.78 | 13.8 | 6 |
+| gpt-oss:20b (no-think) | local | 0.01331 | ×2.78 | 16.6 | 2 |
+| glm-4.7-flash:latest (no-think) | local | 0.01331 | ×2.78 | 2.0 | 3 |
 | cohere/north-mini-code:free (no-think) | cloud | 0.01331 | ×2.78 | 3.0 | 3 |
+| richardyoung/frognano-4b-2609:latest (no-think) | local | 0.01331 | ×2.78 | 3.5 | 1 |
+| gemma4:e2b (no-think) | local | 0.01331 | ×2.78 | 0.8 | 2 |
+| qwen2.5-coder:7b (no-think) | local | 0.01331 | ×2.78 | 3.9 | 2 |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | 0.01331 | ×2.78 | 7.9 | 3 |
+| gemma4:latest (no-think) | local | 0.01331 | ×2.78 | 3.6 | 3 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | 0.01331 | ×2.78 | 10.9 | 1 |
+| frob/sarvam:30b (no-think) | local | 0.01331 | ×2.78 | 13.8 | 1 |
+| nvidia/nemotron-3.5-lightning:free (think) | cloud | 0.01331 | ×2.78 | 18.8 | 1 |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | cloud | 0.01331 | ×2.78 | 1.6 | 1 |
+| qwen3-coder:30b (no-think) | local | 0.00852 | ×1.78 | 5.9 | 1 |
 | dots-studio/dots-3-note-preview:free (no-think) | cloud | 0.00595 | ×1.24 | 1.6 | 1 |
 | poolside/laguna-s-2.1:free (no-think) | cloud | 0.00479 | ×1.00 | - | 0 |
 | nvidia/nemotron-3.5-lightning:free (no-think) | cloud | 0.00479 | ×1.00 | - | 0 |
@@ -230,3 +353,13 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/heilb
 | xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 0.00479 | ×1.00 | - | 0 |
 | google/gemma-4-26b-a4b-it:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
 | google/gemma-4-31b-it:free (no-think) | cloud | | | | failed: all 6 model requests failed: google/gemma-4-31b-it:free … |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | 0.00479 | ×1.00 | - | 0 |
+| nemotron-3-nano:4b (no-think) | local | 0.00479 | ×1.00 | - | 0 |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | local | 0.00479 | ×1.00 | - | 0 |
+| gemma4:e4b-it-qat (no-think) | local | 0.00479 | ×1.00 | - | 0 |
+| qwen3.5:latest (no-think) | local | 0.00479 | ×1.00 | - | 0 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 0.00479 | ×1.00 | - | 0 |
+| xingchen-agi/xing4.0-29b-a4b:free (think) | cloud | 0.00479 | ×1.00 | - | 0 |
+| google/gemma-4-26b-a4b-it:free (think) | cloud | | | | failed: all 6 model requests failed … |
+| google/gemma-4-31b-it:free (think) | cloud | | | | failed: all 5 model requests failed: google/gemma-4-31b-it:free … |
+| recursive/flint-v1.0:free (think) | cloud | | | | failed: all 5 model requests failed: recursive/flint-v1.0:free … |

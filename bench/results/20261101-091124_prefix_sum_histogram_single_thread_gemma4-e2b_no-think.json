@@ -1,0 +1,135 @@
+{
+ "schema": 4,
+ "example": "prefix_sum_histogram_single_thread",
+ "model": "gemma4:e2b",
+ "variant": "no-think",
+ "model_size_gb": 4.6,
+ "model_params": "4.6B",
+ "started": "2026-11-01T09:11:24",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 4.9,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 32768,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 5.87696,
+ "best_score": 5.94377,
+ "improvement": 1.0113681222945194,
+ "llm_calls": 24,
+ "mean_llm_seconds": 10.8,
+ "attempts": 24,
+ "ok": 4,
+ "statuses": {
+  "compile_error": 14,
+  "edit_error": 5,
+  "ok": 4,
+  "duplicate": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 1.87,
+ "best_idea": "Replace the complex and incorrect NEON attempts with a highly optimized sequential loop structure that leverages the running sum register and minimizes branching within the main processing loop for ma",
+ "progress": [
+  [
+   0.0,
+   5.87696
+  ],
+  [
+   1.87,
+   5.94377
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 5.87696,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 0.81,
+   "score": null,
+   "model": "gemma4:e2b",
+   "mode": "best/diff/refine",
+   "status": "compile_error",
+   "idea": "Unroll the loop and use NEON intrinsics to process chunks of the input data to accelerate the prefix sum and histogram counting simultaneously, leveraging vector operations for better throughput on ARM NEON."
+  },
+  {
+   "minutes": 1.87,
+   "score": 5.94377,
+   "model": "gemma4:e2b",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Replace the complex and incorrect NEON attempts with a highly optimized sequential loop structure that leverages the running sum register and minimizes branching within the main processing loop for maximum predictability on a single core."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -29,10 +29,33 @@\n // never overflow int64.\n extern \"C\" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, uint64_t* hist) {\n     for (int b = 0; b < 256; ++b) hist[b] = 0;\n-    int64_t sum = 0;\n-    for (size_t i = 0; i < n; ++i) {\n-        sum += in[i];\n-        out[i] = sum;\n+\n+    int64_t current_sum = 0;\n+    size_t i = 0;\n+\n+    // Optimized loop using the running sum register and small unrolling/prefetching hints\n+    for (; i + 3 < n; i += 4) {\n+        // Process 4 elements for prefix sum\n+        current_sum += in[i];\n+        out[i] = current_sum;\n+        current_sum += in[i + 1];\n+        out[i + 1] = current_sum;\n+        current_sum += in[i + 2];\n+        out[i + 2] = current_sum;\n+        current_sum += in[i + 3];\n+        out[i + 3] = current_sum;\n+\n+        // Histogram updates for the 4 elements\n+        hist[in[i] & 255]++;\n+        hist[in[i + 1] & 255]++;\n+        hist[in[i + 2] & 255]++;\n+        hist[in[i + 3] & 255]++;\n+    }\n+\n+    // Handle remaining elements\n+    for (; i < n; ++i) {\n+        current_sum += in[i];\n+        out[i] = current_sum;\n         hist[in[i] & 255]++;\n     }\n }\n",
+ "initial_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "best_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 0.5,
+ "model_gpu_memory_gb": 0.5,
+ "context_length": 32768,
+ "load_seconds": 17.3,
+ "median_call_seconds": 9.9,
+ "p90_call_seconds": 17.3,
+ "prompt_tokens_per_s": 2102.1,
+ "gen_tokens_per_s": 130.9,
+ "mean_prompt_tokens": 4886,
+ "mean_gen_tokens": 745,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

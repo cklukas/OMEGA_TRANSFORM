@@ -1,0 +1,225 @@
+{
+ "schema": 4,
+ "example": "heilbronn_13",
+ "model": "qwen3-coder:30b",
+ "variant": "no-think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-11-01T00:23:53",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 11.8,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 0.004790811518724618,
+ "best_score": 0.008516998255510434,
+ "improvement": 1.7777777777777781,
+ "llm_calls": 29,
+ "mean_llm_seconds": 23.3,
+ "attempts": 29,
+ "ok": 3,
+ "statuses": {
+  "invalid": 13,
+  "ok": 3,
+  "edit_error": 10,
+  "duplicate": 3
+ },
+ "sweeps": 2,
+ "sweep_variants": 8,
+ "improvements": 1,
+ "minutes_to_best": 5.92,
+ "best_idea": "tuned INITIAL_RADIUS=0.4 on top of: Replace the regular polygon initialization with a more evenly distributed point set that fills the unit square better and avoids near-collinear triples, using a con",
+ "progress": [
+  [
+   0.0,
+   0.004790811518724618
+  ],
+  [
+   5.92,
+   0.008516998255510434
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.004790811518724618,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 5.92,
+   "score": 0.004790811518724618,
+   "model": "qwen3-coder:30b",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Replace the regular polygon initialization with a more evenly distributed point set that fills the unit square better and avoids near-collinear triples, using a configurable radius parameter for the initial circle."
+  },
+  {
+   "minutes": 5.92,
+   "score": 0.008516998255510434,
+   "model": "qwen3-coder:30b",
+   "mode": "sweep/exploit/diff/tune",
+   "status": "ok",
+   "idea": "tuned INITIAL_RADIUS=0.4 on top of: Replace the regular polygon initialization with a more evenly distributed point set that fills the unit square better and avoids near-collinear triples, using a configurable radius parameter for the initial circle."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -5,6 +5,8 @@\n import math\n \n # OMEGA-BLOCK-START\n+INITIAL_RADIUS = 0.4\n+\n def construct(n=13):\n     \"\"\"Return a list of n points (x, y) inside the closed unit square [0,1]^2.\n \n@@ -13,9 +15,8 @@\n     the points on a regular polygon on a small circle around the center, which\n     avoids collinear triples but wastes most of the square.\n     \"\"\"\n-    radius = 0.3\n-    return [(0.5 + radius * math.cos(2 * math.pi * k / n),\n-             0.5 + radius * math.sin(2 * math.pi * k / n)) for k in range(n)]\n+    return [(0.5 + INITIAL_RADIUS * math.cos(2 * math.pi * k / n),\n+             0.5 + INITIAL_RADIUS * math.sin(2 * math.pi * k / n)) for k in range(n)]\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "heilbronn",
+  "points": [
+   [
+    0.8,
+    0.5
+   ],
+   [
+    0.765636807695963,
+    0.6394169516131305
+   ],
+   [
+    0.6704194240193467,
+    0.7468951597680968
+   ],
+   [
+    0.536161004076597,
+    0.7978126622294162
+   ],
+   [
+    0.3936185338872394,
+    0.7805048728056244
+   ],
+   [
+    0.27544677554866964,
+    0.6989367974722386
+   ],
+   [
+    0.2087174547721844,
+    0.5717946992862672
+   ],
+   [
+    0.2087174547721844,
+    0.42820530071373275
+   ],
+   [
+    0.2754467755486696,
+    0.30106320252776153
+   ],
+   [
+    0.3936185338872392,
+    0.21949512719437558
+   ],
+   [
+    0.536161004076597,
+    0.20218733777058384
+   ],
+   [
+    0.6704194240193464,
+    0.25310484023190294
+   ],
+   [
+    0.765636807695963,
+    0.3605830483868695
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "heilbronn",
+  "points": [
+   [
+    0.9,
+    0.5
+   ],
+   [
+    0.854182410261284,
+    0.6858892688175074
+   ],
+   [
+    0.7272258986924623,
+    0.8291935463574626
+   ],
+   [
+    0.5482146721021293,
+    0.8970835496392215
+   ],
+   [
+    0.3581580451829858,
+    0.8740064970741659
+   ],
+   [
+    0.20059570073155952,
+    0.765249063296318
+   ],
+   [
+    0.1116232730295792,
+    0.5957262657150231
+   ],
+   [
+    0.11162327302957914,
+    0.40427373428497704
+   ],
+   [
+    0.20059570073155947,
+    0.23475093670368202
+   ],
+   [
+    0.35815804518298566,
+    0.1259935029258341
+   ],
+   [
+    0.5482146721021293,
+    0.1029164503607784
+   ],
+   [
+    0.7272258986924619,
+    0.17080645364253716
+   ],
+   [
+    0.854182410261284,
+    0.31411073118249266
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 23.0,
+ "model_gpu_memory_gb": 19.0,
+ "context_length": 40960,
+ "load_seconds": 51.7,
+ "median_call_seconds": 22.0,
+ "p90_call_seconds": 35.6,
+ "prompt_tokens_per_s": 745.0,
+ "gen_tokens_per_s": 31.4,
+ "mean_prompt_tokens": 2224,
+ "mean_gen_tokens": 514,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

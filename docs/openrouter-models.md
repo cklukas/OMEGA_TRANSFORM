@@ -4,54 +4,54 @@
 
 # OpenRouter models
 
-Which cloud models does the community use most, and what do they cost? The table joins OpenRouter's public usage rankings with its price list (snapshot of 2026-10-31; rerun `omega openrouter-snapshot` to refresh). See [Cloud models](cloud-models.md) for using them.
+Which cloud models does the community use most, and what do they cost? The table joins OpenRouter's public usage rankings with its price list (snapshot of 2026-11-03; rerun `omega openrouter-snapshot` to refresh). See [Cloud models](cloud-models.md) for using them.
 
 Usage measures popularity, not quality: it also reflects price, free periods and the defaults of widely used tools. The **effective price** weights a model's input and output price by how the community actually used it (most traffic is input).
 
 | # | Model | Tokens (B) | Requests (M) | In $/M | Out $/M | Effective $/M | Free variant | Reasoning | Context |
 |--:|---|--:|--:|--:|--:|--:|---|---|--:|
-| 1 | deepseek/deepseek-v4.1-flash-1017 | 45,532 | 736.3 | 0.15 | 0.60 | 0.156 | - | yes | 1048k |
-| 2 | z-ai/glm-5.3-flash | 16,097 | 766.6 | 0.02 | 0.15 | 0.021 | - | yes | 1048k |
-| 3 | deepseek/deepseek-v4.1-flash | 15,225 | 479.4 | 0.04 | 0.50 | 0.056 | - | yes | 1048k |
-| 4 | openai/gpt-6-luna | 10,927 | 545.4 | 0.10 | 0.50 | 0.110 | - | yes | 1050k |
-| 5 | tencent/hy4-preview | 9,328 | 90.2 | 0.83 | 2.50 | 0.850 | - | yes | 1048k |
-| 6 | anthropic/claude-opus-5.5 | 7,310 | 59.6 | 4.00 | 20.00 | 4.140 | - | yes | 1000k |
-| 7 | stepfun/step-5-preview | 6,300 | 24.5 | 1.00 | 2.70 | 1.008 | - | yes | 1048k |
-| 8 | minimax/minimax-m3.1-flash | 5,043 | 54.4 | 0.15 | 0.60 | 0.156 | - | yes | 1048k |
-| 9 | z-ai/glm-5.3 | 4,624 | 68.7 | 0.07 | 1.40 | 0.090 | - | yes | 1048k |
-| 10 | deepseek/deepseek-v4-flash-0731 | 3,932 | 322.1 | 0.12 | 0.24 | 0.124 | - | yes | 1048k |
-| 11 | openai/gpt-6.1-sol | 3,726 | 76.9 | 2.00 | 10.00 | 2.117 | - | yes | 1050k |
-| 12 | nvidia/nemotron-3-ultra-550b-a55b:free ★ | 3,446 | 34.6 | 0.00 | 0.00 | 0.000 | yes | yes | 262k |
-| 13 | typesafe/jev-1.13 (unlisted) | 3,164 | 972.2 | - | - | - | - | - | 0k |
-| 14 | xiaomi/mimo-v2.6-flash | 3,113 | 55.8 | 0.14 | 0.28 | 0.142 | - | yes | 1050k |
-| 15 | openai/gpt-5.6-luna | 3,112 | 193.2 | 0.20 | 1.20 | 0.223 | - | yes | 1050k |
-| 16 | tencent/hy3 | 3,042 | 38.3 | 0.13 | 0.53 | 0.138 | - | yes | 262k |
-| 17 | deepseek/deepseek-v4-flash | 2,776 | 367.1 | 0.09 | 0.18 | 0.096 | - | yes | 1048k |
-| 18 | anthropic/claude-haiku-5.5 | 2,661 | 202.4 | 0.10 | 0.50 | 0.120 | - | yes | 1000k |
-| 19 | anthropic/claude-sonnet-5.5 | 2,635 | 53.8 | 2.00 | 10.00 | 2.167 | - | yes | 1000k |
-| 20 | meta/muse-spark-1.3-contributor | 2,632 | 35.9 | 0.10 | 0.20 | 0.101 | - | yes | 1048k |
+| 1 | deepseek/deepseek-v4.1-flash-1017 | 50,447 | 814.7 | 0.30 | 1.20 | 0.312 | - | yes | 1048k |
+| 2 | z-ai/glm-5.3-flash | 15,320 | 696.8 | 0.03 | 0.09 | 0.031 | - | yes | 1048k |
+| 3 | deepseek/deepseek-v4.1-flash | 15,076 | 480.2 | 0.04 | 0.50 | 0.055 | - | yes | 1048k |
+| 4 | tencent/hy4-preview | 9,250 | 89.2 | 0.83 | 2.50 | 0.850 | - | yes | 1048k |
+| 5 | openai/gpt-6-luna | 9,219 | 532.4 | 0.10 | 0.50 | 0.111 | - | yes | 1050k |
+| 6 | anthropic/claude-opus-5.5 | 6,670 | 57.0 | 4.00 | 20.00 | 4.141 | - | yes | 1000k |
+| 7 | minimax/minimax-m3.1-flash | 6,461 | 73.1 | 0.15 | 0.60 | 0.157 | - | yes | 1048k |
+| 8 | stepfun/step-5-preview | 6,458 | 25.1 | 1.00 | 2.70 | 1.008 | - | yes | 1048k |
+| 9 | openai/gpt-5.6-luna | 5,322 | 182.5 | 0.20 | 1.20 | 0.222 | - | yes | 1050k |
+| 10 | openai/gpt-6.1-sol | 3,929 | 125.3 | 2.00 | 10.00 | 2.125 | - | yes | 1050k |
+| 11 | deepseek/deepseek-v4-flash-0731 | 3,884 | 335.6 | 0.06 | 0.30 | 0.070 | - | yes | 1048k |
+| 12 | z-ai/glm-5.3 | 3,866 | 67.2 | 0.08 | 3.60 | 0.139 | - | yes | 1048k |
+| 13 | typesafe/jev-1.13 (unlisted) | 3,184 | 1,021.7 | - | - | - | - | - | 0k |
+| 14 | tencent/hy3 | 2,998 | 37.6 | 0.13 | 0.53 | 0.139 | - | yes | 262k |
+| 15 | nvidia/nemotron-3-ultra-550b-a55b:free ★ | 2,912 | 31.9 | 0.00 | 0.00 | 0.000 | yes | yes | 262k |
+| 16 | xiaomi/mimo-v2.6-flash | 2,898 | 57.6 | 0.14 | 0.28 | 0.142 | - | yes | 1050k |
+| 17 | moonshotai/kimi-k3.1-pro | 2,817 | 21.4 | 2.00 | 10.00 | 2.062 | - | yes | 1048k |
+| 18 | anthropic/claude-haiku-5.5 | 2,798 | 186.3 | 0.10 | 0.50 | 0.120 | - | yes | 1000k |
+| 19 | deepseek/deepseek-v4-flash | 2,641 | 332.1 | 0.09 | 0.18 | 0.097 | - | yes | 1048k |
+| 20 | nvidia/nemotron-3.5-super-vl:free ★ | 2,625 | 23.3 | 0.00 | 0.00 | 0.000 | yes | yes | 1048k |
 
 ★ benchmarked by OMEGA TRANSFORM, see [Model benchmarks](benchmarks.md).
 
 ```mermaid
 xychart-beta
     title "Usage (billion tokens)"
-    x-axis ["deepseek-v4.1-flash-1017", "glm-5.3-flash", "deepseek-v4.1-flash", "gpt-6-luna", "hy4-preview", "claude-opus-5.5", "step-5-preview", "minimax-m3.1-flash", "glm-5.3", "deepseek-v4-flash-0731", "gpt-6.1-sol", "nemotron-3-ultra-550b-a5", "jev-1.13", "mimo-v2.6-flash", "gpt-5.6-luna", "hy3", "deepseek-v4-flash", "claude-haiku-5.5", "claude-sonnet-5.5", "muse-spark-1.3-contribut"]
-    y-axis "B tokens" 0 --> 50085
-    bar [45532, 16097, 15225, 10927, 9328, 7310, 6300, 5043, 4624, 3932, 3726, 3446, 3164, 3113, 3112, 3042, 2776, 2661, 2635, 2632]
+    x-axis ["deepseek-v4.1-flash-1017", "glm-5.3-flash", "deepseek-v4.1-flash", "hy4-preview", "gpt-6-luna", "claude-opus-5.5", "minimax-m3.1-flash", "step-5-preview", "gpt-5.6-luna", "gpt-6.1-sol", "deepseek-v4-flash-0731", "glm-5.3", "jev-1.13", "hy3", "nemotron-3-ultra-550b-a5", "mimo-v2.6-flash", "kimi-k3.1-pro", "claude-haiku-5.5", "deepseek-v4-flash", "nemotron-3.5-super-vlfre"]
+    y-axis "B tokens" 0 --> 55492
+    bar [50447, 15320, 15076, 9250, 9219, 6670, 6461, 6458, 5322, 3929, 3884, 3866, 3184, 2998, 2912, 2898, 2817, 2798, 2641, 2625]
 ```
 
 ```mermaid
 xychart-beta
     title "Effective price (dollars per million tokens)"
-    x-axis ["deepseek-v4.1-flash-1017", "glm-5.3-flash", "deepseek-v4.1-flash", "gpt-6-luna", "hy4-preview", "claude-opus-5.5", "step-5-preview", "minimax-m3.1-flash", "glm-5.3", "deepseek-v4-flash-0731", "gpt-6.1-sol", "nemotron-3-ultra-550b-a5", "jev-1.13", "mimo-v2.6-flash", "gpt-5.6-luna", "hy3", "deepseek-v4-flash", "claude-haiku-5.5", "claude-sonnet-5.5", "muse-spark-1.3-contribut"]
-    y-axis "$/M tokens" 0 --> 4.55
-    bar [0.156, 0.021, 0.056, 0.110, 0.850, 4.140, 1.008, 0.156, 0.090, 0.124, 2.117, 0.000, 0.000, 0.142, 0.223, 0.138, 0.096, 0.120, 2.167, 0.101]
+    x-axis ["deepseek-v4.1-flash-1017", "glm-5.3-flash", "deepseek-v4.1-flash", "hy4-preview", "gpt-6-luna", "claude-opus-5.5", "minimax-m3.1-flash", "step-5-preview", "gpt-5.6-luna", "gpt-6.1-sol", "deepseek-v4-flash-0731", "glm-5.3", "jev-1.13", "hy3", "nemotron-3-ultra-550b-a5", "mimo-v2.6-flash", "kimi-k3.1-pro", "claude-haiku-5.5", "deepseek-v4-flash", "nemotron-3.5-super-vlfre"]
+    y-axis "$/M tokens" 0 --> 4.56
+    bar [0.312, 0.031, 0.055, 0.850, 0.111, 4.141, 0.157, 1.008, 0.222, 2.125, 0.070, 0.139, 0.000, 0.139, 0.000, 0.142, 2.062, 0.120, 0.097, 0.000]
 ```
 
 ### Cost against usage
 
-Both axes are logarithmic, from the cheapest to the most expensive model ($0.0214 to $4.14 per million tokens) and from the least to the most used (2,632 to 45,532 billion tokens in the week). A dot's area grows with the model's estimated revenue (the largest: $30.3M a month; see the tables below). Free and unlisted models are not shown.
+Both axes are logarithmic, from the cheapest to the most expensive model ($0.0306 to $4.14 per million tokens) and from the least to the most used (2,641 to 50,447 billion tokens in the week). A dot's area grows with the model's estimated revenue (the largest: $25.3M a month; see the tables below). Free and unlisted models are not shown.
 
 ```mermaid
 quadrantChart
@@ -62,52 +62,50 @@ quadrantChart
     quadrant-2 Cheap and popular
     quadrant-3 Cheap niche
     quadrant-4 Expensive niche
-    deepseek-v4.1-flash-1017: [0.390, 0.950] radius: 10.3
-    glm-5.3-flash: [0.050, 0.622] radius: 9.8
-    deepseek-v4.1-flash: [0.215, 0.604] radius: 8.9
-    gpt-6-luna: [0.330, 0.499] radius: 9.1
-    hy4-preview: [0.679, 0.449] radius: 10.7
-    claude-opus-5.5: [0.950, 0.373] radius: 22.0
-    step-5-preview: [0.708, 0.326] radius: 10.8
-    minimax-m3.1-flash: [0.390, 0.255] radius: 6.7
-    glm-5.3: [0.295, 0.228] radius: 12.8
-    deepseek-v4-flash-0731: [0.350, 0.177] radius: 7.3
-    gpt-6.1-sol: [0.835, 0.160] radius: 14.1
-    mimo-v2.6-flash: [0.373, 0.103] radius: 5.9
-    gpt-5.6-luna: [0.451, 0.103] radius: 7.4
-    hy3: [0.369, 0.096] radius: 6.7
-    deepseek-v4-flash: [0.307, 0.067] radius: 6.6
-    claude-haiku-5.5: [0.344, 0.054] radius: 7.4
-    claude-sonnet-5.5: [0.839, 0.050] radius: 13.6
-    muse-spark-1.3-contribut: [0.316, 0.050] radius: 7.5
+    deepseek-v4.1-flash-1017: [0.476, 0.950] radius: 13.5
+    glm-5.3-flash: [0.050, 0.586] radius: 9.9
+    deepseek-v4.1-flash: [0.157, 0.581] radius: 9.4
+    hy4-preview: [0.660, 0.432] radius: 12.6
+    gpt-6-luna: [0.287, 0.431] radius: 9.2
+    claude-opus-5.5: [0.950, 0.333] radius: 22.0
+    minimax-m3.1-flash: [0.349, 0.323] radius: 7.5
+    step-5-preview: [0.691, 0.323] radius: 11.5
+    gpt-5.6-luna: [0.413, 0.264] radius: 9.2
+    gpt-6.1-sol: [0.828, 0.171] radius: 15.0
+    deepseek-v4-flash-0731: [0.201, 0.168] radius: 7.6
+    glm-5.3: [0.327, 0.166] radius: 11.1
+    hy3: [0.327, 0.089] radius: 6.9
+    mimo-v2.6-flash: [0.332, 0.078] radius: 6.0
+    kimi-k3.1-pro: [0.822, 0.070] radius: 11.4
+    claude-haiku-5.5: [0.300, 0.068] radius: 8.1
+    deepseek-v4-flash: [0.261, 0.050] radius: 7.0
 ```
 
 ### Estimated revenue
 
-What the models earned through OpenRouter in the week, estimated from the snapshot: input tokens times the input price the community paid on average, plus output tokens times the output list price. Monthly figures are the week times 4.35. The split between input and output is not assumed: OpenRouter reports both for each model. Input dominates everywhere, 92.7% to 99.5% of the tokens (median 98.5%), typical of coding agents that send their whole context with every request. Most of that input is cached, and cached input costs a fraction of the list price; OpenRouter's rankings page lists the average input price that was actually paid (known for 17 of 18 models here; where it is not, the list price is used, an upper bound). **Cache hits** is the share of input that must have come from the cache to give that average.
+What the models earned through OpenRouter in the week, estimated from the snapshot: input tokens times the input price the community paid on average, plus output tokens times the output list price. Monthly figures are the week times 4.35. The split between input and output is not assumed: OpenRouter reports both for each model. Input dominates everywhere, 92.7% to 99.5% of the tokens (median 98.4%), typical of coding agents that send their whole context with every request. Most of that input is cached, and cached input costs a fraction of the list price; OpenRouter's rankings page lists the average input price that was actually paid (known for 17 of 17 models here; where it is not, the list price is used, an upper bound). **Cache hits** is the share of input that must have come from the cache to give that average.
 
 These are rough estimates: they cover OpenRouter only (not the vendors' own APIs or other resellers), list prices may have changed during the week, and the money is shared between OpenRouter and the provider that served the model.
 
 | # | Model | Vendor | Country | Tokens (B/week) | Requests (M/week) | k tokens/request | Input share | In $/M list | In $/M paid | Cache hits | Out $/M | Revenue/week | Revenue/month | Share |
 |--:|---|---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| 1 | anthropic/claude-opus-5.5 | Anthropic | USA | 7,310 | 59.6 | 123 | 99.1% | 4.000 | 0.785 | 85% | 20.00 | $7.0M | $30.3M | 36.7% |
-| 2 | openai/gpt-6.1-sol | OpenAI | USA | 3,726 | 76.9 | 48 | 98.5% | 2.000 | 0.447 | 82% | 10.00 | $2.2M | $9.5M | 11.6% |
-| 3 | anthropic/claude-sonnet-5.5 | Anthropic | USA | 2,635 | 53.8 | 49 | 97.9% | 2.000 | 0.549 | 76% | 10.00 | $2.0M | $8.5M | 10.4% |
-| 4 | z-ai/glm-5.3 | Z.ai | China | 4,624 | 68.7 | 67 | 98.5% | 0.070 | 0.346 | - | 1.40 | $1.7M | $7.3M | 8.8% |
-| 5 | stepfun/step-5-preview | StepFun | China | 6,300 | 24.5 | 257 | 99.5% | 1.000 | 0.145 | 95% | 2.70 | $988k | $4.3M | 5.2% |
-| 6 | tencent/hy4-preview | Tencent | China | 9,328 | 90.2 | 103 | 99.0% | 0.834 | 0.081 | 95% | 2.50 | $976k | $4.2M | 5.2% |
-| 7 | deepseek/deepseek-v4.1-flash-1017 | DeepSeek | China | 45,532 | 736.3 | 62 | 98.6% | 0.150 | 0.010 | 95% | 0.60 | $842k | $3.7M | 4.4% |
-| 8 | z-ai/glm-5.3-flash | Z.ai | China | 16,097 | 766.6 | 21 | 96.1% | 0.016 | 0.041 | - | 0.15 | $729k | $3.2M | 3.8% |
-| 9 | openai/gpt-6-luna | OpenAI | USA | 10,927 | 545.4 | 20 | 97.4% | 0.100 | 0.039 | 68% | 0.50 | $557k | $2.4M | 2.9% |
-| 10 | deepseek/deepseek-v4.1-flash | DeepSeek | China | 15,225 | 479.4 | 32 | 97.5% | 0.045 | 0.023 | 57% | 0.50 | $525k | $2.3M | 2.8% |
-| 11 | meta/muse-spark-1.3-contributor | Meta | USA | 2,632 | 35.9 | 73 | 98.6% | 0.100 | - | - | 0.20 | $267k | $1.2M | 1.4% |
-| 12 | anthropic/claude-haiku-5.5 | Anthropic | USA | 2,661 | 202.4 | 13 | 95.1% | 0.100 | 0.073 | 30% | 0.50 | $251k | $1.1M | 1.3% |
-| 13 | openai/gpt-5.6-luna | OpenAI | USA | 3,112 | 193.2 | 16 | 97.7% | 0.200 | 0.054 | 81% | 1.20 | $250k | $1.1M | 1.3% |
-| 14 | deepseek/deepseek-v4-flash-0731 | DeepSeek | China | 3,932 | 322.1 | 12 | 95.7% | 0.119 | 0.052 | 70% | 0.24 | $237k | $1.0M | 1.2% |
-| 15 | minimax/minimax-m3.1-flash | MiniMax | China | 5,043 | 54.4 | 93 | 98.6% | 0.150 | 0.023 | 94% | 0.60 | $160k | $694k | 0.8% |
-| 16 | tencent/hy3 | Tencent | China | 3,042 | 38.3 | 80 | 98.4% | 0.132 | 0.043 | 90% | 0.53 | $155k | $672k | 0.8% |
-| 17 | deepseek/deepseek-v4-flash | DeepSeek | China | 2,776 | 367.1 | 8 | 94.4% | 0.091 | 0.046 | 62% | 0.18 | $148k | $646k | 0.8% |
-| 18 | xiaomi/mimo-v2.6-flash | Xiaomi | China | 3,113 | 55.8 | 56 | 98.7% | 0.140 | 0.021 | 87% | 0.28 | $76k | $329k | 0.4% |
+| 1 | anthropic/claude-opus-5.5 | Anthropic | USA | 6,670 | 57.0 | 117 | 99.1% | 4.000 | 0.702 | 87% | 20.00 | $5.8M | $25.3M | 34.0% |
+| 2 | openai/gpt-6.1-sol | OpenAI | USA | 3,929 | 125.3 | 31 | 98.4% | 2.000 | 0.404 | 84% | 10.00 | $2.2M | $9.5M | 12.7% |
+| 3 | deepseek/deepseek-v4.1-flash-1017 | DeepSeek | China | 50,447 | 814.7 | 62 | 98.6% | 0.300 | 0.016 | 97% | 1.20 | $1.6M | $7.1M | 9.5% |
+| 4 | tencent/hy4-preview | Tencent | China | 9,250 | 89.2 | 104 | 99.1% | 0.834 | 0.120 | 90% | 2.50 | $1.3M | $5.7M | 7.7% |
+| 5 | stepfun/step-5-preview | StepFun | China | 6,458 | 25.1 | 257 | 99.5% | 1.000 | 0.145 | 95% | 2.70 | $1.0M | $4.4M | 5.9% |
+| 6 | moonshotai/kimi-k3.1-pro | Moonshot AI | China | 2,817 | 21.4 | 131 | 99.2% | 2.000 | 0.277 | 96% | 10.00 | $993k | $4.3M | 5.8% |
+| 7 | z-ai/glm-5.3 | Z.ai | China | 3,866 | 67.2 | 58 | 98.3% | 0.080 | 0.179 | - | 3.60 | $914k | $4.0M | 5.3% |
+| 8 | z-ai/glm-5.3-flash | Z.ai | China | 15,320 | 696.8 | 22 | 96.7% | 0.029 | 0.040 | - | 0.09 | $632k | $2.7M | 3.7% |
+| 9 | deepseek/deepseek-v4.1-flash | DeepSeek | China | 15,076 | 480.2 | 31 | 97.8% | 0.045 | 0.025 | 62% | 0.50 | $524k | $2.3M | 3.1% |
+| 10 | openai/gpt-6-luna | OpenAI | USA | 9,219 | 532.4 | 17 | 97.2% | 0.100 | 0.040 | 66% | 0.50 | $492k | $2.1M | 2.9% |
+| 11 | openai/gpt-5.6-luna | OpenAI | USA | 5,322 | 182.5 | 29 | 97.8% | 0.200 | 0.067 | 74% | 1.20 | $489k | $2.1M | 2.9% |
+| 12 | anthropic/claude-haiku-5.5 | Anthropic | USA | 2,798 | 186.3 | 15 | 95.1% | 0.100 | 0.087 | 15% | 0.50 | $300k | $1.3M | 1.8% |
+| 13 | deepseek/deepseek-v4-flash-0731 | DeepSeek | China | 3,884 | 335.6 | 12 | 95.5% | 0.059 | 0.048 | 45% | 0.30 | $232k | $1.0M | 1.4% |
+| 14 | minimax/minimax-m3.1-flash | MiniMax | China | 6,461 | 73.1 | 88 | 98.5% | 0.150 | 0.025 | 93% | 0.60 | $216k | $940k | 1.3% |
+| 15 | deepseek/deepseek-v4-flash | DeepSeek | China | 2,641 | 332.1 | 8 | 94.0% | 0.091 | 0.055 | 50% | 0.18 | $165k | $719k | 1.0% |
+| 16 | tencent/hy3 | Tencent | China | 2,998 | 37.6 | 80 | 98.4% | 0.132 | 0.042 | 91% | 0.53 | $149k | $648k | 0.9% |
+| 17 | xiaomi/mimo-v2.6-flash | Xiaomi | China | 2,898 | 57.6 | 50 | 98.5% | 0.140 | 0.022 | 86% | 0.28 | $74k | $323k | 0.4% |
 
 ### Revenue by vendor
 
@@ -115,16 +113,16 @@ All listed models of the rankings, summed by vendor; free variants count with th
 
 | # | Vendor | Models | Tokens (B/week) | Free tokens | Revenue/month | Share | Revenue per M tokens |
 |--:|---|--:|--:|--:|--:|--:|--:|
-| 1 | Anthropic | 3 | 12,606 | 0% | $39.9M | 48.4% | $0.728 |
-| 2 | OpenAI | 3 | 17,765 | 0% | $13.0M | 15.8% | $0.169 |
-| 3 | Z.ai | 2 | 20,722 | 0% | $10.4M | 12.7% | $0.116 |
-| 4 | DeepSeek | 4 | 67,465 | 0% | $7.6M | 9.2% | $0.026 |
-| 5 | Tencent | 2 | 12,370 | 0% | $4.9M | 6.0% | $0.091 |
-| 6 | StepFun | 1 | 6,300 | 0% | $4.3M | 5.2% | $0.157 |
-| 7 | Meta | 1 | 2,632 | 0% | $1.2M | 1.4% | $0.101 |
-| 8 | MiniMax | 1 | 5,043 | 0% | $694k | 0.8% | $0.032 |
-| 9 | Xiaomi | 1 | 3,113 | 0% | $329k | 0.4% | $0.024 |
-| 10 | NVIDIA | 1 | 3,446 | 100% | $0 | 0.0% | $0.000 |
+| 1 | Anthropic | 2 | 9,468 | 0% | $26.6M | 35.7% | $0.647 |
+| 2 | OpenAI | 3 | 18,470 | 0% | $13.7M | 18.4% | $0.171 |
+| 3 | DeepSeek | 4 | 72,048 | 0% | $11.1M | 14.9% | $0.035 |
+| 4 | Z.ai | 2 | 19,186 | 0% | $6.7M | 9.0% | $0.081 |
+| 5 | Tencent | 2 | 12,249 | 0% | $6.4M | 8.5% | $0.119 |
+| 6 | StepFun | 1 | 6,458 | 0% | $4.4M | 5.9% | $0.157 |
+| 7 | Moonshot AI | 1 | 2,817 | 0% | $4.3M | 5.8% | $0.353 |
+| 8 | MiniMax | 1 | 6,461 | 0% | $940k | 1.3% | $0.033 |
+| 9 | Xiaomi | 1 | 2,898 | 0% | $323k | 0.4% | $0.026 |
+| 10 | NVIDIA | 2 | 5,537 | 100% | $0 | 0.0% | $0.000 |
 
 ### Revenue by country
 
@@ -132,33 +130,32 @@ The same, summed by the country of the vendor's headquarters.
 
 | # | Country | Models | Tokens (B/week) | Free tokens | Revenue/month | Share | Revenue per M tokens |
 |--:|---|--:|--:|--:|--:|--:|--:|
-| 1 | USA | 8 | 36,449 | 9% | $54.1M | 65.7% | $0.341 |
-| 2 | China | 11 | 115,013 | 0% | $28.3M | 34.3% | $0.057 |
+| 1 | USA | 7 | 33,474 | 17% | $40.3M | 54.2% | $0.277 |
+| 2 | China | 12 | 122,117 | 0% | $34.1M | 45.8% | $0.064 |
 
 ### Price history
 
 List prices in dollars per million tokens (input / output) in each snapshot, for the paid models of the current rankings; "-" where a snapshot does not have the model (snapshots before 2026-10-31 hold only the models ranked that week). Rerun `omega openrouter-snapshot` from time to time to extend it.
 
-| Model | 2026-10-10 | 2026-10-31 | Change |
-|---|--:|--:|---|
-| deepseek/deepseek-v4.1-flash-1017 | - | 0.15 / 0.6 | - |
-| z-ai/glm-5.3-flash | 0.15 / 0.5 | 0.0163 / 0.148 | -87% |
-| deepseek/deepseek-v4.1-flash | 0.3 / 1.2 | 0.045 / 0.5 | -83% |
-| openai/gpt-6-luna | 0.1 / 0.5 | 0.1 / 0.5 | - |
-| tencent/hy4-preview | 0.834 / 2.5 | 0.834 / 2.5 | - |
-| anthropic/claude-opus-5.5 | 4 / 20 | 4 / 20 | - |
-| stepfun/step-5-preview | 1 / 2.7 | 1 / 2.7 | - |
-| minimax/minimax-m3.1-flash | - | 0.15 / 0.6 | - |
-| z-ai/glm-5.3 | 0.039 / 4.8 | 0.0699 / 1.4 | -19% |
-| deepseek/deepseek-v4-flash-0731 | 0.0066 / 1.28 | 0.119 / 0.238 | +103% |
-| openai/gpt-6.1-sol | 2 / 10 | 2 / 10 | - |
-| xiaomi/mimo-v2.6-flash | 0.14 / 0.28 | 0.14 / 0.28 | - |
-| openai/gpt-5.6-luna | 0.2 / 1.2 | 0.2 / 1.2 | - |
-| tencent/hy3 | 0.132 / 0.528 | 0.132 / 0.528 | - |
-| deepseek/deepseek-v4-flash | 0.0116 / 1.28 | 0.091 / 0.182 | +16% |
-| anthropic/claude-haiku-5.5 | - | 0.1 / 0.5 | - |
-| anthropic/claude-sonnet-5.5 | 2 / 10 | 2 / 10 | - |
-| meta/muse-spark-1.3-contributor | 0.1 / 0.2 | 0.1 / 0.2 | - |
+| Model | 2026-10-10 | 2026-10-31 | 2026-11-03 | Change |
+|---|--:|--:|--:|---|
+| deepseek/deepseek-v4.1-flash-1017 | - | 0.15 / 0.6 | 0.3 / 1.2 | +100% |
+| z-ai/glm-5.3-flash | 0.15 / 0.5 | 0.0163 / 0.148 | 0.0285 / 0.0923 | -81% |
+| deepseek/deepseek-v4.1-flash | 0.3 / 1.2 | 0.045 / 0.5 | 0.045 / 0.5 | -83% |
+| tencent/hy4-preview | 0.834 / 2.5 | 0.834 / 2.5 | 0.834 / 2.5 | - |
+| openai/gpt-6-luna | 0.1 / 0.5 | 0.1 / 0.5 | 0.1 / 0.5 | - |
+| anthropic/claude-opus-5.5 | 4 / 20 | 4 / 20 | 4 / 20 | - |
+| minimax/minimax-m3.1-flash | - | 0.15 / 0.6 | 0.15 / 0.6 | - |
+| stepfun/step-5-preview | 1 / 2.7 | 1 / 2.7 | 1 / 2.7 | - |
+| openai/gpt-5.6-luna | 0.2 / 1.2 | 0.2 / 1.2 | 0.2 / 1.2 | - |
+| openai/gpt-6.1-sol | 2 / 10 | 2 / 10 | 2 / 10 | - |
+| deepseek/deepseek-v4-flash-0731 | 0.0066 / 1.28 | 0.119 / 0.238 | 0.059 / 0.3 | +9% |
+| z-ai/glm-5.3 | 0.039 / 4.8 | 0.0699 / 1.4 | 0.08 / 3.6 | +17% |
+| tencent/hy3 | 0.132 / 0.528 | 0.132 / 0.528 | 0.132 / 0.528 | - |
+| xiaomi/mimo-v2.6-flash | 0.14 / 0.28 | 0.14 / 0.28 | 0.14 / 0.28 | - |
+| moonshotai/kimi-k3.1-pro | - | 2 / 10 | 2 / 10 | - |
+| anthropic/claude-haiku-5.5 | - | 0.1 / 0.5 | 0.1 / 0.5 | - |
+| deepseek/deepseek-v4-flash | 0.0116 / 1.28 | 0.091 / 0.182 | 0.091 / 0.182 | +9% |
 
 **Change** compares the first and the last known price, blended at the model's share of input tokens in the current week.
 
@@ -171,53 +168,71 @@ Each model's price as one number per million tokens, blended at its share of inp
 ```mermaid
 xychart-beta
     title "claude-opus-5.5: $ per million tokens at 99% input"
-    x-axis ["2026-10-10", "2026-10-31"]
+    x-axis ["2026-10-10", "2026-10-31", "2026-11-03"]
     y-axis "$/M tokens" 0 --> 4.76
-    line [4.14, 4.14]
+    line [4.141, 4.141, 4.141]
 ```
 
 ```mermaid
 xychart-beta
-    title "claude-sonnet-5.5: $ per million tokens at 98% input"
-    x-axis ["2026-10-10", "2026-10-31"]
-    y-axis "$/M tokens" 0 --> 2.49
-    line [2.167, 2.167]
+    title "claude-haiku-5.5: $ per million tokens at 95% input"
+    x-axis ["2026-10-31", "2026-11-03"]
+    y-axis "$/M tokens" 0 --> 0.138
+    line [0.1197, 0.1197]
 ```
 
 ##### DeepSeek
 
 ```mermaid
 xychart-beta
+    title "deepseek-v4.1-flash-1017: $ per million tokens at 99% input"
+    x-axis ["2026-10-31", "2026-11-03"]
+    y-axis "$/M tokens" 0 --> 0.359
+    line [0.1562, 0.3123]
+```
+
+```mermaid
+xychart-beta
     title "deepseek-v4.1-flash: $ per million tokens at 98% input"
-    x-axis ["2026-10-10", "2026-10-31"]
-    y-axis "$/M tokens" 0 --> 0.371
-    line [0.3222, 0.05625]
+    x-axis ["2026-10-10", "2026-10-31", "2026-11-03"]
+    y-axis "$/M tokens" 0 --> 0.367
+    line [0.3194, 0.0548, 0.0548]
 ```
 
 ```mermaid
 xychart-beta
     title "deepseek-v4-flash-0731: $ per million tokens at 96% input"
-    x-axis ["2026-10-10", "2026-10-31"]
+    x-axis ["2026-10-10", "2026-10-31", "2026-11-03"]
     y-axis "$/M tokens" 0 --> 0.143
-    line [0.0612, 0.1241]
+    line [0.06379, 0.1243, 0.06982]
 ```
 
 ```mermaid
 xychart-beta
     title "deepseek-v4-flash: $ per million tokens at 94% input"
-    x-axis ["2026-10-10", "2026-10-31"]
+    x-axis ["2026-10-10", "2026-10-31", "2026-11-03"]
     y-axis "$/M tokens" 0 --> 0.111
-    line [0.08324, 0.09614]
+    line [0.08819, 0.09649, 0.09649]
 ```
 
-##### Meta
+##### MiniMax
 
 ```mermaid
 xychart-beta
-    title "muse-spark-1.3-contribut: $ per million tokens at 99% input"
-    x-axis ["2026-10-10", "2026-10-31"]
-    y-axis "$/M tokens" 0 --> 0.117
-    line [0.1014, 0.1014]
+    title "minimax-m3.1-flash: $ per million tokens at 99% input"
+    x-axis ["2026-10-31", "2026-11-03"]
+    y-axis "$/M tokens" 0 --> 0.18
+    line [0.1566, 0.1566]
+```
+
+##### Moonshot AI
+
+```mermaid
+xychart-beta
+    title "kimi-k3.1-pro: $ per million tokens at 99% input"
+    x-axis ["2026-10-31", "2026-11-03"]
+    y-axis "$/M tokens" 0 --> 2.37
+    line [2.062, 2.062]
 ```
 
 ##### OpenAI
@@ -225,25 +240,25 @@ xychart-beta
 ```mermaid
 xychart-beta
     title "gpt-6-luna: $ per million tokens at 97% input"
-    x-axis ["2026-10-10", "2026-10-31"]
-    y-axis "$/M tokens" 0 --> 0.127
-    line [0.1103, 0.1103]
-```
-
-```mermaid
-xychart-beta
-    title "gpt-6.1-sol: $ per million tokens at 99% input"
-    x-axis ["2026-10-10", "2026-10-31"]
-    y-axis "$/M tokens" 0 --> 2.43
-    line [2.117, 2.117]
+    x-axis ["2026-10-10", "2026-10-31", "2026-11-03"]
+    y-axis "$/M tokens" 0 --> 0.128
+    line [0.1112, 0.1112, 0.1112]
 ```
 
 ```mermaid
 xychart-beta
     title "gpt-5.6-luna: $ per million tokens at 98% input"
-    x-axis ["2026-10-10", "2026-10-31"]
-    y-axis "$/M tokens" 0 --> 0.256
-    line [0.2229, 0.2229]
+    x-axis ["2026-10-10", "2026-10-31", "2026-11-03"]
+    y-axis "$/M tokens" 0 --> 0.255
+    line [0.222, 0.222, 0.222]
+```
+
+```mermaid
+xychart-beta
+    title "gpt-6.1-sol: $ per million tokens at 98% input"
+    x-axis ["2026-10-10", "2026-10-31", "2026-11-03"]
+    y-axis "$/M tokens" 0 --> 2.44
+    line [2.125, 2.125, 2.125]
 ```
 
 ##### StepFun
@@ -251,9 +266,9 @@ xychart-beta
 ```mermaid
 xychart-beta
     title "step-5-preview: $ per million tokens at 100% input"
-    x-axis ["2026-10-10", "2026-10-31"]
+    x-axis ["2026-10-10", "2026-10-31", "2026-11-03"]
     y-axis "$/M tokens" 0 --> 1.16
-    line [1.008, 1.008]
+    line [1.008, 1.008, 1.008]
 ```
 
 ##### Tencent
@@ -261,17 +276,17 @@ xychart-beta
 ```mermaid
 xychart-beta
     title "hy4-preview: $ per million tokens at 99% input"
-    x-axis ["2026-10-10", "2026-10-31"]
-    y-axis "$/M tokens" 0 --> 0.978
-    line [0.85, 0.85]
+    x-axis ["2026-10-10", "2026-10-31", "2026-11-03"]
+    y-axis "$/M tokens" 0 --> 0.977
+    line [0.8496, 0.8496, 0.8496]
 ```
 
 ```mermaid
 xychart-beta
     title "hy3: $ per million tokens at 98% input"
-    x-axis ["2026-10-10", "2026-10-31"]
+    x-axis ["2026-10-10", "2026-10-31", "2026-11-03"]
     y-axis "$/M tokens" 0 --> 0.159
-    line [0.1383, 0.1383]
+    line [0.1385, 0.1385, 0.1385]
 ```
 
 ##### Xiaomi
@@ -279,25 +294,25 @@ xychart-beta
 ```mermaid
 xychart-beta
     title "mimo-v2.6-flash: $ per million tokens at 99% input"
-    x-axis ["2026-10-10", "2026-10-31"]
+    x-axis ["2026-10-10", "2026-10-31", "2026-11-03"]
     y-axis "$/M tokens" 0 --> 0.163
-    line [0.1419, 0.1419]
+    line [0.1421, 0.1421, 0.1421]
 ```
 
 ##### Z.ai
 
 ```mermaid
 xychart-beta
-    title "glm-5.3-flash: $ per million tokens at 96% input"
-    x-axis ["2026-10-10", "2026-10-31"]
-    y-axis "$/M tokens" 0 --> 0.188
-    line [0.1636, 0.02141]
+    title "glm-5.3-flash: $ per million tokens at 97% input"
+    x-axis ["2026-10-10", "2026-10-31", "2026-11-03"]
+    y-axis "$/M tokens" 0 --> 0.186
+    line [0.1617, 0.02069, 0.03063]
 ```
 
 ```mermaid
 xychart-beta
     title "glm-5.3: $ per million tokens at 98% input"
-    x-axis ["2026-10-10", "2026-10-31"]
-    y-axis "$/M tokens" 0 --> 0.127
-    line [0.1105, 0.08987]
+    x-axis ["2026-10-10", "2026-10-31", "2026-11-03"]
+    y-axis "$/M tokens" 0 --> 0.16
+    line [0.1186, 0.09215, 0.1389]
 ```

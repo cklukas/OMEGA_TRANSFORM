@@ -1,0 +1,390 @@
+{
+ "schema": 4,
+ "example": "circle_packing_26",
+ "model": "underdog-saluki-27b:iq2-mix",
+ "variant": "no-think",
+ "model_size_gb": 7.9,
+ "model_params": "26.9B",
+ "started": "2026-11-03T07:37:40",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 45.8,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 32768,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 1.7137251222558807,
+ "improvement": 1.1500723730348392,
+ "llm_calls": 20,
+ "mean_llm_seconds": 134.7,
+ "attempts": 20,
+ "ok": 13,
+ "statuses": {
+  "ok": 13,
+  "invalid": 4,
+  "edit_error": 3
+ },
+ "sweeps": 2,
+ "sweep_variants": 32,
+ "improvements": 3,
+ "minutes_to_best": 31.8,
+ "best_idea": "Add a final local coordinate-descent pass that increases each circle's radius to its wall/neighbor limit whenever the neighbor constraint is already tight, and run extra optimization iterations to pus",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   4.28,
+   1.5012639142633468
+  ],
+  [
+   9.78,
+   1.7135799010955488
+  ],
+  [
+   31.8,
+   1.7137251222558807
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 15.79,
+   "score": 1.7135799010955488,
+   "model": "underdog-saluki-27b:iq2-mix",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the naive uniform grid with a hand-crafted mixed-size layout (one big central circle, corner/edge circles, and gap circles) and add a penalty-based joint optimization of centers and radii to push the packing toward better-known values, mirroring the higher-scoring programs."
+  },
+  {
+   "minutes": 31.8,
+   "score": 1.7137251222558807,
+   "model": "underdog-saluki-27b:iq2-mix",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Add a final local coordinate-descent pass that increases each circle's radius to its wall/neighbor limit whenever the neighbor constraint is already tight, and run extra optimization iterations to push the feasible radii sum higher."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -9,26 +9,173 @@\n # OMEGA-BLOCK-START\n def construct_packing(n=26):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n-    cols = math.ceil(math.sqrt(n))\n-    rows = math.ceil(n / cols)\n-    centers = []\n-    for k in range(n):\n-        i, j = k % cols, k // cols\n-        centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n-    radii = max_radii(centers)\n+    centers0, radii0 = _initial_layout(n)\n+    centers, radii = _penalty_optimize(centers0, radii0)\n+    radii = _feasible_radii(centers)\n+    radii = _local_radius_pass(centers, radii)\n     return [(x, y, r) for (x, y), r in zip(centers, radii)]\n \n \n-def max_radii(centers):\n-    \"\"\"Largest radii for fixed centers: limit by walls, then shrink overlapping pairs.\"\"\"\n+def _initial_layout(n=26):\n+    \"\"\"Return initial centers and radii: one big central circle plus corner/edge/gap circles.\"\"\"\n+    centers = []\n+    radii = []\n+\n+    # One big central circle\n+    centers.append((0.5, 0.5))\n+    radii.append(0.30)\n+\n+    # 4 corner circles\n+    corner_r = 0.09\n+    for (cx, cy) in [(0.09, 0.09), (0.91, 0.09), (0.09, 0.91), (0.91, 0.91)]:\n+        centers.append((cx, cy))\n+        radii.append(corner_r)\n+\n+    # 4 edge-midpoint circles\n+    edge_r = 0.08\n+    for (cx, cy) in [(0.5, 0.09), (0.5, 0.91), (0.09, 0.5), (0.91, 0.5)]:\n+        centers.append((cx, cy))\n+        radii.append(edge_r)\n+\n+    # Gap circles: 5x4 grid in the central region\n+    x0, y0 = 0.25, 0.25\n+    dx, dy = 0.12, 0.12\n+    gap_r = 0.06\n+    for i in range(5):\n+        for j in range(4):\n+            centers.append((x0 + i * dx, y0 + j * dy))\n+            radii.append(gap_r)\n+\n+    # Extra gap circles to reach 26\n+    centers.append((0.38, 0.63))\n+    radii.append(gap_r)\n+    centers.append((0.62, 0.38))\n+    radii.append(gap_r)\n+\n+    # Trim to exactly n\n+    while len(centers) > n:\n+        centers.pop()\n+        radii.pop()\n+\n+    return centers, radii\n+\n+\n+def _penalty_optimize(centers0, radii0, n_iter=3000, lr=0.002):\n+    \"\"\"Penalty-based joint optimization of centers and radii.\"\"\"\n+    n = len(centers0)\n+    centers = [list(c) for c in centers0]\n+    radii = list(radii0)\n+\n+    best_total = sum(radii)\n+\n+    for it in range(n_iter):\n+        total = sum(radii)\n+\n+        # Gradients for centers and radii\n+        gdx = [0.0] * n\n+        gdy = [0.0] * n\n+        gdr = [0.0] * n\n+\n+        # Pairwise overlap penalty\n+        for a in range(n):\n+            for b in range(a + 1, n):\n+                dx = centers[a][0] - centers[b][0]\n+                dy = centers[a][1] - centers[b][1]\n+                d = math.hypot(dx, dy)\n+                s = radii[a] + radii[b]\n+                if d < s:\n+                    if d > 1e-12:\n+                        f = s - d\n+                        inv_d = 1.0 / d\n+                        gdx[a] += f * dx * inv_d\n+                        gdy[a] += f * dy * inv_d\n+                        gdx[b] -= f * dx * inv_d\n+                        gdy[b] -= f * dy * inv_d\n+                        gdr[a] += f\n+                        gdr[b] += f\n+\n+        # Boundary penalties\n+        for a in range(n):\n+            x, y, r = centers[a][0], centers[a][1], radii[a]\n+            if r > x:\n+                gdr[a] += r - x\n+            if r > 1.0 - x:\n+                gdr[a] += r - (1.0 - x)\n+            if r > y:\n+                gdr[a] += r - y\n+            if r > 1.0 - y:\n+                gdr[a] += r - (1.0 - y)\n+\n+        # Gradient descent step\n+        for a in range(n):\n+            centers[a][0] += lr * gdx[a]\n+            centers[a][1] += lr * gdy[a]\n+            r_new = radii[a] + lr * gdr[a]\n+            wall = min(centers[a][0], centers[a][1],\n+                       1.0 - centers[a][0], 1.0 - centers[a][1])\n+            r_new = max(0.0, min(r_new, wall))\n+            radii[a] = r_new\n+\n+        # Project centers to [0, 1]\n+        for a in range(n):\n+            centers[a][0] = max(0.0, min(1.0, centers[a][0]))\n+            centers[a][1] = max(0.0, min(1.0, centers[a][1]))\n+\n+        if total > best_total:\n+            best_total = total\n+\n+    return centers, radii\n+\n+\n+def _feasible_radii(centers):\n+    \"\"\"Compute the largest mutually non-overlapping radii for given centers.\"\"\"\n+    n = len(centers)\n     radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n-    for a in range(len(centers)):\n-        for b in range(a + 1, len(centers)):\n-            d = math.dist(centers[a], centers[b])\n-            if radii[a] + radii[b] > d:\n-                s = d / (radii[a] + radii[b])\n-                radii[a] *= s\n-                radii[b] *= s\n+\n+    for _ in range(200):\n+        changed = False\n+        for a in range(n):\n+            for b in range(a + 1, n):\n+                dx = centers[a][0] - centers[b][0]\n+                dy = centers[a][1] - centers[b][1]\n+                d = math.hypot(dx, dy)\n+                s = radii[a] + radii[b]\n+                if s > d:\n+                    shrink = (s - d) / 2.0 + 1e-12\n+                    radii[a] = max(0.0, radii[a] - shrink)\n+                    radii[b] = max(0.0, radii[b] - shrink)\n+                    changed = True\n+        if not changed:\n+            break\n+\n+    return radii\n+\n+\n+def _local_radius_pass(centers, radii):\n+    \"\"\"Coordinate-descent pass: push each radius up to its wall/neighbor limit.\"\"\"\n+    n = len(centers)\n+    for _ in range(300):\n+        changed = False\n+        for a in range(n):\n+            x, y, r = centers[a][0], centers[a][1], radii[a]\n+            wall = min(x, y, 1.0 - x, 1.0 - y)\n+            if r < wall:\n+                r = wall\n+            for b in range(n):\n+                if a == b:\n+                    continue\n+                dx = x - centers[b][0]\n+                dy = y - centers[b][1]\n+                d = math.hypot(dx, dy)\n+                cap = d - radii[b]\n+                if cap < r:\n+                    r = cap\n+            r = max(0.0, r)\n+            if abs(r - radii[a]) > 1e-12:\n+                radii[a] = r\n+                changed = True\n+        if not changed:\n+            break\n     return radii\n # OMEGA-BLOCK-END\n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.083333,
+    0.1,
+    0.060545
+   ],
+   [
+    0.25,
+    0.1,
+    0.039234
+   ],
+   [
+    0.416667,
+    0.1,
+    0.034262
+   ],
+   [
+    0.583333,
+    0.1,
+    0.040566
+   ],
+   [
+    0.75,
+    0.1,
+    0.05694
+   ],
+   [
+    0.916667,
+    0.1,
+    0.080973
+   ],
+   [
+    0.083333,
+    0.3,
+    0.047978
+   ],
+   [
+    0.25,
+    0.3,
+    0.032893
+   ],
+   [
+    0.416667,
+    0.3,
+    0.029299
+   ],
+   [
+    0.583333,
+    0.3,
+    0.040366
+   ],
+   [
+    0.75,
+    0.3,
+    0.058083
+   ],
+   [
+    0.916667,
+    0.3,
+    0.076636
+   ],
+   [
+    0.083333,
+    0.5,
+    0.05004
+   ],
+   [
+    0.25,
+    0.5,
+    0.036525
+   ],
+   [
+    0.416667,
+    0.5,
+    0.03396
+   ],
+   [
+    0.583333,
+    0.5,
+    0.041209
+   ],
+   [
+    0.75,
+    0.5,
+    0.058085
+   ],
+   [
+    0.916667,
+    0.5,
+    0.076976
+   ],
+   [
+    0.083333,
+    0.7,
+    0.059259
+   ],
+   [
+    0.25,
+    0.7,
+    0.06822
+   ],
+   [
+    0.416667,
+    0.7,
+    0.065257
+   ],
+   [
+    0.583333,
+    0.7,
+    0.069461
+   ],
+   [
+    0.75,
+    0.7,
+    0.089736
+   ],
+   [
+    0.916667,
+    0.7,
+    0.07693
+   ],
+   [
+    0.083333,
+    0.9,
+    0.075758
+   ],
+   [
+    0.25,
+    0.9,
+    0.090909
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.765457,
+    0.982402,
+    0.017592
+   ],
+   [
+    0.010843,
+    0.013446,
+    0.010843
+   ],
+   [
+    0.958625,
+    0.048118,
+    0.041375
+   ],
+   [
+    0.043636,
+    0.939062,
+    0.043636
+   ],
+   [
+    0.924504,
+    0.923384,
+    0.075492
+   ],
+   [
+    0.504924,
+    0.003165,
+    0.003165
+   ],
+   [
+    0.493239,
+    0.99086,
+    0.00914
+   ],
+   [
+    0.005278,
+    0.505047,
+    0.005278
+   ],
+   [
+    0.992971,
+    0.504678,
+    0.007029
+   ],
+   [
+    0.054409,
+    0.040413,
+    0.040394
+   ],
+   [
+    0.018771,
+    0.356384,
+    0.018771
+   ],
+   [
+    0.02171,
+    0.461801,
+    0.02171
+   ],
+   [
+    0.027193,
+    0.72241,
+    0.027193
+   ],
+   [
+    0.342123,
+    0.029153,
+    0.029153
+   ],
+   [
+    0.201691,
+    0.232411,
+    0.201577
+   ],
+   [
+    0.159432,
+    0.590853,
+    0.159339
+   ],
+   [
+    0.200982,
+    0.873598,
+    0.126402
+   ],
+   [
+    0.474289,
+    0.014096,
+    0.014096
+   ],
+   [
+    0.591627,
+    0.190652,
+    0.190589
+   ],
+   [
+    0.617852,
+    0.690292,
+    0.309694
+   ],
+   [
+    0.386926,
+    0.957121,
+    0.042879
+   ],
+   [
+    0.698923,
+    0.015134,
+    0.015127
+   ],
+   [
+    0.885667,
+    0.271354,
+    0.114324
+   ],
+   [
+    0.925453,
+    0.458453,
+    0.074547
+   ],
+   [
+    0.962039,
+    0.73929,
+    0.037961
+   ],
+   [
+    0.841437,
+    0.076424,
+    0.076424
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 11.3,
+ "model_gpu_memory_gb": 11.3,
+ "context_length": 32768,
+ "load_seconds": 25.2,
+ "median_call_seconds": 133.3,
+ "p90_call_seconds": 204.5,
+ "prompt_tokens_per_s": 362.7,
+ "gen_tokens_per_s": 15.9,
+ "mean_prompt_tokens": 4158,
+ "mean_gen_tokens": 1891,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

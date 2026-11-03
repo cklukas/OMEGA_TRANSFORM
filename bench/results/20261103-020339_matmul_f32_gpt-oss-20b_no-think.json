@@ -1,0 +1,146 @@
+{
+ "schema": 4,
+ "example": "matmul_f32",
+ "model": "gpt-oss:20b",
+ "variant": "no-think",
+ "model_size_gb": 13.8,
+ "model_params": "20.9B",
+ "started": "2026-11-03T02:03:40",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 68.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 32768,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 0.866959,
+ "best_score": 36.8454,
+ "improvement": 42.4995876390925,
+ "llm_calls": 31,
+ "mean_llm_seconds": 120.5,
+ "attempts": 31,
+ "ok": 23,
+ "statuses": {
+  "compile_error": 4,
+  "ok": 23,
+  "edit_error": 1,
+  "duplicate": 2,
+  "invalid": 1
+ },
+ "sweeps": 2,
+ "sweep_variants": 20,
+ "improvements": 3,
+ "minutes_to_best": 66.49,
+ "best_idea": "Fix type mismatch in `std::min` and simplify lambda capture to avoid the \u201ccapture default\u201d error, enabling correct compilation and efficient threading.",
+ "progress": [
+  [
+   0.0,
+   0.866959
+  ],
+  [
+   8.83,
+   15.2394
+  ],
+  [
+   35.46,
+   18.0145
+  ],
+  [
+   66.49,
+   36.8454
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.866959,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.9,
+   "score": null,
+   "model": "gpt-oss:20b",
+   "mode": "explore/diff/bold",
+   "status": "compile_error",
+   "idea": "Replace the naive triple\u2011loop with a blocked, NEON\u2011vectorized kernel that zeroes C, processes 32\u2011row/32\u2011column tiles, and falls back to scalar handling for remaining columns, which improves cache locality and vector usage while staying correct for all n."
+  },
+  {
+   "minutes": 16.97,
+   "score": 2.43854,
+   "model": "gpt-oss:20b",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Add stub definitions for NEON intrinsics when __ARM_NEON is not defined, ensuring compilation on all platforms."
+  },
+  {
+   "minutes": 51.63,
+   "score": null,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/rewrite/refine",
+   "status": "compile_error",
+   "idea": "Add multithreading over row blocks and keep NEON vectorized i\u2011k\u2011j loops, zeroing each row inside its thread to avoid a global memset, which scales to all 10 cores and reduces memory traffic."
+  },
+  {
+   "minutes": 66.49,
+   "score": 36.8454,
+   "model": "gpt-oss:20b",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Fix type mismatch in `std::min` and simplify lambda capture to avoid the \u201ccapture default\u201d error, enabling correct compilation and efficient threading."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,14 +19,57 @@\n #endif\n \n // OMEGA-BLOCK-START\n-// Computes C = A * B. C is NOT zeroed by the caller. Any number of threads may be\n-// used (std::thread is available); n is any size from 1 to 2048.\n+#ifndef __ARM_NEON\n+#include <array>\n+using float32x4_t = std::array<float,4>;\n+inline float32x4_t vdupq_n_f32(float val) { return {val,val,val,val}; }\n+inline float32x4_t vld1q_f32(const float* p) { return {p[0],p[1],p[2],p[3]}; }\n+inline float32x4_t vfmaq_f32(const float32x4_t a, const float32x4_t b, const float32x4_t c) {\n+   return {a[0]+b[0]*c[0], a[1]+b[1]*c[1], a[2]+b[2]*c[2], a[3]+b[3]*c[3]};\n+}\n+inline void vst1q_f32(float* p, const float32x4_t v) {\n+   p[0]=v[0]; p[1]=v[1]; p[2]=v[2]; p[3]=v[3];\n+}\n+#endif\n+\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n-        }\n+    if (n <= 0) return;\n+    int tcnt = std::thread::hardware_concurrency();\n+    if (tcnt == 0) tcnt = 1;\n+    tcnt = std::min(tcnt, n);\n+    int rows_per = (n + tcnt - 1) / tcnt;\n+    std::vector<std::thread> threads;\n+    threads.reserve(tcnt);\n+    for (int t = 0; t < tcnt; ++t) {\n+        int i_start = t * rows_per;\n+        int i_end   = std::min(n, (t + 1) * rows_per);\n+        threads.emplace_back([=,&A,&B,&C](){\n+            for (int i = i_start; i < i_end; ++i) {\n+                float* c_row = C + i * n;\n+                // zero the row\n+                int j = 0;\n+                for (; j + 4 <= n; j += 4)\n+                    vst1q_f32(c_row + j, vdupq_n_f32(0.0f));\n+                for (; j < n; ++j)\n+                    c_row[j] = 0.0f;\n+                const float* a_row = A + i * n;\n+                for (int k = 0; k < n; ++k) {\n+                    float a_val = a_row[k];\n+                    float32x4_t a_vec = vdupq_n_f32(a_val);\n+                    const float* b_row = B + k * n;\n+                    int jj = 0;\n+                    for (; jj + 4 <= n; jj += 4) {\n+                        float32x4_t b_vec = vld1q_f32(b_row + jj);\n+                        float32x4_t c_vec = vld1q_f32(c_row + jj);\n+                        c_vec = vfmaq_f32(c_vec, a_vec, b_vec);\n+                        vst1q_f32(c_row + jj, c_vec);\n+                    }\n+                    for (; jj < n; ++jj)\n+                        c_row[jj] += a_val * b_row[jj];\n+                }\n+            }\n+        });\n+    }\n+    for (auto& th : threads) th.join();\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": 13.8,
+ "model_gpu_memory_gb": 13.8,
+ "context_length": 32768,
+ "load_seconds": 98.0,
+ "median_call_seconds": 81.1,
+ "p90_call_seconds": 181.5,
+ "prompt_tokens_per_s": 1858.4,
+ "gen_tokens_per_s": 50.3,
+ "mean_prompt_tokens": 3704,
+ "mean_gen_tokens": 5682,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

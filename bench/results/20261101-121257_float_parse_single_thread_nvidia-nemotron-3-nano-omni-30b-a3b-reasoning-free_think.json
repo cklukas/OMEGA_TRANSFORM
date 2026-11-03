@@ -1,0 +1,157 @@
+{
+ "schema": 4,
+ "example": "float_parse_single_thread",
+ "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-01T12:12:57",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 36.7,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 32768,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 73.7106,
+ "best_score": 78.3662,
+ "improvement": 1.0631605223672038,
+ "llm_calls": 25,
+ "mean_llm_seconds": 86.4,
+ "attempts": 25,
+ "ok": 4,
+ "statuses": {
+  "edit_error": 15,
+  "ok": 4,
+  "invalid": 4,
+  "compile_error": 2
+ },
+ "sweeps": 1,
+ "sweep_variants": 13,
+ "improvements": 3,
+ "minutes_to_best": 13.63,
+ "best_idea": "tuned MAX_DIGITS=16.71 on top of: Increase the integer\u2011only fast path to safely handle up to 19 digits with overflow checking, cutting strtod calls and boosting parsing speed.",
+ "progress": [
+  [
+   0.0,
+   73.7106
+  ],
+  [
+   3.97,
+   76.0063
+  ],
+  [
+   13.63,
+   77.5316
+  ],
+  [
+   13.63,
+   78.3662
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 73.7106,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.97,
+   "score": 76.0063,
+   "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the naive strtod loop with a fast integer path for numbers without '.' or exponent and a digit\u2011limit, using direct uint64_t accumulation, which avoids the heavy overhead of std::strtod and should raise the score."
+  },
+  {
+   "minutes": 13.63,
+   "score": 77.5316,
+   "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Increase the integer\u2011only fast path to safely handle up to 19 digits with overflow checking, cutting strtod calls and boosting parsing speed."
+  },
+  {
+   "minutes": 13.63,
+   "score": 78.3662,
+   "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+   "mode": "sweep/exploit/diff/refine",
+   "status": "ok",
+   "idea": "tuned MAX_DIGITS=16.71 on top of: Increase the integer\u2011only fast path to safely handle up to 19 digits with overflow checking, cutting strtod calls and boosting parsing speed."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -34,10 +34,43 @@\n     const char* p = buf;\n     const char* end = buf + len;\n     size_t count = 0;\n+    constexpr int MAX_DIGITS = 17;\n     while (p < end) {\n-        char* next;\n-        out[count++] = std::strtod(p, &next);\n-        p = next;\n+        int sign = 1;\n+        if (*p == '-') {\n+            sign = -1;\n+            ++p;\n+        }\n+        const char* token_start = p;\n+        bool is_integer_only = true;\n+        while (p < end && *p != '\\n') {\n+            char c = *p;\n+            if (c == '.' || c == 'e' || c == 'E') {\n+                is_integer_only = false;\n+                break;\n+            }\n+            ++p;\n+        }\n+        if (is_integer_only) {\n+            int digits = 0;\n+            uint64_t val = 0;\n+            const char* q = token_start;\n+            while (q < p && *q >= '0' && *q <= '9') {\n+                val = val * 10 + (uint8_t)(*q - '0');\n+                ++digits;\n+                ++q;\n+            }\n+            if (digits <= MAX_DIGITS) {\n+                double d = (double)val;\n+                if (sign == -1) d = -d;\n+                out[count++] = d;\n+                while (p < end && *p == '\\n') ++p;\n+                continue;\n+            }\n+        }\n+        char* endptr;\n+        out[count++] = sign * std::strtod(token_start, &endptr);\n+        p = endptr;\n         while (p < end && *p == '\\n') ++p;\n     }\n     return count;\n",
+ "initial_solution": {
+  "kind": "parse",
+  "count": 2000000,
+  "text_mb": 28.39,
+  "head": [
+   "0",
+   "-0",
+   "1",
+   "-1.5",
+   "0.1",
+   "1e23",
+   "9007199254740993",
+   "4.9e-324"
+  ]
+ },
+ "best_solution": {
+  "kind": "parse",
+  "count": 2000000,
+  "text_mb": 28.39,
+  "head": [
+   "0",
+   "-0",
+   "1",
+   "-1.5",
+   "0.1",
+   "1e23",
+   "9007199254740993",
+   "4.9e-324"
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 77.7,
+ "p90_call_seconds": 148.2,
+ "prompt_tokens_per_s": 9483.6,
+ "gen_tokens_per_s": 126.1,
+ "mean_prompt_tokens": 6393,
+ "mean_gen_tokens": 10811,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

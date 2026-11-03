@@ -1,0 +1,113 @@
+{
+ "schema": 4,
+ "example": "matmul_f32",
+ "model": "cohere/north-mini-code:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-03T06:19:55",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 53.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 32768,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 0.687402,
+ "best_score": 4.56267,
+ "improvement": 6.63755706267948,
+ "llm_calls": 17,
+ "mean_llm_seconds": 183.0,
+ "attempts": 17,
+ "ok": 1,
+ "statuses": {
+  "compile_error": 4,
+  "edit_error": 11,
+  "llm_error": 1,
+  "ok": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 52.23,
+ "best_idea": "Replace naive triple loop with blocked i-k-j algorithm using NEON vectorization, cache blocking, and multithreading over row blocks, and expose BLOCK and MAX_THREADS as tunable constants.",
+ "progress": [
+  [
+   0.0,
+   0.687402
+  ],
+  [
+   52.23,
+   4.56267
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.687402,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 52.23,
+   "score": 4.56267,
+   "model": "cohere/north-mini-code:free",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Replace naive triple loop with blocked i-k-j algorithm using NEON vectorization, cache blocking, and multithreading over row blocks, and expose BLOCK and MAX_THREADS as tunable constants."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,14 +19,68 @@\n #endif\n \n // OMEGA-BLOCK-START\n-// Computes C = A * B. C is NOT zeroed by the caller. Any number of threads may be\n-// used (std::thread is available); n is any size from 1 to 2048.\n-extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n-        }\n-}\n+ // Computes C = A * B. C is NOT zeroed by the caller. Any number of threads may be\n+ // used (std::thread is available); n is any size from 1 to 2048.\n+ // Optimized implementation using i-k-j order, NEON vectorization, cache blocking,\n+ // and multithreading over row blocks.\n+ namespace {\n+     static constexpr int BLOCK = 64; // tile size for i and j loops\n+     static constexpr int MAX_THREADS = 8; // maximum number of threads to use\n+ }\n+ extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n+     // Zero C before computation\n+     std::fill(C, C + static_cast<size_t>(n) * n, 0.0f);\n+\n+     // Determine number of i-blocks\n+     const int num_i_blocks = (n + BLOCK - 1) / BLOCK;\n+     const int threads = std::min(MAX_THREADS, num_i_blocks);\n+     std::vector<std::thread> workers;\n+     workers.reserve(threads);\n+\n+     // Split i-blocks among threads\n+     int block_per_thread = num_i_blocks / threads;\n+     int remainder = num_i_blocks % threads;\n+     int start_block = 0;\n+     for (int t = 0; t < threads; ++t) {\n+         int block_count = block_per_thread + (t < remainder ? 1 : 0);\n+         int i0 = start_block * BLOCK;\n+         int i_end = std::min(i0 + block_count * BLOCK, n);\n+         workers.emplace_back([&, i0, i_end]() {\n+             // Process rows i in [i0, i_end)\n+             for (int i0_local = i0; i0_local < i_end; i0_local += BLOCK) {\n+                 int i_end_local = std::min(i0_local + BLOCK, n);\n+                 for (int j0 = 0; j0 < n; j0 += BLOCK) {\n+                     int j_end = std::min(j0 + BLOCK, n);\n+                     for (int k = 0; k < n; ++k) {\n+                         for (int i = i0_local; i < i_end_local; ++i) {\n+                             float a = A[i * n + k];\n+                             int j = j0;\n+                             // Vectorized inner j loop\n+                             for (; j + 3 < j_end; j += 4) {\n+#if defined(__ARM_NEON)\n+                                 float32x4_t b = vld1q_f32(&B[k * n + j]);\n+                                 float32x4_t c = vld1q_f32(&C[i * n + j]);\n+                                 c = vfmaq_f32(c, b, vdupq_n_f32(a));\n+                                 vst1q_f32(&C[i * n + j], c);\n+#else\n+                                 // Scalar fallback (should not happen on Apple Silicon)\n+                                 C[i * n + j]     += a * B[k * n + j];\n+                                 C[i * n + j + 1] += a * B[k * n + j + 1];\n+                                 C[i * n + j + 2] += a * B[k * n + j + 2];\n+                                 C[i * n + j + 3] += a * B[k * n + j + 3];\n+#endif\n+                             }\n+                             // Remainder scalar loop\n+                             for (; j < j_end; ++j) {\n+                                 C[i * n + j] += a * B[k * n + j];\n+                             }\n+                         }\n+                     }\n+                 }\n+             }\n+         });\n+         start_block += block_count;\n+     }\n+     for (auto& th : workers) th.join();\n+ }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 173.2,
+ "p90_call_seconds": 279.6,
+ "prompt_tokens_per_s": 3201.0,
+ "gen_tokens_per_s": 115.1,
+ "mean_prompt_tokens": 2525,
+ "mean_gen_tokens": 21591,
+ "stopped_calls": 1,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

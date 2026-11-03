@@ -1,0 +1,101 @@
+{
+ "schema": 4,
+ "example": "matmul_f32",
+ "model": "richardyoung/frognano-4b-2609:latest",
+ "variant": "no-think",
+ "model_size_gb": 3.5,
+ "model_params": "4.3B",
+ "started": "2026-11-02T22:43:28",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 18.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 32768,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 0.899142,
+ "best_score": 0.899142,
+ "improvement": 1.0,
+ "llm_calls": 16,
+ "mean_llm_seconds": 64.0,
+ "attempts": 16,
+ "ok": 0,
+ "statuses": {
+  "llm_error": 9,
+  "invalid": 3,
+  "compile_error": 3,
+  "edit_error": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 0,
+ "minutes_to_best": null,
+ "best_idea": "initial program",
+ "progress": [
+  [
+   0.0,
+   0.899142
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.899142,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  }
+ ],
+ "best_diff": "",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 4.3,
+ "model_gpu_memory_gb": 4.3,
+ "context_length": 32768,
+ "load_seconds": 0.0,
+ "median_call_seconds": 56.0,
+ "p90_call_seconds": 127.6,
+ "prompt_tokens_per_s": 3144.8,
+ "gen_tokens_per_s": 55.0,
+ "mean_prompt_tokens": 2751,
+ "mean_gen_tokens": 1593,
+ "stopped_calls": 9,
+ "provider": "ollama",
+ "cost_usd": 0
+}

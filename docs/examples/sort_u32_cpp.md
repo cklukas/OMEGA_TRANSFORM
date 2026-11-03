@@ -76,4 +76,191 @@ extern "C" void sort_u32(uint32_t* a, size_t n) {
 
 ## Benchmark results
 
-This example has not been benchmarked yet. See [Benchmarking models](../benchmarking.md) for how to run it.
+The best result so far comes from **dots-studio/dots-3-note-preview:free (think)**, run through OpenRouter on 2026-11-02: a score of **253.2415** (×13.36 the starting program's 18.9585), reached after 27.61 of 60 minutes with 16 model requests.
+
+What the starting program produces (left) and what the best program by dots-studio/dots-3-note-preview:free (think) produces (right):
+
+![sort_u32_cpp: the starting program's solution and the best one](../assets/examples/sort_u32_cpp.svg)
+
+### How it got there
+
+The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.
+
+| Step | Minute | Score | Kind | Idea |
+|--:|--:|--:|---|---|
+| 0 | 0.0 | 18.9585 | start | initial program |
+| 1 | 27.6 | 190.5028 | edit | Replace the merge sort with an LSD radix sort that detects sorted/reverse runs and uses a configurable radix size, with a fallback to std::sort for small n, to achieve much higher throughput across all distributions. |
+| 2 | 27.6 | 253.2415 | parameter sweep | tuned RADIX_BITS=8, SORT_THRESHOLD=512 on top of: Replace the merge sort with an LSD radix sort that detects sorted/reverse runs and uses a configurable radix size, with a fallback to std::sort for small n, to achieve much higher throughput across all … |
+
+### The best program
+
+What changed compared with the starting program:
+
+```diff
+--- initial
++++ best
+@@ -19,22 +19,100 @@
+ #endif
+ 
+ // OMEGA-BLOCK-START
+-// Sorts a[0..n) ascending, in place, on the calling thread. n is any size from
+-// 0 to 2'000'000. Extra memory may be allocated freely.
+-static void merge_sort_rec(uint32_t* a, uint32_t* tmp, size_t lo, size_t hi) {
+-    if (hi - lo < 2) return;
+-    size_t mid = lo + (hi - lo) / 2;
+-    merge_sort_rec(a, tmp, lo, mid);
+-    merge_sort_rec(a, tmp, mid, hi);
+-    size_t i = lo, j = mid, k = lo;
+-    while (i < mid && j < hi) tmp[k++] = (a[j] < a[i]) ? a[j++] : a[i++];
+-    while (i < mid) tmp[k++] = a[i++];
+-    while (j < hi) tmp[k++] = a[j++];
+-    for (size_t t = lo; t < hi; ++t) a[t] = tmp[t];
+-}
++#include <algorithm>
++#include <cstring>
++#include <vector>
++
++constexpr int SORT_THRESHOLD = 512;
++constexpr int RADIX_BITS = 8;
++constexpr int RADIX_SIZE = 1 << RADIX_BITS;
++constexpr int NUM_PASSES = (32 + RADIX_BITS - 1) / RADIX_BITS;
+ 
+ extern "C" void sort_u32(uint32_t* a, size_t n) {
+-    std::vector<uint32_t> tmp(n);
+-    merge_sort_rec(a, tmp.data(), 0, n);
++    if (n <= 1) return;
++    // Check if already sorted or reverse sorted
++    bool asc = true, desc = true;
++    for (size_t i = 1; i < n; ++i) {
++        if (a[i] < a[i-1]) asc = false;
++        if (a[i] > a[i-1]) desc = false;
++        if (!asc && !desc) break;
++    }
++    if (asc) return;
++    if (desc) {
++        std::reverse(a, a + n);
++        return;
++    }
++    if (n < SORT_THRESHOLD) {
++        std::sort(a, a + n);
++        return;
++    }
++    // Radix sort
++    static std::vector<uint32_t> scratch;
++    if (scratch.size() < n) scratch.resize(n);
++    uint32_t* src = a;
++    uint32_t* dst = scratch.data();
++    
++    // Compute shifts, masks, and histogram sizes for each pass
++    int shifts[NUM_PASSES];
++    int masks[NUM_PASSES];
++    int hist_size[NUM_PASSES];
++    for (int p = 0; p < NUM_PASSES; ++p) {
++        shifts[p] = p * RADIX_BITS;
++        int bits = RADIX_BITS;
++        if (p == NUM_PASSES - 1) {
++            bits = 32 - shifts[p];
++            if (bits <= 0) bits = RADIX_BITS; // fallback
++        }
++        masks[p] = (1 << bits) - 1;
++        hist_size[p] = 1 << bits;
++    }
++    
++    // Histograms: flat array
++    std::vector<uint32_t> hist(NUM_PASSES * RADIX_SIZE);
++    for (size_t i = 0; i < n; ++i) {
++        uint32_t x = a[i];
++        for (int p = 0; p < NUM_PASSES; ++p) {
++            hist[p * RADIX_SIZE + ((x >> shifts[p]) & masks[p])]++;
++        }
++    }
++    
++    // Perform each pass
++    for (int p = 0; p < NUM_PASSES; ++p) {
++        uint32_t* h = &hist[p * RADIX_SIZE];
++        // Check if all elements have the same digit in this pass
++        bool skip = false;
++        for (int i = 0; i < hist_size[p]; ++i) {
++            if (h[i] == n) {
++                skip = true;
++                break;
++            }
++        }
++        if (skip) continue;
++        
++        // Prefix sum
++        uint32_t sum = 0;
++        for (int i = 0; i < hist_size[p]; ++i) {
++            uint32_t count = h[i];
++            h[i] = sum;
++            sum += count;
++        }
++        
++        // Scatter
++        int shift = shifts[p];
++        int mask = masks[p];
++        for (size_t i = 0; i < n; ++i) {
++            uint32_t x = src[i];
++            uint32_t bucket = (x >> shift) & mask;
++            dst[h[bucket]++] = x;
++        }
++        
++        // Swap source and destination for next pass
++        std::swap(src, dst);
++    }
++    
++    // If the final data is in the scratch buffer, copy back to a
++    if (src != a) {
++        std::memcpy(a, src, n * sizeof(uint32_t));
++    }
+ }
+ // OMEGA-BLOCK-END
+```
+
+### All models
+
+One run per model and reasoning mode; the [model benchmarks](../benchmarks/sort_u32_single_thread.md) page has speed, memory and progress over time.
+
+| Model | Where | Best | Gain | Minutes to best | New bests |
+|---|---|--:|--:|--:|--:|
+| dots-studio/dots-3-note-preview:free (think) | cloud | 253.2415 | ×13.36 | 27.6 | 2 |
+| gpt-oss:20b (no-think) | local | 252.0461 | ×12.21 | 14.0 | 5 |
+| nvidia/nemotron-3-ultra-550b-a55b:free (think) | cloud | 228.3437 | ×12.88 | 25.9 | 3 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | 225.6457 | ×12.32 | 44.0 | 3 |
+| cohere/north-mini-code:free (think) | cloud | 197.8012 | ×9.96 | 8.7 | 2 |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | cloud | 194.6110 | ×9.72 | 25.9 | 4 |
+| nvidia/nemotron-3.5-lightning:free (think) | cloud | 187.8212 | ×9.08 | 59.9 | 2 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 182.1660 | ×9.38 | 8.3 | 1 |
+| gemma4:12b-it-qat (no-think) | local | 171.3880 | ×7.75 | 18.4 | 6 |
+| gemma4:26b-a4b-it-qat (no-think) | local | 170.6196 | ×7.74 | 27.8 | 7 |
+| qwen3.5:latest (no-think) | local | 128.7961 | ×5.78 | 23.9 | 3 |
+| gemma4:e4b-it-qat (no-think) | local | 123.3560 | ×6.85 | 10.2 | 8 |
+| gemma4:latest (no-think) | local | 119.3034 | ×5.66 | 8.2 | 4 |
+| glm-4.7-flash:latest (no-think) | local | 102.4331 | ×5.66 | 9.7 | 2 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 87.1696 | ×4.07 | 11.2 | 1 |
+| qwen2.5-coder:7b (no-think) | local | 29.2547 | ×1.43 | 5.3 | 1 |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | 22.6408 | ×1.00 | - | 0 |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | 22.6016 | ×1.00 | - | 0 |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | local | 22.5831 | ×1.00 | - | 0 |
+| google/gemma-4-26b-a4b-it:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
+| gemma4:e2b (no-think) | local | 22.4472 | ×1.00 | - | 0 |
+| nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
+| poolside/laguna-s-2.1:free (no-think) | cloud | | | | failed: all 6 model requests failed: poolside/laguna-s-2.1:free … |
+| richardyoung/frognano-4b-2609:latest (no-think) | local | 22.2670 | ×1.00 | - | 0 |
+| nemotron-3-nano:4b (no-think) | local | 22.2555 | ×1.00 | - | 0 |
+| dots-studio/dots-3-note-preview:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
+| xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 22.2125 | ×1.00 | - | 0 |
+| poolside/laguna-xs-2.1:free (no-think) | cloud | | | | failed: all 6 model requests failed: poolside/laguna-xs-2.1:free … |
+| google/gemma-4-31b-it:free (no-think) | cloud | | | | failed: all 6 model requests failed: google/gemma-4-31b-it:free … |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
+| nvidia/nemotron-3.5-lightning:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
+| qwen3-coder:30b (no-think) | local | 21.5902 | ×1.00 | - | 0 |
+| xingchen-agi/xing4.0-29b-a4b:free (think) | cloud | 20.1104 | ×1.00 | - | 0 |
+| cohere/north-mini-code:free (no-think) | cloud | | | | failed: all 6 model requests failed: cohere/north-mini-code:free … |
+| nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | | | | failed: all 5 model requests failed … |
+| recursive/flint-v1.0:free (think) | cloud | | | | failed: all 5 model requests failed: recursive/flint-v1.0:free … |
+| google/gemma-4-31b-it:free (think) | cloud | | | | failed: all 5 model requests failed: google/gemma-4-31b-it:free … |
+| frob/sarvam:30b (no-think) | local | 17.8300 | ×1.00 | - | 0 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | | | | failed: all 16 model requests failed … |
+| google/gemma-4-26b-a4b-it:free (think) | cloud | | | | failed: all 6 model requests failed … |
+| nvidia/nemotron-3.5-super-vl:free (think) | cloud | | | | failed: RuntimeError: the initial program does not pass the … |

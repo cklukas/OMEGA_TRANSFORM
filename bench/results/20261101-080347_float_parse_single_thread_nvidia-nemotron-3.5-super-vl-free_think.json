@@ -1,0 +1,149 @@
+{
+ "schema": 4,
+ "example": "float_parse_single_thread",
+ "model": "nvidia/nemotron-3.5-super-vl:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-01T08:03:47",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 68.7,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 32768,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 59.8857,
+ "best_score": 80.3475,
+ "improvement": 1.3416809021185359,
+ "llm_calls": 11,
+ "mean_llm_seconds": 371.8,
+ "attempts": 11,
+ "ok": 3,
+ "statuses": {
+  "edit_error": 6,
+  "invalid": 1,
+  "ok": 3,
+  "llm_error": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 3,
+ "minutes_to_best": 28.9,
+ "best_idea": "Fix the sign bug: the strtod fallback already parses the leading '-', so flipping the sign again produced positive results for negative numbers; apply negation only in the fast path and let strtod han",
+ "progress": [
+  [
+   0.0,
+   59.8857
+  ],
+  [
+   23.99,
+   71.254
+  ],
+  [
+   28.42,
+   72.0615
+  ],
+  [
+   28.9,
+   80.3475
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 59.8857,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 5.83,
+   "score": null,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "exploit/diff/refine",
+   "status": "invalid",
+   "idea": "Replace the pure strtod baseline with a fast path that parses simple integers and short decimals exactly (mantissa < 2^53, decimal exponent in [-22, 22] so powers of ten are exactly representable), using one correctly-rounded multiply or divide, and falls back to std::strtod for everything else (long mantissas, large exponents, subnormals, etc.). This covers the common integer, price, fixed-decima"
+  },
+  {
+   "minutes": 28.9,
+   "score": 80.3475,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Fix the sign bug: the strtod fallback already parses the leading '-', so flipping the sign again produced positive results for negative numbers; apply negation only in the fast path and let strtod handle the sign in the fallback."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -31,15 +31,108 @@\n // spaces, no '+' sign on the mantissa, no inf/nan/hex. Every value must be\n // bit-identical to std::strtod (correctly rounded, round-half-to-even).\n extern \"C\" size_t parse_doubles(const char* buf, size_t len, double* out) {\n+    // 10^0 .. 10^22 are all exactly representable as IEEE-754 doubles.\n+    static constexpr double pow10[] = {\n+        1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9,\n+        1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19,\n+        1e20, 1e21, 1e22\n+    };\n+\n     const char* p = buf;\n     const char* end = buf + len;\n     size_t count = 0;\n+\n     while (p < end) {\n-        char* next;\n-        out[count++] = std::strtod(p, &next);\n-        p = next;\n-        while (p < end && *p == '\\n') ++p;\n+        const char* start = p;\n+        bool neg = false;\n+        if (*p == '-') { neg = true; ++p; }\n+\n+        uint64_t mantissa = 0;\n+        int sig_digits = 0;\n+        int digits_after_dot = 0;\n+        bool found_nonzero = false;\n+        bool too_many = false;\n+\n+        // Integer part\n+        while (p < end && *p >= '0' && *p <= '9') {\n+            if (*p != '0' || found_nonzero) {\n+                found_nonzero = true;\n+                if (sig_digits < 19) {\n+                    mantissa = mantissa * 10 + (uint64_t)(*p - '0');\n+                    ++sig_digits;\n+                } else {\n+                    too_many = true;\n+                }\n+            }\n+            ++p;\n+        }\n+\n+        // Fraction part\n+        int exp = 0;\n+        if (p < end && *p == '.') {\n+            ++p;\n+            while (p < end && *p >= '0' && *p <= '9') {\n+                ++digits_after_dot;\n+                if (*p != '0' || found_nonzero) {\n+                    found_nonzero = true;\n+                    if (sig_digits < 19) {\n+                        mantissa = mantissa * 10 + (uint64_t)(*p - '0');\n+                        ++sig_digits;\n+                    } else {\n+                        too_many = true;\n+                    }\n+                }\n+                ++p;\n+            }\n+        }\n+\n+        // Exponent part\n+        if (p < end && (*p == 'e' || *p == 'E')) {\n+            ++p;\n+            int exp_sign = 1;\n+            if (*p == '+') { ++p; }\n+            else if (*p == '-') { exp_sign = -1; ++p; }\n+            int exp_val = 0;\n+            while (p < end && *p >= '0' && *p <= '9') {\n+                exp_val = exp_val * 10 + (*p - '0');\n+                ++p;\n+            }\n+            exp = exp_sign * exp_val;\n+        }\n+\n+        double result;\n+        if (!found_nonzero) {\n+            result = neg ? -0.0 : 0.0;\n+        } else {\n+            exp -= digits_after_dot;\n+\n+            if (!too_many && exp == 0) {\n+                // Pure integer: conversion to double is correctly rounded.\n+                result = (double)mantissa;\n+                if (neg) result = -result;\n+            } else if (!too_many && mantissa < (1ull << 53) && exp >= -22 && exp <= 22) {\n+                // Mantissa exactly representable, power of ten exactly representable:\n+                // one correctly-rounded multiply or divide gives strtod-identical result.\n+                if (exp > 0) {\n+                    result = (double)mantissa * pow10[exp];\n+                } else {\n+                    result = (double)mantissa / pow10[-exp];\n+                }\n+                if (neg) result = -result;\n+            } else {\n+                // strtod parses the optional '-' itself, so do not flip the sign again.\n+                char* next;\n+                result = std::strtod(start, &next);\n+            }\n+        }\n+\n+        out[count++] = result;\n+\n+        // Skip remainder of line (the terminating '\\n').\n+        while (p < end && *p != '\\n') ++p;\n+        if (p < end) ++p;\n     }\n+\n     return count;\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "parse",
+  "count": 2000000,
+  "text_mb": 28.39,
+  "head": [
+   "0",
+   "-0",
+   "1",
+   "-1.5",
+   "0.1",
+   "1e23",
+   "9007199254740993",
+   "4.9e-324"
+  ]
+ },
+ "best_solution": {
+  "kind": "parse",
+  "count": 2000000,
+  "text_mb": 28.39,
+  "head": [
+   "0",
+   "-0",
+   "1",
+   "-1.5",
+   "0.1",
+   "1e23",
+   "9007199254740993",
+   "4.9e-324"
+  ]
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 203.8,
+ "p90_call_seconds": 768.0,
+ "prompt_tokens_per_s": 797.4,
+ "gen_tokens_per_s": 53.0,
+ "mean_prompt_tokens": 6111,
+ "mean_gen_tokens": 18757,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

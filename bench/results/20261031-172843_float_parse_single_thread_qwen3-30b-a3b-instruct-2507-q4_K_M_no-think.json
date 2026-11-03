@@ -1,0 +1,142 @@
+{
+ "schema": 4,
+ "example": "float_parse_single_thread",
+ "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-10-31T17:28:43",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 20.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 32768,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 77.6176,
+ "best_score": 77.7921,
+ "improvement": 1.002248201438849,
+ "llm_calls": 16,
+ "mean_llm_seconds": 73.7,
+ "attempts": 16,
+ "ok": 7,
+ "statuses": {
+  "compile_error": 5,
+  "llm_error": 1,
+  "ok": 7,
+  "invalid": 1,
+  "edit_error": 2
+ },
+ "sweeps": 4,
+ "sweep_variants": 58,
+ "improvements": 1,
+ "minutes_to_best": 19.89,
+ "best_idea": "tuned FAST_PATH_MAX_DIGITS=19.32, FAST_PATH_MAX_EXP=24.78 on top of: Replace the fallback to std::strtod with a fast path for integers and short decimals using NEON intrinsics to process 8 digits at a",
+ "progress": [
+  [
+   0.0,
+   77.6176
+  ],
+  [
+   19.89,
+   77.7921
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 77.6176,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 19.89,
+   "score": 76.6623,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Replace the fallback to std::strtod with a fast path for integers and short decimals using NEON intrinsics to process 8 digits at a time in parallel, reducing branch misprediction and enabling SIMD acceleration for the common case of short decimal numbers, while keeping correctness via exact Clinger's fast path and Eisel-Lemire-like logic for edge cases."
+  },
+  {
+   "minutes": 19.89,
+   "score": 77.7921,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "sweep/exploit/diff/tune",
+   "status": "ok",
+   "idea": "tuned FAST_PATH_MAX_DIGITS=19.32, FAST_PATH_MAX_EXP=24.78 on top of: Replace the fallback to std::strtod with a fast path for integers and short decimals using NEON intrinsics to process 8 digits at a time in parallel, reducing branch misprediction and enabling SIMD acceleration for the common case"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -34,12 +34,132 @@\n     const char* p = buf;\n     const char* end = buf + len;\n     size_t count = 0;\n+#if defined(__ARM_NEON)\n+    // Fast path: process up to FAST_PATH_MAX_DIGITS digits using NEON, with Clinger's fast path\n+    // for mantissas below 2^53 and exponents in [-FAST_PATH_MAX_EXP, FAST_PATH_MAX_EXP]\n+    constexpr int FAST_PATH_MAX_DIGITS = 19;\n+    constexpr int FAST_PATH_MAX_EXP = 25;\n+    constexpr int FAST_PATH_MAX_MANTISSA = 53;  // bits\n+\n+    while (p < end) {\n+        const char* start = p;\n+        bool negative = false;\n+        if (*p == '-') {\n+            negative = true;\n+            p++;\n+        } else if (*p == '+') {\n+            p++;\n+        }\n+\n+        // Load 8 bytes at a time, process 8 digits in parallel\n+        uint64_t digits = 0;\n+        int digit_count = 0;\n+        const uint8_t* up = (const uint8_t*)p;\n+        const uint8_t* end8 = (const uint8_t*)(end - 7);\n+        while (up < end8) {\n+            uint8_t row[8];\n+            for (int i = 0; i < 8; i++) row[i] = up[i];\n+            // Convert to digits, check if valid\n+            uint8_t valid = 0;\n+            for (int i = 0; i < 8; i++) {\n+                if (row[i] >= '0' && row[i] <= '9') {\n+                    row[i] -= '0';\n+                    valid |= (1 << i);\n+                } else {\n+                    break;\n+                }\n+            }\n+            if (valid == 0) break;\n+\n+            // Pack digits into uint64_t using NEON\n+            uint8x8_t v = vld1_u8(row);\n+            uint8x8_t d = vsub_u8(v, vdup_n_u8('0'));\n+            uint16x8_t w = vmovl_u8(d);\n+            uint16x8_t t = vmulq_n_u16(w, 10);\n+            uint16x8_t s = vmovl_u8(vdup_n_u8(1));\n+            uint16x8_t m = vmulq_n_u16(s, 10);\n+            uint64x2_t z = vreinterpretq_u64_u16(vmovn_u16(t));\n+            digits = (digits * 100000000ULL) + (z[0] & 0xFFFFFFFFULL);\n+            digit_count += 8;\n+            up += 8;\n+        }\n+\n+        // Handle remaining digits\n+        while (p < end && *p >= '0' && *p <= '9') {\n+            digits = digits * 10 + (*p - '0');\n+            digit_count++;\n+            p++;\n+        }\n+\n+        // Handle decimal point\n+        int decimal_exp = 0;\n+        if (p < end && *p == '.') {\n+            p++;\n+            int frac_count = 0;\n+            while (p < end && *p >= '0' && *p <= '9') {\n+                digits = digits * 10 + (*p - '0');\n+                digit_count++;\n+                frac_count++;\n+                p++;\n+            }\n+            decimal_exp = -frac_count;\n+        }\n+\n+        // Handle exponent\n+        int exp = 0;\n+        if (p < end && (*p == 'e' || *p == 'E')) {\n+            p++;\n+            int exp_sign = 1;\n+            if (p < end && (*p == '+' || *p == '-')) {\n+                exp_sign = (*p == '-') ? -1 : 1;\n+                p++;\n+            }\n+            while (p < end && *p >= '0' && *p <= '9') {\n+                exp = exp * 10 + (*p - '0');\n+                p++;\n+            }\n+            exp *= exp_sign;\n+        }\n+\n+        // Clinger's fast path: if mantissa < 2^53 and |exp| <= 22, use table lookup\n+        if (digit_count <= FAST_PATH_MAX_DIGITS && exp >= -FAST_PATH_MAX_EXP && exp <= FAST_PATH_MAX_EXP) {\n+            // Use lookup table for powers of 10\n+            static const uint64_t POW10[] = {\n+                1ULL, 10ULL, 100ULL, 1000ULL, 10000ULL, 100000ULL, 1000000ULL, 10000000ULL,\n+                100000000ULL, 1000000000ULL, 10000000000ULL, 100000000000ULL, 1000000000000ULL,\n+                10000000000000ULL, 100000000000000ULL, 1000000000000000ULL, 10000000000000000ULL,\n+                100000000000000000ULL, 1000000000000000000ULL, 10000000000000000000ULL\n+            };\n+            double result = (double)digits;\n+            if (exp < 0) {\n+                for (int i = 0; i < -exp; i++) {\n+                    result /= 10.0;\n+                }\n+            } else {\n+                for (int i = 0; i < exp; i++) {\n+                    result *= 10.0;\n+                }\n+            }\n+            if (negative) result = -result;\n+            out[count++] = result;\n+            continue;\n+        }\n+\n+        // Fallback to std::strtod for complex cases\n+        char* next;\n+        out[count++] = std::strtod(start, &next);\n+        p = next;\n+        while (p < end && *p == '\\n') ++p;\n+    }\n+#else\n+    // Fallback for non-NEON systems\n     while (p < end) {\n         char* next;\n         out[count++] = std::strtod(p, &next);\n         p = next;\n         while (p < end && *p == '\\n') ++p;\n     }\n+#endif\n     return count;\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "parse",
+  "count": 2000000,
+  "text_mb": 28.39,
+  "head": [
+   "0",
+   "-0",
+   "1",
+   "-1.5",
+   "0.1",
+   "1e23",
+   "9007199254740993",
+   "4.9e-324"
+  ]
+ },
+ "best_solution": {
+  "kind": "parse",
+  "count": 2000000,
+  "text_mb": 28.39,
+  "head": [
+   "0",
+   "-0",
+   "1",
+   "-1.5",
+   "0.1",
+   "1e23",
+   "9007199254740993",
+   "4.9e-324"
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 22.2,
+ "model_gpu_memory_gb": 18.9,
+ "context_length": 32768,
+ "load_seconds": 52.4,
+ "median_call_seconds": 71.3,
+ "p90_call_seconds": 128.2,
+ "prompt_tokens_per_s": 1042.4,
+ "gen_tokens_per_s": 31.7,
+ "mean_prompt_tokens": 6696,
+ "mean_gen_tokens": 1835,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

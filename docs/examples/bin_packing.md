@@ -286,3 +286,13 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/bin_p
 | xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | | | | failed: all 7 model requests failed … |
 | google/gemma-4-26b-a4b-it:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
 | google/gemma-4-31b-it:free (no-think) | cloud | | | | failed: all 6 model requests failed: google/gemma-4-31b-it:free … |
+| cohere/north-mini-code:free (think) | cloud | | | | failed: all 6 model requests failed: cohere/north-mini-code:free … |
+| nvidia/nemotron-3.5-super-vl:free (think) | cloud | | | | failed: all 6 model requests failed … |
+| nvidia/nemotron-3-ultra-550b-a55b:free (think) | cloud | | | | failed: all 6 model requests failed … |
+| dots-studio/dots-3-note-preview:free (think) | cloud | | | | failed: all 6 model requests failed … |
+| nvidia/nemotron-3.5-lightning:free (think) | cloud | | | | failed: all 6 model requests failed … |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | cloud | | | | failed: all 6 model requests failed … |
+| xingchen-agi/xing4.0-29b-a4b:free (think) | cloud | 0.79426 | ×1.00 | - | 0 |
+| google/gemma-4-26b-a4b-it:free (think) | cloud | | | | failed: all 6 model requests failed … |
+| google/gemma-4-31b-it:free (think) | cloud | | | | failed: all 6 model requests failed: google/gemma-4-31b-it:free … |
+| recursive/flint-v1.0:free (think) | cloud | | | | failed: all 6 model requests failed: recursive/flint-v1.0:free … |

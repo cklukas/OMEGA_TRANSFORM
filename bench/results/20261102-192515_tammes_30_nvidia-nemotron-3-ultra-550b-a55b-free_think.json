@@ -1,0 +1,437 @@
+{
+ "schema": 4,
+ "example": "tammes_30",
+ "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-02T19:25:15",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 26.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 3.2013569883368893,
+ "best_score": 37.12619397048401,
+ "improvement": 11.59701779768433,
+ "llm_calls": 25,
+ "mean_llm_seconds": 62.4,
+ "attempts": 25,
+ "ok": 17,
+ "statuses": {
+  "invalid": 2,
+  "ok": 17,
+  "duplicate": 5,
+  "edit_error": 1
+ },
+ "sweeps": 13,
+ "sweep_variants": 197,
+ "improvements": 5,
+ "minutes_to_best": 26.55,
+ "best_idea": "tuned NUM_RESTARTS=3, SA_INITIAL_TEMP=0.2, SA_STEPS_PER_RESTART=10000, PERTURBATION_SCALE_START=0.15 on top of: Use Simulated Annealing directly on the minimum angle objective starting from a Fibonacc",
+ "progress": [
+  [
+   0.0,
+   3.2013569883368893
+  ],
+  [
+   0.91,
+   32.74023108183817
+  ],
+  [
+   3.17,
+   33.91731755107034
+  ],
+  [
+   4.86,
+   35.89649347404014
+  ],
+  [
+   13.9,
+   36.787557398084196
+  ],
+  [
+   26.55,
+   37.12619397048401
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.2013569883368893,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 26.55,
+   "score": 36.7698407161547,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "exploit/rewrite/bold",
+   "status": "ok",
+   "idea": "Use Simulated Annealing directly on the minimum angle objective starting from a Fibonacci sphere, with adaptive step sizes and multiple restarts to escape local optima\u2014this avoids the multi-stage repulsion pipeline and directly optimizes the max-min criterion via stochastic search."
+  },
+  {
+   "minutes": 26.55,
+   "score": 37.12619397048401,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "sweep/exploit/rewrite/bold",
+   "status": "ok",
+   "idea": "tuned NUM_RESTARTS=3, SA_INITIAL_TEMP=0.2, SA_STEPS_PER_RESTART=10000, PERTURBATION_SCALE_START=0.15 on top of: Use Simulated Annealing directly on the minimum angle objective starting from a Fibonacci sphere, with adaptive step sizes and multiple restarts to escape local optima\u2014this avoids the mult"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -6,22 +6,224 @@\n import random\n \n # OMEGA-BLOCK-START\n+# Sweepable constants for Simulated Annealing\n+NUM_RESTARTS = 3\n+SA_INITIAL_TEMP = 0.2\n+SA_FINAL_TEMP = 1e-6\n+SA_STEPS_PER_RESTART = 10000\n+SA_COOLING = \"exponential\"  # or \"linear\"\n+PERTURBATION_SCALE_START = 0.15\n+PERTURBATION_SCALE_END = 0.001\n+FIBONACCI_PHASE_RANDOMIZE = True\n+RANDOM_SEED = 42\n+\n+def _min_angle_deg(points):\n+    \"\"\"Return minimum angle in degrees between any two points.\"\"\"\n+    n = len(points)\n+    min_cos = 1.0\n+    for i in range(n):\n+        xi, yi, zi = points[i]\n+        for j in range(i + 1, n):\n+            xj, yj, zj = points[j]\n+            dot = xi * xj + yi * yj + zi * zj\n+            if dot < min_cos:\n+                min_cos = dot\n+    if min_cos > 1.0:\n+        min_cos = 1.0\n+    elif min_cos < -1.0:\n+        min_cos = -1.0\n+    return math.degrees(math.acos(min_cos))\n+\n+def _min_angle_info(points):\n+    \"\"\"Return (min_angle_deg, min_cos, pairs_list) where pairs_list contains (i,j) of closest pairs.\"\"\"\n+    n = len(points)\n+    min_cos = 1.0\n+    pairs = []\n+    for i in range(n):\n+        xi, yi, zi = points[i]\n+        for j in range(i + 1, n):\n+            xj, yj, zj = points[j]\n+            dot = xi * xj + yi * yj + zi * zj\n+            if dot < min_cos - 1e-12:\n+                min_cos = dot\n+                pairs = [(i, j)]\n+            elif abs(dot - min_cos) < 1e-12:\n+                pairs.append((i, j))\n+    if min_cos > 1.0:\n+        min_cos = 1.0\n+    elif min_cos < -1.0:\n+        min_cos = -1.0\n+    return math.degrees(math.acos(min_cos)), min_cos, pairs\n+\n+def _fibonacci_sphere(n, phase=0.0):\n+    \"\"\"Return list of n points on unit sphere using Fibonacci spiral with optional phase offset.\"\"\"\n+    points = []\n+    golden_angle = math.pi * (3.0 - math.sqrt(5.0))\n+    for i in range(n):\n+        y = 1.0 - (i + 0.5) * 2.0 / n\n+        radius = math.sqrt(max(0.0, 1.0 - y * y))\n+        phi = i * golden_angle + phase\n+        x = radius * math.cos(phi)\n+        z = radius * math.sin(phi)\n+        points.append([x, y, z])\n+    return points\n+\n+def _random_tangent_vector(x, y, z, rng, scale=1.0):\n+    \"\"\"Generate a random tangent vector of given scale at point (x,y,z).\"\"\"\n+    # Generate random 3D vector and project onto tangent plane\n+    rx = rng.uniform(-1, 1)\n+    ry = rng.uniform(-1, 1)\n+    rz = rng.uniform(-1, 1)\n+    dot = rx * x + ry * y + rz * z\n+    tx = rx - dot * x\n+    ty = ry - dot * y\n+    tz = rz - dot * z\n+    norm_t = math.sqrt(tx*tx + ty*ty + tz*tz)\n+    if norm_t > 1e-12:\n+        tx *= scale / norm_t\n+        ty *= scale / norm_t\n+        tz *= scale / norm_t\n+    return tx, ty, tz\n+\n+def _move_point(points, idx, tx, ty, tz):\n+    \"\"\"Move point idx by tangent vector (tx,ty,tz) and renormalize.\"\"\"\n+    x, y, z = points[idx]\n+    nx = x + tx\n+    ny = y + ty\n+    nz = z + tz\n+    norm = math.sqrt(nx*nx + ny*ny + nz*nz)\n+    points[idx] = [nx/norm, ny/norm, nz/norm]\n+\n+def _simulated_annealing(points, rng, initial_temp, final_temp, steps, perturb_start, perturb_end):\n+    \"\"\"Run simulated annealing to maximize minimum angle.\"\"\"\n+    n = len(points)\n+    current_min_angle, current_min_cos, _ = _min_angle_info(points)\n+    best_points = [p[:] for p in points]\n+    best_min_angle = current_min_angle\n+    \n+    for step in range(steps):\n+        # Exponential cooling schedule\n+        t = step / steps\n+        temp = initial_temp * (final_temp / initial_temp) ** t\n+        perturb_scale = perturb_start * (perturb_end / perturb_start) ** t\n+        \n+        # Pick a random point to perturb\n+        idx = rng.randrange(n)\n+        x, y, z = points[idx]\n+        \n+        # Generate random tangent move\n+        tx, ty, tz = _random_tangent_vector(x, y, z, rng, perturb_scale)\n+        \n+        # Apply move\n+        old_point = points[idx][:]\n+        _move_point(points, idx, tx, ty, tz)\n+        \n+        # Compute new minimum angle\n+        new_min_angle, new_min_cos, _ = _min_angle_info(points)\n+        \n+        # Acceptance criterion\n+        delta = new_min_angle - current_min_angle\n+        if delta > 0 or rng.random() < math.exp(delta / temp):\n+            current_min_angle = new_min_angle\n+            if current_min_angle > best_min_angle:\n+                best_min_angle = current_min_angle\n+                best_points = [p[:] for p in points]\n+        else:\n+            # Revert\n+            points[idx] = old_point\n+    \n+    return best_points, best_min_angle\n+\n+def _local_polish(points, steps=500, initial_step=0.02, step_decay=0.995):\n+    \"\"\"Deterministic local polish: push apart closest pairs only.\"\"\"\n+    n = len(points)\n+    step = initial_step\n+    for _ in range(steps):\n+        # Find minimum distance and pairs within margin\n+        min_dist2 = float('inf')\n+        for i in range(n):\n+            xi, yi, zi = points[i]\n+            for j in range(i + 1, n):\n+                xj, yj, zj = points[j]\n+                dx = xi - xj\n+                dy = yi - yj\n+                dz = zi - zj\n+                dist2 = dx*dx + dy*dy + dz*dz\n+                if dist2 < min_dist2:\n+                    min_dist2 = dist2\n+        if min_dist2 <= 1e-12:\n+            break\n+        min_dist = math.sqrt(min_dist2)\n+        margin = min_dist * 1.05\n+        margin2 = margin * margin\n+        \n+        forces = [[0.0, 0.0, 0.0] for _ in range(n)]\n+        for i in range(n):\n+            xi, yi, zi = points[i]\n+            for j in range(i + 1, n):\n+                xj, yj, zj = points[j]\n+                dx = xi - xj\n+                dy = yi - yj\n+                dz = zi - zj\n+                dist2 = dx*dx + dy*dy + dz*dz\n+                if dist2 < margin2 and dist2 > 1e-12:\n+                    dist = math.sqrt(dist2)\n+                    force_mag = 1.0 / (dist2 * dist)\n+                    fx = force_mag * dx / dist\n+                    fy = force_mag * dy / dist\n+                    fz = force_mag * dz / dist\n+                    forces[i][0] += fx\n+                    forces[i][1] += fy\n+                    forces[i][2] += fz\n+                    forces[j][0] -= fx\n+                    forces[j][1] -= fy\n+                    forces[j][2] -= fz\n+        \n+        for i in range(n):\n+            fx, fy, fz = forces[i]\n+            x, y, z = points[i]\n+            dot = fx*x + fy*y + fz*z\n+            tx = fx - dot * x\n+            ty = fy - dot * y\n+            tz = fz - dot * z\n+            nx = x + step * tx\n+            ny = y + step * ty\n+            nz = z + step * tz\n+            norm = math.sqrt(nx*nx + ny*ny + nz*nz)\n+            points[i] = [nx/norm, ny/norm, nz/norm]\n+        \n+        step *= step_decay\n+\n def construct(n=30):\n-    \"\"\"Return a list of n points (x, y, z) on the unit sphere.\n-\n-    Vectors need not be normalized (the evaluator normalizes them), but none may be\n-    zero. The score is the minimum angle in degrees between any two points. This\n-    start draws uniformly random points with a fixed seed, so some pairs end up\n-    close together.\n-    \"\"\"\n-    rng = random.Random(1)\n-    points = []\n-    for _ in range(n):\n-        z = rng.uniform(-1.0, 1.0)\n-        phi = rng.uniform(0.0, 2 * math.pi)\n-        s = math.sqrt(1.0 - z * z)\n-        points.append((s * math.cos(phi), s * math.sin(phi), z))\n-    return points\n+    \"\"\"Return optimized list of n points on unit sphere using Simulated Annealing with restarts.\"\"\"\n+    rng = random.Random(RANDOM_SEED)\n+    best_points = None\n+    best_min_angle = -1.0\n+    \n+    for restart in range(NUM_RESTARTS):\n+        # Generate starting configuration: Fibonacci sphere with random phase for restarts > 0\n+        if restart == 0 or not FIBONACCI_PHASE_RANDOMIZE:\n+            phase = 0.0\n+        else:\n+            phase = rng.uniform(0, 2 * math.pi)\n+        points = _fibonacci_sphere(n, phase)\n+        \n+        # Run simulated annealing\n+        sa_points, sa_min_angle = _simulated_annealing(\n+            points, rng,\n+            SA_INITIAL_TEMP, SA_FINAL_TEMP, SA_STEPS_PER_RESTART,\n+            PERTURBATION_SCALE_START, PERTURBATION_SCALE_END\n+        )\n+        \n+        # Local polish to refine\n+        _local_polish(sa_points)\n+        final_min_angle = _min_angle_deg(sa_points)\n+        \n+        if final_min_angle > best_min_angle:\n+            best_min_angle = final_min_angle\n+            best_points = [tuple(p) for p in sa_points]\n+    \n+    return best_points\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "sphere_points",
+  "points": [
+   [
+    0.3919709387244532,
+    -0.5582121095618475,
+    -0.7312715117751976
+   ],
+   [
+    -0.027052463738772504,
+    0.8490936142385189,
+    0.5275492379532281
+   ],
+   [
+    -0.9500239047545286,
+    0.31204362944230385,
+    -0.009129825816118098
+   ],
+   [
+    0.22957314306547277,
+    -0.9248645600666849,
+    0.30318594544552596
+   ],
+   [
+    0.5740391880355756,
+    0.1033386161058686,
+    -0.8122808264515302
+   ],
+   [
+    -0.6758397496085636,
+    0.3037890926411783,
+    0.6715302078397394
+   ],
+   [
+    0.8512988419434201,
+    0.011265659732678564,
+    0.524560164915884
+   ],
+   [
+    -0.17680359044518373,
+    -0.9781667833824966,
+    -0.10922561189039716
+   ],
+   [
+    0.7908900515540614,
+    -0.28321934240489055,
+    -0.5424755574590947
+   ],
+   [
+    0.5851964340381928,
+    0.11388203849293084,
+    0.8028549152229673
+   ],
+   [
+    -0.30434810274742335,
+    -0.08102906244732802,
+    -0.9491082780130784
+   ],
+   [
+    -0.3509958145626131,
+    0.3246444046695718,
+    0.8782983255570211
+   ],
+   [
+    -0.7271635298854837,
+    0.3872590786250933,
+    -0.5668012057387734
+   ],
+   [
+    0.05942052898539893,
+    0.33054331283916893,
+    -0.9419184248502641
+   ],
+   [
+    -0.9919106268324059,
+    0.02610563707090374,
+    -0.12422481269885588
+   ],
+   [
+    0.10141148542176433,
+    0.8394879795728718,
+    -0.5338310994848547
+   ],
+   [
+    -0.800348025639128,
+    0.20762133322971385,
+    -0.5624379253246229
+   ],
+   [
+    0.8990635126271509,
+    0.12213812674917045,
+    -0.4204367708190289
+   ],
+   [
+    -0.6917519647168419,
+    -0.2562101885183855,
+    0.6751559513251457
+   ],
+   [
+    0.3757097440071294,
+    0.88195886829755,
+    0.28458872586489115
+   ],
+   [
+    0.10962933743537041,
+    -0.1326097917248836,
+    0.9850868243521302
+   ],
+   [
+    -0.32373272592570945,
+    0.5659500259391612,
+    -0.7582200803883872
+   ],
+   [
+    -0.2164510454505914,
+    -0.8700158468173443,
+    0.44296881516653674
+   ],
+   [
+    -0.43065317546221576,
+    0.22938243010501777,
+    0.8728811735989193
+   ],
+   [
+    -0.3606302208330362,
+    -0.6589776995328848,
+    0.660071386548654
+   ],
+   [
+    -0.7836961589264019,
+    -0.48079575758636983,
+    -0.3932629781341648
+   ],
+   [
+    0.3660243386758451,
+    -0.5299673944570227,
+    0.7649580016637154
+   ],
+   [
+    -0.8476230763315352,
+    -0.5304935866064687,
+    0.010567641159200837
+   ],
+   [
+    0.016650981414250473,
+    0.36477107016970456,
+    -0.9309483396973168
+   ],
+   [
+    -0.6901522939672605,
+    0.4121803795407587,
+    0.5948084951086057
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "sphere_points",
+  "points": [
+   [
+    0.6100846282816592,
+    -0.291750826060307,
+    -0.7366669544832035
+   ],
+   [
+    -0.7836168937565304,
+    -0.5901207880155688,
+    0.1941700784653773
+   ],
+   [
+    -0.42816344182085725,
+    -0.5120090453107013,
+    0.7446628798376764
+   ],
+   [
+    0.7188660588878443,
+    0.6914318589676884,
+    -0.07178839588363284
+   ],
+   [
+    -0.1285991482263388,
+    -0.5332403586190558,
+    -0.836132154037435
+   ],
+   [
+    -0.8475634222909899,
+    0.3479968183232872,
+    -0.4006675175644441
+   ],
+   [
+    0.4850923720499355,
+    0.6768729306738929,
+    0.5536500937414376
+   ],
+   [
+    0.21645391159516125,
+    -0.602689349925368,
+    0.7680581043395686
+   ],
+   [
+    0.8351789971155297,
+    -0.5239611000307598,
+    -0.167155043093693
+   ],
+   [
+    -0.07312342434813514,
+    -0.02991825463738847,
+    0.9968740456301663
+   ],
+   [
+    -0.9855074372155024,
+    0.041573830591431174,
+    0.1644588331555585
+   ],
+   [
+    -0.4510558182904723,
+    -0.8262492939063635,
+    -0.33743259046148505
+   ],
+   [
+    -0.5205521722838363,
+    0.001738441541165182,
+    -0.8538280937938194
+   ],
+   [
+    -0.224894579104477,
+    -0.9340659466655843,
+    0.27738643724801354
+   ],
+   [
+    -0.47102209938950346,
+    0.853804305040107,
+    -0.2217124051145649
+   ],
+   [
+    -0.6998955872797907,
+    0.6273695782894579,
+    0.3413994422127615
+   ],
+   [
+    0.42674261728319796,
+    -0.8828700749425717,
+    0.19603869354080036
+   ],
+   [
+    0.9176924493661366,
+    0.2180882150906848,
+    0.3320814641243021
+   ],
+   [
+    -0.19639154618875307,
+    0.5808755499817376,
+    0.7899455399070273
+   ],
+   [
+    -0.22797574456591144,
+    0.5863637626843922,
+    -0.7773059871763631
+   ],
+   [
+    -0.6615333837815228,
+    0.10095671856379769,
+    0.7430890411783764
+   ],
+   [
+    0.11358462798346594,
+    0.0638330652178507,
+    -0.9914756033663922
+   ],
+   [
+    0.9380372306605146,
+    0.11798020070166053,
+    -0.32583251240038724
+   ],
+   [
+    -0.03538224164027959,
+    0.9634820300164625,
+    0.26542508323793623
+   ],
+   [
+    0.17124359815617562,
+    0.914705104537858,
+    -0.36604672081977835
+   ],
+   [
+    0.782384878198484,
+    -0.3988727171033441,
+    0.47830372977527447
+   ],
+   [
+    0.5381046027065872,
+    0.4798057198880846,
+    -0.6929862247611153
+   ],
+   [
+    -0.8665304152630153,
+    -0.30723287397033544,
+    -0.3933611579401736
+   ],
+   [
+    0.32769866781212864,
+    -0.8279579610623737,
+    -0.4550815287699481
+   ],
+   [
+    0.5332789287867753,
+    0.08637683483380121,
+    0.841518048835629
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 44.6,
+ "p90_call_seconds": 137.8,
+ "prompt_tokens_per_s": 4493.1,
+ "gen_tokens_per_s": 50.0,
+ "mean_prompt_tokens": 6719,
+ "mean_gen_tokens": 3041,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

@@ -1,0 +1,146 @@
+{
+ "schema": 4,
+ "example": "matmul_f32",
+ "model": "gemma4:26b-a4b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 15.6,
+ "model_params": "25.2B",
+ "started": "2026-11-03T03:11:54",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 26.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 32768,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 0.995313,
+ "best_score": 66.5591,
+ "improvement": 66.87253155540016,
+ "llm_calls": 49,
+ "mean_llm_seconds": 28.4,
+ "attempts": 49,
+ "ok": 34,
+ "statuses": {
+  "edit_error": 5,
+  "ok": 34,
+  "compile_error": 4,
+  "llm_error": 5,
+  "duplicate": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 5,
+ "minutes_to_best": 25.48,
+ "best_idea": "Implement a blocked/tiled approach to maximize cache reuse by dividing the matrix into blocks and using a micro-kernel that processes multiple rows (4 rows) of C simultaneously to increase register pr",
+ "progress": [
+  [
+   0.0,
+   0.995313
+  ],
+  [
+   3.45,
+   12.0049
+  ],
+  [
+   5.77,
+   12.2014
+  ],
+  [
+   9.07,
+   12.9327
+  ],
+  [
+   15.76,
+   15.6728
+  ],
+  [
+   25.48,
+   66.5591
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.995313,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 9.07,
+   "score": 12.9327,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "Implement a multi-threaded i-k-j loop order with `std::fill` for initialization, which optimizes cache locality and allows the compiler to auto-vectorize the inner loop."
+  },
+  {
+   "minutes": 15.76,
+   "score": 15.6728,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "best/rewrite/refine",
+   "status": "ok",
+   "idea": "Implement a tiled/blocked execution strategy to improve L1/L2 cache reuse and reduce the frequency of loading elements of `C` from main memory by using a micro-kernel approach with manual NEON vectorization."
+  },
+  {
+   "minutes": 25.48,
+   "score": 66.5591,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "exploit/rewrite/bold",
+   "status": "ok",
+   "idea": "Implement a blocked/tiled approach to maximize cache reuse by dividing the matrix into blocks and using a micro-kernel that processes multiple rows (4 rows) of C simultaneously to increase register pressure and hide instruction latency."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -22,11 +22,64 @@\n // Computes C = A * B. C is NOT zeroed by the caller. Any number of threads may be\n // used (std::thread is available); n is any size from 1 to 2048.\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n-        }\n+    // Initialize C to zero\n+    std::fill(C, C + (size_t)n * n, 0.0f);\n+\n+    unsigned num_threads = std::thread::hardware_concurrency();\n+    if (num_threads == 0) num_threads = 4;\n+    if (n < 128) num_threads = 1;\n+\n+    std::vector<std::thread> threads;\n+    int rows_per_thread = (n + num_threads - 1) / num_threads;\n+\n+    for (unsigned t = 0; t < num_threads; ++t) {\n+        int start_row = t * rows_per_thread;\n+        int end_row = std::min((int)n, start_row + rows_per_thread);\n+        if (start_row >= n) break;\n+\n+        threads.emplace_back([=, &A, &B, &C]() {\n+            constexpr int BLOCK_M = 64;\n+            constexpr int BLOCK_K = 64;\n+            constexpr int BLOCK_N = 64;\n+\n+            for (int i_block = start_row; i_block < end_row; i_block += BLOCK_M) {\n+                int i_max = std::min(end_row, i_block + BLOCK_M);\n+                for (int k_block = 0; k_block < n; k_block += BLOCK_K) {\n+                    int k_max = std::min(n, k_block + BLOCK_K);\n+                    for (int j_block = 0; j_block < n; j_block += BLOCK_N) {\n+                        int j_max = std::min(n, j_block + BLOCK_N);\n+\n+                        for (int i = i_block; i < i_max; ++i) {\n+                            const float* Ai = &A[i * n];\n+                            float* Ci = &C[i * n];\n+\n+                            for (int k = k_block; k < k_max; ++k) {\n+                                const float aik = Ai[k];\n+                                const float* Bk = &B[k * n];\n+\n+                                int j = j_block;\n+                                #if defined(__ARM_NEON)\n+                                float32x4_t v_aik = vdupq_n_f32(aik);\n+                                for (; j <= j_max - 4; j += 4) {\n+                                    float32x4_t v_bk = vld1q_f32(&Bk[j]);\n+                                    float32x4_t v_ci = vld1q_f32(&Ci[j]);\n+                                    v_ci = vfmaq_f32(v_ci, v_aik, v_bk);\n+                                    vst1q_f32(&Ci[j], v_ci);\n+                                }\n+                                #endif\n+                                for (; j < j_max; ++j) {\n+                                    Ci[j] += aik * Bk[j];\n+                                }\n+                            }\n+                        }\n+                    }\n+                }\n+            }\n+        });\n+    }\n+\n+    for (auto& th : threads) {\n+        th.join();\n+    }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 16.5,
+ "model_gpu_memory_gb": 14.8,
+ "context_length": 32768,
+ "load_seconds": 56.9,
+ "median_call_seconds": 25.2,
+ "p90_call_seconds": 37.9,
+ "prompt_tokens_per_s": 1015.4,
+ "gen_tokens_per_s": 35.9,
+ "mean_prompt_tokens": 4446,
+ "mean_gen_tokens": 656,
+ "stopped_calls": 5,
+ "provider": "ollama",
+ "cost_usd": 0
+}

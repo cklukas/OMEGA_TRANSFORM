@@ -1,0 +1,148 @@
+{
+ "schema": 4,
+ "example": "prefix_sum_histogram_single_thread",
+ "model": "gemma4:12b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 7.2,
+ "model_params": "11.9B",
+ "started": "2026-11-01T10:43:13",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 23.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 32768,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 5.83189,
+ "best_score": 6.348,
+ "improvement": 1.0884978969082064,
+ "llm_calls": 27,
+ "mean_llm_seconds": 49.2,
+ "attempts": 27,
+ "ok": 19,
+ "statuses": {
+  "invalid": 4,
+  "ok": 19,
+  "duplicate": 2,
+  "edit_error": 1,
+  "compile_error": 1
+ },
+ "sweeps": 8,
+ "sweep_variants": 51,
+ "improvements": 6,
+ "minutes_to_best": 22.81,
+ "best_idea": "Use multiple private sub-histograms and loop unrolling to mitigate cache contention on hot bins and increase instruction-level parallelism.",
+ "progress": [
+  [
+   0.0,
+   5.83189
+  ],
+  [
+   1.66,
+   6.15956
+  ],
+  [
+   2.28,
+   6.27406
+  ],
+  [
+   5.24,
+   6.31908
+  ],
+  [
+   6.69,
+   6.32661
+  ],
+  [
+   8.95,
+   6.3411
+  ],
+  [
+   22.81,
+   6.348
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 5.83189,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 22.81,
+   "score": 6.348,
+   "model": "gemma4:12b-it-qat",
+   "mode": "explore/diff/tune",
+   "status": "ok",
+   "idea": "Use multiple private sub-histograms and loop unrolling to mitigate cache contention on hot bins and increase instruction-level parallelism."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -29,11 +29,44 @@\n // never overflow int64.\n extern \"C\" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, uint64_t* hist) {\n     for (int b = 0; b < 256; ++b) hist[b] = 0;\n+    \n+    constexpr int K = 8;\n+    uint64_t sub_hist[K][256] = {0};\n     int64_t sum = 0;\n-    for (size_t i = 0; i < n; ++i) {\n+    size_t i = 0;\n+\n+    for (; i + K <= n; i += K) {\n+        const int64_t v0 = in[i];\n+        const int64_t v1 = in[i + 1];\n+        const int64_t v2 = in[i + 2];\n+        const int64_t v3 = in[i + 3];\n+        const int64_t v4 = in[i + 4];\n+        const int64_t v5 = in[i + 5];\n+        const int64_t v6 = in[i + 6];\n+        const int64_t v7 = in[i + 7];\n+\n+        sum += v0; out[i]   = sum; sub_hist[0][v0 & 255]++;\n+        sum += v1; out[i+1] = sum; sub_hist[1][v1 & 255]++;\n+        sum += v2; out[i+2] = sum; sub_hist[2][v2 & 255]++;\n+        sum += v3; out[i+3] = sum; sub_hist[3][v3 & 255]++;\n+        sum += v4; out[i+4] = sum; sub_hist[4][v4 & 255]++;\n+        sum += v5; out[i+5] = sum; sub_hist[5][v5 & 255]++;\n+        sum += v6; out[i+6] = sum; sub_hist[6][v6 & 255]++;\n+        sum += v7; out[i+7] = sum; sub_hist[7][v7 & 255]++;\n+    }\n+\n+    for (; i < n; ++i) {\n         sum += in[i];\n         out[i] = sum;\n-        hist[in[i] & 255]++;\n+        sub_hist[0][in[i] & 255]++;\n+    }\n+\n+    for (int b = 0; b < 256; ++b) {\n+        uint64_t total = 0;\n+        for (int k = 0; k < K; ++k) {\n+            total += sub_hist[k][b];\n+        }\n+        hist[b] = total;\n     }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "best_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 9.0,
+ "model_gpu_memory_gb": 9.0,
+ "context_length": 32768,
+ "load_seconds": 21.2,
+ "median_call_seconds": 47.4,
+ "p90_call_seconds": 71.6,
+ "prompt_tokens_per_s": 736.3,
+ "gen_tokens_per_s": 28.5,
+ "mean_prompt_tokens": 6245,
+ "mean_gen_tokens": 1066,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -267,6 +267,7 @@ class BenchTest(unittest.TestCase):
         chart = bar_chart("t", ["a", "b"], [3, 0.5], "y", [(1, 1), (0.5, 2)])
         self.assertIn("    error [1, 0.5] [1, 2]\n", chart)
         self.assertNotIn("error", bar_chart("t", ["a"], [3], "y", [None]))
+        self.assertIn("y-axis \"y\" 0 --> 1.1\n", bar_chart("t", ["a"], [0], "y"))  # all zero
 
     def test_example_page_with_repeats_and_machines(self):
         mac = {"cpu": "Apple M1 Max", "model": "Mac13,1", "cores": "10", "memory_gb": 32}

@@ -1,0 +1,269 @@
+{
+ "schema": 4,
+ "example": "heilbronn_13",
+ "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-10-31T23:55:00",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 28.9,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 0.004790811518724618,
+ "best_score": 0.019570665325085067,
+ "improvement": 4.085041803167213,
+ "llm_calls": 45,
+ "mean_llm_seconds": 36.7,
+ "attempts": 45,
+ "ok": 31,
+ "statuses": {
+  "ok": 31,
+  "duplicate": 1,
+  "invalid": 9,
+  "edit_error": 4
+ },
+ "sweeps": 20,
+ "sweep_variants": 304,
+ "improvements": 6,
+ "minutes_to_best": 18.71,
+ "best_idea": "tuned BETA_FINAL=1000, STEP_SIZE_INIT=0.1023, RESTARTS=20, BETA_GROWTH=1.08 on top of: Replace the symmetric grid layout with a randomized, point-symmetric configuration initialized via a low-discrepa",
+ "progress": [
+  [
+   0.0,
+   0.004790811518724618
+  ],
+  [
+   3.28,
+   0.005078129490507871
+  ],
+  [
+   9.5,
+   0.015655449308384414
+  ],
+  [
+   9.5,
+   0.016152469017828016
+  ],
+  [
+   13.73,
+   0.019180266960620918
+  ],
+  [
+   17.43,
+   0.0191842756945158
+  ],
+  [
+   18.71,
+   0.019570665325085067
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.004790811518724618,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.28,
+   "score": 0.0008683816767827424,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "explore/rewrite/bold",
+   "status": "ok",
+   "idea": "Use a point-symmetric grid layout with points placed at strategic positions including corners, edge centers, and a central cluster optimized via simulated annealing to maximize the minimum triangle area while avoiding collinearity. This leverages symmetry and spatial spread more effectively than circular layouts, which concentrate points near the center."
+  },
+  {
+   "minutes": 3.28,
+   "score": 0.005078129490507871,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "sweep/explore/rewrite/bold",
+   "status": "ok",
+   "idea": "tuned INNER_RADIUS=0.2042, TEMPERATURE_INIT=0.1, STEP_SIZE_INIT=0.1, MAX_ITERATIONS=17727 on top of: Use a point-symmetric grid layout with points placed at strategic positions including corners, edge centers, and a central cluster optimized via simulated annealing to maximize the minimum triangle a"
+  },
+  {
+   "minutes": 8.04,
+   "score": 0.00017991640959313937,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "best/diff/bold",
+   "status": "ok",
+   "idea": "Replace the simulated annealing with a gradient-free optimization using a smooth surrogate objective (soft-min) that encourages all triangles to have large area, avoiding local minima caused by isolated small triangles."
+  },
+  {
+   "minutes": 18.71,
+   "score": 0.0191842756945158,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/rewrite/bold",
+   "status": "ok",
+   "idea": "Replace the symmetric grid layout with a randomized, point-symmetric configuration initialized via a low-discrepancy Halton sequence, then optimize using a gradient-free method with a smooth soft-min objective, explicitly preserving symmetry by reflecting perturbations through the center to maintain balance and avoid degeneracy. This avoids clustering and leverages uniformity while enabling effect"
+  },
+  {
+   "minutes": 18.71,
+   "score": 0.019570665325085067,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "sweep/exploit/rewrite/bold",
+   "status": "ok",
+   "idea": "tuned BETA_FINAL=1000, STEP_SIZE_INIT=0.1023, RESTARTS=20, BETA_GROWTH=1.08 on top of: Replace the symmetric grid layout with a randomized, point-symmetric configuration initialized via a low-discrepancy Halton sequence, then optimize using a gradient-free method with a smooth soft-min objective, ex"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -5,17 +5,146 @@\n import math\n \n # OMEGA-BLOCK-START\n+import math\n+import random\n+\n+# Constants for layout and optimization\n+NUM_POINTS = 13\n+CENTER = 0.5\n+BETA_INIT = 1.0\n+BETA_FINAL = 1000\n+BETA_GROWTH = 1.08\n+MAX_ITERATIONS = 5000\n+STEP_SIZE_INIT = 0.1023\n+STEP_SIZE_FINAL = 1e-6\n+RANDOM_SEED = 42\n+RESTARTS = 20\n+MIN_AREA_EPS = 1e-12  # Prevent log(0) in soft-min\n+\n+# Set random seed for reproducibility\n+random.seed(RANDOM_SEED)\n+\n+def triangle_area(p1, p2, p3):\n+    \"\"\"Compute signed area of triangle formed by three points.\"\"\"\n+    return abs((p2[0] - p1[0]) * (p3[1] - p1[1]) - (p3[0] - p1[0]) * (p2[1] - p1[1])) / 2.0\n+\n+def soft_min(areas, beta):\n+    \"\"\"Compute a smooth approximation of the minimum area using log-sum-exp.\"\"\"\n+    return -math.log(sum(math.exp(-beta * a) for a in areas)) / beta\n+\n+def clamp_point(x, y):\n+    \"\"\"Ensure point lies within [0, 1]x[0, 1].\"\"\"\n+    return max(0.0, min(1.0, x)), max(0.0, min(1.0, y))\n+\n+def halton_sequence(n, base):\n+    \"\"\"Generate the first n Halton sequence values in the given base.\"\"\"\n+    result = []\n+    for i in range(n):\n+        h = 0.0\n+        f = 1.0 / base\n+        k = i\n+        while k > 0:\n+            h += f * (k % base)\n+            k //= base\n+            f /= base\n+        result.append(h)\n+    return result\n+\n def construct(n=13):\n-    \"\"\"Return a list of n points (x, y) inside the closed unit square [0,1]^2.\n+    \"\"\"Return a list of 13 points using Halton-based initialization with point symmetry and soft-min optimization.\"\"\"\n+    # Generate Halton points in base 2 and 3 for 2D\n+    x_vals = halton_sequence(n, 2)\n+    y_vals = halton_sequence(n, 3)\n+    \n+    # Scale and shift to [0,1]\n+    points = [(x, y) for x, y in zip(x_vals, y_vals)]\n+    \n+    # Apply point symmetry: reflect through center (0.5, 0.5)\n+    # For odd number of points, keep center fixed\n+    center_idx = n // 2\n+    center_point = points[center_idx]\n+    \n+    # Reflect all other points through center\n+    symmetric_points = [center_point]\n+    for i in range(n):\n+        if i == center_idx:\n+            continue\n+        x, y = points[i]\n+        reflected_x = 1.0 - x\n+        reflected_y = 1.0 - y\n+        symmetric_points.append((reflected_x, reflected_y))\n+    \n+    # Replace original points with symmetric layout\n+    points = symmetric_points\n+    \n+    # Ensure the center is fixed at (0.5, 0.5)\n+    points[center_idx] = (CENTER, CENTER)\n+    \n+    best_min_area = 0.0\n+    best_points = [p for p in points]\n \n-    The score is the smallest area among all triangles with corners at three of\n-    the points, so no three points may be (nearly) collinear. This start puts\n-    the points on a regular polygon on a small circle around the center, which\n-    avoids collinear triples but wastes most of the square.\n-    \"\"\"\n-    radius = 0.3\n-    return [(0.5 + radius * math.cos(2 * math.pi * k / n),\n-             0.5 + radius * math.sin(2 * math.pi * k / n)) for k in range(n)]\n+    # Try multiple random restarts\n+    for _ in range(RESTARTS):\n+        current_points = [p for p in points]\n+        beta = BETA_INIT\n+        step_size = STEP_SIZE_INIT\n+\n+        # Optimization loop with increasing beta\n+        for _ in range(MAX_ITERATIONS):\n+            # Compute all triangle areas\n+            areas = []\n+            n = len(current_points)\n+            for i in range(n):\n+                for j in range(i + 1, n):\n+                    for k in range(j + 1, n):\n+                        areas.append(triangle_area(current_points[i], current_points[j], current_points[k]))\n+\n+            # Compute soft-min\n+            soft_min_area = soft_min(areas, beta)\n+\n+            # Check if we improved the true min area\n+            true_min_area = min(areas)\n+            if true_min_area > best_min_area:\n+                best_min_area = true_min_area\n+                best_points = [p for p in current_points]\n+\n+            # Stop if beta is too high\n+            if beta >= BETA_FINAL:\n+                break\n+\n+            # Move points to improve soft-min\n+            for _ in range(n):\n+                idx = random.randint(0, n - 1)\n+                old_point = current_points[idx]\n+                dx = (random.random() - 0.5) * step_size\n+                dy = (random.random() - 0.5) * step_size\n+                new_x = old_point[0] + dx\n+                new_y = old_point[1] + dy\n+                new_x, new_y = clamp_point(new_x, new_y)\n+                current_points[idx] = (new_x, new_y)\n+\n+                # Re-compute areas after move\n+                new_areas = []\n+                for i in range(n):\n+                    for j in range(i + 1, n):\n+                        for k in range(j + 1, n):\n+                            a = triangle_area(current_points[i], current_points[j], current_points[k])\n+                            new_areas.append(a)\n+\n+                new_soft_min = soft_min(new_areas, beta)\n+\n+                # Accept move if it improves soft-min\n+                if new_soft_min > soft_min_area:\n+                    soft_min_area = new_soft_min\n+                else:\n+                    # Revert\n+                    current_points[idx] = old_point\n+\n+            # Increase beta and decrease step size\n+            beta *= BETA_GROWTH\n+            step_size *= 0.98\n+\n+    return best_points\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "heilbronn",
+  "points": [
+   [
+    0.8,
+    0.5
+   ],
+   [
+    0.765636807695963,
+    0.6394169516131305
+   ],
+   [
+    0.6704194240193467,
+    0.7468951597680968
+   ],
+   [
+    0.536161004076597,
+    0.7978126622294162
+   ],
+   [
+    0.3936185338872394,
+    0.7805048728056244
+   ],
+   [
+    0.27544677554866964,
+    0.6989367974722386
+   ],
+   [
+    0.2087174547721844,
+    0.5717946992862672
+   ],
+   [
+    0.2087174547721844,
+    0.42820530071373275
+   ],
+   [
+    0.2754467755486696,
+    0.30106320252776153
+   ],
+   [
+    0.3936185338872392,
+    0.21949512719437558
+   ],
+   [
+    0.536161004076597,
+    0.20218733777058384
+   ],
+   [
+    0.6704194240193464,
+    0.25310484023190294
+   ],
+   [
+    0.765636807695963,
+    0.3605830483868695
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "heilbronn",
+  "points": [
+   [
+    0.20746177267184662,
+    0.009329583083969237
+   ],
+   [
+    0.9568381862454053,
+    0.917897200495999
+   ],
+   [
+    0.3588042660988576,
+    0.7979081540900432
+   ],
+   [
+    0.9472700803048059,
+    0.09924545739502724
+   ],
+   [
+    0.06872554079090169,
+    0.818799861155424
+   ],
+   [
+    1.0,
+    0.37260378873179034
+   ],
+   [
+    0.323200519586996,
+    0.2643433534691266
+   ],
+   [
+    0.0,
+    0.5607428990355999
+   ],
+   [
+    0.7863700479213602,
+    0.014641379137562086
+   ],
+   [
+    0.2989313064150447,
+    1.0
+   ],
+   [
+    0.7827950364827735,
+    0.6299579760064974
+   ],
+   [
+    0.061833972309946104,
+    0.15789582651989142
+   ],
+   [
+    0.8558967139786127,
+    0.999692472277308
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 23.0,
+ "model_gpu_memory_gb": 19.0,
+ "context_length": 40960,
+ "load_seconds": 52.9,
+ "median_call_seconds": 28.8,
+ "p90_call_seconds": 67.0,
+ "prompt_tokens_per_s": 598.5,
+ "gen_tokens_per_s": 31.1,
+ "mean_prompt_tokens": 4870,
+ "mean_gen_tokens": 778,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

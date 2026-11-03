@@ -223,6 +223,10 @@
    "source": "huggingface",
    "params_b": 30.5
   },
+  "recursive/flint-v1.0:free": {
+   "released": "2026-10-21",
+   "source": "openrouter"
+  },
   "richardyoung/frognano-4b-2609:latest": {
    "repo": "microsoft/FrogNano-4B-2609",
    "released": "2026-09-17",

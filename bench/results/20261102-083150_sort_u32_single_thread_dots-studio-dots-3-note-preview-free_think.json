@@ -1,0 +1,136 @@
+{
+ "schema": 4,
+ "example": "sort_u32_single_thread",
+ "model": "dots-studio/dots-3-note-preview:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-02T08:31:50",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 64.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 32768,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 18.95847953616273,
+ "best_score": 253.24145260282637,
+ "improvement": 13.357687894737333,
+ "llm_calls": 16,
+ "mean_llm_seconds": 239.6,
+ "attempts": 16,
+ "ok": 5,
+ "statuses": {
+  "edit_error": 9,
+  "ok": 5,
+  "llm_error": 2
+ },
+ "sweeps": 2,
+ "sweep_variants": 24,
+ "improvements": 2,
+ "minutes_to_best": 27.61,
+ "best_idea": "tuned RADIX_BITS=8, SORT_THRESHOLD=512 on top of: Replace the merge sort with an LSD radix sort that detects sorted/reverse runs and uses a configurable radix size, with a fallback to std::sort for sm",
+ "progress": [
+  [
+   0.0,
+   18.95847953616273
+  ],
+  [
+   27.61,
+   190.50277416292803
+  ],
+  [
+   27.61,
+   253.24145260282637
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 18.95847953616273,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 27.61,
+   "score": 190.50277416292803,
+   "model": "dots-studio/dots-3-note-preview:free",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Replace the merge sort with an LSD radix sort that detects sorted/reverse runs and uses a configurable radix size, with a fallback to std::sort for small n, to achieve much higher throughput across all distributions."
+  },
+  {
+   "minutes": 27.61,
+   "score": 253.24145260282637,
+   "model": "dots-studio/dots-3-note-preview:free",
+   "mode": "sweep/exploit/diff/tune",
+   "status": "ok",
+   "idea": "tuned RADIX_BITS=8, SORT_THRESHOLD=512 on top of: Replace the merge sort with an LSD radix sort that detects sorted/reverse runs and uses a configurable radix size, with a fallback to std::sort for small n, to achieve much higher throughput across all distributions."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,22 +19,100 @@\n #endif\n \n // OMEGA-BLOCK-START\n-// Sorts a[0..n) ascending, in place, on the calling thread. n is any size from\n-// 0 to 2'000'000. Extra memory may be allocated freely.\n-static void merge_sort_rec(uint32_t* a, uint32_t* tmp, size_t lo, size_t hi) {\n-    if (hi - lo < 2) return;\n-    size_t mid = lo + (hi - lo) / 2;\n-    merge_sort_rec(a, tmp, lo, mid);\n-    merge_sort_rec(a, tmp, mid, hi);\n-    size_t i = lo, j = mid, k = lo;\n-    while (i < mid && j < hi) tmp[k++] = (a[j] < a[i]) ? a[j++] : a[i++];\n-    while (i < mid) tmp[k++] = a[i++];\n-    while (j < hi) tmp[k++] = a[j++];\n-    for (size_t t = lo; t < hi; ++t) a[t] = tmp[t];\n-}\n+#include <algorithm>\n+#include <cstring>\n+#include <vector>\n+\n+constexpr int SORT_THRESHOLD = 512;\n+constexpr int RADIX_BITS = 8;\n+constexpr int RADIX_SIZE = 1 << RADIX_BITS;\n+constexpr int NUM_PASSES = (32 + RADIX_BITS - 1) / RADIX_BITS;\n \n extern \"C\" void sort_u32(uint32_t* a, size_t n) {\n-    std::vector<uint32_t> tmp(n);\n-    merge_sort_rec(a, tmp.data(), 0, n);\n+    if (n <= 1) return;\n+    // Check if already sorted or reverse sorted\n+    bool asc = true, desc = true;\n+    for (size_t i = 1; i < n; ++i) {\n+        if (a[i] < a[i-1]) asc = false;\n+        if (a[i] > a[i-1]) desc = false;\n+        if (!asc && !desc) break;\n+    }\n+    if (asc) return;\n+    if (desc) {\n+        std::reverse(a, a + n);\n+        return;\n+    }\n+    if (n < SORT_THRESHOLD) {\n+        std::sort(a, a + n);\n+        return;\n+    }\n+    // Radix sort\n+    static std::vector<uint32_t> scratch;\n+    if (scratch.size() < n) scratch.resize(n);\n+    uint32_t* src = a;\n+    uint32_t* dst = scratch.data();\n+    \n+    // Compute shifts, masks, and histogram sizes for each pass\n+    int shifts[NUM_PASSES];\n+    int masks[NUM_PASSES];\n+    int hist_size[NUM_PASSES];\n+    for (int p = 0; p < NUM_PASSES; ++p) {\n+        shifts[p] = p * RADIX_BITS;\n+        int bits = RADIX_BITS;\n+        if (p == NUM_PASSES - 1) {\n+            bits = 32 - shifts[p];\n+            if (bits <= 0) bits = RADIX_BITS; // fallback\n+        }\n+        masks[p] = (1 << bits) - 1;\n+        hist_size[p] = 1 << bits;\n+    }\n+    \n+    // Histograms: flat array\n+    std::vector<uint32_t> hist(NUM_PASSES * RADIX_SIZE);\n+    for (size_t i = 0; i < n; ++i) {\n+        uint32_t x = a[i];\n+        for (int p = 0; p < NUM_PASSES; ++p) {\n+            hist[p * RADIX_SIZE + ((x >> shifts[p]) & masks[p])]++;\n+        }\n+    }\n+    \n+    // Perform each pass\n+    for (int p = 0; p < NUM_PASSES; ++p) {\n+        uint32_t* h = &hist[p * RADIX_SIZE];\n+        // Check if all elements have the same digit in this pass\n+        bool skip = false;\n+        for (int i = 0; i < hist_size[p]; ++i) {\n+            if (h[i] == n) {\n+                skip = true;\n+                break;\n+            }\n+        }\n+        if (skip) continue;\n+        \n+        // Prefix sum\n+        uint32_t sum = 0;\n+        for (int i = 0; i < hist_size[p]; ++i) {\n+            uint32_t count = h[i];\n+            h[i] = sum;\n+            sum += count;\n+        }\n+        \n+        // Scatter\n+        int shift = shifts[p];\n+        int mask = masks[p];\n+        for (size_t i = 0; i < n; ++i) {\n+            uint32_t x = src[i];\n+            uint32_t bucket = (x >> shift) & mask;\n+            dst[h[bucket]++] = x;\n+        }\n+        \n+        // Swap source and destination for next pass\n+        std::swap(src, dst);\n+    }\n+    \n+    // If the final data is in the scratch buffer, copy back to a\n+    if (src != a) {\n+        std::memcpy(a, src, n * sizeof(uint32_t));\n+    }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "best_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 284.6,
+ "p90_call_seconds": 306.0,
+ "prompt_tokens_per_s": 1493.9,
+ "gen_tokens_per_s": 86.0,
+ "mean_prompt_tokens": 4543,
+ "mean_gen_tokens": 20137,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

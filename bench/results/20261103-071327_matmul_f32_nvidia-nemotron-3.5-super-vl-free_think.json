@@ -1,0 +1,142 @@
+{
+ "schema": 4,
+ "example": "matmul_f32",
+ "model": "nvidia/nemotron-3.5-super-vl:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-03T07:13:27",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 64.7,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 32768,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 0.874181,
+ "best_score": 102.443,
+ "improvement": 117.18740169369958,
+ "llm_calls": 31,
+ "mean_llm_seconds": 113.8,
+ "attempts": 31,
+ "ok": 13,
+ "statuses": {
+  "edit_error": 11,
+  "compile_error": 5,
+  "invalid": 1,
+  "ok": 13,
+  "duplicate": 1
+ },
+ "sweeps": 8,
+ "sweep_variants": 62,
+ "improvements": 4,
+ "minutes_to_best": 63.48,
+ "best_idea": "tuned BK=16 on top of: Add k-cache blocking (BK=64) to the parallel i-k-j matmul by reordering loops to k-block \u2192 i \u2192 k \u2192 j, so B rows in a k-block are reused across all i rows in a thread's row range",
+ "progress": [
+  [
+   0.0,
+   0.874181
+  ],
+  [
+   29.74,
+   66.65
+  ],
+  [
+   42.71,
+   84.4834
+  ],
+  [
+   47.22,
+   100.54
+  ],
+  [
+   63.48,
+   102.443
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.874181,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 32.32,
+   "score": 48.5997,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Replace the naive i-j-k triple loop with a parallel i-k-j implementation: zero C once, split row blocks across std::thread workers, stream rows of B and C, and vectorize the inner j-loop with NEON FMA (vld1q/vfmaq/vst1q) with a scalar tail for non-multiple-of-4 sizes."
+  },
+  {
+   "minutes": 63.48,
+   "score": 89.4677,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Add k-cache blocking (BK=64) to the parallel i-k-j matmul by reordering loops to k-block \u2192 i \u2192 k \u2192 j, so B rows in a k-block are reused across all i rows in a thread's row range instead of being reloaded for every i. This matches the best-known approach (BK=64 \u2192 ~85 GFLOPS). BK is made a constexpr for sweeping."
+  },
+  {
+   "minutes": 63.48,
+   "score": 102.443,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "sweep/exploit/diff/refine",
+   "status": "ok",
+   "idea": "tuned BK=16 on top of: Add k-cache blocking (BK=64) to the parallel i-k-j matmul by reordering loops to k-block \u2192 i \u2192 k \u2192 j, so B rows in a k-block are reused across all i rows in a thread's row range instead of being reloaded for every i. This matches the best-known approach (BK=64 \u2192 ~85 GFLOPS). B"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,14 +19,63 @@\n #endif\n \n // OMEGA-BLOCK-START\n-// Computes C = A * B. C is NOT zeroed by the caller. Any number of threads may be\n-// used (std::thread is available); n is any size from 1 to 2048.\n+#if defined(__ARM_NEON)\n+#include <arm_neon.h>\n+#endif\n+\n+namespace {\n+\n+constexpr int BK = 16;  // k-cache block size; swept for best L2 reuse\n+\n+void matmul_rows(int n, int i0, int i1, const float* A, const float* B, float* C) {\n+    for (int k0 = 0; k0 < n; k0 += BK) {\n+        int k1 = k0 + BK;\n+        if (k1 > n) k1 = n;\n+        for (int i = i0; i < i1; ++i) {\n+            float* Ci = C + static_cast<size_t>(i) * n;\n+            const float* Ai = A + static_cast<size_t>(i) * n;\n+            for (int k = k0; k < k1; ++k) {\n+                float a = Ai[k];\n+                const float* Bk = B + static_cast<size_t>(k) * n;\n+                int j = 0;\n+#if defined(__ARM_NEON)\n+                for (; j + 3 < n; j += 4) {\n+                    float32x4_t va = vdupq_n_f32(a);\n+                    float32x4_t vb = vld1q_f32(Bk + j);\n+                    float32x4_t vc = vld1q_f32(Ci + j);\n+                    vc = vfmaq_f32(vc, va, vb);\n+                    vst1q_f32(Ci + j, vc);\n+                }\n+#endif\n+                for (; j < n; ++j) {\n+                    Ci[j] += a * Bk[j];\n+                }\n+            }\n+        }\n+    }\n+}\n+\n+}  // namespace\n+\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n-        }\n+    if (n <= 0) return;\n+    std::fill(C, C + static_cast<size_t>(n) * n, 0.0f);\n+    int threads = static_cast<int>(std::thread::hardware_concurrency());\n+    if (threads < 1 || threads > 16) threads = 8;\n+    if (threads > n) threads = n;\n+    if (threads <= 1) {\n+        matmul_rows(n, 0, n, A, B, C);\n+        return;\n+    }\n+    std::vector<std::thread> ts;\n+    ts.reserve(static_cast<size_t>(threads));\n+    int rows_per = n / threads;\n+    int start = 0;\n+    for (int t = 0; t < threads; ++t) {\n+        int end = (t == threads - 1) ? n : start + rows_per;\n+        ts.emplace_back(matmul_rows, n, start, end, A, B, C);\n+        start = end;\n+    }\n+    for (auto& t : ts) t.join();\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 100.9,
+ "p90_call_seconds": 202.1,
+ "prompt_tokens_per_s": 4290.2,
+ "gen_tokens_per_s": 125.0,
+ "mean_prompt_tokens": 4349,
+ "mean_gen_tokens": 14097,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

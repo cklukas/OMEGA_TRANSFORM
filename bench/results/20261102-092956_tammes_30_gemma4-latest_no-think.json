@@ -1,0 +1,446 @@
+{
+ "schema": 4,
+ "example": "tammes_30",
+ "model": "gemma4:latest",
+ "variant": "no-think",
+ "model_size_gb": 6.6,
+ "model_params": "7.5B",
+ "started": "2026-11-02T09:29:56",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 13.8,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 3.2013569883368893,
+ "best_score": 36.81864453874165,
+ "improvement": 11.500949338945484,
+ "llm_calls": 46,
+ "mean_llm_seconds": 17.0,
+ "attempts": 46,
+ "ok": 25,
+ "statuses": {
+  "ok": 25,
+  "invalid": 17,
+  "duplicate": 1,
+  "edit_error": 2,
+  "llm_error": 1
+ },
+ "sweeps": 2,
+ "sweep_variants": 32,
+ "improvements": 7,
+ "minutes_to_best": 8.74,
+ "best_idea": "Implement the energy minimization step on the golden spiral initialization to refine the point positions and increase the minimum angle, as suggested by expert hints and previous successful strategies",
+ "progress": [
+  [
+   0.0,
+   3.2013569883368893
+  ],
+  [
+   0.55,
+   9.577158388900557
+  ],
+  [
+   2.19,
+   31.925256132570524
+  ],
+  [
+   3.79,
+   33.235530208253905
+  ],
+  [
+   4.59,
+   33.45500227283835
+  ],
+  [
+   7.69,
+   34.21492031769925
+  ],
+  [
+   8.31,
+   35.55360591923164
+  ],
+  [
+   8.74,
+   36.81864453874165
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.2013569883368893,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.47,
+   "score": 9.577158388900557,
+   "model": "gemma4:latest",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the uniform random initialization with the golden spiral initialization, as it provides a much better starting configuration for subsequent local optimization or direct scoring."
+  },
+  {
+   "minutes": 8.74,
+   "score": 36.81864453874165,
+   "model": "gemma4:latest",
+   "mode": "explore/diff/refine",
+   "status": "ok",
+   "idea": "Implement the energy minimization step on the golden spiral initialization to refine the point positions and increase the minimum angle, as suggested by expert hints and previous successful strategies."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -16,11 +16,72 @@\n     \"\"\"\n     rng = random.Random(1)\n     points = []\n-    for _ in range(n):\n-        z = rng.uniform(-1.0, 1.0)\n-        phi = rng.uniform(0.0, 2 * math.pi)\n-        s = math.sqrt(1.0 - z * z)\n-        points.append((s * math.cos(phi), s * math.sin(phi), z))\n+    for i in range(n):\n+        # Golden spiral initialization derived from the hint/inspiration\n+        t = (math.pi * (2.0 * i + 1.0) / n) * (1.0 + math.sqrt(5.0)) / 2.0\n+        # A simplified approach for generating points on the sphere using Fibonacci sequence structure\n+        # The initial inspiration used a slightly different projection, we adapt to keep it on the sphere (r^2 + z^2 = 1)\n+        # Using a variation that aims for uniform distribution based on golden angle spiral\n+        phi = t\n+        r_xy = math.sqrt(1.0 - (2.0 * i / n - 1.0)**2)\n+        z = (2.0 * i / n - 1.0)**2 # This is not strictly correct for standard spherical coordinates mapping but mirrors the inspiration structure\n+        \n+        # Reverting to a known good implementation structure for the golden spiral if the above is flawed, \n+        # or sticking closer to the structure provided in the inspiration block for correctness.\n+        # Let's use the coordinates from the inspiration, ensuring they are normalized later by the evaluator if necessary, but trying to keep them on the sphere initially if possible.\n+        \n+        # Using the structure from the inspiration block directly:\n+        t_spir = (math.pi * (2.0 * i + 1.0) / n) * (1.0 + math.sqrt(5.0)) / 2.0\n+        r_val = math.sqrt(1.0 - (2.0 * i / n - 1.0)**2)\n+        z_val = (2.0 * i / n - 1.0)**2\n+        \n+        # Adjusting to ensure the points are exactly on the unit sphere if the inspiration code was slightly off in coordinate definition\n+        # The inspiration had (r * cos(t), r * sin(t), z_val) where r is calculated based on z_val.\n+        \n+        # Let's calculate the actual polar coordinates for the golden spiral approach:\n+        theta = (math.pi * (2.0 * i + 1.0) / n) * (1.0 + math.sqrt(5.0)) / 2.0\n+        radius_xy = math.sqrt(1.0 - z_val) # This assumes z_val is the z-coordinate\n+        \n+        points.append((radius_xy * math.cos(theta), radius_xy * math.sin(theta), z_val))\n+    # Energy minimization loop (Thomson potential)\n+    MAX_ITERATIONS = 5000\n+    STEP_SIZE = 0.05\n+    for _ in range(MAX_ITERATIONS):\n+        new_points = list(points)\n+        for j in range(n):\n+            p_j = points[j]\n+            dx, dy, dz = 0.0, 0.0, 0.0\n+            for k in range(n):\n+                if j == k: continue\n+                p_k = points[k]\n+                \n+                # Vector pointing from k to j\n+                vec_kj = (p_j[0] - p_k[0], p_j[1] - p_k[1], p_j[2] - p_k[2])\n+\n+                # Dot product (cosine of angle)\n+                dot_product = p_j[0] * p_k[0] + p_j[1] * p_k[1] + p_j[2] * p_k[2]\n+\n+                # Avoid division by zero/near-zero distance\n+                if 1.0 - dot_product < 1e-12: continue\n+\n+                # Force proportional to 1/(1-dot_product)\n+                force_magnitude = 1.0 / (1.0 - dot_product)\n+                dx += vec_kj[0] * force_magnitude\n+                dy += vec_kj[1] * force_magnitude\n+                dz += vec_kj[2] * force_magnitude\n+\n+            # Update position\n+            new_x = p_j[0] + dx * STEP_SIZE\n+            new_y = p_j[1] + dy * STEP_SIZE\n+            new_z = p_j[2] + dz * STEP_SIZE\n+\n+            # Renormalize back onto the unit sphere\n+            mag = math.sqrt(new_x*new_x + new_y*new_y + new_z*new_z)\n+            if mag > 1e-12:\n+                new_points[j] = (new_x/mag, new_y/mag, new_z/mag)\n+            else:\n+                new_points[j] = p_j # Should not happen\n+        points = new_points\n     return points\n # OMEGA-BLOCK-END\n \n",
+ "initial_solution": {
+  "kind": "sphere_points",
+  "points": [
+   [
+    0.3919709387244532,
+    -0.5582121095618475,
+    -0.7312715117751976
+   ],
+   [
+    -0.027052463738772504,
+    0.8490936142385189,
+    0.5275492379532281
+   ],
+   [
+    -0.9500239047545286,
+    0.31204362944230385,
+    -0.009129825816118098
+   ],
+   [
+    0.22957314306547277,
+    -0.9248645600666849,
+    0.30318594544552596
+   ],
+   [
+    0.5740391880355756,
+    0.1033386161058686,
+    -0.8122808264515302
+   ],
+   [
+    -0.6758397496085636,
+    0.3037890926411783,
+    0.6715302078397394
+   ],
+   [
+    0.8512988419434201,
+    0.011265659732678564,
+    0.524560164915884
+   ],
+   [
+    -0.17680359044518373,
+    -0.9781667833824966,
+    -0.10922561189039716
+   ],
+   [
+    0.7908900515540614,
+    -0.28321934240489055,
+    -0.5424755574590947
+   ],
+   [
+    0.5851964340381928,
+    0.11388203849293084,
+    0.8028549152229673
+   ],
+   [
+    -0.30434810274742335,
+    -0.08102906244732802,
+    -0.9491082780130784
+   ],
+   [
+    -0.3509958145626131,
+    0.3246444046695718,
+    0.8782983255570211
+   ],
+   [
+    -0.7271635298854837,
+    0.3872590786250933,
+    -0.5668012057387734
+   ],
+   [
+    0.05942052898539893,
+    0.33054331283916893,
+    -0.9419184248502641
+   ],
+   [
+    -0.9919106268324059,
+    0.02610563707090374,
+    -0.12422481269885588
+   ],
+   [
+    0.10141148542176433,
+    0.8394879795728718,
+    -0.5338310994848547
+   ],
+   [
+    -0.800348025639128,
+    0.20762133322971385,
+    -0.5624379253246229
+   ],
+   [
+    0.8990635126271509,
+    0.12213812674917045,
+    -0.4204367708190289
+   ],
+   [
+    -0.6917519647168419,
+    -0.2562101885183855,
+    0.6751559513251457
+   ],
+   [
+    0.3757097440071294,
+    0.88195886829755,
+    0.28458872586489115
+   ],
+   [
+    0.10962933743537041,
+    -0.1326097917248836,
+    0.9850868243521302
+   ],
+   [
+    -0.32373272592570945,
+    0.5659500259391612,
+    -0.7582200803883872
+   ],
+   [
+    -0.2164510454505914,
+    -0.8700158468173443,
+    0.44296881516653674
+   ],
+   [
+    -0.43065317546221576,
+    0.22938243010501777,
+    0.8728811735989193
+   ],
+   [
+    -0.3606302208330362,
+    -0.6589776995328848,
+    0.660071386548654
+   ],
+   [
+    -0.7836961589264019,
+    -0.48079575758636983,
+    -0.3932629781341648
+   ],
+   [
+    0.3660243386758451,
+    -0.5299673944570227,
+    0.7649580016637154
+   ],
+   [
+    -0.8476230763315352,
+    -0.5304935866064687,
+    0.010567641159200837
+   ],
+   [
+    0.016650981414250473,
+    0.36477107016970456,
+    -0.9309483396973168
+   ],
+   [
+    -0.6901522939672605,
+    0.4121803795407587,
+    0.5948084951086057
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "sphere_points",
+  "points": [
+   [
+    0.3363192793379955,
+    -0.28221303373342205,
+    0.8984682219959423
+   ],
+   [
+    0.7159260437173727,
+    -0.590015322318282,
+    0.3732717768018961
+   ],
+   [
+    0.7729269504291851,
+    0.08589222791065075,
+    0.6286544794120098
+   ],
+   [
+    0.04490835755785975,
+    0.34149442201834584,
+    0.9388103105270049
+   ],
+   [
+    0.4808874146720038,
+    0.6455274972322603,
+    0.5933308897462953
+   ],
+   [
+    -0.1458847050132292,
+    0.8757446512565527,
+    0.46020534399194246
+   ],
+   [
+    -0.6583400665908158,
+    0.7482802114701863,
+    0.08163995249467898
+   ],
+   [
+    -0.28685213626916894,
+    -0.1542459649404743,
+    -0.9454755598202399
+   ],
+   [
+    -0.645727338211489,
+    0.4884150546071837,
+    -0.586930097302368
+   ],
+   [
+    -0.8204446818791236,
+    -0.12246771327008639,
+    -0.5584551756252776
+   ],
+   [
+    -0.9776097897634577,
+    0.2103493675115478,
+    -0.0056782520320838295
+   ],
+   [
+    -0.8488625954119206,
+    -0.5278778643206776,
+    -0.02787928390002761
+   ],
+   [
+    -0.45310915256790557,
+    -0.6918418057812534,
+    -0.5621805863177143
+   ],
+   [
+    0.1648499160002941,
+    -0.6912222695104548,
+    -0.7035881460965018
+   ],
+   [
+    -0.24301373061765455,
+    -0.9694123078108422,
+    -0.034410815104370544
+   ],
+   [
+    0.3840494154497752,
+    -0.9188519436264391,
+    -0.09064850901477282
+   ],
+   [
+    0.9914270092124645,
+    -0.12499859412910201,
+    0.03805045163695047
+   ],
+   [
+    0.7422621910218944,
+    -0.504878417317528,
+    -0.4406184557032591
+   ],
+   [
+    0.8187359140498556,
+    0.16266265190397403,
+    -0.550647223474807
+   ],
+   [
+    0.8488625954317485,
+    0.5278778642919802,
+    0.027879283839679136
+   ],
+   [
+    0.32713185847541043,
+    0.9449640897539683,
+    0.005255116162213042
+   ],
+   [
+    0.44769640974184005,
+    0.6731706125114845,
+    -0.5885654179062676
+   ],
+   [
+    -0.06202886738204038,
+    0.45278461737779657,
+    -0.889459672991049
+   ],
+   [
+    0.37029025262292664,
+    -0.08329697404465784,
+    -0.9251738987495555
+   ],
+   [
+    -0.19527895335918977,
+    0.9137874802809134,
+    -0.3561721090383115
+   ],
+   [
+    -0.5800482055348979,
+    0.4330250210306586,
+    0.6899517449917367
+   ],
+   [
+    -0.8465140443468439,
+    -0.11634826111431981,
+    0.5194969247832212
+   ],
+   [
+    -0.3095252115375503,
+    -0.21662018338322594,
+    0.9258886755834377
+   ],
+   [
+    -0.49811417659054746,
+    -0.6974977771254697,
+    0.5151496073807585
+   ],
+   [
+    0.1250800473552088,
+    -0.8121873367312679,
+    0.5698304237288394
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 3.3,
+ "model_gpu_memory_gb": 3.3,
+ "context_length": 40960,
+ "load_seconds": 24.5,
+ "median_call_seconds": 16.7,
+ "p90_call_seconds": 27.0,
+ "prompt_tokens_per_s": 1255.6,
+ "gen_tokens_per_s": 63.1,
+ "mean_prompt_tokens": 3760,
+ "mean_gen_tokens": 701,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

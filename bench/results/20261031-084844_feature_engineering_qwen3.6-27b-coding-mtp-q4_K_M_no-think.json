@@ -1,0 +1,254 @@
+{
+ "schema": 4,
+ "example": "feature_engineering",
+ "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 17.8,
+ "model_params": "27.3B",
+ "started": "2026-10-31T08:48:44",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 65.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 0.623,
+ "best_score": 0.762,
+ "improvement": 1.2231139646869984,
+ "llm_calls": 25,
+ "mean_llm_seconds": 149.0,
+ "attempts": 25,
+ "ok": 22,
+ "statuses": {
+  "ok": 22,
+  "invalid": 2,
+  "llm_error": 1
+ },
+ "sweeps": 2,
+ "sweep_variants": 8,
+ "improvements": 6,
+ "minutes_to_best": 41.47,
+ "best_idea": "tuned STEEPNESS=7 on top of: The current program has a train/test accuracy gap (0.726 vs 0.754) and includes squared terms with low weights, suggesting potential overfitting or noise; I will remove th",
+ "progress": [
+  [
+   0.0,
+   0.623
+  ],
+  [
+   2.33,
+   0.726
+  ],
+  [
+   3.53,
+   0.728
+  ],
+  [
+   4.7,
+   0.757
+  ],
+  [
+   32.21,
+   0.758
+  ],
+  [
+   41.47,
+   0.759
+  ],
+  [
+   41.47,
+   0.762
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.623,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.53,
+   "score": 0.728,
+   "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Transform the lognormal-like x3 with log to linearize its effect, and add pairwise products of the Gaussian-like inputs (x1*x2, x1*x6, x2*x6) to capture potential XOR/quadrant nonlinearities in the hidden label function."
+  },
+  {
+   "minutes": 32.21,
+   "score": 0.754,
+   "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "The feedback shows that pairwise products have high weights, suggesting interactions are key, but the model may be missing higher-order interactions or specific threshold behaviors. I will add squared terms of the Gaussian variables and the log-transformed skewed variable to capture radial/circular patterns, and also add soft threshold indicators (using tanh) for the most influential pairwise prod"
+  },
+  {
+   "minutes": 41.47,
+   "score": 0.759,
+   "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "The current program has a train/test accuracy gap (0.726 vs 0.754) and includes squared terms with low weights, suggesting potential overfitting or noise; I will remove the low-weight squared features and add interaction terms between log(x3) and the Gaussian variables, which often capture nonlinear dependencies in such problems, while keeping the feature count manageable."
+  },
+  {
+   "minutes": 41.47,
+   "score": 0.762,
+   "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+   "mode": "sweep/exploit/diff/refine",
+   "status": "ok",
+   "idea": "tuned STEEPNESS=7 on top of: The current program has a train/test accuracy gap (0.726 vs 0.754) and includes squared terms with low weights, suggesting potential overfitting or noise; I will remove the low-weight squared features and add interaction terms between log(x3) and the Gaussian variables,"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -9,6 +9,10 @@\n import math\n \n # OMEGA-BLOCK-START\n+import math\n+\n+STEEPNESS = 7\n+\n def features(row):\n     \"\"\"Return the feature vector (a list of at most 30 finite floats) for one row.\n \n@@ -19,7 +23,38 @@\n     features (they are standardized and a bias is added), so nonlinear structure only\n     helps if a feature expresses it. Only the Python standard library may be used.\n \n-    Current method: the raw inputs.\n+    Method: log(x3) to linearize skew, pairwise products of Gaussians for quadrant effects,\n+    interactions between log(x3) and Gaussian variables, and soft thresholds for key interactions.\n     \"\"\"\n-    return list(row)\n+    x1, x2, x3, x4, x5, x6 = row\n+    \n+    # Guard log for non-positive x3\n+    log_x3 = math.log(max(x3, 1e-9))\n+    \n+    # Basic pairwise products (already shown to be useful)\n+    p_x1_x2 = x1 * x2\n+    p_x1_x6 = x1 * x6\n+    p_x2_x6 = x2 * x6\n+    \n+    # Interactions between log(x3) and Gaussian variables\n+    p_x1_log_x3 = x1 * log_x3\n+    p_x2_log_x3 = x2 * log_x3\n+    p_x6_log_x3 = x6 * log_x3\n+    \n+    # Soft threshold indicators for the most influential interactions\n+    # Using tanh to approximate step functions based on pairwise products\n+    t_p_x1_x2 = math.tanh(p_x1_x2 * STEEPNESS)\n+    t_p_x1_x6 = math.tanh(p_x1_x6 * STEEPNESS)\n+    t_p_x2_x6 = math.tanh(p_x2_x6 * STEEPNESS)\n+    \n+    # Return features: raw, transformed, interactions, log-Gaussian interactions, thresholds\n+    # Total features: 3 raw (x1,x2,x6) + 1 log(x3) + 3 products + 3 log-Gaussian products + 3 thresholds = 13 features\n+    # Excluding x4, x5 as they seemed less relevant and to keep feature count manageable\n+    return [\n+        x1, x2, x6,\n+        log_x3,\n+        p_x1_x2, p_x1_x6, p_x2_x6,\n+        p_x1_log_x3, p_x2_log_x3, p_x6_log_x3,\n+        t_p_x1_x2, t_p_x1_x6, t_p_x2_x6\n+    ]\n # OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "classification",
+  "columns": [
+   "x1",
+   "x2",
+   "x3",
+   "x4",
+   "x5",
+   "x6"
+  ],
+  "head": [
+   [
+    0.14,
+    1.08,
+    1.79,
+    -0.66,
+    1.01,
+    -0.54
+   ],
+   [
+    -1.03,
+    -0.71,
+    0.47,
+    1.72,
+    0.77,
+    -0.69
+   ],
+   [
+    0.36,
+    -0.3,
+    0.1,
+    -2.0,
+    0.57,
+    -0.15
+   ],
+   [
+    1.13,
+    1.16,
+    1.34,
+    1.26,
+    1.29,
+    0.92
+   ]
+  ],
+  "head_labels": [
+   1,
+   1,
+   0,
+   1
+  ],
+  "train_rows": 1000,
+  "num_features": 6,
+  "test_correct": "1110101111000101011111011010101001101100111100110111111101011110101110011011001101101000011100011010111110110111011110000011111111011100100110111110101000001001110101111110101010111011101101000010010100000101110011000100110001010111011001101100110011110111111010101001011101111011110101110011100101100100011011010011101011000101100100110110111110100101101111110111101100011110111111110110111111101100010111110011111011001100001101010011101100101011010111110000111000010111111111100111110101010101111011001000111110111101110001011111011110011101010011011101111101001101110110101100001110001001101010001011011001111110111110101111110110110110101010111001011111101111111101101111001111001000101101001000000100100101111111111011011101110111110101111110001111001101111101111101011111111011111111111111111000111001001110010010010000110000101111110101001111101111000111011000111111101111101111000111011111010001001101100011000110110111000010111110110001111111111101001111101100011100101100101011101110111010"
+ },
+ "best_solution": {
+  "kind": "classification",
+  "columns": [
+   "x1",
+   "x2",
+   "x3",
+   "x4",
+   "x5",
+   "x6"
+  ],
+  "head": [
+   [
+    0.14,
+    1.08,
+    1.79,
+    -0.66,
+    1.01,
+    -0.54
+   ],
+   [
+    -1.03,
+    -0.71,
+    0.47,
+    1.72,
+    0.77,
+    -0.69
+   ],
+   [
+    0.36,
+    -0.3,
+    0.1,
+    -2.0,
+    0.57,
+    -0.15
+   ],
+   [
+    1.13,
+    1.16,
+    1.34,
+    1.26,
+    1.29,
+    0.92
+   ]
+  ],
+  "head_labels": [
+   1,
+   1,
+   0,
+   1
+  ],
+  "train_rows": 1000,
+  "num_features": 13,
+  "test_correct": "1111101010101011011111011101101011001111111001110001011110111111111110101101111111110101110011011010100100011110111111111111111111111101101111110110110110011111111111111011110111011001011111111100100100111111110111111111010101111011111111111101111111110110111101111001111111111100011111011000111111111111011110011101111111000011111100101110111111101101110111011111110001100110110010110011101111111111110111111110101011010011101101111111101011111011001111110100110101011111111111101111110101101101111011011111111111110100111111111110101111011101110111111110111110011111010011001000011101011001111110100111011001111011110011111001111001110111111011011101111110111101111111010111101111010010010100111100111110111011011111011111111111111101101111111111101111111011111111110101011111111011111111111110011010101101011110110111110111011001101111101111011111001111111111110101111111001111110101011011111111110110111111111111101111111010010111111111111011011111011101111111101111111011111111101111111110111010"
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": 20.4,
+ "model_gpu_memory_gb": 14.9,
+ "context_length": 40960,
+ "load_seconds": 52.7,
+ "median_call_seconds": 135.2,
+ "p90_call_seconds": 220.8,
+ "prompt_tokens_per_s": 187.0,
+ "gen_tokens_per_s": 7.4,
+ "mean_prompt_tokens": 3603,
+ "mean_gen_tokens": 925,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

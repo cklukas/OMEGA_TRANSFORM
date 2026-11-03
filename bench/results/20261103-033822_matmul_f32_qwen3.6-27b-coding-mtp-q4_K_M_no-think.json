@@ -1,0 +1,126 @@
+{
+ "schema": 4,
+ "example": "matmul_f32",
+ "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 17.8,
+ "model_params": "27.3B",
+ "started": "2026-11-03T03:38:22",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 64.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "9596232",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 32768,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 1.00883,
+ "best_score": 60.6579,
+ "improvement": 60.1269787773956,
+ "llm_calls": 15,
+ "mean_llm_seconds": 251.2,
+ "attempts": 15,
+ "ok": 3,
+ "statuses": {
+  "invalid": 5,
+  "compile_error": 5,
+  "llm_error": 1,
+  "edit_error": 1,
+  "ok": 3
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 2,
+ "minutes_to_best": 63.27,
+ "best_idea": "The previous implementation failed because `matmul_neon_block` used absolute indices (`ir`, `jr`) for pointer arithmetic and loop bounds, but was called repeatedly with overlapping or partial blocks, ",
+ "progress": [
+  [
+   0.0,
+   1.00883
+  ],
+  [
+   63.18,
+   13.3318
+  ],
+  [
+   63.27,
+   60.6579
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.00883,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 7.84,
+   "score": null,
+   "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+   "mode": "best/diff/refine",
+   "status": "invalid",
+   "idea": "Switch to an i-k-j loop order with cache blocking and NEON vectorization to exploit memory locality and SIMD throughput on Apple Silicon."
+  },
+  {
+   "minutes": 63.27,
+   "score": 60.6579,
+   "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "The previous implementation failed because `matmul_neon_block` used absolute indices (`ir`, `jr`) for pointer arithmetic and loop bounds, but was called repeatedly with overlapping or partial blocks, causing out-of-bounds memory access and incorrect accumulation logic. I will rewrite the kernel to take proper base pointers and local dimensions, use NEON accumulation in the inner loop correctly, an"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -21,12 +21,126 @@\n // OMEGA-BLOCK-START\n // Computes C = A * B. C is NOT zeroed by the caller. Any number of threads may be\n // used (std::thread is available); n is any size from 1 to 2048.\n+#include <algorithm>\n+#include <thread>\n+#include <vector>\n+#include <atomic>\n+#if defined(__ARM_NEON)\n+#include <arm_neon.h>\n+#endif\n+\n+namespace {\n+    // Block sizes for cache tiling.\n+    constexpr int MB = 64;  // block size for i dimension\n+    constexpr int NB = 64;  // block size for j dimension\n+    constexpr int KB = 32;  // block size for k dimension\n+\n+    // Micro-kernel for a specific tile of C.\n+    // Computes C_tile += A_tile * B_tile.\n+    // A_tile is [mr x KB], B_tile is [KB x nr], C_tile is [mr x nr].\n+    // A_tile rows are contiguous in memory with stride n.\n+    // B_tile columns are contiguous in memory with stride n.\n+    void matmul_tile(int n, int mr, int nr, int kb,\n+                     const float* A_base, const float* B_base, float* C_base) {\n+        // A_base points to A[i_start][k_start]\n+        // B_base points to B[k_start][j_start]\n+        // C_base points to C[i_start][j_start]\n+        \n+        // Iterate over k in the block\n+        for (int k = 0; k < kb; ++k) {\n+            // Pointer to A[i][k_start + k]\n+            const float* a_ptr = A_base + k; \n+            // Pointer to B[k_start + k][j]\n+            const float* b_ptr = B_base + k * n;\n+            // Pointer to C[i][j_start]\n+            float* c_ptr = C_base;\n+\n+            // Iterate over i in the block\n+            for (int i = 0; i < mr; ++i) {\n+                float a_val = *a_ptr;\n+#if defined(__ARM_NEON)\n+                // Vectorized inner loop for j\n+                int j = 0;\n+                float32x4_t acc = vdupq_n_f32(0.0f);\n+                int limit = nr;\n+                for (; j + 3 < limit; j += 4) {\n+                    float32x4_t b_vec = vld1q_f32(b_ptr + j);\n+                    acc = vfmaq_f32(acc, b_vec, a_val);\n+                }\n+                vst1q_f32(c_ptr + j, acc);\n+                // Scalar tail\n+                for (; j < limit; ++j) {\n+                    c_ptr[j] += a_val * b_ptr[j];\n+                }\n+#else\n+                // Scalar fallback\n+                for (int j = 0; j < nr; ++j) {\n+                    c_ptr[j] += a_val * b_ptr[j];\n+                }\n+#endif\n+                a_ptr += n; // Move to next row of A\n+                c_ptr += n; // Move to next row of C\n+            }\n+        }\n+    }\n+\n+    void matmul_threaded(int n, const float* A, const float* B, float* C) {\n+        // Clear C\n+        std::fill(C, C + (size_t)n * n, 0.0f);\n+\n+        if (n == 0) return;\n+\n+        // Use static thread pool logic or simple threads.\n+        // For simplicity and robustness in this constrained env, we use std::thread.\n+        // To avoid overhead for small n, just do serial if n is small.\n+        int num_threads = (n < 64) ? 1 : std::min(10, n / 8); \n+        \n+        if (num_threads <= 1) {\n+            // Serial execution\n+            for (int ir = 0; ir < n; ir += MB) {\n+                int mr = std::min(MB, n - ir);\n+                for (int jr = 0; jr < n; jr += NB) {\n+                    int nr = std::min(NB, n - jr);\n+                    for (int kr = 0; kr < n; kr += KB) {\n+                        int kb = std::min(KB, n - kr);\n+                        matmul_tile(n, mr, nr, kb, \n+                                    A + ir * n + kr, \n+                                    B + kr * n + jr, \n+                                    C + ir * n + jr);\n+                    }\n+                }\n+            }\n+            return;\n+        }\n+\n+        std::vector<std::thread> threads;\n+        threads.reserve(num_threads);\n+\n+        for (int t = 0; t < num_threads; ++t) {\n+            threads.emplace_back([=, &A, &B, &C]() {\n+                // Each thread processes disjoint row blocks\n+                for (int ir = t * MB; ir < n; ir += num_threads * MB) {\n+                    int mr = std::min(MB, n - ir);\n+                    for (int jr = 0; jr < n; jr += NB) {\n+                        int nr = std::min(NB, n - jr);\n+                        for (int kr = 0; kr < n; kr += KB) {\n+                            int kb = std::min(KB, n - kr);\n+                            matmul_tile(n, mr, nr, kb,\n+                                        A + ir * n + kr,\n+                                        B + kr * n + jr,\n+                                        C + ir * n + jr);\n+                        }\n+                    }\n+                }\n+            });\n+        }\n+        for (auto& th : threads) {\n+            th.join();\n+        }\n+    }\n+}\n+\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n-        }\n+    matmul_threaded(n, A, B, C);\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": 19.9,
+ "model_gpu_memory_gb": 14.9,
+ "context_length": 32768,
+ "load_seconds": 58.5,
+ "median_call_seconds": 198.0,
+ "p90_call_seconds": 522.5,
+ "prompt_tokens_per_s": 190.8,
+ "gen_tokens_per_s": 6.7,
+ "mean_prompt_tokens": 2601,
+ "mean_gen_tokens": 1406,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

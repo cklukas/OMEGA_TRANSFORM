@@ -4,7 +4,7 @@
 
 # log_compressor
 
-31 models, each run at most 60 minutes, ended earlier after 15 answers in a row without progress; one run per model. The [overall ranking](../benchmarks.md#overall-ranking) compares the models over all examples.
+41 models, each run at most 60 minutes, ended earlier after 15 answers in a row without progress; one run per model. The [overall ranking](../benchmarks.md#overall-ranking) compares the models over all examples.
 
 Machine: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz (MS-7A98), 12 cores, 64 GB, 2x NVIDIA GeForce GTX 1080 Ti, 11264 MiB.
 
@@ -192,29 +192,39 @@ Free OpenRouter models; times include the network and the provider's queue.
 | xingchen-agi/xing4.0-29b-a4b:free (no-think) |  | 11.2861 | **11.2861** | ×1.00 | 8 | 61 | 0% | 0 | - | 8.2 | model errors |
 | google/gemma-4-26b-a4b-it:free (no-think) |  | | | | | | | | | | failed: all 6 model requests failed: google/gemma-4-26b-a4b-it:free: |
 | google/gemma-4-31b-it:free (no-think) |  | | | | | | | | | | failed: all 6 model requests failed: google/gemma-4-31b-it:free: rat |
+| cohere/north-mini-code:free (think) |  | | | | | | | | | | failed: all 6 model requests failed: cohere/north-mini-code:free: ra |
+| nvidia/nemotron-3.5-super-vl:free (think) |  | | | | | | | | | | failed: all 5 model requests failed: nvidia/nemotron-3.5-super-vl:fr |
+| nvidia/nemotron-3-ultra-550b-a55b:free (think) |  | | | | | | | | | | failed: all 6 model requests failed: nvidia/nemotron-3-ultra-550b-a5 |
+| dots-studio/dots-3-note-preview:free (think) |  | | | | | | | | | | failed: all 6 model requests failed: dots-studio/dots-3-note-preview |
+| nvidia/nemotron-3.5-lightning:free (think) |  | | | | | | | | | | failed: all 6 model requests failed: nvidia/nemotron-3.5-lightning:f |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) |  | | | | | | | | | | failed: all 6 model requests failed: nvidia/nemotron-3-nano-omni-30b |
+| xingchen-agi/xing4.0-29b-a4b:free (think) |  | 11.2861 | **11.2861** | ×1.00 | 14 | 270 | 0% | 0 | - | 63.0 | time limit |
+| google/gemma-4-26b-a4b-it:free (think) |  | | | | | | | | | | failed: all 6 model requests failed: google/gemma-4-26b-a4b-it:free: |
+| google/gemma-4-31b-it:free (think) |  | | | | | | | | | | failed: all 6 model requests failed: google/gemma-4-31b-it:free: rat |
+| recursive/flint-v1.0:free (think) |  | | | | | | | | | | failed: all 6 model requests failed: recursive/flint-v1.0:free: requ |
 
 ```mermaid
 xychart-beta
     title "log_compressor, cloud: best score"
-    x-axis ["laguna-s-2.1 (no-think)", "laguna-xs-2.1 (no-think)", "dots-3-note-preview (no-think)", "north-mini-code (no-think)", "nemotron-3-ultra-550b-a55b (no-think)", "nemotron-3.5-lightning (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)", "xing4.0-29b-a4b (no-think)"]
+    x-axis ["laguna-s-2.1 (no-think)", "laguna-xs-2.1 (no-think)", "dots-3-note-preview (no-think)", "north-mini-code (no-think)", "nemotron-3-ultra-550b-a55b (no-think)", "nemotron-3.5-lightning (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)", "xing4.0-29b-a4b (no-think)", "xing4.0-29b-a4b (think)"]
     y-axis "score" 0 --> 23.71
-    bar [21.55, 21.46, 19.66, 11.29, 11.29, 11.29, 11.29, 11.29]
+    bar [21.55, 21.46, 19.66, 11.29, 11.29, 11.29, 11.29, 11.29, 11.29]
 ```
 
 ```mermaid
 xychart-beta
     title "log_compressor, cloud: valid answers (%)"
-    x-axis ["laguna-s-2.1 (no-think)", "laguna-xs-2.1 (no-think)", "dots-3-note-preview (no-think)", "north-mini-code (no-think)", "nemotron-3-ultra-550b-a55b (no-think)", "nemotron-3.5-lightning (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)", "xing4.0-29b-a4b (no-think)"]
+    x-axis ["laguna-s-2.1 (no-think)", "laguna-xs-2.1 (no-think)", "dots-3-note-preview (no-think)", "north-mini-code (no-think)", "nemotron-3-ultra-550b-a55b (no-think)", "nemotron-3.5-lightning (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)", "xing4.0-29b-a4b (no-think)", "xing4.0-29b-a4b (think)"]
     y-axis "% of answers" 0 --> 41.72
-    bar [16.67, 23.53, 37.93, 12.5, 0, 0, 0, 0]
+    bar [16.67, 23.53, 37.93, 12.5, 0, 0, 0, 0, 0]
 ```
 
 ```mermaid
 xychart-beta
     title "log_compressor, cloud: seconds per LLM call"
-    x-axis ["laguna-s-2.1 (no-think)", "laguna-xs-2.1 (no-think)", "dots-3-note-preview (no-think)", "north-mini-code (no-think)", "nemotron-3-ultra-550b-a55b (no-think)", "nemotron-3.5-lightning (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)", "xing4.0-29b-a4b (no-think)"]
-    y-axis "seconds" 0 --> 77.22
-    bar [70.2, 47.7, 19.3, 27.2, 16.1, 43.2, 63.6, 61.2]
+    x-axis ["laguna-s-2.1 (no-think)", "laguna-xs-2.1 (no-think)", "dots-3-note-preview (no-think)", "north-mini-code (no-think)", "nemotron-3-ultra-550b-a55b (no-think)", "nemotron-3.5-lightning (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)", "xing4.0-29b-a4b (no-think)", "xing4.0-29b-a4b (think)"]
+    y-axis "seconds" 0 --> 297
+    bar [70.2, 47.7, 19.3, 27.2, 16.1, 43.2, 63.6, 61.2, 270]
 ```
 
 ### Inference speed and cost
@@ -229,15 +239,16 @@ Generation speed is measured from the first to the last streamed token; the time
 | xingchen-agi/xing4.0-29b-a4b:free (no-think) | 106.4 | 74 | 126 | 17 | 1 | 0.000 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | 94.1 | 9 | 58 | 1376 | 0 | 0.000 |
 | nvidia/nemotron-3.5-lightning:free (no-think) | 78.8 | 47 | 76 | 4762 | 14 | 0.000 |
+| xingchen-agi/xing4.0-29b-a4b:free (think) | 57.6 | 344 | 416 | 5581 | 7 | 0.000 |
 | poolside/laguna-s-2.1:free (no-think) | 49.3 | 75 | 161 | 2273 | 4 | 0.000 |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | 43.1 | 25 | 285 | 1018 | 4 | 0.000 |
 
 ```mermaid
 xychart-beta
     title "log_compressor, cloud: generation speed (tokens/s)"
-    x-axis ["dots-3-note-preview (no-think)", "north-mini-code (no-think)", "laguna-xs-2.1 (no-think)", "xing4.0-29b-a4b (no-think)", "nemotron-3-ultra-550b-a55b (no-think)", "nemotron-3.5-lightning (no-think)", "laguna-s-2.1 (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)"]
+    x-axis ["dots-3-note-preview (no-think)", "north-mini-code (no-think)", "laguna-xs-2.1 (no-think)", "xing4.0-29b-a4b (no-think)", "nemotron-3-ultra-550b-a55b (no-think)", "nemotron-3.5-lightning (no-think)", "xing4.0-29b-a4b (think)", "laguna-s-2.1 (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)"]
     y-axis "tokens/s" 0 --> 130
-    bar [118.2, 111.4, 107.6, 106.4, 94.1, 78.8, 49.3, 43.1]
+    bar [118.2, 111.4, 107.6, 106.4, 94.1, 78.8, 57.6, 49.3, 43.1]
 ```
 
 ### Best score over time
@@ -252,6 +263,7 @@ xychart-beta
 | nvidia/nemotron-3.5-lightning:free (no-think) | 11.2861 | 11.2861 | 11.2861 | 11.2861 |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | 11.2861 | 11.2861 | 11.2861 | 11.2861 |
 | xingchen-agi/xing4.0-29b-a4b:free (no-think) | 11.2861 | 11.2861 | 11.2861 | 11.2861 |
+| xingchen-agi/xing4.0-29b-a4b:free (think) | 11.2861 | 11.2861 | 11.2861 | 11.2861 |
 
 ### Outcome of the LLM answers
 
@@ -265,6 +277,7 @@ xychart-beta
 | nvidia/nemotron-3.5-lightning:free (no-think) | 0 | 0 | 2 | 14 | 0 |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | 0 | 8 | 4 | 4 | 0 |
 | xingchen-agi/xing4.0-29b-a4b:free (no-think) | 0 | 0 | 1 | 7 | 0 |
+| xingchen-agi/xing4.0-29b-a4b:free (think) | 0 | 1 | 2 | 11 | 0 |
 
 ### Best idea per model
 
@@ -276,3 +289,4 @@ xychart-beta
 - **nvidia/nemotron-3.5-lightning:free (no-think)**: initial program
 - **nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think)**: initial program
 - **xingchen-agi/xing4.0-29b-a4b:free (no-think)**: initial program
+- **xingchen-agi/xing4.0-29b-a4b:free (think)**: initial program
