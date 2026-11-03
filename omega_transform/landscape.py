@@ -329,10 +329,11 @@ def _price_history(snap: dict, history: list[dict]) -> str:
         if len(known) >= 2:
             pts = [(d, _blended(p, share)) for d, p in zip(dates, series) if p is not None]
             top = max(v for _, v in pts) or 1.0
+            axis = ", ".join('"' + d + '"' for d, _ in pts)  # no backslash in an f-string (3.11)
             charts.setdefault(vendor(m["id"])[0], []).append(
                 f"\n```mermaid\nxychart-beta\n    title \"{_short(m['id'])}: $ per million "
                 f"tokens at {share:.0%} input\"\n"
-                f"    x-axis [{', '.join(f'\"{d}\"' for d, _ in pts)}]\n"
+                f"    x-axis [{axis}]\n"
                 f"    y-axis \"$/M tokens\" 0 --> {top * 1.15:.3g}\n"
                 f"    line [{', '.join(f'{v:.4g}' for _, v in pts)}]\n```\n")
         parts.append(f"| {m['id']} | " + " | ".join(cells) + f" | {change} |\n")
