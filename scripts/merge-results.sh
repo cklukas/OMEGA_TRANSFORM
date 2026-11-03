@@ -56,7 +56,7 @@ $dirty"
 err=$(ssh -o BatchMode=yes -o ConnectTimeout=30 "$HOST" echo ok 2>&1) \
     || die "$HOST is not reachable: $err"
 if [ -n "${OMEGA_MERGE_STATUS:-}" ]; then
-    status=$(ssh -o BatchMode=yes "$HOST" "$OMEGA_MERGE_STATUS" 2>&1 | tr -d '\r') || true
+    status=$(ssh -o BatchMode=yes "$HOST" "$OMEGA_MERGE_STATUS" 2>/dev/null | tr -d '\r') || true
     log "$HOST: $(echo "$status" | tr '\n' ';')"
 fi
 
