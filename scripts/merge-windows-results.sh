@@ -9,8 +9,9 @@
 #   1. mirror V:\omega_transform\bench-v4\results into bench/results (results
 #      deleted on Windows are deleted here too),
 #   2. date new models (`omega model-releases`) and take an OpenRouter snapshot,
-#   3. wait until the Mac's load is low, rebuild the report and the docs, check
-#      them (`omega docs --check`, `ckdocs check`),
+#   3. rebuild the report and the docs and check them (`omega docs --check`,
+#      `ckdocs check`): about a minute of one core, so it does not wait for a
+#      low load as builds, tests and benchmarks on this Mac do,
 #   4. commit only those files and publish to rpi4 and GitHub.
 #
 # It touches nothing when the files it owns (bench/results, bench/openrouter,
@@ -23,8 +24,6 @@ WS=${OMEGA_WORKSTATION:-workstation}
 REMOTE_RESULTS=${OMEGA_REMOTE_RESULTS:-V:/omega_transform/bench-v4/results}
 REMOTE_LOGS=${OMEGA_REMOTE_LOGS:-'V:\omega_transform\bench-v4'}
 SCRATCH_ROOT=${OMEGA_SCRATCH:-/Volumes/S8T/tmp/OMEGA_TRANSFORM}
-MAX_LOAD=${OMEGA_MAX_LOAD:-32}
-LOAD_WAIT_MINUTES=${OMEGA_LOAD_WAIT_MINUTES:-240}
 OWNED=(bench/results bench/openrouter bench/model-releases.json docs)
 
 cd "$(dirname "$0")/.."
@@ -65,14 +64,6 @@ if [ -n "$missing" ]; then
     python3 -m omega_transform model-releases || log "model-releases failed; continuing"
 fi
 python3 -m omega_transform openrouter-snapshot || log "OpenRouter snapshot failed; continuing"
-
-waited=0
-while [ "$(sysctl -n vm.loadavg | awk '{print int($3)}')" -ge "$MAX_LOAD" ]; do
-    [ "$waited" -lt "$LOAD_WAIT_MINUTES" ] || die "the load stayed above $MAX_LOAD for $LOAD_WAIT_MINUTES minutes"
-    sleep 60
-    waited=$((waited + 1))
-done
-log "load $(sysctl -n vm.loadavg) after waiting $waited min"
 
 python3 -m omega_transform report >/dev/null || die "omega report"
 python3 -m omega_transform docs >/dev/null || die "omega docs"
