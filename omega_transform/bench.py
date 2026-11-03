@@ -243,6 +243,12 @@ def transient(error: str | None) -> bool:
     return bool(error) and bool(_TRANSIENT.search(error))
 
 
+def to_retry(result: dict) -> bool:
+    """Whether a result is to be replaced by running it again: it failed for a
+    transient reason, or the run was cut short by requests failing in a row."""
+    return transient(result.get("error")) or result.get("stop_reason") == "model errors"
+
+
 def _results(out_dir: Path):
     for p in sorted(Path(out_dir).glob("*.json")):
         try:
@@ -256,10 +262,10 @@ def _results(out_dir: Path):
 def finished_runs(out_dir: Path) -> set[tuple[str, str, str]]:
     """(example, model, variant) of every result file in ``out_dir`` that counts:
     what ``bench --skip-existing`` does not run again. A run that failed for a
-    transient reason (see ``transient``) does not count and is run again."""
+    transient reason (see ``to_retry``) does not count and is run again."""
     return {(d.get("example"), d.get("model"), d.get("variant"))
             for _, d in _results(out_dir)
-            if (d.get("llm_calls") or d.get("error")) and not transient(d.get("error"))}
+            if (d.get("llm_calls") or d.get("error")) and not to_retry(d)}
 
 
 def drop_transient(out_dir: Path, example: str, model: str, variant: str,
@@ -269,7 +275,7 @@ def drop_transient(out_dir: Path, example: str, model: str, variant: str,
     gone = []
     for p, d in _results(out_dir):
         if p != keep and (d.get("example"), d.get("model"), d.get("variant")) == \
-                (example, model, variant) and transient(d.get("error")):
+                (example, model, variant) and to_retry(d):
             p.unlink()
             gone.append(p)
     return gone

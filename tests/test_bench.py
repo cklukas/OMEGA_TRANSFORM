@@ -22,11 +22,12 @@ class BenchTest(unittest.TestCase):
         errors = [(None, 12), ("RuntimeError: timed out", 0), (None, 0),
                   ("all 7 model requests failed: m: rate limited (HTTP 429); try again", 7),
                   ("all 16 model requests failed: m: answer stopped: the answer started "
-                   "repeating itself", 16)]
+                   "repeating itself", 16), (None, 9)]
         for i, (err, calls) in enumerate(errors):
             (tmp / f"{i}.json").write_text(json.dumps(
                 {"example": f"ex{i}", "model": "m", "variant": "no-think", "error": err,
-                 "llm_calls": calls}), encoding="utf-8", newline="\n")
+                 "llm_calls": calls, "stop_reason": "model errors" if i == 5 else "no progress"}),
+                encoding="utf-8", newline="\n")
         (tmp / "broken.json").write_text("{", encoding="utf-8")
         # A model that gave no usable answer is a result; a rate limit or timeout is not.
         self.assertEqual(finished_runs(tmp), {("ex0", "m", "no-think"), ("ex4", "m", "no-think")})
