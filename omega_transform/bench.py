@@ -229,18 +229,50 @@ def _posix_machine_info() -> dict:
     }
 
 
-def finished_runs(out_dir: Path) -> set[tuple[str, str, str]]:
-    """(example, model, variant) of every result file in ``out_dir`` that recorded a
-    search, not an error: what ``bench --skip-existing`` does not run again."""
-    done = set()
-    for p in Path(out_dir).glob("*.json"):
+# Errors that say nothing about the model: the service or the machine failed. A run
+# that ended in one of them is run again; a run whose model gave no usable answer
+# (cut off, repeating itself, wrong format) is a result and is not.
+_TRANSIENT = re.compile(
+    r"rate limited|HTTP 429|HTTP 5\d\d|connection|timed out|unreachable|overloaded"
+    r"|has no model|initial program does not pass|context of \d+ tokens instead"
+    r"|not enough memory|does not fit", re.IGNORECASE)
+
+
+def transient(error: str | None) -> bool:
+    """Whether a run's error is the service's or the machine's fault, not the model's."""
+    return bool(error) and bool(_TRANSIENT.search(error))
+
+
+def _results(out_dir: Path):
+    for p in sorted(Path(out_dir).glob("*.json")):
         try:
             d = json.loads(p.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             continue
-        if isinstance(d, dict) and not d.get("error") and d.get("llm_calls"):
-            done.add((d.get("example"), d.get("model"), d.get("variant")))
-    return done
+        if isinstance(d, dict):
+            yield p, d
+
+
+def finished_runs(out_dir: Path) -> set[tuple[str, str, str]]:
+    """(example, model, variant) of every result file in ``out_dir`` that counts:
+    what ``bench --skip-existing`` does not run again. A run that failed for a
+    transient reason (see ``transient``) does not count and is run again."""
+    return {(d.get("example"), d.get("model"), d.get("variant"))
+            for _, d in _results(out_dir)
+            if (d.get("llm_calls") or d.get("error")) and not transient(d.get("error"))}
+
+
+def drop_transient(out_dir: Path, example: str, model: str, variant: str,
+                   keep: Path) -> list[Path]:
+    """Delete the earlier results of a run that failed for a transient reason, now
+    that ``keep`` replaces them; the report would count them as failed repeats."""
+    gone = []
+    for p, d in _results(out_dir):
+        if p != keep and (d.get("example"), d.get("model"), d.get("variant")) == \
+                (example, model, variant) and transient(d.get("error")):
+            p.unlink()
+            gone.append(p)
+    return gone
 
 
 _commits: dict[str, str] = {}
@@ -476,6 +508,8 @@ def run_bench(examples: list[Path], models: list[dict], minutes: float, out_dir:
             path.write_text(json.dumps(asdict(res), indent=1) + "\n", encoding="utf-8",
                             newline="\n")
             written.append(path)
+            for p in drop_transient(out_dir, res.example, res.model, variant, keep=path):
+                log(f"  replaces {p.name}, which failed for a transient reason")
             log(f"  -> {path.name}: best {res.best_score} (x{(res.improvement or 0):.2f}), "
                 f"stopped by {res.stop_reason or '-'} after {res.wall_minutes:g} min, "
                 f"{res.llm_calls} LLM calls, {res.gen_tokens_per_s} tok/s, "

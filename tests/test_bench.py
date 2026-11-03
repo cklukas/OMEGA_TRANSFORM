@@ -19,13 +19,31 @@ class BenchTest(unittest.TestCase):
     def test_finished_runs_leave_out_errors(self):
         from omega_transform.bench import finished_runs
         tmp = Path(self.enterContext(tempfile.TemporaryDirectory()))
-        for i, (err, calls) in enumerate([(None, 12), ("RuntimeError: timed out", 0),
-                                          (None, 0)]):
+        errors = [(None, 12), ("RuntimeError: timed out", 0), (None, 0),
+                  ("all 7 model requests failed: m: rate limited (HTTP 429); try again", 7),
+                  ("all 16 model requests failed: m: answer stopped: the answer started "
+                   "repeating itself", 16)]
+        for i, (err, calls) in enumerate(errors):
             (tmp / f"{i}.json").write_text(json.dumps(
                 {"example": f"ex{i}", "model": "m", "variant": "no-think", "error": err,
                  "llm_calls": calls}), encoding="utf-8", newline="\n")
         (tmp / "broken.json").write_text("{", encoding="utf-8")
-        self.assertEqual(finished_runs(tmp), {("ex0", "m", "no-think")})
+        # A model that gave no usable answer is a result; a rate limit or timeout is not.
+        self.assertEqual(finished_runs(tmp), {("ex0", "m", "no-think"), ("ex4", "m", "no-think")})
+
+    def test_a_retry_replaces_the_transient_failure(self):
+        from omega_transform.bench import drop_transient
+        tmp = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        files = {}
+        for name, ex, err in [("old", "ex", "RuntimeError: OpenRouter has no model 'm'"),
+                              ("own", "ex", "all 3 model requests failed: m: answer stopped"),
+                              ("other", "ex2", "rate limited (HTTP 429)"), ("new", "ex", None)]:
+            files[name] = tmp / f"{name}.json"
+            files[name].write_text(json.dumps({"example": ex, "model": "m",
+                                               "variant": "think", "error": err}))
+        self.assertEqual(drop_transient(tmp, "ex", "m", "think", keep=files["new"]),
+                         [files["old"]])
+        self.assertEqual(sorted(p.stem for p in tmp.glob("*.json")), ["new", "other", "own"])
 
     def test_summarize_run(self):
         cfg = load_config(TOY)
