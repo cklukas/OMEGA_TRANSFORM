@@ -229,3 +229,11 @@ answers. The limit belongs to the free endpoints themselves, not to the
 benchmark's daily allowance of free requests, which other models used at the
 same time without trouble. They are therefore left out of the benchmark; the
 26B model is benchmarked locally as `gemma4:26b-a4b-it-qat`.
+
+## Laguna S 2.1 and XS 2.1, free on OpenRouter (Poolside, France)
+
+`poolside/laguna-s-2.1:free` and `poolside/laguna-xs-2.1:free` were part of the
+cloud benchmark until OpenRouter stopped offering them on 2026-10-31; from then
+on every request failed with "OpenRouter has no model". They had results for
+only the first examples, so they are left out of the benchmark rather than
+shown with gaps.
