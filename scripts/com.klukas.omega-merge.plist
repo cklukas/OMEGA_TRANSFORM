@@ -2,40 +2,34 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!-- Copyright (c) 2026 by C. Klukas -->
 <!-- SPDX-License-Identifier: GPL-3.0-only -->
-<!-- Daily merge of the Windows benchmark results (scripts/merge-windows-results.sh).
-     Install with scripts/install-merge-job.sh: it runs the job through a small
-     launcher (scripts/omega-merge-launcher.c), the one program that needs Full Disk
-     Access for /Volumes/PRO-BLADE, and replaces the two lines below accordingly.
-     Run now:   launchctl kickstart gui/$(id -u)/com.klukas.omega-merge
-     launchd runs a missed time (Mac asleep) when the Mac wakes up. -->
+<!-- Template of the daily merge job (scripts/merge-results.sh) for macOS launchd.
+     scripts/install-merge-job.sh fills in the @...@ fields and loads it; see
+     "Collecting results automatically" in docs/benchmarking.md. -->
 <plist version="1.0">
 <dict>
     <key>Label</key>
     <string>com.klukas.omega-merge</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/bin/bash</string>
-        <string>/Volumes/PRO-BLADE/git/OMEGA_TRANSFORM/scripts/merge-windows-results.sh</string>
+        <string>@LAUNCHER@</string>
     </array>
     <key>WorkingDirectory</key>
-    <string>/Volumes/PRO-BLADE/git/OMEGA_TRANSFORM</string>
+    <string>@REPO@</string>
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
-        <string>/Library/Frameworks/Python.framework/Versions/3.13/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
-        <key>TMPDIR</key>
-        <string>/Volumes/S8T/tmp/OMEGA_TRANSFORM</string>
+        <string>@PATH@</string>
     </dict>
     <key>StartCalendarInterval</key>
     <dict>
         <key>Hour</key>
-        <integer>7</integer>
+        <integer>@HOUR@</integer>
         <key>Minute</key>
-        <integer>23</integer>
+        <integer>@MINUTE@</integer>
     </dict>
     <key>StandardOutPath</key>
-    <string>/Users/klukas/Library/Logs/omega-merge.log</string>
+    <string>@LOG@</string>
     <key>StandardErrorPath</key>
-    <string>/Users/klukas/Library/Logs/omega-merge.log</string>
+    <string>@LOG@</string>
 </dict>
 </plist>

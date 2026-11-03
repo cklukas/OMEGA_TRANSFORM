@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: GPL-3.0-only
  *
  * The program launchd starts for the daily merge (scripts/com.klukas.omega-merge.plist).
- * It runs one fixed script, scripts/merge-windows-results.sh, and nothing else.
+ * It runs one fixed script, scripts/merge-results.sh, and nothing else.
  *
  * Why it exists: macOS lets a program that launchd starts read an external volume
- * such as /Volumes/PRO-BLADE only with the Full Disk Access permission, and the
- * permission belongs to the program launchd started; the processes it spawns run
- * under it. Granting it to this launcher instead of /bin/bash keeps every other
- * shell script without disk access. The launcher spawns the script and waits for
+ * only with the user's permission (Full Disk Access), and the permission belongs
+ * to the program launchd started; the processes it spawns run under it. Granting
+ * it to this launcher instead of /bin/bash keeps every other shell script without
+ * disk access. The launcher spawns the script and waits for
  * it, rather than replacing itself with it, so it stays the process macOS asks.
  *
  * Build (scripts/install-merge-job.sh does this):
- *   clang -O2 -Wall -DSCRIPT='"/path/to/merge-windows-results.sh"' -o omega-merge omega-merge-launcher.c
+ *   clang -O2 -Wall -DSCRIPT='"/path/to/merge-results.sh"' -o omega-merge omega-merge-launcher.c
  *   codesign --force --sign - --identifier com.klukas.omega-merge omega-merge
  */
 #include <spawn.h>
@@ -21,7 +21,7 @@
 #include <sys/wait.h>
 
 #ifndef SCRIPT
-#error "build with -DSCRIPT='\"/absolute/path/to/merge-windows-results.sh\"'"
+#error "build with -DSCRIPT='\"/absolute/path/to/merge-results.sh\"'"
 #endif
 
 extern char **environ;

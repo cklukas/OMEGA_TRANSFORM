@@ -254,12 +254,62 @@ To merge another machine's results, copy its result files into
 example and model, so they do not collide:
 
 ```bash
-scp 'workstation:V:/omega_transform/bench-v4/results/*.json' bench/results/
+scp 'benchhost:V:/omega/results/*.json' bench/results/
 python3 -m omega_transform report
 python3 -m omega_transform docs
 ```
 
 Commit the copied files with the pages, as with any new results.
+
+### Collecting results automatically
+
+A benchmark on another machine runs for days. `scripts/merge-results.sh` does
+the collecting in one step, so that it can run unattended, for example once a
+day:
+
+1. It copies the other machine's result folder over ssh and mirrors it into
+   `bench/results/`: new results are added, and results deleted there (runs to
+   be repeated, models dropped) are deleted here too.
+2. It dates new models (`omega model-releases`) and takes an
+   [OpenRouter snapshot](openrouter-models.md), which builds up the price
+   history.
+3. It regenerates the report and the documentation and checks them
+   (`omega docs --check`, `ckdocs check`).
+4. It commits only these files and, if configured, publishes.
+
+It changes nothing when these files (`bench/results/`, `bench/openrouter/`,
+`bench/model-releases.json`, `docs/`) already have uncommitted changes, which
+may be someone's work in progress; a failed step leaves its changes in place
+for inspection. The settings are shell variables in
+`~/.config/omega-merge.env`, outside the repository:
+
+```bash
+OMEGA_MERGE_HOST=benchhost                  # ssh host that runs the benchmark
+OMEGA_MERGE_RESULTS=V:/omega/results        # its result folder, as scp writes it
+OMEGA_MERGE_STATUS='...'                    # optional: a command whose output is logged
+OMEGA_MERGE_PUBLISH='git push origin main'  # optional: run after the commit
+OMEGA_MERGE_SCRATCH=/path/to/scratch        # optional: where the copy goes ($TMPDIR)
+```
+
+The ssh connection must work without a password prompt (a key, as for any
+unattended job). On macOS, `scripts/install-merge-job.sh` sets up a daily
+launchd job (07:23, or another time as `HH:MM`; `--remove` takes it out again).
+launchd runs a time the Mac slept through as soon as it wakes. The job's output
+goes to `~/Library/Logs/omega-merge.log`; `launchctl kickstart
+gui/$(id -u)/com.klukas.omega-merge` runs it at once.
+
+The job starts through a small launcher program
+(`scripts/omega-merge-launcher.c`) rather than through `bash` directly: macOS
+lets a program that launchd starts read an external volume only with the
+user's permission (Full Disk Access), and the permission then belongs to that
+program. The launcher runs this one script and nothing else, so granting it
+leaves every other shell script without that access. macOS may ask for the
+permission the first time; otherwise add the launcher,
+`~/Library/Application Support/OMEGA/omega-merge`, under System Settings >
+Privacy & Security > Full Disk Access.
+
+On Linux, a cron entry or a systemd timer that runs the script does the same,
+without a launcher.
 
 ## Progress over time
 
