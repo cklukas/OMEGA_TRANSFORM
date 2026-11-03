@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Copyright (c) 2026 by C. Klukas -->
+<!-- SPDX-License-Identifier: GPL-3.0-only -->
+<!-- Daily merge of the Windows benchmark results (scripts/merge-windows-results.sh).
+     Install:   cp scripts/com.klukas.omega-merge.plist ~/Library/LaunchAgents/ &&
+                launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.klukas.omega-merge.plist
+     Run now:   launchctl kickstart gui/$(id -u)/com.klukas.omega-merge
+     Remove:    launchctl bootout gui/$(id -u)/com.klukas.omega-merge
+     launchd runs a missed time (Mac asleep) when the Mac wakes up. -->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.klukas.omega-merge</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Volumes/PRO-BLADE/git/OMEGA_TRANSFORM/scripts/merge-windows-results.sh</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/Volumes/PRO-BLADE/git/OMEGA_TRANSFORM</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/Library/Frameworks/Python.framework/Versions/3.13/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>TMPDIR</key>
+        <string>/Volumes/S8T/tmp/OMEGA_TRANSFORM</string>
+    </dict>
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>7</integer>
+        <key>Minute</key>
+        <integer>23</integer>
+    </dict>
+    <key>StandardOutPath</key>
+    <string>/Users/klukas/Library/Logs/omega-merge.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/klukas/Library/Logs/omega-merge.log</string>
+</dict>
+</plist>
