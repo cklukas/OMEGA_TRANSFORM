@@ -51,7 +51,7 @@ xychart-beta
 
 ### Cost against usage
 
-Both axes are logarithmic, from the cheapest to the most expensive model ($0.0306 to $4.14 per million tokens) and from the least to the most used (2,641 to 50,447 billion tokens in the week). A dot's area grows with the model's estimated revenue (the largest: $25.3M a month; see the tables below). Free and unlisted models are not shown.
+Both axes are logarithmic, from the cheapest to the most expensive model ($0.0306 to $4.14 per million tokens) and from the least to the most used (2,641 to 50,447 billion tokens in the week). A dot's area grows with the model's estimated revenue (the largest: $24.8M a month; see the tables below). Free and unlisted models are not shown.
 
 ```mermaid
 quadrantChart
@@ -62,23 +62,23 @@ quadrantChart
     quadrant-2 Cheap and popular
     quadrant-3 Cheap niche
     quadrant-4 Expensive niche
-    deepseek-v4.1-flash-1017: [0.476, 0.950] radius: 13.5
-    glm-5.3-flash: [0.050, 0.586] radius: 9.9
+    deepseek-v4.1-flash-1017: [0.476, 0.950] radius: 13.8
+    glm-5.3-flash: [0.050, 0.586] radius: 10.1
     deepseek-v4.1-flash: [0.157, 0.581] radius: 9.4
-    hy4-preview: [0.660, 0.432] radius: 12.6
-    gpt-6-luna: [0.287, 0.431] radius: 9.2
+    hy4-preview: [0.660, 0.432] radius: 11.9
+    gpt-6-luna: [0.287, 0.431] radius: 9.3
     claude-opus-5.5: [0.950, 0.333] radius: 22.0
     minimax-m3.1-flash: [0.349, 0.323] radius: 7.5
-    step-5-preview: [0.691, 0.323] radius: 11.5
-    gpt-5.6-luna: [0.413, 0.264] radius: 9.2
-    gpt-6.1-sol: [0.828, 0.171] radius: 15.0
+    step-5-preview: [0.691, 0.323] radius: 11.6
+    gpt-5.6-luna: [0.413, 0.264] radius: 9.6
+    gpt-6.1-sol: [0.828, 0.171] radius: 15.3
     deepseek-v4-flash-0731: [0.201, 0.168] radius: 7.6
-    glm-5.3: [0.327, 0.166] radius: 11.1
+    glm-5.3: [0.327, 0.166] radius: 11.4
     hy3: [0.327, 0.089] radius: 6.9
     mimo-v2.6-flash: [0.332, 0.078] radius: 6.0
-    kimi-k3.1-pro: [0.822, 0.070] radius: 11.4
-    claude-haiku-5.5: [0.300, 0.068] radius: 8.1
-    deepseek-v4-flash: [0.261, 0.050] radius: 7.0
+    kimi-k3.1-pro: [0.822, 0.070] radius: 11.6
+    claude-haiku-5.5: [0.300, 0.068] radius: 7.8
+    deepseek-v4-flash: [0.261, 0.050] radius: 7.1
 ```
 
 ### Estimated revenue
@@ -89,23 +89,23 @@ These are rough estimates: they cover OpenRouter only (not the vendors' own APIs
 
 | # | Model | Vendor | Country | Tokens (B/week) | Requests (M/week) | k tokens/request | Input share | In $/M list | In $/M paid | Cache hits | Out $/M | Revenue/week | Revenue/month | Share |
 |--:|---|---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| 1 | anthropic/claude-opus-5.5 | Anthropic | USA | 6,670 | 57.0 | 117 | 99.1% | 4.000 | 0.702 | 87% | 20.00 | $5.8M | $25.3M | 34.0% |
-| 2 | openai/gpt-6.1-sol | OpenAI | USA | 3,929 | 125.3 | 31 | 98.4% | 2.000 | 0.404 | 84% | 10.00 | $2.2M | $9.5M | 12.7% |
-| 3 | deepseek/deepseek-v4.1-flash-1017 | DeepSeek | China | 50,447 | 814.7 | 62 | 98.6% | 0.300 | 0.016 | 97% | 1.20 | $1.6M | $7.1M | 9.5% |
-| 4 | tencent/hy4-preview | Tencent | China | 9,250 | 89.2 | 104 | 99.1% | 0.834 | 0.120 | 90% | 2.50 | $1.3M | $5.7M | 7.7% |
-| 5 | stepfun/step-5-preview | StepFun | China | 6,458 | 25.1 | 257 | 99.5% | 1.000 | 0.145 | 95% | 2.70 | $1.0M | $4.4M | 5.9% |
-| 6 | moonshotai/kimi-k3.1-pro | Moonshot AI | China | 2,817 | 21.4 | 131 | 99.2% | 2.000 | 0.277 | 96% | 10.00 | $993k | $4.3M | 5.8% |
-| 7 | z-ai/glm-5.3 | Z.ai | China | 3,866 | 67.2 | 58 | 98.3% | 0.080 | 0.179 | - | 3.60 | $914k | $4.0M | 5.3% |
-| 8 | z-ai/glm-5.3-flash | Z.ai | China | 15,320 | 696.8 | 22 | 96.7% | 0.029 | 0.040 | - | 0.09 | $632k | $2.7M | 3.7% |
-| 9 | deepseek/deepseek-v4.1-flash | DeepSeek | China | 15,076 | 480.2 | 31 | 97.8% | 0.045 | 0.025 | 62% | 0.50 | $524k | $2.3M | 3.1% |
-| 10 | openai/gpt-6-luna | OpenAI | USA | 9,219 | 532.4 | 17 | 97.2% | 0.100 | 0.040 | 66% | 0.50 | $492k | $2.1M | 2.9% |
-| 11 | openai/gpt-5.6-luna | OpenAI | USA | 5,322 | 182.5 | 29 | 97.8% | 0.200 | 0.067 | 74% | 1.20 | $489k | $2.1M | 2.9% |
-| 12 | anthropic/claude-haiku-5.5 | Anthropic | USA | 2,798 | 186.3 | 15 | 95.1% | 0.100 | 0.087 | 15% | 0.50 | $300k | $1.3M | 1.8% |
-| 13 | deepseek/deepseek-v4-flash-0731 | DeepSeek | China | 3,884 | 335.6 | 12 | 95.5% | 0.059 | 0.048 | 45% | 0.30 | $232k | $1.0M | 1.4% |
-| 14 | minimax/minimax-m3.1-flash | MiniMax | China | 6,461 | 73.1 | 88 | 98.5% | 0.150 | 0.025 | 93% | 0.60 | $216k | $940k | 1.3% |
-| 15 | deepseek/deepseek-v4-flash | DeepSeek | China | 2,641 | 332.1 | 8 | 94.0% | 0.091 | 0.055 | 50% | 0.18 | $165k | $719k | 1.0% |
+| 1 | anthropic/claude-opus-5.5 | Anthropic | USA | 6,670 | 57.0 | 117 | 99.1% | 4.000 | 0.683 | 87% | 20.00 | $5.7M | $24.8M | 33.5% |
+| 2 | openai/gpt-6.1-sol | OpenAI | USA | 3,929 | 125.3 | 31 | 98.4% | 2.000 | 0.421 | 83% | 10.00 | $2.2M | $9.7M | 13.2% |
+| 3 | deepseek/deepseek-v4.1-flash-1017 | DeepSeek | China | 50,447 | 814.7 | 62 | 98.6% | 0.300 | 0.017 | 96% | 1.20 | $1.7M | $7.3M | 9.9% |
+| 4 | tencent/hy4-preview | Tencent | China | 9,250 | 89.2 | 104 | 99.1% | 0.834 | 0.096 | 93% | 2.50 | $1.1M | $4.8M | 6.4% |
+| 5 | moonshotai/kimi-k3.1-pro | Moonshot AI | China | 2,817 | 21.4 | 131 | 99.2% | 2.000 | 0.285 | 95% | 10.00 | $1.0M | $4.4M | 6.0% |
+| 6 | stepfun/step-5-preview | StepFun | China | 6,458 | 25.1 | 257 | 99.5% | 1.000 | 0.145 | 95% | 2.70 | $1.0M | $4.4M | 6.0% |
+| 7 | z-ai/glm-5.3 | Z.ai | China | 3,866 | 67.2 | 58 | 98.3% | 0.080 | 0.195 | - | 3.60 | $973k | $4.2M | 5.7% |
+| 8 | z-ai/glm-5.3-flash | Z.ai | China | 15,320 | 696.8 | 22 | 96.7% | 0.029 | 0.041 | - | 0.09 | $648k | $2.8M | 3.8% |
+| 9 | openai/gpt-5.6-luna | OpenAI | USA | 5,322 | 182.5 | 29 | 97.8% | 0.200 | 0.079 | 67% | 1.20 | $553k | $2.4M | 3.3% |
+| 10 | deepseek/deepseek-v4.1-flash | DeepSeek | China | 15,076 | 480.2 | 31 | 97.8% | 0.045 | 0.023 | 66% | 0.50 | $505k | $2.2M | 3.0% |
+| 11 | openai/gpt-6-luna | OpenAI | USA | 9,219 | 532.4 | 17 | 97.2% | 0.100 | 0.040 | 66% | 0.50 | $490k | $2.1M | 2.9% |
+| 12 | anthropic/claude-haiku-5.5 | Anthropic | USA | 2,798 | 186.3 | 15 | 95.1% | 0.100 | 0.071 | 32% | 0.50 | $259k | $1.1M | 1.5% |
+| 13 | deepseek/deepseek-v4-flash-0731 | DeepSeek | China | 3,884 | 335.6 | 12 | 95.5% | 0.059 | 0.048 | 48% | 0.30 | $229k | $994k | 1.3% |
+| 14 | minimax/minimax-m3.1-flash | MiniMax | China | 6,461 | 73.1 | 88 | 98.5% | 0.150 | 0.025 | 92% | 0.60 | $218k | $946k | 1.3% |
+| 15 | deepseek/deepseek-v4-flash | DeepSeek | China | 2,641 | 332.1 | 8 | 94.0% | 0.091 | 0.056 | 49% | 0.18 | $167k | $727k | 1.0% |
 | 16 | tencent/hy3 | Tencent | China | 2,998 | 37.6 | 80 | 98.4% | 0.132 | 0.042 | 91% | 0.53 | $149k | $648k | 0.9% |
-| 17 | xiaomi/mimo-v2.6-flash | Xiaomi | China | 2,898 | 57.6 | 50 | 98.5% | 0.140 | 0.022 | 86% | 0.28 | $74k | $323k | 0.4% |
+| 17 | xiaomi/mimo-v2.6-flash | Xiaomi | China | 2,898 | 57.6 | 50 | 98.5% | 0.140 | 0.021 | 87% | 0.28 | $72k | $315k | 0.4% |
 
 ### Revenue by vendor
 
@@ -113,15 +113,15 @@ All listed models of the rankings, summed by vendor; free variants count with th
 
 | # | Vendor | Models | Tokens (B/week) | Free tokens | Revenue/month | Share | Revenue per M tokens |
 |--:|---|--:|--:|--:|--:|--:|--:|
-| 1 | Anthropic | 2 | 9,468 | 0% | $26.6M | 35.7% | $0.647 |
-| 2 | OpenAI | 3 | 18,470 | 0% | $13.7M | 18.4% | $0.171 |
-| 3 | DeepSeek | 4 | 72,048 | 0% | $11.1M | 14.9% | $0.035 |
-| 4 | Z.ai | 2 | 19,186 | 0% | $6.7M | 9.0% | $0.081 |
-| 5 | Tencent | 2 | 12,249 | 0% | $6.4M | 8.5% | $0.119 |
-| 6 | StepFun | 1 | 6,458 | 0% | $4.4M | 5.9% | $0.157 |
-| 7 | Moonshot AI | 1 | 2,817 | 0% | $4.3M | 5.8% | $0.353 |
-| 8 | MiniMax | 1 | 6,461 | 0% | $940k | 1.3% | $0.033 |
-| 9 | Xiaomi | 1 | 2,898 | 0% | $323k | 0.4% | $0.026 |
+| 1 | Anthropic | 2 | 9,468 | 0% | $25.9M | 35.0% | $0.629 |
+| 2 | OpenAI | 3 | 18,470 | 0% | $14.3M | 19.3% | $0.178 |
+| 3 | DeepSeek | 4 | 72,048 | 0% | $11.2M | 15.2% | $0.036 |
+| 4 | Z.ai | 2 | 19,186 | 0% | $7.0M | 9.5% | $0.084 |
+| 5 | Tencent | 2 | 12,249 | 0% | $5.4M | 7.3% | $0.102 |
+| 6 | Moonshot AI | 1 | 2,817 | 0% | $4.4M | 6.0% | $0.360 |
+| 7 | StepFun | 1 | 6,458 | 0% | $4.4M | 6.0% | $0.157 |
+| 8 | MiniMax | 1 | 6,461 | 0% | $946k | 1.3% | $0.034 |
+| 9 | Xiaomi | 1 | 2,898 | 0% | $315k | 0.4% | $0.025 |
 | 10 | NVIDIA | 2 | 5,537 | 100% | $0 | 0.0% | $0.000 |
 
 ### Revenue by country
@@ -130,8 +130,8 @@ The same, summed by the country of the vendor's headquarters.
 
 | # | Country | Models | Tokens (B/week) | Free tokens | Revenue/month | Share | Revenue per M tokens |
 |--:|---|--:|--:|--:|--:|--:|--:|
-| 1 | USA | 7 | 33,474 | 17% | $40.3M | 54.2% | $0.277 |
-| 2 | China | 12 | 122,117 | 0% | $34.1M | 45.8% | $0.064 |
+| 1 | USA | 7 | 33,474 | 17% | $40.2M | 54.3% | $0.276 |
+| 2 | China | 12 | 122,117 | 0% | $33.7M | 45.7% | $0.064 |
 
 ### Price history
 

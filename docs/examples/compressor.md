@@ -315,11 +315,9 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/log_c
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|
 | gpt-oss:20b (no-think) | local | 29.6153 | ×2.62 | 18.3 | 3 |
-| poolside/laguna-s-2.1:free (no-think) | cloud | 21.5508 | ×1.91 | 2.2 | 1 |
 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | 21.4903 | ×1.90 | 1.1 | 1 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 21.4903 | ×1.90 | 23.4 | 3 |
 | gemma4:e2b (no-think) | local | 21.4570 | ×1.90 | 1.4 | 2 |
-| poolside/laguna-xs-2.1:free (no-think) | cloud | 21.4570 | ×1.90 | 0.1 | 1 |
 | glm-4.7-flash:latest (no-think) | local | 21.4560 | ×1.90 | 19.2 | 2 |
 | richardyoung/frognano-4b-2609:latest (no-think) | local | 19.6626 | ×1.74 | 2.1 | 1 |
 | qwen3.5:latest (no-think) | local | 19.6626 | ×1.74 | 1.1 | 2 |
@@ -341,8 +339,6 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/log_c
 | nvidia/nemotron-3.5-lightning:free (no-think) | cloud | 11.2861 | ×1.00 | - | 0 |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | 11.2861 | ×1.00 | - | 0 |
 | xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 11.2861 | ×1.00 | - | 0 |
-| google/gemma-4-26b-a4b-it:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
-| google/gemma-4-31b-it:free (no-think) | cloud | | | | failed: all 6 model requests failed: google/gemma-4-31b-it:free … |
 | qwen3-coder:30b (no-think) | local | 11.2861 | ×1.00 | - | 0 |
 | frob/sarvam:30b (no-think) | local | 11.2861 | ×1.00 | - | 0 |
 | cohere/north-mini-code:free (think) | cloud | | | | failed: all 6 model requests failed: cohere/north-mini-code:free … |
@@ -352,6 +348,4 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/log_c
 | nvidia/nemotron-3.5-lightning:free (think) | cloud | | | | failed: all 6 model requests failed … |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | cloud | | | | failed: all 6 model requests failed … |
 | xingchen-agi/xing4.0-29b-a4b:free (think) | cloud | 11.2861 | ×1.00 | - | 0 |
-| google/gemma-4-26b-a4b-it:free (think) | cloud | | | | failed: all 6 model requests failed … |
-| google/gemma-4-31b-it:free (think) | cloud | | | | failed: all 6 model requests failed: google/gemma-4-31b-it:free … |
 | recursive/flint-v1.0:free (think) | cloud | | | | failed: all 6 model requests failed: recursive/flint-v1.0:free … |

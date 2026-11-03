@@ -1,16 +1,16 @@
 {
  "schema": 4,
- "example": "matmul_f32_single_thread",
- "model": "xingchen-agi/xing4.0-29b-a4b:free",
+ "example": "float_parse_single_thread",
+ "model": "nemotron-3-nano:4b",
  "variant": "no-think",
- "model_size_gb": 0.0,
- "model_params": "",
- "started": "2026-10-31T20:03:22",
+ "model_size_gb": 2.8,
+ "model_params": "4.0B",
+ "started": "2026-11-03T09:59:26",
  "minutes_budget": 60.0,
  "patience": 15,
- "wall_minutes": 16.6,
+ "wall_minutes": 4.7,
  "omega_version": "0.1.0",
- "omega_commit": "9596232",
+ "omega_commit": "0c1aa03c",
  "machine": {
   "platform": "Windows-11-10.0.26300-SP0",
   "machine": "AMD64",
@@ -32,22 +32,23 @@
   "sweep_budget": 16,
   "temperature": 0.8,
   "min_gain": 0.001,
-  "num_ctx": 32768,
+  "num_ctx": 40960,
   "max_tokens": 24576,
   "max_answer_chars": 0,
   "answer_room": 24000,
   "max_reasoning_factor": 8.0
  },
- "initial_score": 1.48879,
- "best_score": 1.48879,
+ "initial_score": 60.7376,
+ "best_score": 60.7376,
  "improvement": 1.0,
- "llm_calls": 12,
- "mean_llm_seconds": 80.9,
- "attempts": 12,
+ "llm_calls": 16,
+ "mean_llm_seconds": 13.9,
+ "attempts": 16,
  "ok": 0,
  "statuses": {
-  "llm_error": 11,
-  "invalid": 1
+  "edit_error": 10,
+  "llm_error": 2,
+  "compile_error": 4
  },
  "sweeps": 0,
  "sweep_variants": 0,
@@ -57,13 +58,13 @@
  "progress": [
   [
    0.0,
-   1.48879
+   60.7376
   ]
  ],
  "best_lineage": [
   {
    "minutes": 0.0,
-   "score": 1.48879,
+   "score": 60.7376,
    "model": "",
    "mode": "initial",
    "status": "ok",
@@ -72,28 +73,48 @@
  ],
  "best_diff": "",
  "initial_solution": {
-  "kind": "matmul",
-  "n": 768,
-  "cores": "one core, CPU time"
+  "kind": "parse",
+  "count": 2000000,
+  "text_mb": 28.39,
+  "head": [
+   "0",
+   "-0",
+   "1",
+   "-1.5",
+   "0.1",
+   "1e23",
+   "9007199254740993",
+   "4.9e-324"
+  ]
  },
  "best_solution": {
-  "kind": "matmul",
-  "n": 768,
-  "cores": "one core, CPU time"
+  "kind": "parse",
+  "count": 2000000,
+  "text_mb": 28.39,
+  "head": [
+   "0",
+   "-0",
+   "1",
+   "-1.5",
+   "0.1",
+   "1e23",
+   "9007199254740993",
+   "4.9e-324"
+  ]
  },
  "error": "",
- "stop_reason": "model errors",
- "model_memory_gb": null,
- "model_gpu_memory_gb": null,
- "context_length": null,
- "load_seconds": 0,
- "median_call_seconds": 74.2,
- "p90_call_seconds": 82.6,
- "prompt_tokens_per_s": 2941.6,
- "gen_tokens_per_s": 60.7,
- "mean_prompt_tokens": 291,
- "mean_gen_tokens": 50,
+ "stop_reason": "no progress",
+ "model_memory_gb": 3.9,
+ "model_gpu_memory_gb": 3.9,
+ "context_length": 40960,
+ "load_seconds": 0.0,
+ "median_call_seconds": 9.7,
+ "p90_call_seconds": 24.1,
+ "prompt_tokens_per_s": 3775.4,
+ "gen_tokens_per_s": 72.7,
+ "mean_prompt_tokens": 6237,
+ "mean_gen_tokens": 715,
  "stopped_calls": 1,
- "provider": "openrouter",
+ "provider": "ollama",
  "cost_usd": 0
 }

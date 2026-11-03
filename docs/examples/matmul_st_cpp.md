@@ -70,28 +70,4 @@ extern "C" void matmul(int n, const float* A, const float* B, float* C) {
 
 ## Benchmark results
 
-The best result so far comes from **xingchen-agi/xing4.0-29b-a4b:free (no-think)**, run through OpenRouter on 2026-10-31: a score of **1.48879** (×1.00 the starting program's 1.48879), reached after no improvement with 12 model requests.
-
-What the starting program produces; no model improved on it:
-
-![matmul_st_cpp: the starting program's solution](../assets/examples/matmul_st_cpp.svg)
-
-No model improved on the starting program.
-
-### All models
-
-One run per model and reasoning mode; the [model benchmarks](../benchmarks/matmul_f32_single_thread.md) page has speed, memory and progress over time.
-
-| Model | Where | Best | Gain | Minutes to best | New bests |
-|---|---|--:|--:|--:|--:|
-| nvidia/nemotron-3.5-lightning:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
-| xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 1.48879 | ×1.00 | - | 0 |
-| google/gemma-4-31b-it:free (no-think) | cloud | | | | failed: all 6 model requests failed: google/gemma-4-31b-it:free … |
-| google/gemma-4-26b-a4b-it:free (no-think) | cloud | | | | failed: all 5 model requests failed … |
-| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
-| nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
-| nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
-| dots-studio/dots-3-note-preview:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
-| cohere/north-mini-code:free (no-think) | cloud | | | | failed: all 6 model requests failed: cohere/north-mini-code:free … |
-| poolside/laguna-s-2.1:free (no-think) | cloud | | | | failed: RuntimeError: OpenRouter has no model … |
-| poolside/laguna-xs-2.1:free (no-think) | cloud | | | | failed: RuntimeError: OpenRouter has no model … |
+This example has not been benchmarked yet. See [Benchmarking models](../benchmarking.md) for how to run it.

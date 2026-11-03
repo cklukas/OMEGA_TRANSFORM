@@ -554,18 +554,12 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/symbo
 | cohere/north-mini-code:free (no-think) | cloud | | | | failed: all 6 model requests failed: cohere/north-mini-code:free … |
 | nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
-| poolside/laguna-s-2.1:free (no-think) | cloud | | | | failed: all 6 model requests failed: poolside/laguna-s-2.1:free … |
 | dots-studio/dots-3-note-preview:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
 | nvidia/nemotron-3.5-lightning:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
-| poolside/laguna-xs-2.1:free (no-think) | cloud | | | | failed: all 6 model requests failed: poolside/laguna-xs-2.1:free … |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
 | xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 0.31284 | ×1.00 | - | 0 |
-| google/gemma-4-26b-a4b-it:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
-| google/gemma-4-31b-it:free (no-think) | cloud | | | | failed: all 6 model requests failed: google/gemma-4-31b-it:free … |
 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | | | | failed: all 7 model requests failed … |
 | frob/sarvam:30b (no-think) | local | 0.31284 | ×1.00 | - | 0 |
 | xingchen-agi/xing4.0-29b-a4b:free (think) | cloud | 0.31284 | ×1.00 | - | 0 |
-| google/gemma-4-26b-a4b-it:free (think) | cloud | | | | failed: all 5 model requests failed … |
-| google/gemma-4-31b-it:free (think) | cloud | | | | failed: all 6 model requests failed: google/gemma-4-31b-it:free … |
 | recursive/flint-v1.0:free (think) | cloud | | | | failed: all 5 model requests failed: recursive/flint-v1.0:free … |
 | gemma4:e4b-it-qat (no-think) | local | | | | failed: RuntimeError: the initial program does not pass the … |

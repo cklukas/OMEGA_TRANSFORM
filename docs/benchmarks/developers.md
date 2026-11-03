@@ -15,13 +15,12 @@ Every benchmarked model and the company that develops it, which the comparisons 
 | Alibaba (Qwen) | qwen2.5-coder:7b, qwen3-coder:30b, qwen3.5:latest, qwen3.6:27b-coding-mtp-q4_K_M, qwen3:30b-a3b-instruct-2507-q4_K_M | – |
 | Cohere | – | cohere/north-mini-code:free |
 | Conway | underdog-saluki-27b:iq2-mix | – |
-| Google | gemma4:12b-it-qat, gemma4:26b-a4b-it-qat, gemma4:e2b, gemma4:e4b-it-qat, gemma4:latest | google/gemma-4-26b-a4b-it:free, google/gemma-4-31b-it:free |
+| Google | gemma4:12b-it-qat, gemma4:26b-a4b-it-qat, gemma4:e2b, gemma4:e4b-it-qat, gemma4:latest | – |
 | Liquid AI | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M | – |
 | Microsoft | richardyoung/frognano-4b-2609:latest | – |
 | NII (LLM-jp) | llm-jp-4-8b-omega:q4_k_m | – |
 | NVIDIA | nemotron-3-nano:4b | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free, nvidia/nemotron-3-ultra-550b-a55b:free, nvidia/nemotron-3.5-lightning:free, nvidia/nemotron-3.5-super-vl:free |
 | OpenAI | gpt-oss:20b | – |
-| Poolside | – | poolside/laguna-s-2.1:free, poolside/laguna-xs-2.1:free |
 | Sarvam AI | frob/sarvam:30b | – |
 | Swiss AI Initiative | MichelRosselli/apertus:8b-instruct-2509-q4_k_m | – |
 | Yandex | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest | – |
@@ -39,7 +38,6 @@ Every benchmarked model and the company that develops it, which the comparisons 
 - **NII (LLM-jp)** (founded 2000, Tokyo, Japan): Japan's National Institute of Informatics leads LLM-jp, a consortium of universities and companies that has trained fully open Japanese-English models from scratch since 2023 (LLM-jp-4 in 2026, Apache 2.0).
 - **NVIDIA** (founded 1993, Santa Clara, USA): The leading maker of AI accelerators. Its Nemotron models are open-weight, often with their training data published, and partly built on other open models.
 - **OpenAI** (founded 2015, San Francisco, USA): Best known for ChatGPT and its proprietary GPT models; gpt-oss (August 2025, Apache 2.0) were its first open-weight language models since GPT-2 in 2019.
-- **Poolside** (founded 2023, Paris, France): Founded by a former GitHub CTO to build models for software development, trained with reinforcement learning from executing code; Laguna is its open-weight line (2026).
 - **Sarvam AI** (founded 2023, Bengaluru, India): Builds models for India's languages; released the Sarvam 30B and 105B mixture-of-experts models (March 2026, Apache 2.0), trained in India under the national IndiaAI mission.
 - **Swiss AI Initiative** (founded 2023, Lausanne and Zurich, Switzerland): A joint effort of EPFL, ETH Zurich and the national supercomputing centre CSCS; its Apertus models (2025) are fully open, with training data and recipes, under Apache 2.0.
 - **Yandex** (founded 1997, Moscow, Russia): Russia's largest search engine; published YandexGPT 5 Lite (8B) as open weights in 2025, while its flagship models (now Alice AI) remain proprietary.
@@ -53,18 +51,18 @@ The developer's best single model, the mean share over all its models, and the m
 
 | Developer | Models | Best model | Released | Best model's share | Mean over its models | Best per example |
 |---|--:|---|---|--:|--:|--:|
-| OpenAI | 1 | gpt-oss:20b (no-think) | 2025-08-04 | **73%** | 73% | 73% |
-| Google | 5 | gemma4:26b-a4b-it-qat (no-think) | 2026-03-11 | **66%** | 50% | 82% |
-| Alibaba (Qwen) | 5 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 2026-04-21 | **59%** | 43% | 75% |
-| Conway | 1 | underdog-saluki-27b:iq2-mix (no-think) | 2026-10-08 | **45%** | 45% | 45% |
-| Z.ai | 1 | glm-4.7-flash:latest (no-think) | 2026-01-19 | **41%** | 41% | 41% |
-| Sarvam AI | 1 | frob/sarvam:30b (no-think) | 2026-03-03 | **35%** | 35% | 35% |
-| Yandex | 1 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 2025-03-28 | **25%** | 25% | 25% |
-| Microsoft | 1 | richardyoung/frognano-4b-2609:latest (no-think) | 2026-09-17 | **19%** | 19% | 19% |
-| NII (LLM-jp) | 1 | llm-jp-4-8b-omega:q4_k_m (no-think) | 2026-03-16 | **14%** | 14% | 14% |
-| Swiss AI Initiative | 1 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 2025-08-13 | **13%** | 13% | 13% |
-| Liquid AI | 1 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | 2026-10-23 | **2%** | 2% | 2% |
-| NVIDIA | 1 | nemotron-3-nano:4b (no-think) | 2026-03-07 | **2%** | 2% | 2% |
+| OpenAI | 1 | gpt-oss:20b (no-think) | 2025-08-04 | **81%** | 81% | 81% |
+| Google | 5 | gemma4:12b-it-qat (no-think) | 2026-05-23 | **80%** | 64% | 91% |
+| Alibaba (Qwen) | 5 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | 2025-07-28 | **75%** | 54% | 83% |
+| Conway | 1 | underdog-saluki-27b:iq2-mix (no-think) | 2026-10-08 | **55%** | 55% | 55% |
+| Z.ai | 1 | glm-4.7-flash:latest (no-think) | 2026-01-19 | **54%** | 54% | 54% |
+| Sarvam AI | 1 | frob/sarvam:30b (no-think) | 2026-03-03 | **51%** | 51% | 51% |
+| Microsoft | 1 | richardyoung/frognano-4b-2609:latest (no-think) | 2026-09-17 | **29%** | 29% | 29% |
+| Yandex | 1 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 2025-03-28 | **26%** | 26% | 26% |
+| NII (LLM-jp) | 1 | llm-jp-4-8b-omega:q4_k_m (no-think) | 2026-03-16 | **21%** | 21% | 21% |
+| Swiss AI Initiative | 1 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 2025-08-13 | **20%** | 20% | 20% |
+| Liquid AI | 1 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | 2026-10-23 | **3%** | 3% | 3% |
+| NVIDIA | 1 | nemotron-3-nano:4b (no-think) | 2026-03-07 | **3%** | 3% | 3% |
 
 ### Progress over time
 
@@ -72,33 +70,33 @@ Each developer's ranked models by release date (the original publication on Hugg
 
 | Developer | Size class | Released | Model | Parameters | Share |
 |---|---|---|---|--:|--:|
-| Alibaba (Qwen) | under 15B | 2024-09-17 | qwen2.5-coder:7b (no-think) | 7.6B | 25% |
-| Alibaba (Qwen) | under 15B | 2026-02-27 | qwen3.5:latest (no-think) | 9.7B | 37% |
-| Alibaba (Qwen) | 15B and up | 2025-07-28 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | 30.5B | 58% |
-| Alibaba (Qwen) | 15B and up | 2025-07-31 | qwen3-coder:30b (no-think) | 30.5B | 33% |
-| Alibaba (Qwen) | 15B and up | 2026-04-21 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 27.3B | 59% |
-| Conway | 15B and up | 2026-10-08 | underdog-saluki-27b:iq2-mix (no-think) | 26.9B | 45% |
-| Google | under 15B | 2026-03-02 | gemma4:e2b (no-think) | 5.1B | 32% |
-| Google | under 15B | 2026-03-02 | gemma4:e4b-it-qat (no-think) | 7.5B | 36% |
-| Google | under 15B | 2026-03-02 | gemma4:latest (no-think) | 8.1B | 53% |
-| Google | under 15B | 2026-05-23 | gemma4:12b-it-qat (no-think) | 11.9B | 62% |
-| Google | 15B and up | 2026-03-11 | gemma4:26b-a4b-it-qat (no-think) | 25.2B | 66% |
-| Liquid AI | under 15B | 2026-10-23 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | 1.73B | 2% |
-| Microsoft | under 15B | 2026-09-17 | richardyoung/frognano-4b-2609:latest (no-think) | 4.3B | 19% |
-| NII (LLM-jp) | under 15B | 2026-03-16 | llm-jp-4-8b-omega:q4_k_m (no-think) | 8.6B | 14% |
-| NVIDIA | under 15B | 2026-03-07 | nemotron-3-nano:4b (no-think) | 4B | 2% |
-| OpenAI | 15B and up | 2025-08-04 | gpt-oss:20b (no-think) | 20.9B | 73% |
-| Sarvam AI | 15B and up | 2026-03-03 | frob/sarvam:30b (no-think) | 32.2B | 35% |
-| Swiss AI Initiative | under 15B | 2025-08-13 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 8.1B | 13% |
-| Yandex | under 15B | 2025-03-28 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 8B | 25% |
-| Z.ai | 15B and up | 2026-01-19 | glm-4.7-flash:latest (no-think) | 29.9B | 41% |
+| Alibaba (Qwen) | under 15B | 2024-09-17 | qwen2.5-coder:7b (no-think) | 7.6B | 39% |
+| Alibaba (Qwen) | under 15B | 2026-02-27 | qwen3.5:latest (no-think) | 9.7B | 53% |
+| Alibaba (Qwen) | 15B and up | 2025-07-28 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | 30.5B | 75% |
+| Alibaba (Qwen) | 15B and up | 2025-07-31 | qwen3-coder:30b (no-think) | 30.5B | 37% |
+| Alibaba (Qwen) | 15B and up | 2026-04-21 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 27.3B | 67% |
+| Conway | 15B and up | 2026-10-08 | underdog-saluki-27b:iq2-mix (no-think) | 26.9B | 55% |
+| Google | under 15B | 2026-03-02 | gemma4:e2b (no-think) | 5.1B | 50% |
+| Google | under 15B | 2026-03-02 | gemma4:e4b-it-qat (no-think) | 7.5B | 48% |
+| Google | under 15B | 2026-03-02 | gemma4:latest (no-think) | 8.1B | 74% |
+| Google | under 15B | 2026-05-23 | gemma4:12b-it-qat (no-think) | 11.9B | 80% |
+| Google | 15B and up | 2026-03-11 | gemma4:26b-a4b-it-qat (no-think) | 25.2B | 69% |
+| Liquid AI | under 15B | 2026-10-23 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | 1.73B | 3% |
+| Microsoft | under 15B | 2026-09-17 | richardyoung/frognano-4b-2609:latest (no-think) | 4.3B | 29% |
+| NII (LLM-jp) | under 15B | 2026-03-16 | llm-jp-4-8b-omega:q4_k_m (no-think) | 8.6B | 21% |
+| NVIDIA | under 15B | 2026-03-07 | nemotron-3-nano:4b (no-think) | 4B | 3% |
+| OpenAI | 15B and up | 2025-08-04 | gpt-oss:20b (no-think) | 20.9B | 81% |
+| Sarvam AI | 15B and up | 2026-03-03 | frob/sarvam:30b (no-think) | 32.2B | 51% |
+| Swiss AI Initiative | under 15B | 2025-08-13 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 8.1B | 20% |
+| Yandex | under 15B | 2025-03-28 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 8B | 26% |
+| Z.ai | 15B and up | 2026-01-19 | glm-4.7-flash:latest (no-think) | 29.9B | 54% |
 
 ```mermaid
 xychart-beta
     title "Alibaba (Qwen), local, 15B and up: share by release date"
     x-axis ["qwen3:30b-a3b-instruct-2507-q4_K_M (2025-07)", "qwen3-coder:30b (2025-07)", "qwen3.6:27b-coding-mtp-q4_K_M (2026-04)"]
     y-axis "% of the best gain" 0 --> 100
-    line [58.31, 33.41, 59]
+    line [74.54, 36.65, 67.38]
 ```
 
 ## Cloud models (OpenRouter)
@@ -109,11 +107,9 @@ The developer's best single model, the mean share over all its models, and the m
 
 | Developer | Models | Best model | Released | Best model's share | Mean over its models | Best per example |
 |---|--:|---|---|--:|--:|--:|
-| NVIDIA | 8 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | 2026-06-04 | **69%** | 38% | 90% |
-| Cohere | 2 | cohere/north-mini-code:free (think) | 2026-06-17 | **56%** | 43% | 65% |
-| other | 5 | dots-studio/dots-3-note-preview:free (think) | 2026-08-14 | **51%** | 22% | 77% |
-| Poolside | 2 | poolside/laguna-s-2.1:free (no-think) | 2026-07-21 | **37%** | 37% | 39% |
-| Google | 4 | google/gemma-4-26b-a4b-it:free (no-think) | 2026-04-03 | **0%** | 0% | 0% |
+| NVIDIA | 8 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | 2026-06-04 | **65%** | 41% | 89% |
+| Cohere | 2 | cohere/north-mini-code:free (think) | 2026-06-17 | **58%** | 51% | 79% |
+| other | 5 | dots-studio/dots-3-note-preview:free (no-think) | 2026-08-14 | **50%** | 23% | 82% |
 
 ### Progress over time
 
@@ -121,15 +117,11 @@ Each developer's ranked models by release date (the original publication on Hugg
 
 | Developer | Size class | Released | Model | Parameters | Share |
 |---|---|---|---|--:|--:|
-| Cohere | 15B and up | 2026-06-17 | cohere/north-mini-code:free (think) | 30B | 56% |
-| Google | 15B and up | 2026-04-02 | google/gemma-4-31b-it:free (no-think) | 31B | 0% |
-| Google | 15B and up | 2026-04-03 | google/gemma-4-26b-a4b-it:free (no-think) | 26B | 0% |
-| NVIDIA | 15B and up | 2026-04-28 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | 30B | 24% |
-| NVIDIA | 15B and up | 2026-06-04 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | 550B | 69% |
-| NVIDIA | size unknown | 2026-08-11 | nvidia/nemotron-3.5-lightning:free (think) | ? | 36% |
-| NVIDIA | size unknown | 2026-10-15 | nvidia/nemotron-3.5-super-vl:free (think) | ? | 64% |
-| Poolside | size unknown | 2026-07-02 | poolside/laguna-xs-2.1:free (no-think) | ? | 37% |
-| Poolside | size unknown | 2026-07-21 | poolside/laguna-s-2.1:free (no-think) | ? | 37% |
-| other | 15B and up | 2026-10-16 | xingchen-agi/xing4.0-29b-a4b:free (think) | 29B | 12% |
-| other | size unknown | 2026-08-14 | dots-studio/dots-3-note-preview:free (think) | ? | 51% |
+| Cohere | 15B and up | 2026-06-17 | cohere/north-mini-code:free (think) | 30B | 58% |
+| NVIDIA | 15B and up | 2026-04-28 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | 30B | 21% |
+| NVIDIA | 15B and up | 2026-06-04 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | 550B | 65% |
+| NVIDIA | size unknown | 2026-08-11 | nvidia/nemotron-3.5-lightning:free (think) | ? | 40% |
+| NVIDIA | size unknown | 2026-10-15 | nvidia/nemotron-3.5-super-vl:free (think) | ? | 61% |
+| other | 15B and up | 2026-10-16 | xingchen-agi/xing4.0-29b-a4b:free (think) | 29B | 15% |
+| other | size unknown | 2026-08-14 | dots-studio/dots-3-note-preview:free (no-think) | ? | 50% |
 | other | size unknown | 2026-10-21 | recursive/flint-v1.0:free (think) | ? | 0% |

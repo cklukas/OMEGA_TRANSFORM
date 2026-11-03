@@ -1,16 +1,16 @@
 {
  "schema": 4,
- "example": "sort_u32_single_thread",
- "model": "google/gemma-4-31b-it:free",
- "variant": "think",
- "model_size_gb": 0.0,
- "model_params": "",
- "started": "2026-11-02T12:16:40",
+ "example": "float_parse_single_thread",
+ "model": "hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 1.1,
+ "model_params": "1.73B",
+ "started": "2026-11-03T09:37:53",
  "minutes_budget": 60.0,
  "patience": 15,
- "wall_minutes": 7.0,
+ "wall_minutes": 17.6,
  "omega_version": "0.1.0",
- "omega_commit": "9596232",
+ "omega_commit": "773cb44",
  "machine": {
   "platform": "Windows-11-10.0.26300-SP0",
   "machine": "AMD64",
@@ -25,28 +25,28 @@
   ]
  },
  "settings": {
-  "think": true,
+  "think": false,
   "islands": 3,
   "llm_concurrency": 1,
   "eval_concurrency": 4,
   "sweep_budget": 16,
   "temperature": 0.8,
   "min_gain": 0.001,
-  "num_ctx": 32768,
+  "num_ctx": 40960,
   "max_tokens": 24576,
   "max_answer_chars": 0,
   "answer_room": 24000,
   "max_reasoning_factor": 8.0
  },
- "initial_score": 17.844396885565644,
- "best_score": 17.844396885565644,
+ "initial_score": 68.4256,
+ "best_score": 68.4256,
  "improvement": 1.0,
- "llm_calls": 5,
- "mean_llm_seconds": 71.4,
- "attempts": 5,
+ "llm_calls": 16,
+ "mean_llm_seconds": 62.2,
+ "attempts": 16,
  "ok": 0,
  "statuses": {
-  "llm_error": 5
+  "llm_error": 16
  },
  "sweeps": 0,
  "sweep_variants": 0,
@@ -56,13 +56,13 @@
  "progress": [
   [
    0.0,
-   17.844396885565644
+   68.4256
   ]
  ],
  "best_lineage": [
   {
    "minutes": 0.0,
-   "score": 17.844396885565644,
+   "score": 68.4256,
    "model": "",
    "mode": "initial",
    "status": "ok",
@@ -71,40 +71,48 @@
  ],
  "best_diff": "",
  "initial_solution": {
-  "kind": "sort",
-  "n": 1000000,
-  "distributions": [
-   "uniform",
-   "dups1000",
-   "sorted",
-   "reverse",
-   "nearly_sorted"
+  "kind": "parse",
+  "count": 2000000,
+  "text_mb": 28.39,
+  "head": [
+   "0",
+   "-0",
+   "1",
+   "-1.5",
+   "0.1",
+   "1e23",
+   "9007199254740993",
+   "4.9e-324"
   ]
  },
  "best_solution": {
-  "kind": "sort",
-  "n": 1000000,
-  "distributions": [
-   "uniform",
-   "dups1000",
-   "sorted",
-   "reverse",
-   "nearly_sorted"
+  "kind": "parse",
+  "count": 2000000,
+  "text_mb": 28.39,
+  "head": [
+   "0",
+   "-0",
+   "1",
+   "-1.5",
+   "0.1",
+   "1e23",
+   "9007199254740993",
+   "4.9e-324"
   ]
  },
- "error": "all 5 model requests failed: google/gemma-4-31b-it:free: rate limited (HTTP 429); try again later",
- "stop_reason": "model errors",
- "model_memory_gb": null,
- "model_gpu_memory_gb": null,
- "context_length": null,
+ "error": "all 16 model requests failed: hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M: answer stopped: exceeded 27534 characters",
+ "stop_reason": "no progress",
+ "model_memory_gb": 1.5,
+ "model_gpu_memory_gb": 1.5,
+ "context_length": 40960,
  "load_seconds": 0,
- "median_call_seconds": 71.4,
- "p90_call_seconds": 72.2,
+ "median_call_seconds": 71.6,
+ "p90_call_seconds": 74.3,
  "prompt_tokens_per_s": null,
  "gen_tokens_per_s": null,
  "mean_prompt_tokens": 0,
  "mean_gen_tokens": 0,
- "stopped_calls": 0,
- "provider": "openrouter",
+ "stopped_calls": 16,
+ "provider": "ollama",
  "cost_usd": 0
 }

@@ -1,5 +1,5 @@
 {
- "taken": "2026-11-03T09:03:03",
+ "taken": "2026-11-03T10:36:39",
  "source": "https://openrouter.ai/rankings",
  "models": [
   {
@@ -13,7 +13,7 @@
    "price_in": 0.3,
    "price_out": 1.2,
    "price_cache_read": 0.006,
-   "price_in_paid": 0.015946,
+   "price_in_paid": 0.017079,
    "effective_price": 0.3123,
    "free_variant": false,
    "context": 1048576,
@@ -31,7 +31,7 @@
    "price_in": 0.0285,
    "price_out": 0.0923,
    "price_cache_read": 0.0285,
-   "price_in_paid": 0.039507,
+   "price_in_paid": 0.040569,
    "effective_price": 0.0306,
    "free_variant": false,
    "context": 1048576,
@@ -49,7 +49,7 @@
    "price_in": 0.045,
    "price_out": 0.5,
    "price_cache_read": 0.012,
-   "price_in_paid": 0.024539,
+   "price_in_paid": 0.023206,
    "effective_price": 0.0548,
    "free_variant": false,
    "context": 1048576,
@@ -67,7 +67,7 @@
    "price_in": 0.834,
    "price_out": 2.501,
    "price_cache_read": 0.042,
-   "price_in_paid": 0.119767,
+   "price_in_paid": 0.095847,
    "effective_price": 0.8496,
    "free_variant": false,
    "context": 1048576,
@@ -85,7 +85,7 @@
    "price_in": 0.1,
    "price_out": 0.5,
    "price_cache_read": 0.01,
-   "price_in_paid": 0.040422,
+   "price_in_paid": 0.040266,
    "effective_price": 0.1112,
    "free_variant": false,
    "context": 1050000,
@@ -103,7 +103,7 @@
    "price_in": 4.0,
    "price_out": 20.0,
    "price_cache_read": 0.2,
-   "price_in_paid": 0.702162,
+   "price_in_paid": 0.683257,
    "effective_price": 4.1415,
    "free_variant": false,
    "context": 1000000,
@@ -121,7 +121,7 @@
    "price_in": 0.15,
    "price_out": 0.6,
    "price_cache_read": 0.015,
-   "price_in_paid": 0.025039,
+   "price_in_paid": 0.025266,
    "effective_price": 0.1566,
    "free_variant": false,
    "context": 1048576,
@@ -139,7 +139,7 @@
    "price_in": 1.0,
    "price_out": 2.7,
    "price_cache_read": 0.1,
-   "price_in_paid": 0.145015,
+   "price_in_paid": 0.144985,
    "effective_price": 1.0079,
    "free_variant": false,
    "context": 1048576,
@@ -157,7 +157,7 @@
    "price_in": 0.2,
    "price_out": 1.2,
    "price_cache_read": 0.02,
-   "price_in_paid": 0.067057,
+   "price_in_paid": 0.079305,
    "effective_price": 0.222,
    "free_variant": false,
    "context": 1050000,
@@ -175,7 +175,7 @@
    "price_in": 2.0,
    "price_out": 10.0,
    "price_cache_read": 0.1,
-   "price_in_paid": 0.403611,
+   "price_in_paid": 0.420816,
    "effective_price": 2.1247,
    "free_variant": false,
    "context": 1050000,
@@ -193,7 +193,7 @@
    "price_in": 0.059,
    "price_out": 0.3,
    "price_cache_read": 0.035,
-   "price_in_paid": 0.048315,
+   "price_in_paid": 0.047509,
    "effective_price": 0.0698,
    "free_variant": false,
    "context": 1048576,
@@ -211,7 +211,7 @@
    "price_in": 0.08,
    "price_out": 3.6,
    "price_cache_read": 0.076,
-   "price_in_paid": 0.179288,
+   "price_in_paid": 0.194603,
    "effective_price": 0.1389,
    "free_variant": false,
    "context": 1048576,
@@ -247,7 +247,7 @@
    "price_in": 0.132,
    "price_out": 0.528,
    "price_cache_read": 0.033,
-   "price_in_paid": 0.04179,
+   "price_in_paid": 0.041753,
    "effective_price": 0.1385,
    "free_variant": false,
    "context": 262144,
@@ -283,7 +283,7 @@
    "price_in": 0.14,
    "price_out": 0.28,
    "price_cache_read": 0.0028,
-   "price_in_paid": 0.021785,
+   "price_in_paid": 0.021159,
    "effective_price": 0.1421,
    "free_variant": false,
    "context": 1050000,
@@ -301,7 +301,7 @@
    "price_in": 2.0,
    "price_out": 10.0,
    "price_cache_read": 0.2,
-   "price_in_paid": 0.277231,
+   "price_in_paid": 0.284898,
    "effective_price": 2.062,
    "free_variant": false,
    "context": 1048576,
@@ -319,7 +319,7 @@
    "price_in": 0.1,
    "price_out": 0.5,
    "price_cache_read": 0.01,
-   "price_in_paid": 0.086771,
+   "price_in_paid": 0.071283,
    "effective_price": 0.1197,
    "free_variant": false,
    "context": 1000000,
@@ -337,7 +337,7 @@
    "price_in": 0.091,
    "price_out": 0.182,
    "price_cache_read": 0.0182,
-   "price_in_paid": 0.054938,
+   "price_in_paid": 0.055648,
    "effective_price": 0.0965,
    "free_variant": false,
    "context": 1048576,
@@ -1350,9 +1350,9 @@
    0.1
   ],
   "~moonshotai/kimi-latest": [
-   0.1529,
-   9.7471,
-   0.15
+   0.1824,
+   9.3388,
+   0.18
   ],
   "~google/gemini-flash-latest": [
    0.75,
@@ -1460,9 +1460,9 @@
    0.26
   ],
   "google/gemma-4-26b-a4b-it": [
-   0.082,
-   0.246,
-   0.041
+   0.1,
+   0.3,
+   0.05
   ],
   "google/gemma-4-26b-a4b-it:free": [
    0.0,
@@ -2065,9 +2065,9 @@
    0.0025
   ],
   "openai/gpt-oss-120b": [
-   0.15,
-   0.6,
-   0.075
+   0.028,
+   0.102,
+   0.025
   ],
   "openai/gpt-oss-120b:batch": [
    0.0296,

@@ -165,7 +165,6 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/featu
 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 0.885 | ×1.42 | 3.6 | 5 |
 | gemma4:26b-a4b-it-qat (no-think) | local | 0.882 | ×1.42 | 2.8 | 2 |
 | cohere/north-mini-code:free (no-think) | cloud | 0.88 | ×1.41 | 0.2 | 1 |
-| poolside/laguna-xs-2.1:free (no-think) | cloud | 0.88 | ×1.41 | 2.6 | 2 |
 | llm-jp-4-8b-omega:q4_k_m (no-think) | local | 0.879 | ×1.41 | 0.7 | 1 |
 | nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | 0.877 | ×1.41 | 1.7 | 3 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 0.874 | ×1.40 | 3.7 | 2 |
@@ -175,7 +174,6 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/featu
 | gemma4:e2b (no-think) | local | 0.835 | ×1.34 | 6.4 | 11 |
 | gemma4:12b-it-qat (no-think) | local | 0.83 | ×1.33 | 0.9 | 1 |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | cloud | 0.821 | ×1.32 | 9.9 | 3 |
-| poolside/laguna-s-2.1:free (no-think) | cloud | 0.82 | ×1.32 | 0.5 | 1 |
 | gemma4:latest (no-think) | local | 0.813 | ×1.30 | 5.6 | 7 |
 | glm-4.7-flash:latest (no-think) | local | 0.813 | ×1.30 | 7.8 | 4 |
 | richardyoung/frognano-4b-2609:latest (no-think) | local | 0.808 | ×1.30 | 6.1 | 4 |
@@ -192,9 +190,5 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/featu
 | qwen2.5-coder:7b (no-think) | local | 0.75 | ×1.20 | 3.1 | 5 |
 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | 0.703 | ×1.13 | 15.8 | 4 |
 | xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 0.678 | ×1.09 | 1.9 | 1 |
-| google/gemma-4-26b-a4b-it:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
-| google/gemma-4-31b-it:free (no-think) | cloud | | | | failed: all 6 model requests failed: google/gemma-4-31b-it:free … |
 | nemotron-3-nano:4b (no-think) | local | 0.623 | ×1.00 | - | 0 |
-| google/gemma-4-26b-a4b-it:free (think) | cloud | | | | failed: all 5 model requests failed … |
-| google/gemma-4-31b-it:free (think) | cloud | | | | failed: all 6 model requests failed: google/gemma-4-31b-it:free … |
 | recursive/flint-v1.0:free (think) | cloud | | | | failed: all 5 model requests failed: recursive/flint-v1.0:free … |

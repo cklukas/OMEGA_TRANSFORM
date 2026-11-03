@@ -4,7 +4,7 @@
 
 # tsp_heuristic
 
-41 models, each run at most 60 minutes, ended earlier after 15 answers in a row without progress; one run per model. The [overall ranking](../benchmarks.md#overall-ranking) compares the models over all examples.
+35 models, each run at most 60 minutes, ended earlier after 15 answers in a row without progress; one run per model. The [overall ranking](../benchmarks.md#overall-ranking) compares the models over all examples.
 
 Machine: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz (MS-7A98), 12 cores, 64 GB, 2x NVIDIA GeForce GTX 1080 Ti, 11264 MiB.
 
@@ -192,16 +192,10 @@ Free OpenRouter models; times include the network and the provider's queue.
 | nvidia/nemotron-3.5-lightning:free (no-think) |  | | | | | | | | | | failed: all 6 model requests failed: nvidia/nemotron-3.5-lightning:f |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) |  | | | | | | | | | | failed: all 6 model requests failed: nvidia/nemotron-3-nano-omni-30b |
 | xingchen-agi/xing4.0-29b-a4b:free (no-think) |  | | | | | | | | | | failed: all 6 model requests failed: xingchen-agi/xing4.0-29b-a4b:fr |
-| google/gemma-4-26b-a4b-it:free (no-think) |  | | | | | | | | | | failed: all 6 model requests failed: google/gemma-4-26b-a4b-it:free: |
-| google/gemma-4-31b-it:free (no-think) |  | | | | | | | | | | failed: all 6 model requests failed: google/gemma-4-31b-it:free: rat |
 | dots-studio/dots-3-note-preview:free (think) |  | 1 | **1** | ×1.00 | 14 | 273 | 0% | 0 | - | 63.8 | time limit |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) |  | 1 | **1** | ×1.00 | 16 | 212 | 19% | 0 | - | 56.8 | no progress |
 | xingchen-agi/xing4.0-29b-a4b:free (think) |  | 1 | **1** | ×1.00 | 15 | 248 | 7% | 0 | - | 62.1 | time limit |
-| google/gemma-4-26b-a4b-it:free (think) |  | | | | | | | | | | failed: all 5 model requests failed: google/gemma-4-26b-a4b-it:free: |
-| google/gemma-4-31b-it:free (think) |  | | | | | | | | | | failed: all 6 model requests failed: google/gemma-4-31b-it:free: rat |
 | recursive/flint-v1.0:free (think) |  | | | | | | | | | | failed: all 6 model requests failed: recursive/flint-v1.0:free: requ |
-| poolside/laguna-s-2.1:free (no-think) |  | | | | | | | | | | failed: RuntimeError: OpenRouter has no model 'poolside/laguna-s-2.1 |
-| poolside/laguna-xs-2.1:free (no-think) |  | | | | | | | | | | failed: RuntimeError: OpenRouter has no model 'poolside/laguna-xs-2. |
 
 ```mermaid
 xychart-beta

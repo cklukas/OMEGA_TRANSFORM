@@ -346,13 +346,9 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/heilb
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | cloud | 0.01331 | ×2.78 | 1.6 | 1 |
 | qwen3-coder:30b (no-think) | local | 0.00852 | ×1.78 | 5.9 | 1 |
 | dots-studio/dots-3-note-preview:free (no-think) | cloud | 0.00595 | ×1.24 | 1.6 | 1 |
-| poolside/laguna-s-2.1:free (no-think) | cloud | 0.00479 | ×1.00 | - | 0 |
 | nvidia/nemotron-3.5-lightning:free (no-think) | cloud | 0.00479 | ×1.00 | - | 0 |
-| poolside/laguna-xs-2.1:free (no-think) | cloud | 0.00479 | ×1.00 | - | 0 |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | 0.00479 | ×1.00 | - | 0 |
 | xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 0.00479 | ×1.00 | - | 0 |
-| google/gemma-4-26b-a4b-it:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
-| google/gemma-4-31b-it:free (no-think) | cloud | | | | failed: all 6 model requests failed: google/gemma-4-31b-it:free … |
 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | 0.00479 | ×1.00 | - | 0 |
 | nemotron-3-nano:4b (no-think) | local | 0.00479 | ×1.00 | - | 0 |
 | llm-jp-4-8b-omega:q4_k_m (no-think) | local | 0.00479 | ×1.00 | - | 0 |
@@ -360,6 +356,4 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/heilb
 | qwen3.5:latest (no-think) | local | 0.00479 | ×1.00 | - | 0 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 0.00479 | ×1.00 | - | 0 |
 | xingchen-agi/xing4.0-29b-a4b:free (think) | cloud | 0.00479 | ×1.00 | - | 0 |
-| google/gemma-4-26b-a4b-it:free (think) | cloud | | | | failed: all 6 model requests failed … |
-| google/gemma-4-31b-it:free (think) | cloud | | | | failed: all 5 model requests failed: google/gemma-4-31b-it:free … |
 | recursive/flint-v1.0:free (think) | cloud | | | | failed: all 5 model requests failed: recursive/flint-v1.0:free … |

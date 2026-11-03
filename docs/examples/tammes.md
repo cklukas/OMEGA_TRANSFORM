@@ -376,13 +376,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/tamme
 | dots-studio/dots-3-note-preview:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
 | nvidia/nemotron-3.5-lightning:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
-| google/gemma-4-26b-a4b-it:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
-| google/gemma-4-31b-it:free (no-think) | cloud | | | | failed: all 6 model requests failed: google/gemma-4-31b-it:free … |
 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | 3.20136 | ×1.00 | - | 0 |
 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | 3.20136 | ×1.00 | - | 0 |
 | llm-jp-4-8b-omega:q4_k_m (no-think) | local | 3.20136 | ×1.00 | - | 0 |
-| google/gemma-4-26b-a4b-it:free (think) | cloud | | | | failed: all 6 model requests failed … |
-| google/gemma-4-31b-it:free (think) | cloud | | | | failed: all 6 model requests failed: google/gemma-4-31b-it:free … |
 | recursive/flint-v1.0:free (think) | cloud | | | | failed: all 6 model requests failed: recursive/flint-v1.0:free … |
-| poolside/laguna-s-2.1:free (no-think) | cloud | | | | failed: RuntimeError: OpenRouter has no model … |
-| poolside/laguna-xs-2.1:free (no-think) | cloud | | | | failed: RuntimeError: OpenRouter has no model … |
