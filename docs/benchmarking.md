@@ -33,13 +33,12 @@ going. The answer's character limit is twice the program plus 24,000
 characters; a reasoning model may think for eight times that before its answer
 counts as a runaway and is stopped.
 
-Ollama may load a model with a smaller context window than requested when it
-thinks memory is short, which would cut the room for prompt and answer without
-any message. Before a local run, the benchmark therefore loads the model,
-compares the window Ollama reports with the request (or with the model's own
-maximum, when that is smaller), unloads and tries again, and ends the run with
-an error when the window stays short; the result records the window the model
-ran with (`context_length`).
+Before a local run, the benchmark loads the model and compares the context
+window Ollama reports with the request (or with the model's own maximum, when
+that is smaller); when it is shorter, it unloads and tries again, and ends the
+run with an error when the window stays short, so that no run gets less room
+than its budget. The result records the window the model ran with
+(`context_length`).
 
 Each result records why its run ended (`stop_reason`): `time limit`,
 `no progress`, `cost limit`, `model errors` (five failed requests in a row),
