@@ -93,7 +93,6 @@ confirm_runs = 2
 [llm]
 models = ["qwen3.5:latest"]
 think = false
-num_ctx = 32768
 
 [search]
 iterations = 150

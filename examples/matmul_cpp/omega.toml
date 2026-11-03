@@ -61,7 +61,6 @@ confirm_runs = 2   # timing noise is about ±5%: a new best must hold up in 3 ru
 [llm]
 models = ["qwen3.5:latest"]
 think = false   # true: slower, more deliberate answers
-num_ctx = 32768
 
 [search]
 iterations = 150

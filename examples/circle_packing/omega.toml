@@ -51,7 +51,6 @@ concurrency = 6
 models = ["qwen3.5:latest"]
 think = false   # true: slower, more deliberate answers
 temperature = 0.8
-num_ctx = 32768
 concurrency = 1
 
 [search]
