@@ -4,7 +4,7 @@
 
 # float_parse_single_thread
 
-2 models, each run at most 60 minutes, ended earlier after 15 answers in a row without progress; one run per model. The [overall ranking](../benchmarks.md#overall-ranking) compares the models over all examples.
+3 models, each run at most 60 minutes, ended earlier after 15 answers in a row without progress; one run per model. The [overall ranking](../benchmarks.md#overall-ranking) compares the models over all examples.
 
 Machine: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz (MS-7A98), 12 cores, 64 GB, 2x NVIDIA GeForce GTX 1080 Ti, 11264 MiB.
 
@@ -15,30 +15,31 @@ Ollama on this machine.
 | Model | Params | Initial | Best | Gain | LLM calls | s/call | Valid | New bests | Min to best | Minutes | Stopped by |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|---|
 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | 1.73B | | | | | | | | | | failed: all 16 model requests failed: hf.co/LiquidAI/LFM3-1.7B-GGUF: |
+| richardyoung/frognano-4b-2609:latest (no-think) | 4.3B | 65.2254 | **65.2254** | ×1.00 | 15 | 128 | 0% | 0 | - | 33.3 | no progress |
 | nemotron-3-nano:4b (no-think) | 4.0B | 60.7376 | **60.7376** | ×1.00 | 16 | 14 | 0% | 0 | - | 4.7 | no progress |
 
 ```mermaid
 xychart-beta
     title "float_parse_single_thread, local: best score"
-    x-axis ["nemotron-3-nano:4b (no-think)"]
-    y-axis "score" 0 --> 66.81
-    bar [60.74]
+    x-axis ["frognano-4b-2609 (no-think)", "nemotron-3-nano:4b (no-think)"]
+    y-axis "score" 0 --> 71.75
+    bar [65.23, 60.74]
 ```
 
 ```mermaid
 xychart-beta
     title "float_parse_single_thread, local: valid answers (%)"
-    x-axis ["nemotron-3-nano:4b (no-think)"]
+    x-axis ["frognano-4b-2609 (no-think)", "nemotron-3-nano:4b (no-think)"]
     y-axis "% of answers" 0 --> 1.1
-    bar [0]
+    bar [0, 0]
 ```
 
 ```mermaid
 xychart-beta
     title "float_parse_single_thread, local: seconds per LLM call"
-    x-axis ["nemotron-3-nano:4b (no-think)"]
-    y-axis "seconds" 0 --> 15.29
-    bar [13.9]
+    x-axis ["frognano-4b-2609 (no-think)", "nemotron-3-nano:4b (no-think)"]
+    y-axis "seconds" 0 --> 141.1
+    bar [128.3, 13.9]
 ```
 
 ### Inference speed and memory
@@ -48,35 +49,39 @@ RAM is what Ollama reports for the loaded model (weights, context cache and buff
 | Model | Params | RAM GB | Load s | Prompt tok/s | Gen tok/s | Median s/call | p90 s/call | Tokens/answer | Stopped |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
 | nemotron-3-nano:4b (no-think) | 4.0B | 3.9 | 0 | 3775 | 72.7 | 10 | 24 | 715 | 1 |
+| richardyoung/frognano-4b-2609:latest (no-think) | 4.3B | 4.8 | 0 | 2511 | 55.5 | 97 | 440 | 6912 | 6 |
 
 ```mermaid
 xychart-beta
     title "float_parse_single_thread, local: generation speed (tokens/s)"
-    x-axis ["nemotron-3-nano:4b (no-think)"]
+    x-axis ["nemotron-3-nano:4b (no-think)", "frognano-4b-2609 (no-think)"]
     y-axis "tokens/s" 0 --> 79.97
-    bar [72.7]
+    bar [72.7, 55.5]
 ```
 
 ```mermaid
 xychart-beta
     title "float_parse_single_thread, local: model memory (GB)"
-    x-axis ["nemotron-3-nano:4b (no-think)"]
-    y-axis "GB" 0 --> 4.29
-    bar [3.9]
+    x-axis ["nemotron-3-nano:4b (no-think)", "frognano-4b-2609 (no-think)"]
+    y-axis "GB" 0 --> 5.28
+    bar [3.9, 4.8]
 ```
 
 ### Best score over time
 
 | Model | 15 min | 30 min | 45 min | 60 min |
 |---|--:|--:|--:|--:|
+| richardyoung/frognano-4b-2609:latest (no-think) | 65.2254 | 65.2254 | 65.2254 | 65.2254 |
 | nemotron-3-nano:4b (no-think) | 60.7376 | 60.7376 | 60.7376 | 60.7376 |
 
 ### Outcome of the LLM answers
 
 | Model | compile error | edit error | llm error |
 |---|--:|--:|--:|
+| richardyoung/frognano-4b-2609:latest (no-think) | 5 | 4 | 6 |
 | nemotron-3-nano:4b (no-think) | 4 | 10 | 2 |
 
 ### Best idea per model
 
+- **richardyoung/frognano-4b-2609:latest (no-think)**: initial program
 - **nemotron-3-nano:4b (no-think)**: initial program

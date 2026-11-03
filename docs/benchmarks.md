@@ -27,7 +27,7 @@ it was doing, so machines are compared through their own shares only.
 | [bin_packing_1d](benchmarks/bin_packing_1d.md) | 35 models on this example: scores, speed, memory and progress over time |
 | [circles_in_circle_21](benchmarks/circles_in_circle_21.md) | 35 models on this example: scores, speed, memory and progress over time |
 | [feature_engineering](benchmarks/feature_engineering.md) | 35 models on this example: scores, speed, memory and progress over time |
-| [float_parse_single_thread](benchmarks/float_parse_single_thread.md) | 2 models on this example: scores, speed, memory and progress over time |
+| [float_parse_single_thread](benchmarks/float_parse_single_thread.md) | 3 models on this example: scores, speed, memory and progress over time |
 | [heilbronn_13](benchmarks/heilbronn_13.md) | 35 models on this example: scores, speed, memory and progress over time |
 | [log_compressor](benchmarks/log_compressor.md) | 35 models on this example: scores, speed, memory and progress over time |
 | [max_cut](benchmarks/max_cut.md) | 35 models on this example: scores, speed, memory and progress over time |
@@ -35,7 +35,7 @@ it was doing, so machines are compared through their own shares only.
 | [tammes_30](benchmarks/tammes_30.md) | 35 models on this example: scores, speed, memory and progress over time |
 | [tsp_heuristic](benchmarks/tsp_heuristic.md) | 35 models on this example: scores, speed, memory and progress over time |
 
-Machines: **i7-8700K**: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz (MS-7A98), 12 cores, 64 GB, 1 runs; **i7-8700K + 2x GTX 1080 Ti**: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz (MS-7A98), 12 cores, 64 GB, 2x NVIDIA GeForce GTX 1080 Ti, 11264 MiB, 316 runs.
+Machines: **i7-8700K**: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz (MS-7A98), 12 cores, 64 GB, 1 runs; **i7-8700K + 2x GTX 1080 Ti**: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz (MS-7A98), 12 cores, 64 GB, 2x NVIDIA GeForce GTX 1080 Ti, 11264 MiB, 317 runs.
 
 ## Overall ranking
 
@@ -95,7 +95,7 @@ Results come from several machines. Raw scores are not pooled: timing examples d
 | 11 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | 2026-04-28 | **21%** | 21% | ×1.53 | 0 | 4 | 8 (3 failed) | 8 (8 cells) |
 | 12 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | 2026-04-28 | **16%** | 16% | ×1.04 | 0 | 7 | 9 (3 failed) | 9 (9 cells) |
 | 13 | xingchen-agi/xing4.0-29b-a4b:free (think) | 2026-10-16 | **15%** | 15% | ×1.34 | 0 | 7 | 9 (2 failed) | 9 (9 cells) |
-| 14 | xingchen-agi/xing4.0-29b-a4b:free (no-think) | 2026-10-16 | **6%** | 6% | ×1.22 | 0 | 7 | 9 (2 failed) | 9 (9 cells) |
+| 14 | xingchen-agi/xing4.0-29b-a4b:free (no-think) | 2026-10-16 | **6%** | 6% | ×1.22 | 0 | 7 | 9 (1 failed) | 9 (9 cells) |
 | 15 | recursive/flint-v1.0:free (think) | 2026-10-21 | **0%** | 0% | ×1.00 | 0 | 9 | 9 (9 failed) | 9 (9 cells) |
 
 ```mermaid
@@ -123,7 +123,7 @@ xychart-beta
 | 11 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | 2026-04-28 | **21%** | ×1.53 | 0 | 4 | 8 (3 failed) | 8 |
 | 12 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | 2026-04-28 | **16%** | ×1.04 | 0 | 7 | 9 (3 failed) | 9 |
 | 13 | xingchen-agi/xing4.0-29b-a4b:free (think) | 2026-10-16 | **15%** | ×1.34 | 0 | 7 | 9 (2 failed) | 9 |
-| 14 | xingchen-agi/xing4.0-29b-a4b:free (no-think) | 2026-10-16 | **6%** | ×1.22 | 0 | 7 | 9 (2 failed) | 9 |
+| 14 | xingchen-agi/xing4.0-29b-a4b:free (no-think) | 2026-10-16 | **6%** | ×1.22 | 0 | 7 | 9 (1 failed) | 9 |
 | 15 | recursive/flint-v1.0:free (think) | 2026-10-21 | **0%** | ×1.00 | 0 | 9 | 9 (9 failed) | 9 |
 
 ```mermaid

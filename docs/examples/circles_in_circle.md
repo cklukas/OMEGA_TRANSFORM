@@ -263,7 +263,6 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/circl
 | qwen3.5:latest (no-think) | local | 3.18905 | ×1.00 | - | 0 |
 | nvidia/nemotron-3.5-lightning:free (no-think) | cloud | 3.18905 | ×1.00 | - | 0 |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | 3.18905 | ×1.00 | - | 0 |
-| xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
 | cohere/north-mini-code:free (think) | cloud | | | | failed: all 5 model requests failed: cohere/north-mini-code:free … |
 | nvidia/nemotron-3.5-super-vl:free (think) | cloud | | | | failed: all 6 model requests failed … |
 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | cloud | | | | failed: all 5 model requests failed … |
@@ -272,3 +271,4 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/circl
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | cloud | | | | failed: all 6 model requests failed … |
 | xingchen-agi/xing4.0-29b-a4b:free (think) | cloud | | | | failed: all 7 model requests failed … |
 | recursive/flint-v1.0:free (think) | cloud | | | | failed: all 6 model requests failed: recursive/flint-v1.0:free … |
+| xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 3.18905 | ×1.00 | - | 0 |

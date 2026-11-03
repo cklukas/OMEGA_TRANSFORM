@@ -81,7 +81,7 @@ extern "C" size_t parse_doubles(const char* buf, size_t len, double* out) {
 
 ## Benchmark results
 
-The best result so far comes from **nemotron-3-nano:4b (no-think)**, run locally with Ollama on 2026-11-03: a score of **60.7376** (×1.00 the starting program's 60.7376), reached after no improvement with 16 model requests.
+The best result so far comes from **richardyoung/frognano-4b-2609:latest (no-think)**, run locally with Ollama on 2026-11-03: a score of **65.2254** (×1.00 the starting program's 65.2254), reached after no improvement with 15 model requests.
 
 What the starting program produces; no model improved on it:
 
@@ -96,4 +96,5 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/float
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|
 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | | | | failed: all 16 model requests failed … |
+| richardyoung/frognano-4b-2609:latest (no-think) | local | 65.2254 | ×1.00 | - | 0 |
 | nemotron-3-nano:4b (no-think) | local | 60.7376 | ×1.00 | - | 0 |
