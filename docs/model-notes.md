@@ -218,3 +218,14 @@ It supports reasoning and is benchmarked in both passes, in two builds:
   [#19344](https://github.com/ollama/ollama/pull/19344)). This build runs on
   both machines once a newer Ollama is installed, so it is the one that
   compares the Mac and Windows.
+
+## Gemma 4 26B and 31B, free on OpenRouter (Google, USA)
+
+`google/gemma-4-26b-a4b-it:free` and `google/gemma-4-31b-it:free` were part of
+the cloud benchmark, but OpenRouter rejected nearly every request to them as
+rate limited (HTTP 429), around the clock and on every example: in the first
+days of the current benchmark version, none of their runs got more than a few
+answers. The limit belongs to the free endpoints themselves, not to the
+benchmark's daily allowance of free requests, which other models used at the
+same time without trouble. They are therefore left out of the benchmark; the
+26B model is benchmarked locally as `gemma4:26b-a4b-it-qat`.
