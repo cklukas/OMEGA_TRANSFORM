@@ -3,10 +3,10 @@
 <!-- Copyright (c) 2026 by C. Klukas -->
 <!-- SPDX-License-Identifier: GPL-3.0-only -->
 <!-- Daily merge of the Windows benchmark results (scripts/merge-windows-results.sh).
-     Install:   cp scripts/com.klukas.omega-merge.plist ~/Library/LaunchAgents/ &&
-                launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.klukas.omega-merge.plist
+     Install with scripts/install-merge-job.sh: it runs the job through a small
+     launcher (scripts/omega-merge-launcher.c), the one program that needs Full Disk
+     Access for /Volumes/PRO-BLADE, and replaces the two lines below accordingly.
      Run now:   launchctl kickstart gui/$(id -u)/com.klukas.omega-merge
-     Remove:    launchctl bootout gui/$(id -u)/com.klukas.omega-merge
      launchd runs a missed time (Mac asleep) when the Mac wakes up. -->
 <plist version="1.0">
 <dict>

@@ -40,8 +40,8 @@ dirty=$(git status --porcelain -- "${OWNED[@]}")
 [ -z "$dirty" ] || die "uncommitted changes in the merged files, not touching them:
 $dirty"
 
-ssh -o BatchMode=yes -o ConnectTimeout=30 "$WS" true 2>/dev/null \
-    || die "workstation $WS is not reachable"
+err=$(ssh -o BatchMode=yes -o ConnectTimeout=30 "$WS" echo ok 2>&1) \
+    || die "workstation $WS is not reachable: $err"
 status=$(ssh -o BatchMode=yes "$WS" "powershell -NoProfile -Command \"Get-ScheduledTask OmegaBenchV4,OmegaBenchV4Cloud | ForEach-Object { [Console]::WriteLine(\$_.TaskName + ' ' + \$_.State) }; foreach (\$l in 'bench-v4.log','bench-v4-cloud.log') { [Console]::WriteLine(\$l + ' done: ' + [bool](Select-String -Path ('$REMOTE_LOGS\\' + \$l) -Pattern '##### done' -SimpleMatch -Quiet)) }\"" | tr -d '\r')
 log "workstation: $(echo "$status" | tr '\n' ';')"
 
