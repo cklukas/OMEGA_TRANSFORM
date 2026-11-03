@@ -87,6 +87,49 @@ def loaded_model_memory(base_url: str, name: str) -> dict:
     return {}
 
 
+def trained_context(base_url: str, name: str) -> int | None:
+    """The context length a model was trained for, from Ollama's model information."""
+    body = json.dumps({"model": name}).encode()
+    req = urllib.request.Request(f"{base_url.rstrip('/')}/api/show", data=body, method="POST",
+                                 headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r:
+            info = json.loads(r.read()).get("model_info") or {}
+    except (OSError, ValueError):
+        return None
+    sizes = [v for k, v in info.items() if k.endswith(".context_length") and isinstance(v, int)]
+    return max(sizes) if sizes else None
+
+
+def load_with_context(base_url: str, name: str, num_ctx: int, keep_alive: str,
+                      tries: int = 3, log=print, pause: float = 60.0) -> int:
+    """Load a model with the full context window and return the context it got.
+
+    Ollama silently loads a model with a smaller window than requested when it
+    thinks memory is short; a run would then get less room for prompt and answer
+    than the budget promises. Loads, compares with the request (or the model's own
+    maximum, when smaller), and retries after unloading; raises when it stays short."""
+    want = min(num_ctx, trained_context(base_url, name) or num_ctx)
+    body = json.dumps({"model": name, "prompt": "", "keep_alive": keep_alive,
+                       "options": {"num_ctx": num_ctx}}).encode()
+    got = None
+    for attempt in range(1, tries + 1):
+        req = urllib.request.Request(f"{base_url.rstrip('/')}/api/generate", data=body,
+                                     method="POST", headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=1800) as r:
+            r.read()
+        got = loaded_model_memory(base_url, name).get("context_length")
+        if got is None or got >= want:
+            return got or want
+        log(f"  Ollama loaded {name} with a context of {got} tokens instead of {want} "
+            f"(attempt {attempt} of {tries}); unloading and trying again")
+        unload(base_url, name)
+        if attempt < tries:
+            time.sleep(pause)
+    raise RuntimeError(f"Ollama loads the model with a context of {got} tokens instead of "
+                       f"{want}; too little free memory? (commit charge, not only RAM)")
+
+
 def inference_summary(calls: list[dict]) -> dict:
     """Speed of the model itself, from the per-call stats the server reported."""
     if not calls:
@@ -403,6 +446,9 @@ def run_bench(examples: list[Path], models: list[dict], minutes: float, out_dir:
                 problems = eng.llm.check(reserve_gb, measured=measured)
                 if problems:
                     raise RuntimeError("; ".join(problems))
+                if not remote:
+                    load_with_context(cfg.llm.base_url, m["name"], cfg.llm.num_ctx,
+                                      cfg.llm.keep_alive, log=log)
                 eng.run()
                 res.stop_reason = eng.stop_reason
                 memory = {} if remote else loaded_model_memory(cfg.llm.base_url, m["name"])
