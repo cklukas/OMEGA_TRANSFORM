@@ -22,6 +22,7 @@ Ollama on this machine.
 | qwen3.5:latest (no-think) | 9.0B | 0.31284 | **0.998** | ×3.19 | 17 | 25 | 100% | 1 | 1.1 | 7.4 | no progress |
 | gemma4:12b-it-qat (no-think) | 11.9B | 0.31284 | **0.99728** | ×3.19 | 26 | 29 | 100% | 5 | 7.5 | 13.6 | no progress |
 | underdog-saluki-27b:iq2-mix (no-think) | 26.9B | 0.31284 | **0.93038** | ×2.97 | 23 | 84 | 48% | 5 | 32.2 | 33.4 | no progress |
+| gemma4:e4b-it-qat (no-think) | 7.5B | 0.31284 | **0.38196** | ×1.22 | 23 | 12 | 87% | 3 | 1.2 | 5.7 | no progress |
 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 8.1B | 0.31284 | **0.38171** | ×1.22 | 41 | 18 | 22% | 3 | 8.3 | 12.9 | no progress |
 | glm-4.7-flash:latest (no-think) | 29.9B | 0.31284 | **0.38166** | ×1.22 | 17 | 28 | 71% | 2 | 2.2 | 8.2 | no progress |
 | gemma4:e2b (no-think) | 4.6B | 0.31284 | **0.38132** | ×1.22 | 32 | 8 | 50% | 3 | 2.2 | 4.6 | no progress |
@@ -33,30 +34,29 @@ Ollama on this machine.
 | nemotron-3-nano:4b (no-think) | 4.0B | 0.31284 | **0.36846** | ×1.18 | 32 | 9 | 16% | 3 | 2.4 | 5.4 | no progress |
 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | 1.73B | | | | | | | | | | failed: all 7 model requests failed: hf.co/LiquidAI/LFM3-1.7B-GGUF:Q |
 | frob/sarvam:30b (no-think) | 32.2B | 0.31284 | **0.31284** | ×1.00 | 6 | 607 | 0% | 0 | - | 61.0 | time limit |
-| gemma4:e4b-it-qat (no-think) | 7.5B | | | | | | | | | | failed: RuntimeError: the initial program does not pass the evaluato |
 
 ```mermaid
 xychart-beta
     title "symbolic_regression, local: best score"
-    x-axis ["qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "YandexGPT-5-Lite-8B-instruct-GGUF (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "gemma4:26b-a4b-it-qat (no-think)", "gemma4 (no-think)", "qwen3.5 (no-think)", "gemma4:12b-it-qat (no-think)", "underdog-saluki-27b:iq2-mix (no-think)", "apertus:8b-instruct-2509-q4_k_m (no-think)", "glm-4.7-flash (no-think)", "gemma4:e2b (no-think)", "gpt-oss:20b (no-think)", "qwen2.5-coder:7b (no-think)", "frognano-4b-2609 (no-think)", "llm-jp-4-8b-omega:q4_k_m (no-think)", "qwen3-coder:30b (no-think)", "nemotron-3-nano:4b (no-think)", "sarvam:30b (no-think)"]
+    x-axis ["qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "YandexGPT-5-Lite-8B-instruct-GGUF (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "gemma4:26b-a4b-it-qat (no-think)", "gemma4 (no-think)", "qwen3.5 (no-think)", "gemma4:12b-it-qat (no-think)", "underdog-saluki-27b:iq2-mix (no-think)", "gemma4:e4b-it-qat (no-think)", "apertus:8b-instruct-2509-q4_k_m (no-think)", "glm-4.7-flash (no-think)", "gemma4:e2b (no-think)", "gpt-oss:20b (no-think)", "qwen2.5-coder:7b (no-think)", "frognano-4b-2609 (no-think)", "llm-jp-4-8b-omega:q4_k_m (no-think)", "qwen3-coder:30b (no-think)", "nemotron-3-nano:4b (no-think)", "sarvam:30b (no-think)"]
     y-axis "score" 0 --> 1.098
-    bar [0.9986, 0.9982, 0.9981, 0.9981, 0.998, 0.998, 0.9973, 0.9304, 0.3817, 0.3817, 0.3813, 0.3802, 0.3794, 0.3794, 0.3794, 0.3784, 0.3685, 0.3128]
+    bar [0.9986, 0.9982, 0.9981, 0.9981, 0.998, 0.998, 0.9973, 0.9304, 0.382, 0.3817, 0.3817, 0.3813, 0.3802, 0.3794, 0.3794, 0.3794, 0.3784, 0.3685, 0.3128]
 ```
 
 ```mermaid
 xychart-beta
     title "symbolic_regression, local: valid answers (%)"
-    x-axis ["qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "YandexGPT-5-Lite-8B-instruct-GGUF (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "gemma4:26b-a4b-it-qat (no-think)", "gemma4 (no-think)", "qwen3.5 (no-think)", "gemma4:12b-it-qat (no-think)", "underdog-saluki-27b:iq2-mix (no-think)", "apertus:8b-instruct-2509-q4_k_m (no-think)", "glm-4.7-flash (no-think)", "gemma4:e2b (no-think)", "gpt-oss:20b (no-think)", "qwen2.5-coder:7b (no-think)", "frognano-4b-2609 (no-think)", "llm-jp-4-8b-omega:q4_k_m (no-think)", "qwen3-coder:30b (no-think)", "nemotron-3-nano:4b (no-think)", "sarvam:30b (no-think)"]
+    x-axis ["qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "YandexGPT-5-Lite-8B-instruct-GGUF (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "gemma4:26b-a4b-it-qat (no-think)", "gemma4 (no-think)", "qwen3.5 (no-think)", "gemma4:12b-it-qat (no-think)", "underdog-saluki-27b:iq2-mix (no-think)", "gemma4:e4b-it-qat (no-think)", "apertus:8b-instruct-2509-q4_k_m (no-think)", "glm-4.7-flash (no-think)", "gemma4:e2b (no-think)", "gpt-oss:20b (no-think)", "qwen2.5-coder:7b (no-think)", "frognano-4b-2609 (no-think)", "llm-jp-4-8b-omega:q4_k_m (no-think)", "qwen3-coder:30b (no-think)", "nemotron-3-nano:4b (no-think)", "sarvam:30b (no-think)"]
     y-axis "% of answers" 0 --> 110
-    bar [53.85, 39.53, 73.68, 78.26, 72.41, 100, 100, 47.83, 21.95, 70.59, 50, 93.75, 42.31, 61.11, 7.692, 44.44, 15.62, 0]
+    bar [53.85, 39.53, 73.68, 78.26, 72.41, 100, 100, 47.83, 86.96, 21.95, 70.59, 50, 93.75, 42.31, 61.11, 7.692, 44.44, 15.62, 0]
 ```
 
 ```mermaid
 xychart-beta
     title "symbolic_regression, local: seconds per LLM call"
-    x-axis ["qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "YandexGPT-5-Lite-8B-instruct-GGUF (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "gemma4:26b-a4b-it-qat (no-think)", "gemma4 (no-think)", "qwen3.5 (no-think)", "gemma4:12b-it-qat (no-think)", "underdog-saluki-27b:iq2-mix (no-think)", "apertus:8b-instruct-2509-q4_k_m (no-think)", "glm-4.7-flash (no-think)", "gemma4:e2b (no-think)", "gpt-oss:20b (no-think)", "qwen2.5-coder:7b (no-think)", "frognano-4b-2609 (no-think)", "llm-jp-4-8b-omega:q4_k_m (no-think)", "qwen3-coder:30b (no-think)", "nemotron-3-nano:4b (no-think)", "sarvam:30b (no-think)"]
+    x-axis ["qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "YandexGPT-5-Lite-8B-instruct-GGUF (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "gemma4:26b-a4b-it-qat (no-think)", "gemma4 (no-think)", "qwen3.5 (no-think)", "gemma4:12b-it-qat (no-think)", "underdog-saluki-27b:iq2-mix (no-think)", "gemma4:e4b-it-qat (no-think)", "apertus:8b-instruct-2509-q4_k_m (no-think)", "glm-4.7-flash (no-think)", "gemma4:e2b (no-think)", "gpt-oss:20b (no-think)", "qwen2.5-coder:7b (no-think)", "frognano-4b-2609 (no-think)", "llm-jp-4-8b-omega:q4_k_m (no-think)", "qwen3-coder:30b (no-think)", "nemotron-3-nano:4b (no-think)", "sarvam:30b (no-think)"]
     y-axis "seconds" 0 --> 667.6
-    bar [305, 24.4, 36.5, 37, 11.6, 24.6, 29.4, 84, 17.7, 28.1, 7.9, 55.7, 21.7, 21.3, 28.7, 46, 9.3, 606.9]
+    bar [305, 24.4, 36.5, 37, 11.6, 24.6, 29.4, 84, 12.3, 17.7, 28.1, 7.9, 55.7, 21.7, 21.3, 28.7, 46, 9.3, 606.9]
 ```
 
 ### Inference speed and memory
@@ -69,6 +69,7 @@ RAM is what Ollama reports for the loaded model (weights, context cache and buff
 | gemma4:latest (no-think) | 7.5B | 3.3 | 60 | 1401 | 64.0 | 10 | 14 | 267 | 0 |
 | nemotron-3-nano:4b (no-think) | 4.0B | 3.9 | 10 | 2230 | 74.5 | 7 | 14 | 359 | 0 |
 | richardyoung/frognano-4b-2609:latest (no-think) | 4.3B | 4.8 | 12 | 1893 | 56.2 | 21 | 43 | 655 | 2 |
+| gemma4:e4b-it-qat (no-think) | 7.5B | 6.1 | 0 | 1609 | 43.4 | 11 | 17 | 329 | 0 |
 | qwen2.5-coder:7b (no-think) | 7.6B | 6.6 | 15 | 1494 | 44.7 | 25 | 29 | 713 | 0 |
 | qwen3.5:latest (no-think) | 9.0B | 9.4 | 50 | 1094 | 37.0 | 21 | 37 | 575 | 0 |
 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 8.0B | 10.2 | 38 | 1701 | 44.6 | 23 | 32 | 817 | 0 |
@@ -87,17 +88,17 @@ RAM is what Ollama reports for the loaded model (weights, context cache and buff
 ```mermaid
 xychart-beta
     title "symbolic_regression, local: generation speed (tokens/s)"
-    x-axis ["gemma4:e2b (no-think)", "gemma4 (no-think)", "nemotron-3-nano:4b (no-think)", "frognano-4b-2609 (no-think)", "qwen2.5-coder:7b (no-think)", "qwen3.5 (no-think)", "YandexGPT-5-Lite-8B-instruct-GGUF (no-think)", "gemma4:12b-it-qat (no-think)", "underdog-saluki-27b:iq2-mix (no-think)", "apertus:8b-instruct-2509-q4_k_m (no-think)", "llm-jp-4-8b-omega:q4_k_m (no-think)", "gpt-oss:20b (no-think)", "gemma4:26b-a4b-it-qat (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "sarvam:30b (no-think)", "glm-4.7-flash (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3-coder:30b (no-think)"]
+    x-axis ["gemma4:e2b (no-think)", "gemma4 (no-think)", "nemotron-3-nano:4b (no-think)", "frognano-4b-2609 (no-think)", "gemma4:e4b-it-qat (no-think)", "qwen2.5-coder:7b (no-think)", "qwen3.5 (no-think)", "YandexGPT-5-Lite-8B-instruct-GGUF (no-think)", "gemma4:12b-it-qat (no-think)", "underdog-saluki-27b:iq2-mix (no-think)", "apertus:8b-instruct-2509-q4_k_m (no-think)", "llm-jp-4-8b-omega:q4_k_m (no-think)", "gpt-oss:20b (no-think)", "gemma4:26b-a4b-it-qat (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "sarvam:30b (no-think)", "glm-4.7-flash (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3-coder:30b (no-think)"]
     y-axis "tokens/s" 0 --> 136.4
-    bar [124, 64, 74.5, 56.2, 44.7, 37, 44.6, 27.9, 15.9, 43, 40.5, 51.6, 35.3, 5.4, 35, 25.5, 25.1, 25.5]
+    bar [124, 64, 74.5, 56.2, 43.4, 44.7, 37, 44.6, 27.9, 15.9, 43, 40.5, 51.6, 35.3, 5.4, 35, 25.5, 25.1, 25.5]
 ```
 
 ```mermaid
 xychart-beta
     title "symbolic_regression, local: model memory (GB)"
-    x-axis ["gemma4:e2b (no-think)", "gemma4 (no-think)", "nemotron-3-nano:4b (no-think)", "frognano-4b-2609 (no-think)", "qwen2.5-coder:7b (no-think)", "qwen3.5 (no-think)", "YandexGPT-5-Lite-8B-instruct-GGUF (no-think)", "gemma4:12b-it-qat (no-think)", "underdog-saluki-27b:iq2-mix (no-think)", "apertus:8b-instruct-2509-q4_k_m (no-think)", "llm-jp-4-8b-omega:q4_k_m (no-think)", "gpt-oss:20b (no-think)", "gemma4:26b-a4b-it-qat (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "sarvam:30b (no-think)", "glm-4.7-flash (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3-coder:30b (no-think)"]
+    x-axis ["gemma4:e2b (no-think)", "gemma4 (no-think)", "nemotron-3-nano:4b (no-think)", "frognano-4b-2609 (no-think)", "gemma4:e4b-it-qat (no-think)", "qwen2.5-coder:7b (no-think)", "qwen3.5 (no-think)", "YandexGPT-5-Lite-8B-instruct-GGUF (no-think)", "gemma4:12b-it-qat (no-think)", "underdog-saluki-27b:iq2-mix (no-think)", "apertus:8b-instruct-2509-q4_k_m (no-think)", "llm-jp-4-8b-omega:q4_k_m (no-think)", "gpt-oss:20b (no-think)", "gemma4:26b-a4b-it-qat (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "sarvam:30b (no-think)", "glm-4.7-flash (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3-coder:30b (no-think)"]
     y-axis "GB" 0 --> 25.3
-    bar [0.9, 3.3, 3.9, 4.8, 6.6, 9.4, 10.2, 11, 11.2, 12.6, 13, 13.9, 16.1, 20.4, 21.2, 21.6, 23, 23]
+    bar [0.9, 3.3, 3.9, 4.8, 6.1, 6.6, 9.4, 10.2, 11, 11.2, 12.6, 13, 13.9, 16.1, 20.4, 21.2, 21.6, 23, 23]
 ```
 
 ### Best score over time
@@ -112,6 +113,7 @@ xychart-beta
 | qwen3.5:latest (no-think) | 0.998 | 0.998 | 0.998 | 0.998 |
 | gemma4:12b-it-qat (no-think) | 0.99728 | 0.99728 | 0.99728 | 0.99728 |
 | underdog-saluki-27b:iq2-mix (no-think) | 0.38022 | 0.9301 | 0.93038 | 0.93038 |
+| gemma4:e4b-it-qat (no-think) | 0.38196 | 0.38196 | 0.38196 | 0.38196 |
 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 0.38171 | 0.38171 | 0.38171 | 0.38171 |
 | glm-4.7-flash:latest (no-think) | 0.38166 | 0.38166 | 0.38166 | 0.38166 |
 | gemma4:e2b (no-think) | 0.38132 | 0.38132 | 0.38132 | 0.38132 |
@@ -135,6 +137,7 @@ xychart-beta
 | qwen3.5:latest (no-think) | 0 | 0 | 0 | 0 | 17 | 0 | 0 |
 | gemma4:12b-it-qat (no-think) | 0 | 0 | 0 | 0 | 26 | 0 | 0 |
 | underdog-saluki-27b:iq2-mix (no-think) | 1 | 2 | 6 | 2 | 11 | 0 | 1 |
+| gemma4:e4b-it-qat (no-think) | 2 | 0 | 1 | 0 | 20 | 0 | 0 |
 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 8 | 20 | 4 | 0 | 9 | 0 | 0 |
 | glm-4.7-flash:latest (no-think) | 2 | 3 | 0 | 0 | 12 | 0 | 0 |
 | gemma4:e2b (no-think) | 5 | 3 | 6 | 0 | 16 | 2 | 0 |
@@ -156,6 +159,7 @@ xychart-beta
 - **qwen3.5:latest (no-think)**: Replace the linear-only basis functions with a rich set including quadratic terms, cross-products of inputs, sine/cosine interactions, and an exponential term to capture …
 - **gemma4:12b-it-qat (no-think)**: The feedback shows errors at high $|x_1|$ and $x_2$ where the prediction is too high, and the current basis lacks a potentially large but bounded term like $\sin(x_1 \cdot x_2 …
 - **underdog-saluki-27b:iq2-mix (no-think)**: Add higher-degree polynomial terms in x1 (x1^2, x1^3) and x1^2*x2, x1^2*x3 to capture the growth seen at extrapolation, since tanh saturates while true y keeps growing with x1 …
+- **gemma4:e4b-it-qat (no-think)**: Introduce basis functions based on input ratios and differences, which might capture underlying functional relationships that are not captured by simple products and powers of …
 - **MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think)**: Add a cubic term to the basis to better fit non-linear dependencies and potentially allow better extrapolation.
 - **glm-4.7-flash:latest (no-think)**: Add sinusoidal basis terms to capture periodic behavior and reduce extrapolation errors, as the largest errors occur at high |x| where polynomial terms fail.
 - **gemma4:e2b (no-think)**: The current model is suffering from poor extrapolation, suggesting that the cubic basis might be insufficient, and increasing the complexity of the basis functions, perhaps by …
@@ -177,14 +181,14 @@ Free OpenRouter models; times include the network and the provider's queue.
 | cohere/north-mini-code:free (think) |  | 0.31284 | **0.99872** | ×3.19 | 19 | 152 | 68% | 5 | 36.7 | 48.6 | no progress |
 | dots-studio/dots-3-note-preview:free (think) |  | 0.31284 | **0.99867** | ×3.19 | 16 | 231 | 25% | 2 | 61.9 | 62.0 | time limit |
 | nvidia/nemotron-3-ultra-550b-a55b:free (think) |  | 0.31284 | **0.99853** | ×3.19 | 15 | 88 | 87% | 5 | 20.6 | 22.5 | no progress |
+| nvidia/nemotron-3.5-super-vl:free (no-think) |  | 0.31284 | **0.99852** | ×3.19 | 16 | 10 | 50% | 1 | 0.2 | 2.8 | no progress |
+| nvidia/nemotron-3-ultra-550b-a55b:free (no-think) |  | 0.31284 | **0.99798** | ×3.19 | 14 | 22 | 71% | 5 | 1.8 | 5.4 | no progress |
 | nvidia/nemotron-3.5-lightning:free (think) |  | 0.31284 | **0.99085** | ×3.17 | 22 | 179 | 41% | 4 | 50.2 | 68.0 | time limit |
+| dots-studio/dots-3-note-preview:free (no-think) |  | 0.31284 | **0.98943** | ×3.16 | 33 | 13 | 73% | 2 | 4.3 | 7.5 | no progress |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) |  | 0.31284 | **0.49574** | ×1.58 | 29 | 5 | 21% | 2 | 1.2 | 2.5 | no progress |
+| cohere/north-mini-code:free (no-think) |  | 0.31284 | **0.37945** | ×1.21 | 25 | 7 | 52% | 2 | 1.1 | 3.4 | no progress |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) |  | 0.31284 | **0.37881** | ×1.21 | 22 | 92 | 41% | 6 | 33.9 | 34.3 | no progress |
-| cohere/north-mini-code:free (no-think) |  | | | | | | | | | | failed: all 6 model requests failed: cohere/north-mini-code:free: ra |
-| nvidia/nemotron-3.5-super-vl:free (no-think) |  | | | | | | | | | | failed: all 6 model requests failed: nvidia/nemotron-3.5-super-vl:fr |
-| nvidia/nemotron-3-ultra-550b-a55b:free (no-think) |  | | | | | | | | | | failed: all 6 model requests failed: nvidia/nemotron-3-ultra-550b-a5 |
-| dots-studio/dots-3-note-preview:free (no-think) |  | | | | | | | | | | failed: all 6 model requests failed: dots-studio/dots-3-note-preview |
-| nvidia/nemotron-3.5-lightning:free (no-think) |  | | | | | | | | | | failed: all 6 model requests failed: nvidia/nemotron-3.5-lightning:f |
-| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) |  | | | | | | | | | | failed: all 6 model requests failed: nvidia/nemotron-3-nano-omni-30b |
+| nvidia/nemotron-3.5-lightning:free (no-think) |  | 0.31284 | **0.37589** | ×1.20 | 16 | 25 | 6% | 1 | 6.6 | 6.6 | no progress |
 | xingchen-agi/xing4.0-29b-a4b:free (no-think) |  | 0.31284 | **0.31284** | ×1.00 | 16 | 75 | 0% | 0 | - | 20.1 | no progress |
 | xingchen-agi/xing4.0-29b-a4b:free (think) |  | 0.31284 | **0.31284** | ×1.00 | 15 | 184 | 0% | 0 | - | 45.9 | no progress |
 | recursive/flint-v1.0:free (think) |  | | | | | | | | | | failed: all 5 model requests failed: recursive/flint-v1.0:free: requ |
@@ -192,25 +196,25 @@ Free OpenRouter models; times include the network and the provider's queue.
 ```mermaid
 xychart-beta
     title "symbolic_regression, cloud: best score"
-    x-axis ["nemotron-3.5-super-vl (think)", "north-mini-code (think)", "dots-3-note-preview (think)", "nemotron-3-ultra-550b-a55b (think)", "nemotron-3.5-lightning (think)", "nemotron-3-nano-omni-30b-a3b-reasoning (think)", "xing4.0-29b-a4b (no-think)", "xing4.0-29b-a4b (think)"]
+    x-axis ["nemotron-3.5-super-vl (think)", "north-mini-code (think)", "dots-3-note-preview (think)", "nemotron-3-ultra-550b-a55b (think)", "nemotron-3.5-super-vl (no-think)", "nemotron-3-ultra-550b-a55b (no-think)", "nemotron-3.5-lightning (think)", "dots-3-note-preview (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)", "north-mini-code (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (think)", "nemotron-3.5-lightning (no-think)", "xing4.0-29b-a4b (no-think)", "xing4.0-29b-a4b (think)"]
     y-axis "score" 0 --> 1.099
-    bar [0.9988, 0.9987, 0.9987, 0.9985, 0.9909, 0.3788, 0.3128, 0.3128]
+    bar [0.9988, 0.9987, 0.9987, 0.9985, 0.9985, 0.998, 0.9909, 0.9894, 0.4957, 0.3794, 0.3788, 0.3759, 0.3128, 0.3128]
 ```
 
 ```mermaid
 xychart-beta
     title "symbolic_regression, cloud: valid answers (%)"
-    x-axis ["nemotron-3.5-super-vl (think)", "north-mini-code (think)", "dots-3-note-preview (think)", "nemotron-3-ultra-550b-a55b (think)", "nemotron-3.5-lightning (think)", "nemotron-3-nano-omni-30b-a3b-reasoning (think)", "xing4.0-29b-a4b (no-think)", "xing4.0-29b-a4b (think)"]
+    x-axis ["nemotron-3.5-super-vl (think)", "north-mini-code (think)", "dots-3-note-preview (think)", "nemotron-3-ultra-550b-a55b (think)", "nemotron-3.5-super-vl (no-think)", "nemotron-3-ultra-550b-a55b (no-think)", "nemotron-3.5-lightning (think)", "dots-3-note-preview (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)", "north-mini-code (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (think)", "nemotron-3.5-lightning (no-think)", "xing4.0-29b-a4b (no-think)", "xing4.0-29b-a4b (think)"]
     y-axis "% of answers" 0 --> 95.33
-    bar [75, 68.42, 25, 86.67, 40.91, 40.91, 0, 0]
+    bar [75, 68.42, 25, 86.67, 50, 71.43, 40.91, 72.73, 20.69, 52, 40.91, 6.25, 0, 0]
 ```
 
 ```mermaid
 xychart-beta
     title "symbolic_regression, cloud: seconds per LLM call"
-    x-axis ["nemotron-3.5-super-vl (think)", "north-mini-code (think)", "dots-3-note-preview (think)", "nemotron-3-ultra-550b-a55b (think)", "nemotron-3.5-lightning (think)", "nemotron-3-nano-omni-30b-a3b-reasoning (think)", "xing4.0-29b-a4b (no-think)", "xing4.0-29b-a4b (think)"]
+    x-axis ["nemotron-3.5-super-vl (think)", "north-mini-code (think)", "dots-3-note-preview (think)", "nemotron-3-ultra-550b-a55b (think)", "nemotron-3.5-super-vl (no-think)", "nemotron-3-ultra-550b-a55b (no-think)", "nemotron-3.5-lightning (think)", "dots-3-note-preview (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)", "north-mini-code (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (think)", "nemotron-3.5-lightning (no-think)", "xing4.0-29b-a4b (no-think)", "xing4.0-29b-a4b (think)"]
     y-axis "seconds" 0 --> 253.9
-    bar [120.2, 151.7, 230.8, 87.7, 179.2, 91.7, 75.2, 183.5]
+    bar [120.2, 151.7, 230.8, 87.7, 10.4, 21.9, 179.2, 13.3, 4.9, 7.4, 91.7, 24.6, 75.2, 183.5]
 ```
 
 ### Inference speed and cost
@@ -219,21 +223,27 @@ Generation speed is measured from the first to the last streamed token; the time
 
 | Model | Gen tok/s | Median s/call | p90 s/call | Tokens/answer | Stopped | Cost $ |
 |---|--:|--:|--:|--:|--:|--:|
+| nvidia/nemotron-3.5-super-vl:free (no-think) | 172.2 | 10 | 20 | 1641 | 2 | 0.000 |
+| cohere/north-mini-code:free (no-think) | 161.7 | 6 | 16 | 1120 | 0 | 0.000 |
 | nvidia/nemotron-3.5-super-vl:free (think) | 134.3 | 125 | 208 | 15993 | 0 | 0.000 |
 | cohere/north-mini-code:free (think) | 109.3 | 180 | 256 | 15445 | 0 | 0.000 |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | 109.2 | 75 | 189 | 8962 | 2 | 0.000 |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | 108.8 | 4 | 9 | 382 | 2 | 0.000 |
+| dots-studio/dots-3-note-preview:free (no-think) | 102.5 | 14 | 24 | 1106 | 0 | 0.000 |
+| nvidia/nemotron-3.5-lightning:free (no-think) | 102.1 | 21 | 47 | 1920 | 8 | 0.000 |
 | dots-studio/dots-3-note-preview:free (think) | 91.4 | 269 | 287 | 20741 | 0 | 0.000 |
 | xingchen-agi/xing4.0-29b-a4b:free (no-think) | 71.7 | 75 | 85 | 110 | 2 | 0.000 |
 | nvidia/nemotron-3.5-lightning:free (think) | 65.9 | 162 | 391 | 12481 | 2 | 0.000 |
 | xingchen-agi/xing4.0-29b-a4b:free (think) | 64.2 | 75 | 428 | 3699 | 4 | 0.000 |
+| nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | 59.0 | 19 | 50 | 1220 | 0 | 0.000 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | 51.9 | 52 | 206 | 4451 | 0 | 0.000 |
 
 ```mermaid
 xychart-beta
     title "symbolic_regression, cloud: generation speed (tokens/s)"
-    x-axis ["nemotron-3.5-super-vl (think)", "north-mini-code (think)", "nemotron-3-nano-omni-30b-a3b-reasoning (think)", "dots-3-note-preview (think)", "xing4.0-29b-a4b (no-think)", "nemotron-3.5-lightning (think)", "xing4.0-29b-a4b (think)", "nemotron-3-ultra-550b-a55b (think)"]
-    y-axis "tokens/s" 0 --> 147.7
-    bar [134.3, 109.3, 109.2, 91.4, 71.7, 65.9, 64.2, 51.9]
+    x-axis ["nemotron-3.5-super-vl (no-think)", "north-mini-code (no-think)", "nemotron-3.5-super-vl (think)", "north-mini-code (think)", "nemotron-3-nano-omni-30b-a3b-reasoning (think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)", "dots-3-note-preview (no-think)", "nemotron-3.5-lightning (no-think)", "dots-3-note-preview (think)", "xing4.0-29b-a4b (no-think)", "nemotron-3.5-lightning (think)", "xing4.0-29b-a4b (think)", "nemotron-3-ultra-550b-a55b (no-think)", "nemotron-3-ultra-550b-a55b (think)"]
+    y-axis "tokens/s" 0 --> 189.4
+    bar [172.2, 161.7, 134.3, 109.3, 109.2, 108.8, 102.5, 102.1, 91.4, 71.7, 65.9, 64.2, 59, 51.9]
 ```
 
 ### Best score over time
@@ -244,8 +254,14 @@ xychart-beta
 | cohere/north-mini-code:free (think) | 0.49907 | 0.99872 | 0.99872 | 0.99872 |
 | dots-studio/dots-3-note-preview:free (think) | 0.31284 | 0.31284 | 0.31284 | 0.99867 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | 0.99853 | 0.99853 | 0.99853 | 0.99853 |
+| nvidia/nemotron-3.5-super-vl:free (no-think) | 0.99852 | 0.99852 | 0.99852 | 0.99852 |
+| nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | 0.99798 | 0.99798 | 0.99798 | 0.99798 |
 | nvidia/nemotron-3.5-lightning:free (think) | 0.37971 | 0.98961 | 0.98961 | 0.99085 |
+| dots-studio/dots-3-note-preview:free (no-think) | 0.98943 | 0.98943 | 0.98943 | 0.98943 |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | 0.49574 | 0.49574 | 0.49574 | 0.49574 |
+| cohere/north-mini-code:free (no-think) | 0.37945 | 0.37945 | 0.37945 | 0.37945 |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | 0.37879 | 0.37879 | 0.37881 | 0.37881 |
+| nvidia/nemotron-3.5-lightning:free (no-think) | 0.37589 | 0.37589 | 0.37589 | 0.37589 |
 | xingchen-agi/xing4.0-29b-a4b:free (no-think) | 0.31284 | 0.31284 | 0.31284 | 0.31284 |
 | xingchen-agi/xing4.0-29b-a4b:free (think) | 0.31284 | 0.31284 | 0.31284 | 0.31284 |
 
@@ -257,8 +273,14 @@ xychart-beta
 | cohere/north-mini-code:free (think) | 0 | 5 | 0 | 1 | 13 | 0 |
 | dots-studio/dots-3-note-preview:free (think) | 0 | 11 | 1 | 0 | 4 | 0 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | 1 | 0 | 1 | 0 | 13 | 0 |
+| nvidia/nemotron-3.5-super-vl:free (no-think) | 1 | 1 | 4 | 2 | 8 | 0 |
+| nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | 3 | 1 | 0 | 0 | 10 | 0 |
 | nvidia/nemotron-3.5-lightning:free (think) | 3 | 7 | 1 | 2 | 9 | 0 |
+| dots-studio/dots-3-note-preview:free (no-think) | 2 | 2 | 5 | 0 | 24 | 0 |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | 2 | 17 | 2 | 2 | 6 | 0 |
+| cohere/north-mini-code:free (no-think) | 4 | 3 | 5 | 0 | 13 | 0 |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | 0 | 11 | 0 | 2 | 9 | 0 |
+| nvidia/nemotron-3.5-lightning:free (no-think) | 0 | 4 | 3 | 8 | 1 | 0 |
 | xingchen-agi/xing4.0-29b-a4b:free (no-think) | 0 | 0 | 1 | 14 | 0 | 1 |
 | xingchen-agi/xing4.0-29b-a4b:free (think) | 0 | 1 | 0 | 13 | 0 | 1 |
 
@@ -268,7 +290,13 @@ xychart-beta
 - **cohere/north-mini-code:free (think)**: tuned MAX_TERMS=6, TOL=1e-05, RIDGE=0.1 on top of: Adjust suboptimal constants MAX_TERMS, TOL, RIDGE to better defaults (MAX_TERMS=6, RIDGE=0.01) and sweep them to find optimal …
 - **dots-studio/dots-3-note-preview:free (think)**: Expose key hyperparameters (max terms, ridge regularization, random seed, and extra basis terms) as named constants and sweep them to find the optimal combination for feature …
 - **nvidia/nemotron-3-ultra-550b-a55b:free (think)**: tuned RIDGE=0.001 on top of: Replace the fixed basis with a larger pool of candidate functions (including exponentials, logarithms, and trigonometric products) and use forward …
+- **nvidia/nemotron-3.5-super-vl:free (no-think)**: Expand the linear model to a broad library of elementary basis functions (polynomials, trigonometric terms, exponentials, logs, and pairwise interactions), fit coefficients by …
+- **nvidia/nemotron-3-ultra-550b-a55b:free (no-think)**: tuned POLY_DEGREE=2, INCLUDE_TRIG=True, INCLUDE_EXP=False on top of: The negative extrapolation R^2 (-0.649) indicates severe overfitting or wrong functional form for …
 - **nvidia/nemotron-3.5-lightning:free (think)**: Add cross-variable cos product terms and x*cos(x) self terms to the basis, providing complementary periodic modulation pathways that capture out-of-phase structure and improve …
+- **dots-studio/dots-3-note-preview:free (no-think)**: The forward selection is too slow and buggy; replace it with a direct least-squares fit on a curated set of physically motivated basis functions (polynomials, trigonometric, and …
+- **nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think)**: Adding interaction terms between pairs of basis functions will better capture hidden relationships and improve extrapolation, so I'll include all pairwise products of the existing …
+- **cohere/north-mini-code:free (no-think)**: Extend the basis to include quadratic and cross terms (e.g., x1^2, x1*x2, x2*x2) to capture polynomial interactions that improve extrapolation, and prune via forward selection to …
 - **nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think)**: tuned RIDGE=0.005 on top of: Add higher-degree polynomial terms and expose the ridge constant for sweeping to better capture curvature and allow regularization tuning.
+- **nvidia/nemotron-3.5-lightning:free (no-think)**: Replace the 4-term linear basis with a rich expanded set of powers, products, trig functions, and log terms, then fit coefficients via least squares; this enables extrapolation …
 - **xingchen-agi/xing4.0-29b-a4b:free (no-think)**: initial program
 - **xingchen-agi/xing4.0-29b-a4b:free (think)**: initial program

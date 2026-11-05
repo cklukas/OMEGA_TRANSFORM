@@ -241,6 +241,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/max_c
 | dots-studio/dots-3-note-preview:free (no-think) | cloud | i7-8700K + 2x GTX 1080 Ti | 0.76761 | ×1.50 | 3.6 | 3 |
 | dots-studio/dots-3-note-preview:free (think) | cloud | i7-8700K + 2x GTX 1080 Ti | 0.76752 | ×1.50 | 27.1 | 4 |
 | nvidia/nemotron-3.5-super-vl:free (think) | cloud | i7-8700K + 2x GTX 1080 Ti | 0.76745 | ×1.50 | 6.7 | 4 |
+| recursive/flint-v1.0:free (think) | cloud | i7-8700K + 2x GTX 1080 Ti | 0.76745 | ×1.50 | 30.3 | 10 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | i7-8700K + 2x GTX 1080 Ti | 0.76741 | ×1.50 | 8.2 | 5 |
 | gpt-oss:20b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.76574 | ×1.50 | 13.8 | 5 |
 | gemma4:e4b-it-qat (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.76471 | ×1.49 | 22.0 | 9 |
@@ -249,11 +250,13 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/max_c
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.76007 | ×1.48 | 12.3 | 7 |
 | cohere/north-mini-code:free (think) | cloud | i7-8700K + 2x GTX 1080 Ti | 0.75925 | ×1.48 | 7.6 | 4 |
 | cohere/north-mini-code:free (no-think) | cloud | i7-8700K + 2x GTX 1080 Ti | 0.75332 | ×1.47 | 6.5 | 5 |
+| xingchen-agi/xing4.0-29b-a4b:free (think) | cloud | i7-8700K + 2x GTX 1080 Ti | 0.75161 | ×1.47 | 15.0 | 1 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.74898 | ×1.46 | 54.1 | 6 |
 | underdog-saluki-27b:iq2-mix (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.74766 | ×1.46 | 31.3 | 6 |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | cloud | i7-8700K | 0.7393 | ×1.44 | 34.4 | 3 |
 | qwen3.5:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.73495 | ×1.43 | 2.0 | 2 |
 | glm-4.7-flash:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.73215 | ×1.43 | 14.7 | 6 |
+| xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | i7-8700K + 2x GTX 1080 Ti | 0.73131 | ×1.43 | 14.1 | 1 |
 | gemma4:e2b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.73068 | ×1.43 | 0.9 | 2 |
 | frob/sarvam:30b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.72422 | ×1.41 | 9.1 | 1 |
 | nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | i7-8700K + 2x GTX 1080 Ti | 0.71534 | ×1.40 | 11.1 | 4 |
@@ -261,7 +264,6 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/max_c
 | qwen3-coder:30b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.70701 | ×1.38 | 5.6 | 1 |
 | qwen2.5-coder:7b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.6981 | ×1.36 | 3.2 | 3 |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |
-| xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |
 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |
 | nemotron-3-nano:4b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |
 | richardyoung/frognano-4b-2609:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |
@@ -269,6 +271,4 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/max_c
 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |
 | llm-jp-4-8b-omega:q4_k_m (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |
 | gemma4:26b-a4b-it-qat (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |
-| xingchen-agi/xing4.0-29b-a4b:free (think) | cloud | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 11 model requests failed … |
-| recursive/flint-v1.0:free (think) | cloud | i7-8700K + 2x GTX 1080 Ti | | | | failed: all 5 model requests failed: recursive/flint-v1.0:free … |
-| nvidia/nemotron-3.5-lightning:free (think) | cloud | i7-8700K + 2x GTX 1080 Ti | | | | failed: RuntimeError: the initial program does not pass the … |
+| nvidia/nemotron-3.5-lightning:free (think) | cloud | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |

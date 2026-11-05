@@ -1,0 +1,337 @@
+{
+ "schema": 4,
+ "example": "circles_in_circle_21",
+ "model": "cohere/north-mini-code:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-04T20:14:09",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 63.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 3.1890454825108625,
+ "best_score": 3.4936796798085084,
+ "improvement": 1.0955251967926765,
+ "llm_calls": 16,
+ "mean_llm_seconds": 235.9,
+ "attempts": 16,
+ "ok": 5,
+ "statuses": {
+  "edit_error": 8,
+  "invalid": 2,
+  "timeout": 1,
+  "ok": 5
+ },
+ "sweeps": 1,
+ "sweep_variants": 16,
+ "improvements": 2,
+ "minutes_to_best": 56.09,
+ "best_idea": "tuned NUM_ITER=10000, START_TEMP=0.2, COOLING_RATE=0.9995, SIGMA_INIT=0.3 on top of: Replace the static equal\u2011radii ring arrangement with a simulated annealing optimizer that perturbs circle centers a",
+ "progress": [
+  [
+   0.0,
+   3.1890454825108625
+  ],
+  [
+   56.09,
+   3.1994350024489133
+  ],
+  [
+   56.09,
+   3.4936796798085084
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.1890454825108625,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 56.09,
+   "score": 3.1994350024489133,
+   "model": "cohere/north-mini-code:free",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Replace the static equal\u2011radii ring arrangement with a simulated annealing optimizer that perturbs circle centers and projects feasible radii via an iterative constraint\u2011satisfaction step, allowing mixed sizes and better packing; expose key numeric parameters for sweeping to explore optimal configurations."
+  },
+  {
+   "minutes": 56.09,
+   "score": 3.4936796798085084,
+   "model": "cohere/north-mini-code:free",
+   "mode": "sweep/exploit/diff/tune",
+   "status": "ok",
+   "idea": "tuned NUM_ITER=10000, START_TEMP=0.2, COOLING_RATE=0.9995, SIGMA_INIT=0.3 on top of: Replace the static equal\u2011radii ring arrangement with a simulated annealing optimizer that perturbs circle centers and projects feasible radii via an iterative constraint\u2011satisfaction step, allowing mixed sizes and b"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -4,24 +4,94 @@\n import math\n \n # OMEGA-BLOCK-START\n+import random\n+import math\n+\n+# Constants for the packing algorithm\n+INITIAL_RING1_RADIUS = 0.35\n+INITIAL_RING2_RADIUS = 0.75\n+NUM_ITER = 10000\n+START_TEMP = 0.2\n+COOLING_RATE = 0.9995\n+SIGMA_INIT = 0.3\n+NUM_PERTURB = 3\n+PASSES = 5\n+\n+def compute_feasible_radii(centers, passes):\n+    \"\"\"Given fixed centers, compute the largest feasible radii by enforcing\n+    container and non\u2011overlap constraints via iterative pairwise reduction.\"\"\"\n+    n = len(centers)\n+    # container limits\n+    r = [max(0.0, 1.0 - math.hypot(x, y)) for (x, y) in centers]\n+    for _ in range(passes):\n+        for i in range(n):\n+            xi, yi = centers[i]\n+            for j in range(i + 1, n):\n+                xj, yj = centers[j]\n+                d = math.hypot(xi - xj, yi - yj)\n+                # enforce non\u2011overlap: r_i <= d - r_j and r_j <= d - r_i\n+                new_ri = min(r[i], d - r[j])\n+                new_rj = min(r[j], d - new_ri)\n+                r[i] = new_ri\n+                r[j] = new_rj\n+    return r\n+\n def construct(n=21):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit circle (center (0,0),\n-    radius 1) without overlaps.\n+    radius 1) without overlaps, maximizing the sum of radii using simulated annealing.\"\"\"\n+    random.seed(0)  # deterministic for reproducibility\n+    # Build initial centers: central + two rings (7 and 13 circles)\n+    centers = [(0.0, 0.0)]\n+    for k in range(7):\n+        angle = 2 * math.pi * k / 7\n+        centers.append((INITIAL_RING1_RADIUS * math.cos(angle),\n+                        INITIAL_RING1_RADIUS * math.sin(angle)))\n+    for k in range(n - 8):\n+        angle = 2 * math.pi * k / (n - 8)\n+        centers.append((INITIAL_RING2_RADIUS * math.cos(angle),\n+                        INITIAL_RING2_RADIUS * math.sin(angle)))\n+    # initial feasible radii\n+    radii = compute_feasible_radii(centers, PASSES)\n+    best_centers = [list(c) for c in centers]\n+    best_radii = radii[:]\n+    best_sum = sum(best_radii)\n \n-    This start places one circle at the center and two concentric rings of 7 and\n-    13 circles, all with the same radius: the largest one that keeps every pair\n-    apart and every circle inside the container.\n-    \"\"\"\n-    centers = [(0.0, 0.0)]\n-    for count, ring in ((7, 0.35), (n - 8, 0.75)):\n-        centers += [(ring * math.cos(2 * math.pi * k / count),\n-                     ring * math.sin(2 * math.pi * k / count)) for k in range(count)]\n-    r = min(1.0 - math.hypot(x, y) for x, y in centers)\n-    for a in range(n):\n-        for b in range(a + 1, n):\n-            r = min(r, math.dist(centers[a], centers[b]) / 2)\n-    r *= 1 - 1e-12  # stay strictly feasible despite rounding\n-    return [(x, y, r) for x, y in centers]\n+    # Simulated annealing\n+    temperature = START_TEMP\n+    sigma = SIGMA_INIT\n+    for _ in range(NUM_ITER):\n+        # perturb a random subset of circles\n+        new_centers = [list(c) for c in best_centers]\n+        idxs = random.sample(range(n), min(NUM_PERTURB, n))\n+        for i in idxs:\n+            dx = random.uniform(-sigma, sigma)\n+            dy = random.uniform(-sigma, sigma)\n+            new_centers[i][0] += dx\n+            new_centers[i][1] += dy\n+            # keep inside unit circle\n+            x, y = new_centers[i]\n+            d = math.hypot(x, y)\n+            if d > 1.0:\n+                new_centers[i][0] = x / d\n+                new_centers[i][1] = y / d\n+        new_centers = [(x, y) for x, y in new_centers]\n+        # compute feasible radii for the new configuration\n+        new_radii = compute_feasible_radii(new_centers, PASSES)\n+        new_sum = sum(new_radii)\n+        # acceptance criterion\n+        if new_sum > best_sum or random.random() < math.exp((new_sum - best_sum) / temperature):\n+            best_centers = new_centers\n+            best_radii = new_radii\n+            best_sum = new_sum\n+        # cool down\n+        temperature *= COOLING_RATE\n+        sigma *= COOLING_RATE\n+\n+    # final safety scaling to stay strictly inside constraints\n+    scale = 1 - 1e-10\n+    best_radii = [r * scale for r in best_radii]\n+\n+    return [(x, y, r) for (x, y), r in zip(best_centers, best_radii)]\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.0,
+    0.0,
+    0.151859
+   ],
+   [
+    0.35,
+    0.0,
+    0.151859
+   ],
+   [
+    0.218221,
+    0.273641,
+    0.151859
+   ],
+   [
+    -0.077882,
+    0.341225,
+    0.151859
+   ],
+   [
+    -0.315339,
+    0.151859,
+    0.151859
+   ],
+   [
+    -0.315339,
+    -0.151859,
+    0.151859
+   ],
+   [
+    -0.077882,
+    -0.341225,
+    0.151859
+   ],
+   [
+    0.218221,
+    -0.273641,
+    0.151859
+   ],
+   [
+    0.75,
+    0.0,
+    0.151859
+   ],
+   [
+    0.664092,
+    0.348542,
+    0.151859
+   ],
+   [
+    0.426049,
+    0.617238,
+    0.151859
+   ],
+   [
+    0.090403,
+    0.744532,
+    0.151859
+   ],
+   [
+    -0.265954,
+    0.701262,
+    0.151859
+   ],
+   [
+    -0.561383,
+    0.497342,
+    0.151859
+   ],
+   [
+    -0.728206,
+    0.179487,
+    0.151859
+   ],
+   [
+    -0.728206,
+    -0.179487,
+    0.151859
+   ],
+   [
+    -0.561383,
+    -0.497342,
+    0.151859
+   ],
+   [
+    -0.265954,
+    -0.701262,
+    0.151859
+   ],
+   [
+    0.090403,
+    -0.744532,
+    0.151859
+   ],
+   [
+    0.426049,
+    -0.617238,
+    0.151859
+   ],
+   [
+    0.664092,
+    -0.348542,
+    0.151859
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.093183,
+    -0.198795,
+    0.283276
+   ],
+   [
+    -0.5582,
+    0.763864,
+    0.047018
+   ],
+   [
+    0.011374,
+    -0.739744,
+    0.257596
+   ],
+   [
+    -0.494259,
+    0.241975,
+    0.207873
+   ],
+   [
+    0.274929,
+    0.889764,
+    0.062372
+   ],
+   [
+    -0.534101,
+    -0.36039,
+    0.342525
+   ],
+   [
+    0.601575,
+    -0.414987,
+    0.205077
+   ],
+   [
+    0.80218,
+    -0.068793,
+    0.189755
+   ],
+   [
+    0.866798,
+    -0.324961,
+    0.07429
+   ],
+   [
+    0.410961,
+    0.422487,
+    0.170817
+   ],
+   [
+    -0.799481,
+    0.36732,
+    0.120174
+   ],
+   [
+    -0.079243,
+    0.632834,
+    0.362224
+   ],
+   [
+    -0.625915,
+    0.5763,
+    0.149182
+   ],
+   [
+    -0.462519,
+    0.816066,
+    0.061977
+   ],
+   [
+    0.426516,
+    -0.730875,
+    0.153776
+   ],
+   [
+    0.648908,
+    -0.677617,
+    0.061785
+   ],
+   [
+    -0.362045,
+    -0.801154,
+    0.120839
+   ],
+   [
+    0.646712,
+    0.595327,
+    0.118631
+   ],
+   [
+    0.422224,
+    0.742091,
+    0.146201
+   ],
+   [
+    0.751223,
+    0.306262,
+    0.188746
+   ],
+   [
+    -0.82838,
+    0.058675,
+    0.169545
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 255.2,
+ "p90_call_seconds": 317.6,
+ "prompt_tokens_per_s": 3171.6,
+ "gen_tokens_per_s": 92.5,
+ "mean_prompt_tokens": 2032,
+ "mean_gen_tokens": 21749,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

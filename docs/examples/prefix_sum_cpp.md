@@ -75,4 +75,45 @@ extern "C" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, ui
 
 ## Benchmark results
 
-This example has not been benchmarked yet. See [Benchmarking models](../benchmarking.md) for how to run it.
+The best result so far comes from **glm-4.7-flash:latest (no-think)**, run locally with Ollama on 2026-11-04: a score of **5.31132** (×1.00 the starting program's 5.31132), reached after no improvement with 15 model requests.
+
+What the starting program produces; no model improved on it:
+
+![prefix_sum_cpp: the starting program's solution](../assets/examples/prefix_sum_cpp.svg)
+
+No model improved on the starting program.
+
+### All models
+
+One run per model and reasoning mode; the [model benchmarks](../benchmarks/prefix_sum_histogram_single_thread.md) page has speed, memory and progress over time.
+
+| Model | Where | Best | Gain | Minutes to best | New bests |
+|---|---|--:|--:|--:|--:|
+| glm-4.7-flash:latest (no-think) | local | 5.31132 | ×1.00 | - | 0 |
+| frob/sarvam:30b (no-think) | local | 5.30545 | ×1.00 | - | 0 |
+| cohere/north-mini-code:free (think) | cloud | 5.22357 | ×1.19 | 22.3 | 2 |
+| qwen3-coder:30b (no-think) | local | 5.20055 | ×1.00 | - | 0 |
+| nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 5.19129 | ×1.22 | 16.0 | 5 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 5.07887 | ×1.11 | 28.2 | 1 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 4.99407 | ×1.00 | - | 0 |
+| qwen2.5-coder:7b (no-think) | local | 4.97865 | ×1.05 | 4.6 | 1 |
+| gemma4:latest (no-think) | local | 4.95586 | ×1.10 | 5.4 | 1 |
+| gpt-oss:20b (no-think) | local | 4.92035 | ×1.08 | 16.6 | 2 |
+| richardyoung/frognano-4b-2609:latest (no-think) | local | 4.88596 | ×1.00 | - | 0 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | 4.86684 | ×1.09 | 53.6 | 6 |
+| xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 4.79928 | ×1.00 | - | 0 |
+| nemotron-3-nano:4b (no-think) | local | 4.78129 | ×1.00 | - | 0 |
+| gemma4:e4b-it-qat (no-think) | local | 4.76532 | ×1.10 | 6.0 | 2 |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | local | 4.69476 | ×1.00 | - | 0 |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | 4.69193 | ×1.00 | - | 0 |
+| gemma4:12b-it-qat (no-think) | local | 4.68777 | ×1.07 | 3.8 | 2 |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | 4.67263 | ×1.00 | - | 0 |
+| nvidia/nemotron-3.5-lightning:free (no-think) | cloud | 4.65112 | ×1.00 | - | 0 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | | | | failed: all 16 model requests failed … |
+| dots-studio/dots-3-note-preview:free (no-think) | cloud | 4.62763 | ×1.01 | 3.7 | 1 |
+| qwen3.5:latest (no-think) | local | 4.62595 | ×1.06 | 2.4 | 1 |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | 4.56958 | ×1.10 | 2.5 | 1 |
+| nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | 4.45235 | ×1.00 | - | 0 |
+| gemma4:e2b (no-think) | local | 4.3636 | ×1.00 | - | 0 |
+| cohere/north-mini-code:free (no-think) | cloud | 3.99453 | ×1.00 | - | 0 |
+| gemma4:26b-a4b-it-qat (no-think) | local | | | | failed: RuntimeError: the initial program does not pass the … |

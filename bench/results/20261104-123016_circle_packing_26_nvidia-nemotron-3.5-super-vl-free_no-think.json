@@ -1,0 +1,460 @@
+{
+ "schema": 4,
+ "example": "circle_packing_26",
+ "model": "nvidia/nemotron-3.5-super-vl:free",
+ "variant": "no-think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-04T12:30:16",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 10.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 2.071952335464907,
+ "improvement": 1.3904768672157017,
+ "llm_calls": 74,
+ "mean_llm_seconds": 8.0,
+ "attempts": 74,
+ "ok": 48,
+ "statuses": {
+  "invalid": 8,
+  "llm_error": 5,
+  "ok": 48,
+  "edit_error": 8,
+  "duplicate": 5
+ },
+ "sweeps": 29,
+ "sweep_variants": 405,
+ "improvements": 12,
+ "minutes_to_best": 7.6,
+ "best_idea": "Switch to the better mixed-size layout (center + 6 ring + 12 edge + 7 corner/gap) and compute exact feasible radii per circle via sequential shrink-projection plus a re-expansion pass, which previousl",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   0.71,
+   1.4932924150176898
+  ],
+  [
+   1.9,
+   1.523490956301793
+  ],
+  [
+   2.04,
+   1.6040642515667702
+  ],
+  [
+   2.67,
+   1.6223496349464286
+  ],
+  [
+   2.67,
+   1.7405648000167848
+  ],
+  [
+   3.58,
+   1.8121496516003068
+  ],
+  [
+   4.33,
+   1.8221496516003068
+  ],
+  [
+   4.7,
+   1.827149651600307
+  ],
+  [
+   4.95,
+   1.8839745909190821
+  ],
+  [
+   6.7,
+   2.016490932541015
+  ],
+  [
+   7.28,
+   2.055243866176395
+  ],
+  [
+   7.6,
+   2.071952335464907
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.04,
+   "score": 1.4901019817854253,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "Tune the grid dimensions (rows and columns) for 26 circles to find the densest feasible regular grid arrangement."
+  },
+  {
+   "minutes": 3.25,
+   "score": 1.4356666113598566,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Switch to a staggered hexagonal lattice and sweep the horizontal offset and vertical pitch so the engine finds the densest feasible arrangement for 26 circles."
+  },
+  {
+   "minutes": 3.25,
+   "score": 1.6187506738466755,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "sweep/exploit/diff/refine",
+   "status": "ok",
+   "idea": "tuned HEX_XOFF=0.1, HEX_YPITCH=1, ROWS=6, COLS=5 on top of: Switch to a staggered hexagonal lattice and sweep the horizontal offset and vertical pitch so the engine finds the densest feasible arrangement for 26 circles."
+  },
+  {
+   "minutes": 4.49,
+   "score": 1.541428720422357,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the plain staggered lattice with a mixed-size layout: one large center circle, 6 inner-ring circles, 7 middle-ring circles, and 12 edge circles, with radii recomputed by pairwise shrink after placement."
+  },
+  {
+   "minutes": 4.49,
+   "score": 1.6186627764302561,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "sweep/exploit/diff/refine",
+   "status": "ok",
+   "idea": "tuned R_CENTER=0.14, R_MID=0.095, R_EDGE=0.085, R_CORNER=0.035 on top of: Replace the plain staggered lattice with a mixed-size layout: one large center circle, 6 inner-ring circles, 7 middle-ring circles, and 12 edge circles, with radii recomputed by pairwise shrink after placement."
+  },
+  {
+   "minutes": 7.6,
+   "score": 2.071952335464907,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Switch to the better mixed-size layout (center + 6 ring + 12 edge + 7 corner/gap) and compute exact feasible radii per circle via sequential shrink-projection plus a re-expansion pass, which previously reached 1.88397."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -7,21 +7,54 @@\n import math\n \n # OMEGA-BLOCK-START\n+R_CENTER = 0.14\n+R_MID = 0.105\n+R_EDGE = 0.105\n+R_CORNER = 0.06\n+\n+\n def construct_packing(n=26):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n-    cols = math.ceil(math.sqrt(n))\n-    rows = math.ceil(n / cols)\n-    centers = []\n-    for k in range(n):\n-        i, j = k % cols, k // cols\n-        centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n+    centers = mixed_layout_centers(n)\n     radii = max_radii(centers)\n     return [(x, y, r) for (x, y), r in zip(centers, radii)]\n \n \n+def mixed_layout_centers(n):\n+    \"\"\"One center circle, 6 ring circles, 12 edge circles, and 7 corner/gap circles.\"\"\"\n+    centers = [(0.5, 0.5)]\n+    # 6 around center on a ring\n+    for k in range(6):\n+        ang = k * math.pi / 3.0\n+        centers.append((0.5 + (R_CENTER + R_MID) * math.cos(ang),\n+                        0.5 + (R_CENTER + R_MID) * math.sin(ang)))\n+    # 12 edge circles along the sides\n+    for k in range(12):\n+        side = k // 3\n+        t = (k % 3 + 1) / 4.0\n+        if side == 0:\n+            centers.append((t, R_EDGE))\n+        elif side == 1:\n+            centers.append((1.0 - R_EDGE, t))\n+        elif side == 2:\n+            centers.append((1.0 - t, 1.0 - R_EDGE))\n+        else:\n+            centers.append((R_EDGE, 1.0 - t))\n+    # 7 small circles in corners and gaps\n+    centers.append((R_CORNER, R_CORNER))\n+    centers.append((1.0 - R_CORNER, R_CORNER))\n+    centers.append((R_CORNER, 1.0 - R_CORNER))\n+    centers.append((1.0 - R_CORNER, 1.0 - R_CORNER))\n+    centers.append((0.5, R_CORNER))\n+    centers.append((0.5, 1.0 - R_CORNER))\n+    centers.append((R_CORNER, 0.5))\n+    return centers[:n]\n+\n+\n def max_radii(centers):\n-    \"\"\"Largest radii for fixed centers: limit by walls, then shrink overlapping pairs.\"\"\"\n+    \"\"\"Largest radii for fixed centers: wall limits, then sequential shrink, then re-expand.\"\"\"\n     radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n+    # sequential shrink for overlapping pairs\n     for a in range(len(centers)):\n         for b in range(a + 1, len(centers)):\n             d = math.dist(centers[a], centers[b])\n@@ -29,6 +62,17 @@\n                 s = d / (radii[a] + radii[b])\n                 radii[a] *= s\n                 radii[b] *= s\n+    # re-expansion pass: grow each circle up to wall and neighbor limits\n+    for a in range(len(centers)):\n+        xa, ya = centers[a]\n+        limit = min(xa, ya, 1 - xa, 1 - ya)\n+        for b in range(len(centers)):\n+            if b == a:\n+                continue\n+            d = math.dist(centers[a], centers[b])\n+            limit = min(limit, d - radii[b])\n+        if limit > radii[a]:\n+            radii[a] = limit\n     return radii\n # OMEGA-BLOCK-END\n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.083333,
+    0.1,
+    0.060545
+   ],
+   [
+    0.25,
+    0.1,
+    0.039234
+   ],
+   [
+    0.416667,
+    0.1,
+    0.034262
+   ],
+   [
+    0.583333,
+    0.1,
+    0.040566
+   ],
+   [
+    0.75,
+    0.1,
+    0.05694
+   ],
+   [
+    0.916667,
+    0.1,
+    0.080973
+   ],
+   [
+    0.083333,
+    0.3,
+    0.047978
+   ],
+   [
+    0.25,
+    0.3,
+    0.032893
+   ],
+   [
+    0.416667,
+    0.3,
+    0.029299
+   ],
+   [
+    0.583333,
+    0.3,
+    0.040366
+   ],
+   [
+    0.75,
+    0.3,
+    0.058083
+   ],
+   [
+    0.916667,
+    0.3,
+    0.076636
+   ],
+   [
+    0.083333,
+    0.5,
+    0.05004
+   ],
+   [
+    0.25,
+    0.5,
+    0.036525
+   ],
+   [
+    0.416667,
+    0.5,
+    0.03396
+   ],
+   [
+    0.583333,
+    0.5,
+    0.041209
+   ],
+   [
+    0.75,
+    0.5,
+    0.058085
+   ],
+   [
+    0.916667,
+    0.5,
+    0.076976
+   ],
+   [
+    0.083333,
+    0.7,
+    0.059259
+   ],
+   [
+    0.25,
+    0.7,
+    0.06822
+   ],
+   [
+    0.416667,
+    0.7,
+    0.065257
+   ],
+   [
+    0.583333,
+    0.7,
+    0.069461
+   ],
+   [
+    0.75,
+    0.7,
+    0.089736
+   ],
+   [
+    0.916667,
+    0.7,
+    0.07693
+   ],
+   [
+    0.083333,
+    0.9,
+    0.075758
+   ],
+   [
+    0.25,
+    0.9,
+    0.090909
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.5,
+    0.5,
+    0.124376
+   ],
+   [
+    0.745,
+    0.5,
+    0.05845
+   ],
+   [
+    0.6225,
+    0.712176,
+    0.120361
+   ],
+   [
+    0.3775,
+    0.712176,
+    0.120361
+   ],
+   [
+    0.255,
+    0.5,
+    0.120624
+   ],
+   [
+    0.3775,
+    0.287824,
+    0.120361
+   ],
+   [
+    0.6225,
+    0.287824,
+    0.120624
+   ],
+   [
+    0.25,
+    0.105,
+    0.10253
+   ],
+   [
+    0.5,
+    0.105,
+    0.027717
+   ],
+   [
+    0.75,
+    0.105,
+    0.101179
+   ],
+   [
+    0.895,
+    0.25,
+    0.103882
+   ],
+   [
+    0.895,
+    0.5,
+    0.09155
+   ],
+   [
+    0.895,
+    0.75,
+    0.10253
+   ],
+   [
+    0.75,
+    0.895,
+    0.10253
+   ],
+   [
+    0.5,
+    0.895,
+    0.028636
+   ],
+   [
+    0.25,
+    0.895,
+    0.10253
+   ],
+   [
+    0.105,
+    0.75,
+    0.10253
+   ],
+   [
+    0.105,
+    0.5,
+    0.025249
+   ],
+   [
+    0.105,
+    0.25,
+    0.10253
+   ],
+   [
+    0.06,
+    0.06,
+    0.06
+   ],
+   [
+    0.94,
+    0.06,
+    0.06
+   ],
+   [
+    0.06,
+    0.94,
+    0.06
+   ],
+   [
+    0.94,
+    0.94,
+    0.06
+   ],
+   [
+    0.5,
+    0.06,
+    0.017283
+   ],
+   [
+    0.5,
+    0.94,
+    0.016364
+   ],
+   [
+    0.06,
+    0.5,
+    0.019751
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 6.7,
+ "p90_call_seconds": 16.3,
+ "prompt_tokens_per_s": 6624.1,
+ "gen_tokens_per_s": 143.9,
+ "mean_prompt_tokens": 5784,
+ "mean_gen_tokens": 970,
+ "stopped_calls": 5,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

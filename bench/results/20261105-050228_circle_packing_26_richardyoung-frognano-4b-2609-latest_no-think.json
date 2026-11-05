@@ -1,0 +1,380 @@
+{
+ "schema": 4,
+ "example": "circle_packing_26",
+ "model": "richardyoung/frognano-4b-2609:latest",
+ "variant": "no-think",
+ "model_size_gb": 3.5,
+ "model_params": "4.3B",
+ "started": "2026-11-05T05:02:28",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 8.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 1.882230765546259,
+ "improvement": 1.263155668909982,
+ "llm_calls": 19,
+ "mean_llm_seconds": 24.8,
+ "attempts": 19,
+ "ok": 10,
+ "statuses": {
+  "llm_error": 2,
+  "invalid": 5,
+  "ok": 10,
+  "edit_error": 1,
+  "timeout": 1
+ },
+ "sweeps": 4,
+ "sweep_variants": 54,
+ "improvements": 2,
+ "minutes_to_best": 6.11,
+ "best_idea": "Replace the fixed square grid with a hexagonal lattice using a vertical offset `H` and staggered row spacing, and tune the grid dimensions dynamically to maximize density before shrinking radii.",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   1.99,
+   1.8822307563621787
+  ],
+  [
+   6.11,
+   1.882230765546259
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 6.11,
+   "score": 1.882230765546259,
+   "model": "richardyoung/frognano-4b-2609:latest",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Replace the fixed square grid with a hexagonal lattice using a vertical offset `H` and staggered row spacing, and tune the grid dimensions dynamically to maximize density before shrinking radii."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -7,14 +7,88 @@\n import math\n \n # OMEGA-BLOCK-START\n+# Hexagonal packing parameters to be swept\n+H_OFFSET = math.sqrt(3) / 2\n+\n def construct_packing(n=26):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n-    cols = math.ceil(math.sqrt(n))\n+    # Estimate columns for hexagonal packing: sqrt(2*n/sqrt(3))\n+    cols = max(3, math.ceil(math.sqrt(2 * n / math.sqrt(3))))\n     rows = math.ceil(n / cols)\n+    \n+    centers = []\n+    # Use staggered rows: odd columns are shifted by H_OFFSET vertically relative to row height\n+    # Row height in hex packing is 2 * H_OFFSET\n+    row_height = H_OFFSET * 2\n+    \n+    for k in range(n):\n+        i, j = k % cols, k // cols\n+        # Base y position for row j\n+        y_base = (j + 0.5) / rows\n+        \n+        x = (i + 0.5) / cols\n+        \n+        # Stagger: if column index is odd, shift up by half row height (which is H_OFFSET)\n+        # Actually standard hex: shift by H_OFFSET. Let's normalize to row_height.\n+        # y_shift = (i % 2) * (row_height / 2)\n+        # But simpler: just add H_OFFSET directly if i is odd, provided we scale y properly.\n+        # Let's use the logic from Inspiration 2 but make H a tunable constant.\n+        # Here we fix H to sqrt(3)/2 for now, but allow sweeping a general 'H' parameter.\n+        # However, the spacing between rows must also change if we change H.\n+        # Let's redefine: vertical spacing between adjacent rows in a hex lattice is H.\n+        # Then row_height = H.\n+        # x offset for odd rows relative to even rows is H * (sqrt(3)/2) ? No.\n+        # Standard: x_spacing = 1, y_spacing = sqrt(3)/2.\n+        # If we set H = sqrt(3)/2, then odd rows are shifted by H.\n+        # Let's just use H as the vertical step.\n+        # x step = 1/cols. y step = H/rows.\n+        # Odd cols shifted by H/2? No, odd rows shifted.\n+        # Let's stick to: even cols at y = (j+0.5)/rows, odd cols at y = (j+0.5)/rows + H_OFFSET\n+        # But H_OFFSET depends on aspect ratio.\n+        # Let's just parameterize the vertical shift factor `STAGGER` and row spacing `ROW_SPAC`.\n+        pass\n+\n+    # Re-implement with tunable constants\n+    # cols and rows are already estimated.\n+    # We will use a generic stagger factor STAGGER and row height factor ROW_H.\n+    # But to keep it simple and effective, let's just sweep STAGGER and COLS.\n+    \n+    # Actually, let's just use a clean hex layout with one main sweep parameter: the vertical offset ratio.\n+    # And maybe columns count.\n+    \n+    # Let's reset to a very standard hex layout where we sweep the number of columns and the vertical offset.\n+    # Vertical spacing between rows = sqrt(3)/2 * dx where dx = 1/cols? No.\n+    # Let's just use the inspiration code's structure but parameterize the offset.\n+    \n+    # Define constants here for sweeping\n+    # We will sweep COLS_COUNT and STAGGER_FACTOR\n+    \n+    # Let's just use the code below which sweeps COLS_COUNT and STAGGER_FACTOR\n+    \n+    # Re-calculate centers with parameterization\n     centers = []\n     for k in range(n):\n         i, j = k % cols, k // cols\n-        centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n+        \n+        # x coordinate\n+        x = (i + 0.5) / cols\n+        \n+        # y coordinate base\n+        y_base = (j + 0.5) / rows\n+        \n+        # Apply stagger: if i is odd, shift y by STAGGER_FACTOR * (row_height)\n+        # row_height should be 1/rows. So shift = STAGGER_FACTOR / rows\n+        if i % 2 == 1:\n+            y = y_base + STAGGER_FACTOR / rows\n+        else:\n+            y = y_base\n+            \n+        # Clamp to [0, 1]\n+        x = max(0.0, min(1.0, x))\n+        y = max(0.0, min(1.0, y))\n+        \n+        centers.append((x, y))\n+    \n     radii = max_radii(centers)\n     return [(x, y, r) for (x, y), r in zip(centers, radii)]\n \n@@ -22,14 +96,23 @@\n def max_radii(centers):\n     \"\"\"Largest radii for fixed centers: limit by walls, then shrink overlapping pairs.\"\"\"\n     radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n-    for a in range(len(centers)):\n-        for b in range(a + 1, len(centers)):\n-            d = math.dist(centers[a], centers[b])\n-            if radii[a] + radii[b] > d:\n-                s = d / (radii[a] + radii[b])\n-                radii[a] *= s\n-                radii[b] *= s\n+    # Sort by radius descending for stability\n+    indices = sorted(range(len(centers)), key=lambda i: -radii[i])\n+    for idx_a in indices:\n+        for idx_b in indices:\n+            if idx_a == idx_b: continue\n+            d = math.dist(centers[idx_a], centers[idx_b])\n+            if d > 1e-9:\n+                if radii[idx_a] + radii[idx_b] > d:\n+                    scale = d / (radii[idx_a] + radii[idx_b])\n+                    radii[idx_a] *= scale\n+                    radii[idx_b] *= scale\n     return radii\n+\n+# Constants for sweeping\n+COLS_COUNT = 5\n+STAGGER_FACTOR = math.sqrt(3) / 2\n+\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.083333,
+    0.1,
+    0.060545
+   ],
+   [
+    0.25,
+    0.1,
+    0.039234
+   ],
+   [
+    0.416667,
+    0.1,
+    0.034262
+   ],
+   [
+    0.583333,
+    0.1,
+    0.040566
+   ],
+   [
+    0.75,
+    0.1,
+    0.05694
+   ],
+   [
+    0.916667,
+    0.1,
+    0.080973
+   ],
+   [
+    0.083333,
+    0.3,
+    0.047978
+   ],
+   [
+    0.25,
+    0.3,
+    0.032893
+   ],
+   [
+    0.416667,
+    0.3,
+    0.029299
+   ],
+   [
+    0.583333,
+    0.3,
+    0.040366
+   ],
+   [
+    0.75,
+    0.3,
+    0.058083
+   ],
+   [
+    0.916667,
+    0.3,
+    0.076636
+   ],
+   [
+    0.083333,
+    0.5,
+    0.05004
+   ],
+   [
+    0.25,
+    0.5,
+    0.036525
+   ],
+   [
+    0.416667,
+    0.5,
+    0.03396
+   ],
+   [
+    0.583333,
+    0.5,
+    0.041209
+   ],
+   [
+    0.75,
+    0.5,
+    0.058085
+   ],
+   [
+    0.916667,
+    0.5,
+    0.076976
+   ],
+   [
+    0.083333,
+    0.7,
+    0.059259
+   ],
+   [
+    0.25,
+    0.7,
+    0.06822
+   ],
+   [
+    0.416667,
+    0.7,
+    0.065257
+   ],
+   [
+    0.583333,
+    0.7,
+    0.069461
+   ],
+   [
+    0.75,
+    0.7,
+    0.089736
+   ],
+   [
+    0.916667,
+    0.7,
+    0.07693
+   ],
+   [
+    0.083333,
+    0.9,
+    0.075758
+   ],
+   [
+    0.25,
+    0.9,
+    0.090909
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.083333,
+    0.1,
+    0.083333
+   ],
+   [
+    0.25,
+    0.273205,
+    0.086757
+   ],
+   [
+    0.416667,
+    0.1,
+    0.1
+   ],
+   [
+    0.583333,
+    0.273205,
+    0.04676
+   ],
+   [
+    0.75,
+    0.1,
+    0.1
+   ],
+   [
+    0.916667,
+    0.273205,
+    0.081308
+   ],
+   [
+    0.083333,
+    0.3,
+    0.08205
+   ],
+   [
+    0.25,
+    0.473205,
+    0.090555
+   ],
+   [
+    0.416667,
+    0.3,
+    0.044179
+   ],
+   [
+    0.583333,
+    0.473205,
+    0.018667
+   ],
+   [
+    0.75,
+    0.3,
+    0.087499
+   ],
+   [
+    0.916667,
+    0.473205,
+    0.080262
+   ],
+   [
+    0.083333,
+    0.5,
+    0.078251
+   ],
+   [
+    0.25,
+    0.673205,
+    0.08761
+   ],
+   [
+    0.416667,
+    0.5,
+    0.00974
+   ],
+   [
+    0.583333,
+    0.673205,
+    0.039123
+   ],
+   [
+    0.75,
+    0.5,
+    0.088545
+   ],
+   [
+    0.916667,
+    0.673205,
+    0.073496
+   ],
+   [
+    0.083333,
+    0.7,
+    0.081197
+   ],
+   [
+    0.25,
+    0.873205,
+    0.096077
+   ],
+   [
+    0.416667,
+    0.7,
+    0.048652
+   ],
+   [
+    0.583333,
+    0.873205,
+    0.126795
+   ],
+   [
+    0.75,
+    0.7,
+    0.095311
+   ],
+   [
+    0.916667,
+    0.873205,
+    0.083333
+   ],
+   [
+    0.083333,
+    0.9,
+    0.07273
+   ],
+   [
+    0.25,
+    1.0,
+    0.0
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 4.8,
+ "model_gpu_memory_gb": 4.8,
+ "context_length": 40960,
+ "load_seconds": 0.0,
+ "median_call_seconds": 21.7,
+ "p90_call_seconds": 40.2,
+ "prompt_tokens_per_s": 1672.1,
+ "gen_tokens_per_s": 59.7,
+ "mean_prompt_tokens": 3183,
+ "mean_gen_tokens": 1166,
+ "stopped_calls": 2,
+ "provider": "ollama",
+ "cost_usd": 0
+}

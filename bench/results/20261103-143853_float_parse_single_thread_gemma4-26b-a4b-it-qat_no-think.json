@@ -1,0 +1,148 @@
+{
+ "schema": 4,
+ "example": "float_parse_single_thread",
+ "model": "gemma4:26b-a4b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 15.6,
+ "model_params": "25.2B",
+ "started": "2026-11-03T14:38:53",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 12.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 55.0496,
+ "best_score": 56.7909,
+ "improvement": 1.0316314741614836,
+ "llm_calls": 16,
+ "mean_llm_seconds": 37.6,
+ "attempts": 16,
+ "ok": 11,
+ "statuses": {
+  "invalid": 4,
+  "ok": 11,
+  "llm_error": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 10.59,
+ "best_idea": "Optimize the loop by skipping the expensive `strtod` call for common cases where the number is a simple integer or a short decimal that can be parsed with `uint64_t` and power-of-ten tables, while ens",
+ "progress": [
+  [
+   0.0,
+   55.0496
+  ],
+  [
+   10.59,
+   56.7909
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 55.0496,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 0.84,
+   "score": null,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "explore/diff/bold",
+   "status": "invalid",
+   "idea": "Implement a fast-path integer and simple decimal parser that handles common cases directly and falls back to `strtod` only for complex/large mantissas or exponents, reducing the overhead of `strtod`'s locale and whitespace handling."
+  },
+  {
+   "minutes": 2.88,
+   "score": 53.8387,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Fix the logic to correctly advance the pointer `p` after using `strtod` and ensure the loop correctly processes each line by strictly following the `strtod` pointer."
+  },
+  {
+   "minutes": 10.59,
+   "score": 56.7909,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Optimize the loop by skipping the expensive `strtod` call for common cases where the number is a simple integer or a short decimal that can be parsed with `uint64_t` and power-of-ten tables, while ensuring strict correctness by using `strtod` as the fallback."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -24,21 +24,136 @@\n #endif\n \n // OMEGA-BLOCK-START\n-// Parses the numbers in buf[0..len) into out[0..) and returns how many there are.\n-// Every number is followed by exactly one '\\n'; buf[len] is '\\0'. Grammar of a\n-// number: optional '-', one or more digits, optionally '.' and one or more digits,\n-// optionally 'e' or 'E', an optional '+' or '-', and one or more digits. No\n-// spaces, no '+' sign on the mantissa, no inf/nan/hex. Every value must be\n-// bit-identical to std::strtod (correctly rounded, round-half-to-even).\n extern \"C\" size_t parse_doubles(const char* buf, size_t len, double* out) {\n     const char* p = buf;\n     const char* end = buf + len;\n     size_t count = 0;\n+\n+    // Precompute powers of 10 to avoid pow() in fast path\n+    // We only need up to 10^-20 or so for most decimals\n+    static constexpr double POW10[] = {\n+        1.0, 10.0, 100.0, 1000.0, 10000.0, 100000.0, 1000000.0, 10000000.0, 100000000.0, 1000000000.0,\n+        10000000000.0, 100000000000.0, 1000000000000.0, 10000000000000.0, 100000000000000.0,\n+        1000000000000000.0, 10000000000000000.0, 100000000000000000.0, 1000000000000000000.0,\n+        10000000000000000000.0, 1e21, 1e22, 1e23, 1e24, 1e25, 1e26, 1e27, 1e28, 1e29, 1e30\n+    };\n+\n     while (p < end) {\n+        const char* start = p;\n         char* next;\n-        out[count++] = std::strtod(p, &next);\n+        \n+        // Check for very simple cases: integer or simple decimal\n+        // If we see 'e', 'E', or a very long string, jump to strtod.\n+        bool fast_path = true;\n+        const char* scan = p;\n+        bool neg = false;\n+        if (*scan == '-') { neg = true; scan++; }\n+        \n+        int digit_count = 0;\n+        bool has_dot = false;\n+        bool has_exp = false;\n+        \n+        while (scan < end) {\n+            char c = *scan;\n+            if (c >= '0' && c <= '9') {\n+                digit_count++;\n+            } else if (c == '.' && !has_dot && !has_exp) {\n+                has_dot = true;\n+            } else if (c == 'e' || c == 'E') {\n+                has_exp = true;\n+                break;\n+            } else {\n+                break;\n+            }\n+            scan++;\n+        }\n+\n+        // Heuristic: only attempt fast path if it's a small integer or decimal without exponent\n+        // and doesn't contain non-digit characters that make it complex.\n+        if (has_exp || digit_count > 18) {\n+            fast_path = false;\n+        }\n+\n+        if (fast_path) {\n+            // Try to parse as integer or simple decimal manually\n+            uint64_t mantissa = 0;\n+            int exp_val = 0;\n+            const char* cur = p;\n+            bool is_neg = false;\n+            if (*cur == '-') { is_neg = true; cur++; }\n+            \n+            bool dot_found = false;\n+            int digits_after_dot = 0;\n+            int total_digits = 0;\n+\n+            while (cur < end && *cur >= '0' && *cur <= '9') {\n+                if (total_digits < 19) {\n+                    mantissa = mantissa * 10 + (*cur - '0');\n+                    total_digits++;\n+                    if (dot_found) digits_after_dot++;\n+                } else {\n+                    // Too many digits for exact mantissa representation\n+                    break;\n+                }\n+                cur++;\n+            }\n+\n+            if (cur < end && *cur == '.') {\n+                dot_found = true;\n+                cur++;\n+                while (cur < end && *cur >= '0' && *cur <= '9') {\n+                    if (total_digits < 19) {\n+                        mantissa = mantissa * 10 + (*cur - '0');\n+                        total_digits++;\n+                        digits_after_dot++;\n+                    } else {\n+                        // Too many digits\n+                        break;\n+                    }\n+                    cur++;\n+                }\n+                if (cur < end && (*cur == 'e' || *cur == 'E')) {\n+                    fast_path = false; // Exponent detected, fallback\n+                }\n+            } else if (cur < end && (*cur == 'e' || *cur == 'E')) {\n+                fast_path = false;\n+            }\n+\n+            if (fast_path) {\n+                // Check if we reached the newline or end of buffer\n+                // to ensure we haven't missed any characters in a complex format.\n+                if (cur < end && *cur != '\\n' && *cur != '\\0') {\n+                    fast_path = false;\n+                }\n+\n+                double val = (double)mantissa;\n+                if (dot_found) {\n+                    // For decimals, we must be careful with rounding.\n+                    // For the sake of this task and the 19-digit limit, \n+                    // we use strtod as a safe fallback for most cases.\n+                    fast_path = false;\n+                } else {\n+                    val = (double)mantissa;\n+                    if (is_neg) val = -val;\n+                    out[count++] = val;\n+                    p = cur;\n+                    if (p < end && *p == '\\n') p++;\n+                    continue;\n+                }\n+            }\n+        }\n+\n+        // Fallback to strtod\n+        double val = std::strtod(start, &next);\n+        out[count++] = val;\n         p = next;\n-        while (p < end && *p == '\\n') ++p;\n+        // Skip the trailing newline if strtod didn't consume it\n+        if (p < end && *p == '\\n') p++;\n+        else if (p < end && *p != '\\0') {\n+            // If strtod stopped somewhere else, we need to find the next newline\n+            while (p < end && *p != '\\n' && *p != '\\0') p++;\n+            if (p < end && *p == '\\n') p++;\n+        }\n     }\n     return count;\n }\n",
+ "initial_solution": {
+  "kind": "parse",
+  "count": 2000000,
+  "text_mb": 28.39,
+  "head": [
+   "0",
+   "-0",
+   "1",
+   "-1.5",
+   "0.1",
+   "1e23",
+   "9007199254740993",
+   "4.9e-324"
+  ]
+ },
+ "best_solution": {
+  "kind": "parse",
+  "count": 2000000,
+  "text_mb": 28.39,
+  "head": [
+   "0",
+   "-0",
+   "1",
+   "-1.5",
+   "0.1",
+   "1e23",
+   "9007199254740993",
+   "4.9e-324"
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 16.1,
+ "model_gpu_memory_gb": 14.4,
+ "context_length": 40960,
+ "load_seconds": 0.2,
+ "median_call_seconds": 29.6,
+ "p90_call_seconds": 58.4,
+ "prompt_tokens_per_s": 812.8,
+ "gen_tokens_per_s": 34.2,
+ "mean_prompt_tokens": 6141,
+ "mean_gen_tokens": 685,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -1,0 +1,128 @@
+{
+ "schema": 4,
+ "example": "matmul_f32",
+ "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 17.8,
+ "model_params": "27.3B",
+ "started": "2026-11-05T02:01:58",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 63.9,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 1.07063,
+ "best_score": 106.505,
+ "improvement": 99.47881154086846,
+ "llm_calls": 16,
+ "mean_llm_seconds": 227.2,
+ "attempts": 16,
+ "ok": 4,
+ "statuses": {
+  "compile_error": 5,
+  "invalid": 7,
+  "ok": 4
+ },
+ "sweeps": 1,
+ "sweep_variants": 4,
+ "improvements": 3,
+ "minutes_to_best": 61.94,
+ "best_idea": "tuned BLOCK_M=128, BLOCK_K=32, BLOCK_N=128 on top of: Implement a multithreaded, cache-blocked i-k-j matmul with NEON vectorization. The naive implementation has terrible memory access patterns (rando",
+ "progress": [
+  [
+   0.0,
+   1.07063
+  ],
+  [
+   61.42,
+   31.0348
+  ],
+  [
+   61.94,
+   67.931
+  ],
+  [
+   61.94,
+   106.505
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.07063,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 61.94,
+   "score": 67.931,
+   "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "Implement a multithreaded, cache-blocked i-k-j matmul with NEON vectorization. The naive implementation has terrible memory access patterns (random access into B columns) and no parallelism. Switching to i-k-j order allows streaming B rows and C rows, making it vectorizable and cache-friendly. Adding OpenMP-style threading via `std::thread` utilizes all 10 cores. Blocking helps fit working sets in"
+  },
+  {
+   "minutes": 61.94,
+   "score": 106.505,
+   "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+   "mode": "sweep/exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "tuned BLOCK_M=128, BLOCK_K=32, BLOCK_N=128 on top of: Implement a multithreaded, cache-blocked i-k-j matmul with NEON vectorization. The naive implementation has terrible memory access patterns (random access into B columns) and no parallelism. Switching to i-k-j order allows streaming B rows and C"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -21,12 +21,91 @@\n // OMEGA-BLOCK-START\n // Computes C = A * B. C is NOT zeroed by the caller. Any number of threads may be\n // used (std::thread is available); n is any size from 1 to 2048.\n+\n+// Sweepable parameters for tiling and thread granularity\n+constexpr int BLOCK_M = 128;   // Row block size for tiling\n+constexpr int BLOCK_K = 32;   // K block size for tiling\n+constexpr int BLOCK_N = 128;   // Column block size for tiling\n+constexpr int THREAD_GRAN = 64; // Minimum chunk size for thread distribution\n+\n+static void matmul_thread_chunk(int n, const float* A, const float* B, float* C,\n+                                int row_start, int row_end) {\n+    // Process rows [row_start, row_end)\n+    // Use i-k-j loop order for cache efficiency and vectorization potential\n+    // C is not zeroed, so we must zero the relevant rows first\n+    for (int i = row_start; i < row_end; ++i) {\n+        std::memset(C + i * n, 0, n * sizeof(float));\n+    }\n+\n+    for (int ii = row_start; ii < row_end; ii += BLOCK_M) {\n+        int imax = std::min(ii + BLOCK_M, row_end);\n+        for (int kk = 0; kk < n; kk += BLOCK_K) {\n+            int kmax = std::min(kk + BLOCK_K, n);\n+            for (int jj = 0; jj < n; jj += BLOCK_N) {\n+                int jmax = std::min(jj + BLOCK_N, n);\n+                \n+                // Micro-kernel for block [ii:imax, jj:jmax] x [kk:kmax]\n+                for (int i = ii; i < imax; ++i) {\n+                    const float* a_row = A + i * n + kk;\n+                    float* c_row = C + i * n + jj;\n+                    for (int k = kk; k < kmax; ++k) {\n+                        float a_val = a_row[k - kk];\n+                        const float* b_row = B + k * n + jj;\n+                        for (int j = jj; j < jmax; ++j) {\n+                            c_row[j - jj] += a_val * b_row[j - jj];\n+                        }\n+                    }\n+                }\n+            }\n+        }\n+    }\n+}\n+\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+    if (n <= 0) return;\n+    \n+    // Determine number of threads based on hardware concurrency\n+    // Use std::thread for parallelism over row blocks\n+    std::vector<std::thread> threads;\n+    int num_threads = 1;\n+    \n+    // Heuristic: use multiple threads for large matrices\n+    if (n > 128) {\n+        num_threads = std::thread::hardware_concurrency();\n+        if (num_threads == 0) num_threads = 4;\n+        // Cap threads to avoid overhead for moderate sizes\n+        if (n < 512) num_threads = std::min(num_threads, 4);\n+    }\n+    \n+    // Distribute rows among threads\n+    std::vector<int> thread_starts;\n+    std::vector<int> thread_ends;\n+    int rows_per_thread = (n + num_threads - 1) / num_threads;\n+    \n+    for (int t = 0; t < num_threads; ++t) {\n+        int start = t * rows_per_thread;\n+        int end = std::min((t + 1) * rows_per_thread, n);\n+        if (start < end) {\n+            thread_starts.push_back(start);\n+            thread_ends.push_back(end);\n         }\n+    }\n+    \n+    if (thread_starts.empty()) {\n+        // Fallback to single thread\n+        matmul_thread_chunk(n, A, B, C, 0, n);\n+        return;\n+    }\n+    \n+    // Launch threads\n+    for (size_t t = 0; t < thread_starts.size(); ++t) {\n+        threads.emplace_back(matmul_thread_chunk, n, A, B, C,\n+                            thread_starts[t], thread_ends[t]);\n+    }\n+    \n+    // Join all threads\n+    for (auto& thread : threads) {\n+        thread.join();\n+    }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": 20.4,
+ "model_gpu_memory_gb": 14.9,
+ "context_length": 40960,
+ "load_seconds": 0.1,
+ "median_call_seconds": 233.8,
+ "p90_call_seconds": 476.7,
+ "prompt_tokens_per_s": 194.6,
+ "gen_tokens_per_s": 6.2,
+ "mean_prompt_tokens": 2710,
+ "mean_gen_tokens": 1301,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

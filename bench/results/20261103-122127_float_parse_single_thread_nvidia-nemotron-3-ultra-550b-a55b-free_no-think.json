@@ -1,0 +1,157 @@
+{
+ "schema": 4,
+ "example": "float_parse_single_thread",
+ "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+ "variant": "no-think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-03T12:21:27",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 13.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 53.8025,
+ "best_score": 77.5919,
+ "improvement": 1.4421616095906322,
+ "llm_calls": 33,
+ "mean_llm_seconds": 22.2,
+ "attempts": 33,
+ "ok": 14,
+ "statuses": {
+  "invalid": 10,
+  "ok": 14,
+  "duplicate": 7,
+  "compile_error": 2
+ },
+ "sweeps": 6,
+ "sweep_variants": 39,
+ "improvements": 3,
+ "minutes_to_best": 4.79,
+ "best_idea": "Add a fast path for scientific notation with small exponents using Clinger's algorithm, and increase the mantissa digit limit to 19 to handle more cases without fallback.",
+ "progress": [
+  [
+   0.0,
+   53.8025
+  ],
+  [
+   1.75,
+   57.0214
+  ],
+  [
+   2.38,
+   62.8008
+  ],
+  [
+   4.79,
+   77.5919
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 53.8025,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 0.53,
+   "score": null,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "explore/diff/bold",
+   "status": "invalid",
+   "idea": "Implement a fast path for integers and simple decimals using direct parsing with 64-bit integer accumulation, falling back to strtod only when necessary. This avoids strtod's overhead for the common cases while maintaining exact correctness."
+  },
+  {
+   "minutes": 2.38,
+   "score": 62.8008,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Fix the fast path to correctly handle numbers with more than 19 significant digits by falling back to strtod, and ensure the exponent calculation accounts for all digits when mantissa is truncated."
+  },
+  {
+   "minutes": 4.79,
+   "score": 77.5919,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Add a fast path for scientific notation with small exponents using Clinger's algorithm, and increase the mantissa digit limit to 19 to handle more cases without fallback."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -30,15 +30,128 @@\n // optionally 'e' or 'E', an optional '+' or '-', and one or more digits. No\n // spaces, no '+' sign on the mantissa, no inf/nan/hex. Every value must be\n // bit-identical to std::strtod (correctly rounded, round-half-to-even).\n+#include <cstdint>\n+#include <cmath>\n+\n+namespace {\n+\n+// Powers of 10 for fast path (exactly representable up to 10^22)\n+constexpr double POW10[23] = {\n+    1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9,\n+    1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19,\n+    1e20, 1e21, 1e22\n+};\n+\n+// Maximum significant digits for fast path\n+constexpr int MAX_FAST_DIGITS = 19;\n+\n+// Fast path: parse integer, simple decimal, or scientific notation with small exponent\n+// Returns true if successfully parsed, false if fallback needed\n+bool parse_fast(const char*& p, const char* end, double& result) {\n+    const char* start = p;\n+    bool neg = false;\n+    if (p < end && *p == '-') {\n+        neg = true;\n+        ++p;\n+    }\n+    if (p >= end || *p < '0' || *p > '9') return false;\n+    \n+    uint64_t mantissa = 0;\n+    int total_digits = 0;\n+    int digits_after_dot = 0;\n+    int exp10 = 0;\n+    bool has_dot = false;\n+    bool has_exp = false;\n+    \n+    // Parse digits before decimal point\n+    while (p < end && *p >= '0' && *p <= '9') {\n+        if (total_digits < MAX_FAST_DIGITS) {\n+            mantissa = mantissa * 10 + (*p - '0');\n+        }\n+        ++total_digits;\n+        ++p;\n+    }\n+    \n+    // Parse fractional part\n+    if (p < end && *p == '.') {\n+        has_dot = true;\n+        ++p;\n+        while (p < end && *p >= '0' && *p <= '9') {\n+            if (total_digits < MAX_FAST_DIGITS) {\n+                mantissa = mantissa * 10 + (*p - '0');\n+            }\n+            ++total_digits;\n+            ++digits_after_dot;\n+            ++p;\n+        }\n+    }\n+    \n+    // Parse exponent\n+    if (p < end && (*p == 'e' || *p == 'E')) {\n+        has_exp = true;\n+        ++p;\n+        bool exp_neg = false;\n+        if (p < end && *p == '+') {\n+            ++p;\n+        } else if (p < end && *p == '-') {\n+            exp_neg = true;\n+            ++p;\n+        }\n+        if (p >= end || *p < '0' || *p > '9') return false;\n+        int exp_val = 0;\n+        while (p < end && *p >= '0' && *p <= '9') {\n+            exp_val = exp_val * 10 + (*p - '0');\n+            if (exp_val > 350) return false; // Too large for fast path\n+            ++p;\n+        }\n+        exp10 = exp_neg ? -exp_val : exp_val;\n+    }\n+    \n+    // Skip trailing newline\n+    if (p >= end || *p != '\\n') return false;\n+    ++p;\n+    \n+    // If we have more than MAX_FAST_DIGITS significant digits, we cannot use fast path\n+    if (total_digits > MAX_FAST_DIGITS) return false;\n+    \n+    // Adjust exponent for decimal point\n+    exp10 -= digits_after_dot;\n+    \n+    // Clinger's fast path: mantissa < 2^53 and |exp10| <= 22\n+    if (mantissa < (1ull << 53) && exp10 >= -22 && exp10 <= 22) {\n+        double val = (double)mantissa;\n+        if (exp10 < 0) {\n+            val /= POW10[-exp10];\n+        } else if (exp10 > 0) {\n+            val *= POW10[exp10];\n+        }\n+        result = neg ? -val : val;\n+        return true;\n+    }\n+    \n+    return false;\n+}\n+\n+} // namespace\n+\n extern \"C\" size_t parse_doubles(const char* buf, size_t len, double* out) {\n     const char* p = buf;\n     const char* end = buf + len;\n     size_t count = 0;\n+    \n     while (p < end) {\n-        char* next;\n-        out[count++] = std::strtod(p, &next);\n-        p = next;\n-        while (p < end && *p == '\\n') ++p;\n+        const char* start = p;\n+        double val;\n+        if (parse_fast(p, end, val)) {\n+            out[count++] = val;\n+        } else {\n+            // Fallback to strtod\n+            char* next;\n+            val = std::strtod(start, &next);\n+            out[count++] = val;\n+            p = next;\n+            while (p < end && *p == '\\n') ++p;\n+        }\n     }\n     return count;\n }\n",
+ "initial_solution": {
+  "kind": "parse",
+  "count": 2000000,
+  "text_mb": 28.39,
+  "head": [
+   "0",
+   "-0",
+   "1",
+   "-1.5",
+   "0.1",
+   "1e23",
+   "9007199254740993",
+   "4.9e-324"
+  ]
+ },
+ "best_solution": {
+  "kind": "parse",
+  "count": 2000000,
+  "text_mb": 28.39,
+  "head": [
+   "0",
+   "-0",
+   "1",
+   "-1.5",
+   "0.1",
+   "1e23",
+   "9007199254740993",
+   "4.9e-324"
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 15.8,
+ "p90_call_seconds": 51.2,
+ "prompt_tokens_per_s": 5719.3,
+ "gen_tokens_per_s": 68.2,
+ "mean_prompt_tokens": 7807,
+ "mean_gen_tokens": 1421,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

@@ -1,0 +1,175 @@
+{
+ "schema": 4,
+ "example": "float_parse_single_thread",
+ "model": "dots-studio/dots-3-note-preview:free",
+ "variant": "no-think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-03T12:34:57",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 17.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 56.3142,
+ "best_score": 71.5623,
+ "improvement": 1.2707682964509839,
+ "llm_calls": 65,
+ "mean_llm_seconds": 14.3,
+ "attempts": 65,
+ "ok": 20,
+ "statuses": {
+  "edit_error": 10,
+  "invalid": 21,
+  "compile_error": 6,
+  "ok": 20,
+  "llm_error": 4,
+  "duplicate": 4
+ },
+ "sweeps": 1,
+ "sweep_variants": 5,
+ "improvements": 7,
+ "minutes_to_best": 16.39,
+ "best_idea": "Extend the fast path to handle scientific notation by parsing the exponent, combining it with the decimal exponent, and using exact multiplication/division by powers of ten (Clinger's fast path) for m",
+ "progress": [
+  [
+   0.0,
+   56.3142
+  ],
+  [
+   2.53,
+   56.8373
+  ],
+  [
+   4.15,
+   57.2843
+  ],
+  [
+   6.22,
+   63.2928
+  ],
+  [
+   9.75,
+   67.3548
+  ],
+  [
+   11.85,
+   68.5223
+  ],
+  [
+   12.62,
+   69.3072
+  ],
+  [
+   16.39,
+   71.5623
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 56.3142,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 4.36,
+   "score": 53.0593,
+   "model": "dots-studio/dots-3-note-preview:free",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Implement a fast path for plain integers (no dot, no exponent) by parsing up to 15 digits directly into a uint64_t and converting to double, falling back to strtod for all other formats, to reduce CPU time on the many integer inputs in the benchmark."
+  },
+  {
+   "minutes": 12.62,
+   "score": 69.3072,
+   "model": "dots-studio/dots-3-note-preview:free",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Extend the fast path to handle short decimals (no exponent) with up to 15 significant digits by parsing the fractional part, tracking the decimal exponent, and using exact division by powers of ten, which covers a large fraction of the benchmark inputs while remaining bit-exact."
+  },
+  {
+   "minutes": 16.39,
+   "score": 71.5623,
+   "model": "dots-studio/dots-3-note-preview:free",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Extend the fast path to handle scientific notation by parsing the exponent, combining it with the decimal exponent, and using exact multiplication/division by powers of ten (Clinger's fast path) for mantissa < 2^53 and |combined exponent| <= 22, falling back to strtod otherwise."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -30,11 +30,94 @@\n // optionally 'e' or 'E', an optional '+' or '-', and one or more digits. No\n // spaces, no '+' sign on the mantissa, no inf/nan/hex. Every value must be\n // bit-identical to std::strtod (correctly rounded, round-half-to-even).\n+// Fast path for integers, short decimals, and scientific notation with up to 15\n+// significant digits and |combined exponent| <= 22 (Clinger's exact range).\n+static inline bool is_digit(char c) { return c >= '0' && c <= '9'; }\n+\n+// Exact powers of ten for scaling (0..22).\n+static const double pow10_table[23] = {\n+    1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7,\n+    1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15,\n+    1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22\n+};\n+\n extern \"C\" size_t parse_doubles(const char* buf, size_t len, double* out) {\n     const char* p = buf;\n     const char* end = buf + len;\n     size_t count = 0;\n     while (p < end) {\n+        // Fast path for integers, short decimals, and scientific notation.\n+        const char* q = p;\n+        bool neg = false;\n+        if (*q == '-') { neg = true; ++q; }\n+        if (!is_digit(*q)) goto fallback;\n+\n+        uint64_t mantissa = 0;\n+        int digits = 0;       // total significant digits parsed\n+        int exp10 = 0;        // decimal exponent adjustment\n+\n+        // Parse integer part\n+        while (is_digit(*q)) {\n+            if (digits < 15) {\n+                mantissa = mantissa * 10 + (*q - '0');\n+            }\n+            ++digits;\n+            ++q;\n+        }\n+\n+        // Optional fractional part\n+        if (*q == '.') {\n+            ++q;\n+            if (!is_digit(*q)) goto fallback;  // must have at least one digit after '.'\n+            while (is_digit(*q)) {\n+                if (digits < 15) {\n+                    mantissa = mantissa * 10 + (*q - '0');\n+                    --exp10;  // each fractional digit reduces the exponent\n+                }\n+                ++digits;\n+                ++q;\n+            }\n+        }\n+\n+        // Optional exponent part\n+        if (*q == 'e' || *q == 'E') {\n+            ++q;\n+            bool exp_neg = false;\n+            if (*q == '+' || *q == '-') {\n+                exp_neg = (*q == '-');\n+                ++q;\n+            }\n+            if (!is_digit(*q)) goto fallback;\n+            int exp_val = 0;\n+            while (is_digit(*q)) {\n+                exp_val = exp_val * 10 + (*q - '0');\n+                if (exp_val > 100) goto fallback;  // prevent overflow\n+                ++q;\n+            }\n+            if (exp_neg) exp_val = -exp_val;\n+            exp10 += exp_val;\n+        }\n+\n+        // Must end with newline\n+        if (*q != '\\n') goto fallback;\n+\n+        // Only handle up to 15 significant digits for exact conversion\n+        if (digits <= 15) {\n+            double d = (double)mantissa;\n+            // Clinger's fast path: mantissa < 2^53 and |exp10| <= 22\n+            if (mantissa < 9007199254740992ULL && exp10 >= -22 && exp10 <= 22) {\n+                if (exp10 < 0) {\n+                    d /= pow10_table[-exp10];\n+                } else if (exp10 > 0) {\n+                    d *= pow10_table[exp10];\n+                }\n+                out[count++] = neg ? -d : d;\n+                p = q + 1; // skip '\\n'\n+                continue;\n+            }\n+        }\n+\n+    fallback:\n         char* next;\n         out[count++] = std::strtod(p, &next);\n         p = next;\n",
+ "initial_solution": {
+  "kind": "parse",
+  "count": 2000000,
+  "text_mb": 28.39,
+  "head": [
+   "0",
+   "-0",
+   "1",
+   "-1.5",
+   "0.1",
+   "1e23",
+   "9007199254740993",
+   "4.9e-324"
+  ]
+ },
+ "best_solution": {
+  "kind": "parse",
+  "count": 2000000,
+  "text_mb": 28.39,
+  "head": [
+   "0",
+   "-0",
+   "1",
+   "-1.5",
+   "0.1",
+   "1e23",
+   "9007199254740993",
+   "4.9e-324"
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 10.7,
+ "p90_call_seconds": 24.2,
+ "prompt_tokens_per_s": 3989.2,
+ "gen_tokens_per_s": 102.3,
+ "mean_prompt_tokens": 7218,
+ "mean_gen_tokens": 1060,
+ "stopped_calls": 2,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

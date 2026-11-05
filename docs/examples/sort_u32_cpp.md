@@ -76,4 +76,235 @@ extern "C" void sort_u32(uint32_t* a, size_t n) {
 
 ## Benchmark results
 
-This example has not been benchmarked yet. See [Benchmarking models](../benchmarking.md) for how to run it.
+The best result so far comes from **qwen3-coder:30b (no-think)**, run locally with Ollama on 2026-11-04: a score of **210.1563** (×9.84 the starting program's 21.3555), reached after 53.13 of 60 minutes with 38 model requests.
+
+What the starting program produces (left) and what the best program by qwen3-coder:30b (no-think) produces (right):
+
+![sort_u32_cpp: the starting program's solution and the best one](../assets/examples/sort_u32_cpp.svg)
+
+### How it got there
+
+The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.
+
+| Step | Minute | Score | Kind | Idea |
+|--:|--:|--:|---|---|
+| 0 | 0.0 | 21.3555 | start | initial program |
+| 1 | 2.9 | 93.9786 | edit | Replace the generic merge sort with a hybrid approach that uses LSD radix sort for large arrays and insertion sort for small subarrays, which should improve performance on the benchmark distributions while maintaining correctness. |
+| 2 | 16.6 | 122.3360 | edit | Replace the generic LSD radix sort with an adaptive approach that detects already-sorted or reverse-sorted runs and uses a hybrid strategy combining counting sort with NEON optimization for the histogram computation, which should improve performance on sorted … |
+| 3 | 27.2 | 133.7974 | edit | Replace the generic LSD radix sort with an adaptive approach that detects already-sorted or reverse-sorted runs and uses a hybrid strategy combining counting sort with NEON optimization for the histogram computation, which should improve performance on sorted … |
+| 4 | 37.2 | 197.4725 | edit | Replace the generic LSD radix sort with an adaptive approach that detects already-sorted or reverse-sorted runs and uses a hybrid strategy combining counting sort with NEON optimization for the histogram computation, which should improve performance on sorted … |
+| 5 | 53.1 | 210.1563 | edit | Replace the NEON histogram computation with a fully unrolled loop that processes 8 elements at a time using vector operations, which should improve performance on large arrays by better utilizing SIMD units and reducing loop overhead. |
+
+### The best program
+
+What changed compared with the starting program:
+
+```diff
+--- initial
++++ best
+@@ -21,20 +21,159 @@
+ // OMEGA-BLOCK-START
+ // Sorts a[0..n) ascending, in place, on the calling thread. n is any size from
+ // 0 to 2'000'000. Extra memory may be allocated freely.
+-static void merge_sort_rec(uint32_t* a, uint32_t* tmp, size_t lo, size_t hi) {
+-    if (hi - lo < 2) return;
+-    size_t mid = lo + (hi - lo) / 2;
+-    merge_sort_rec(a, tmp, lo, mid);
+-    merge_sort_rec(a, tmp, mid, hi);
+-    size_t i = lo, j = mid, k = lo;
+-    while (i < mid && j < hi) tmp[k++] = (a[j] < a[i]) ? a[j++] : a[i++];
+-    while (i < mid) tmp[k++] = a[i++];
+-    while (j < hi) tmp[k++] = a[j++];
+-    for (size_t t = lo; t < hi; ++t) a[t] = tmp[t];
++constexpr size_t INSERTION_SORT_THRESHOLD = 16;
++constexpr size_t RADIX_SORT_THRESHOLD = 256;
++
++static void insertion_sort(uint32_t* a, size_t lo, size_t hi) {
++    for (size_t i = lo + 1; i < hi; ++i) {
++        uint32_t key = a[i];
++        size_t j = i;
++        while (j > lo && a[j - 1] > key) {
++            a[j] = a[j - 1];
++            --j;
++        }
++        a[j] = key;
++    }
++}
++
++static bool is_sorted(uint32_t* a, size_t n) {
++    for (size_t i = 1; i < n; ++i)
++        if (a[i] < a[i-1]) return false;
++    return true;
++}
++
++static bool is_reverse_sorted(uint32_t* a, size_t n) {
++    for (size_t i = 1; i < n; ++i)
++        if (a[i] > a[i-1]) return false;
++    return true;
++}
++
++static void radix_sort_pass(uint32_t* src, uint32_t* dst, size_t n, int shift) {
++    constexpr int RADIX = 256;
++    int histogram[RADIX] = {0};
++    
++#if defined(__ARM_NEON)
++    // Use NEON to accelerate histogram computation for large arrays
++    if (n >= 128) {
++        size_t i = 0;
++        for (; i <= n - 8; i += 8) {
++            uint32x4_t data1 = vld1q_u32(&src[i]);
++            uint32x4_t data2 = vld1q_u32(&src[i+4]);
++            
++            // Shift and mask to extract 8-bit values
++            uint32x4_t shifted1 = vshrq_n_u32(data1, shift);
++            uint32x4_t shifted2 = vshrq_n_u32(data2, shift);
++            uint32x4_t masked1 = vandq_u32(shifted1, vdupq_n_u32(0xFF));
++            uint32x4_t masked2 = vandq_u32(shifted2, vdupq_n_u32(0xFF));
++            
++            // Pack to 8-bit and extract
++            uint8x8_t bytes1 = vmovn_u16(vreinterpretq_u16_u32(masked1));
++            uint8x8_t bytes2 = vmovn_u16(vreinterpretq_u16_u32(masked2));
++            
++            // Increment histogram for 8 elements
++            histogram[vgetq_lane_u8(bytes1, 0)]++;
++            histogram[vgetq_lane_u8(bytes1, 1)]++;
++            histogram[vgetq_lane_u8(bytes1, 2)]++;
++            histogram[vgetq_lane_u8(bytes1, 3)]++;
++            histogram[vgetq_lane_u8(bytes1, 4)]++;
++            histogram[vgetq_lane_u8(bytes1, 5)]++;
++            histogram[vgetq_lane_u8(bytes1, 6)]++;
++            histogram[vgetq_lane_u8(bytes1, 7)]++;
++            histogram[vgetq_lane_u8(bytes2, 0)]++;
++            histogram[vgetq_lane_u8(bytes2, 1)]++;
++            histogram[vgetq_lane_u8(bytes2, 2)]++;
++            histogram[vgetq_lane_u8(bytes2, 3)]++;
++            histogram[vgetq_lane_u8(bytes2, 4)]++;
++            histogram[vgetq_lane_u8(bytes2, 5)]++;
++            histogram[vgetq_lane_u8(bytes2, 6)]++;
++            histogram[vgetq_lane_u8(bytes2, 7)]++;
++        }
++        // Handle remaining elements
++        for (; i < n; ++i)
++            histogram[(src[i] >> shift) & 0xFF]++;
++    } else {
++#endif
++        for (size_t i = 0; i < n; ++i)
++            histogram[(src[i] >> shift) & 0xFF]++;
++#if defined(__ARM_NEON)
++    }
++#endif
++    
++    int prefix_sum[RADIX] = {0};
++    for (int i = 1; i < RADIX; ++i)
++        prefix_sum[i] = prefix_sum[i - 1] + histogram[i - 1];
++    
++    // Use NEON in sorting phase for large arrays
++#if defined(__ARM_NEON)
++    if (n >= 128) {
++        size_t i = 0;
++        for (; i <= n - 8; i += 8) {
++            uint32x4_t data1 = vld1q_u32(&src[i]);
++            uint32x4_t data2 = vld1q_u32(&src[i+4]);
++            
++            // Extract 8-bit values
++            uint32x4_t shifted1 = vshrq_n_u32(data1, shift);
++            uint32x4_t shifted2 = vshrq_n_u32(data2, shift);
++            uint32x4_t masked1 = vandq_u32(shifted1, vdupq_n_u32(0xFF));
++            uint32x4_t masked2 = vandq_u32(shifted2, vdupq_n_u32(0xFF));
++            
++            // Pack to 8-bit and extract
++            uint8x8_t bytes1 = vmovn_u16(vreinterpretq_u16_u32(masked1));
++            uint8x8_t bytes2 = vmovn_u16(vreinterpretq_u16_u32(masked2));
++            
++            // Process 8 elements in parallel
++            dst[prefix_sum[vgetq_lane_u8(bytes1, 0)]++] = src[i];
++            dst[prefix_sum[vgetq_lane_u8(bytes1, 1)]++] = src[i+1];
++            dst[prefix_sum[vgetq_lane_u8(bytes1, 2)]++] = src[i+2];
++            dst[prefix_sum[vgetq_lane_u8(bytes1, 3)]++] = src[i+3];
++            dst[prefix_sum[vgetq_lane_u8(bytes1, 4)]++] = src[i+4];
++            dst[prefix_sum[vgetq_lane_u8(bytes1, 5)]++] = src[i+5];
++            dst[prefix_sum[vgetq_lane_u8(bytes1, 6)]++] = src[i+6];
++            dst[prefix_sum[vgetq_lane_u8(bytes1, 7)]++] = src[i+7];
++        }
++        // Handle remaining elements
++        for (; i < n; ++i) {
++            int digit = (src[i] >> shift) & 0xFF;
++            dst[prefix_sum[digit]++] = src[i];
++        }
++    } else {
++#endif
++        for (size_t i = 0; i < n; ++i) {
++            int digit = (src[i] >> shift) & 0xFF;
++            dst[prefix_sum[digit]++] = src[i];
++        }
++#if defined(__ARM_NEON)
++    }
++#endif
++}
++
++static void lsd_radix_sort(uint32_t* a, uint32_t* tmp, size_t n) {
++    if (n < RADIX_SORT_THRESHOLD) {
++        insertion_sort(a, 0, n);
++        return;
++    }
++
++    // Detect sorted or reverse-sorted arrays
++    if (is_sorted(a, n)) return;
++    if (is_reverse_sorted(a, n)) {
++        std::reverse(a, a + n);
++        return;
++    }
++    
++    // 4 passes of 8 bits each
++    radix_sort_pass(a, tmp, n, 0);
++    if (is_sorted(tmp, n)) return;
++    radix_sort_pass(tmp, a, n, 8);
++    if (is_sorted(a, n)) return;
++    radix_sort_pass(a, tmp, n, 16);
++    if (is_sorted(tmp, n)) return;
++    radix_sort_pass(tmp, a, n, 24);
+ }
+ 
+ extern "C" void sort_u32(uint32_t* a, size_t n) {
++    if (n < 2) return;
++    
+     std::vector<uint32_t> tmp(n);
+-    merge_sort_rec(a, tmp.data(), 0, n);
++    lsd_radix_sort(a, tmp.data(), n);
+ }
+ // OMEGA-BLOCK-END
+```
+
+### All models
+
+One run per model and reasoning mode; the [model benchmarks](../benchmarks/sort_u32_single_thread.md) page has speed, memory and progress over time.
+
+| Model | Where | Best | Gain | Minutes to best | New bests |
+|---|---|--:|--:|--:|--:|
+| qwen3-coder:30b (no-think) | local | 210.1563 | ×9.84 | 53.1 | 7 |
+| gpt-oss:20b (no-think) | local | 209.0805 | ×10.10 | 49.0 | 5 |
+| gemma4:12b-it-qat (no-think) | local | 196.9652 | ×9.41 | 12.2 | 9 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 190.7861 | ×9.01 | 46.4 | 2 |
+| dots-studio/dots-3-note-preview:free (no-think) | cloud | 190.7624 | ×10.44 | 8.8 | 5 |
+| nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | 176.1989 | ×9.78 | 2.3 | 3 |
+| nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 158.5411 | ×8.62 | 26.8 | 6 |
+| gemma4:26b-a4b-it-qat (no-think) | local | 151.3881 | ×7.19 | 6.4 | 5 |
+| cohere/north-mini-code:free (no-think) | cloud | 111.5420 | ×6.16 | 3.5 | 2 |
+| gemma4:e4b-it-qat (no-think) | local | 110.5333 | ×5.25 | 2.6 | 2 |
+| gemma4:latest (no-think) | local | 108.7229 | ×5.16 | 5.0 | 2 |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | 105.6055 | ×5.83 | 1.7 | 2 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 102.6424 | ×4.86 | 4.0 | 1 |
+| gemma4:e2b (no-think) | local | 98.6291 | ×4.53 | 3.4 | 2 |
+| frob/sarvam:30b (no-think) | local | 79.3777 | ×3.68 | 58.8 | 1 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | 27.9395 | ×1.30 | 34.7 | 2 |
+| qwen2.5-coder:7b (no-think) | local | 26.1112 | ×1.45 | 7.9 | 3 |
+| richardyoung/frognano-4b-2609:latest (no-think) | local | 21.6144 | ×1.00 | - | 0 |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | local | 21.6066 | ×1.00 | - | 0 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | 21.5673 | ×1.00 | - | 0 |
+| glm-4.7-flash:latest (no-think) | local | 21.5517 | ×1.00 | - | 0 |
+| nemotron-3-nano:4b (no-think) | local | 21.4822 | ×1.00 | - | 0 |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | 21.2540 | ×1.00 | - | 0 |
+| qwen3.5:latest (no-think) | local | 20.7871 | ×1.00 | - | 0 |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | 20.6900 | ×1.08 | 6.7 | 2 |
+| xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 17.9483 | ×1.00 | - | 0 |
+| nvidia/nemotron-3.5-lightning:free (no-think) | cloud | 17.8017 | ×1.00 | - | 0 |

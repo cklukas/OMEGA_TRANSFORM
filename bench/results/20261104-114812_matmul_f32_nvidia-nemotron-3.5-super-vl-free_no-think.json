@@ -1,0 +1,151 @@
+{
+ "schema": 4,
+ "example": "matmul_f32",
+ "model": "nvidia/nemotron-3.5-super-vl:free",
+ "variant": "no-think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-04T11:48:12",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 12.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 0.719051,
+ "best_score": 80.2183,
+ "improvement": 111.56134961219719,
+ "llm_calls": 36,
+ "mean_llm_seconds": 8.6,
+ "attempts": 36,
+ "ok": 17,
+ "statuses": {
+  "edit_error": 6,
+  "compile_error": 4,
+  "invalid": 4,
+  "llm_error": 3,
+  "ok": 17,
+  "duplicate": 2
+ },
+ "sweeps": 8,
+ "sweep_variants": 51,
+ "improvements": 6,
+ "minutes_to_best": 10.78,
+ "best_idea": "Switch from per-row k-blocking to full i-k-j cache blocking with B-panel packing: each thread processes row tiles, and for each k tile it packs the B tile rows into a contiguous panel so the inner j l",
+ "progress": [
+  [
+   0.0,
+   0.719051
+  ],
+  [
+   1.83,
+   57.4141
+  ],
+  [
+   3.38,
+   67.6925
+  ],
+  [
+   3.94,
+   68.7509
+  ],
+  [
+   4.23,
+   72.2156
+  ],
+  [
+   9.44,
+   78.2049
+  ],
+  [
+   10.78,
+   80.2183
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.719051,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.83,
+   "score": 57.4141,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Parallelize over row blocks with std::thread using all available hardware cores (bounded to 10), since n=1024 gives enough work per thread to amortize launch overhead and the i-k-j order lets each thread stream contiguous B rows and C rows."
+  },
+  {
+   "minutes": 3.38,
+   "score": 67.6925,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Add cache blocking over k (and i/j tiles) to the existing row-parallel i-k-j NEON kernel so A rows and B panels stay in L2/L1 and reuse C rows across multiple k blocks, improving memory locality for large n without changing the correct C-zeroing and accumulation semantics."
+  },
+  {
+   "minutes": 10.78,
+   "score": 80.2183,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "explore/diff/refine",
+   "status": "ok",
+   "idea": "Switch from per-row k-blocking to full i-k-j cache blocking with B-panel packing: each thread processes row tiles, and for each k tile it packs the B tile rows into a contiguous panel so the inner j loop streams contiguous memory while reusing loaded A values from registers. This improves cache reuse over the current per-row approach and should raise GFLOPS at n=1024 while remaining correct for al"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -21,12 +21,75 @@\n // OMEGA-BLOCK-START\n // Computes C = A * B. C is NOT zeroed by the caller. Any number of threads may be\n // used (std::thread is available); n is any size from 1 to 2048.\n+namespace {\n+constexpr int IBLOCK = 64;\n+constexpr int KBLOCK = 64;\n+\n+void row_block(int n, int i0, int i1, const float* A, const float* B, float* C) {\n+    // Zero the rows this thread owns.\n+    for (int i = i0; i < i1; ++i) {\n+        float* Crow = C + (size_t)i * n;\n+        for (int j = 0; j < n; ++j) Crow[j] = 0.0f;\n+    }\n+\n+    // Packed panel of B rows for the current k tile: [k_tile][j].\n+    std::vector<float> panel((size_t)KBLOCK * n);\n+\n+    for (int k0 = 0; k0 < n; k0 += KBLOCK) {\n+        int k_end = std::min(k0 + KBLOCK, n);\n+        int kk = k_end - k0;\n+\n+        // Pack B[k0:k_end][0:n] contiguously.\n+        for (int kk2 = 0; kk2 < kk; ++kk2) {\n+            const float* Brow = B + (size_t)(k0 + kk2) * n;\n+            float* prow = panel.data() + (size_t)kk2 * n;\n+            for (int j = 0; j < n; ++j) prow[j] = Brow[j];\n+        }\n+\n+        for (int i = i0; i < i1; ++i) {\n+            const float* Arow = A + (size_t)i * n;\n+            float* Crow = C + (size_t)i * n;\n+            for (int kk2 = 0; kk2 < kk; ++kk2) {\n+                float a = Arow[k0 + kk2];\n+                const float* Brow = panel.data() + (size_t)kk2 * n;\n+                int j = 0;\n+#if defined(__ARM_NEON)\n+                for (; j + 3 < n; j += 4) {\n+                    float32x4_t va = vdupq_n_f32(a);\n+                    float32x4_t vb = vld1q_f32(Brow + j);\n+                    float32x4_t vc = vld1q_f32(Crow + j);\n+                    vc = vfmaq_f32(vc, va, vb);\n+                    vst1q_f32(Crow + j, vc);\n+                }\n+#endif\n+                for (; j < n; ++j) {\n+                    Crow[j] += a * Brow[j];\n+                }\n+            }\n+        }\n+    }\n+}\n+}  // namespace\n+\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n-        }\n+    if (n <= 0) return;\n+    unsigned hw = std::thread::hardware_concurrency();\n+    if (hw == 0 || hw > 10) hw = 10;\n+    unsigned t = hw;\n+    if ((int)t > n) t = (unsigned)n;\n+    if (t == 1) {\n+        row_block(n, 0, n, A, B, C);\n+        return;\n+    }\n+    std::vector<std::thread> threads;\n+    threads.reserve(t);\n+    int base = n / (int)t, rem = n % (int)t;\n+    int start = 0;\n+    for (unsigned i = 0; i < t; ++i) {\n+        int end = start + base + (i < (unsigned)rem ? 1 : 0);\n+        threads.emplace_back(row_block, n, start, end, A, B, C);\n+        start = end;\n+    }\n+    for (auto& th : threads) th.join();\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 6.5,
+ "p90_call_seconds": 18.7,
+ "prompt_tokens_per_s": 5236.6,
+ "gen_tokens_per_s": 161.0,
+ "mean_prompt_tokens": 3950,
+ "mean_gen_tokens": 1120,
+ "stopped_calls": 3,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

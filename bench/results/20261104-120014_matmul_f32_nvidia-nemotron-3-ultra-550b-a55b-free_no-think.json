@@ -1,0 +1,125 @@
+{
+ "schema": 4,
+ "example": "matmul_f32",
+ "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+ "variant": "no-think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-04T12:00:14",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 11.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 0.738375,
+ "best_score": 37.3228,
+ "improvement": 50.54721516844422,
+ "llm_calls": 19,
+ "mean_llm_seconds": 31.2,
+ "attempts": 19,
+ "ok": 3,
+ "statuses": {
+  "compile_error": 11,
+  "edit_error": 2,
+  "invalid": 3,
+  "ok": 3
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 2,
+ "minutes_to_best": 10.58,
+ "best_idea": "Fix the compilation errors by removing the unconditional `#include <arm_neon.h>` and wrapping all NEON-specific code inside `#if defined(__ARM_NEON) ... #else ... #endif` blocks to provide a portable ",
+ "progress": [
+  [
+   0.0,
+   0.738375
+  ],
+  [
+   10.43,
+   11.0264
+  ],
+  [
+   10.58,
+   37.3228
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.738375,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 5.4,
+   "score": null,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "exploit/diff/refine",
+   "status": "compile_error",
+   "idea": "Replace the naive triple loop with a blocked i-k-j loop order using 64x64 tiles for better cache locality, add NEON vectorization for 4x speedup in the inner loop, and use multi-threading over row blocks to utilize all 10 cores."
+  },
+  {
+   "minutes": 10.58,
+   "score": 37.3228,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Fix the compilation errors by removing the unconditional `#include <arm_neon.h>` and wrapping all NEON-specific code inside `#if defined(__ARM_NEON) ... #else ... #endif` blocks to provide a portable scalar fallback."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -21,12 +21,71 @@\n // OMEGA-BLOCK-START\n // Computes C = A * B. C is NOT zeroed by the caller. Any number of threads may be\n // used (std::thread is available); n is any size from 1 to 2048.\n+#include <thread>\n+#include <algorithm>\n+\n+#if defined(__ARM_NEON)\n+#include <arm_neon.h>\n+#endif\n+\n+static constexpr int TILE = 64;\n+\n+static void compute_tile(int n, const float* A, const float* B, float* C,\n+                         int i0, int j0, int k0, int ti, int tj, int tk) {\n+    int i_end = std::min(i0 + ti, n);\n+    int j_end = std::min(j0 + tj, n);\n+    int k_end = std::min(k0 + tk, n);\n+\n+    for (int i = i0; i < i_end; ++i) {\n+        for (int k = k0; k < k_end; ++k) {\n+            float a = A[i * n + k];\n+            int j = j0;\n+#if defined(__ARM_NEON)\n+            // Vectorized loop: process 4 elements at a time\n+            for (; j + 3 < j_end; j += 4) {\n+                float32x4_t b_vec = vld1q_f32(B + k * n + j);\n+                float32x4_t c_vec = vld1q_f32(C + i * n + j);\n+                c_vec = vfmaq_n_f32(c_vec, b_vec, a);\n+                vst1q_f32(C + i * n + j, c_vec);\n+            }\n+#endif\n+            // Remainder loop\n+            for (; j < j_end; ++j) {\n+                C[i * n + j] += a * B[k * n + j];\n+            }\n+        }\n+    }\n+}\n+\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n-        }\n+    // Initialize C to zero\n+    std::fill(C, C + (size_t)n * n, 0.0f);\n+\n+    // Multi-thread over row tiles\n+    int num_threads = std::thread::hardware_concurrency();\n+    if (num_threads <= 0) num_threads = 10; // Apple Silicon has 10 cores\n+    std::vector<std::thread> threads;\n+    int rows_per_thread = (n + num_threads - 1) / num_threads;\n+\n+    for (int t = 0; t < num_threads; ++t) {\n+        int i_start = t * rows_per_thread;\n+        int i_end = std::min(i_start + rows_per_thread, n);\n+        if (i_start >= i_end) break;\n+\n+        threads.emplace_back([=]() {\n+            for (int i0 = i_start; i0 < i_end; i0 += TILE) {\n+                int ti = std::min(TILE, i_end - i0);\n+                for (int j0 = 0; j0 < n; j0 += TILE) {\n+                    int tj = std::min(TILE, n - j0);\n+                    for (int k0 = 0; k0 < n; k0 += TILE) {\n+                        int tk = std::min(TILE, n - k0);\n+                        compute_tile(n, A, B, C, i0, j0, k0, ti, tj, tk);\n+                    }\n+                }\n+            }\n+        });\n+    }\n+\n+    for (auto& th : threads) th.join();\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 24.6,
+ "p90_call_seconds": 73.7,
+ "prompt_tokens_per_s": 2517.0,
+ "gen_tokens_per_s": 50.1,
+ "mean_prompt_tokens": 3229,
+ "mean_gen_tokens": 1497,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

@@ -1,0 +1,1400 @@
+{
+ "schema": 4,
+ "example": "bin_packing_1d",
+ "model": "nvidia/nemotron-3.5-super-vl:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-04T14:51:08",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 61.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 0.7942635036246238,
+ "best_score": 0.9628071210678151,
+ "improvement": 1.2122011356105902,
+ "llm_calls": 41,
+ "mean_llm_seconds": 88.1,
+ "attempts": 41,
+ "ok": 28,
+ "statuses": {
+  "ok": 28,
+  "edit_error": 9,
+  "invalid": 4
+ },
+ "sweeps": 19,
+ "sweep_variants": 261,
+ "improvements": 10,
+ "minutes_to_best": 58.4,
+ "best_idea": "Expose the hardcoded denominator `10` that controls how many of the lightest bins the local search tries to empty (`len(bins) // 10`) as a named constant `LIGHT_BIN_DENOM`, and sweep it so the engine ",
+ "progress": [
+  [
+   0.0,
+   0.7942635036246238
+  ],
+  [
+   2.93,
+   0.9519941782240652
+  ],
+  [
+   7.95,
+   0.9523270805292451
+  ],
+  [
+   7.95,
+   0.9533809222613776
+  ],
+  [
+   22.26,
+   0.9559319763028156
+  ],
+  [
+   32.79,
+   0.95739837458359
+  ],
+  [
+   38.44,
+   0.958879044380479
+  ],
+  [
+   47.33,
+   0.9596247963635464
+  ],
+  [
+   51.25,
+   0.9605806992878588
+  ],
+  [
+   51.25,
+   0.9620613690847478
+  ],
+  [
+   58.4,
+   0.9628071210678151
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.7942635036246238,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.99,
+   "score": 0.9512800819252432,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace next-fit with best-fit decreasing: sort items by descending size and place each in the bin with the least remaining space that can still hold it, packing items tightly and sharply reducing bin count."
+  },
+  {
+   "minutes": 17.42,
+   "score": 0.9519941782240652,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Add a time-bounded improvement phase to best-fit decreasing that repeatedly empties the lightest bin by relocating its items elsewhere and applies 1-1 swaps between the lightest bin and another bin that raise the sum of squared bin loads, then runs randomized perturbation restarts until the time budget is nearly exhausted, keeping the best packing found."
+  },
+  {
+   "minutes": 17.42,
+   "score": 0.9527116912515895,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "sweep/exploit/diff/refine",
+   "status": "ok",
+   "idea": "tuned TIME_BUDGET=1.75, PERTURB_MAX=12 on top of: Add a time-bounded improvement phase to best-fit decreasing that repeatedly empties the lightest bin by relocating its items elsewhere and applies 1-1 swaps between the lightest bin and another bin that raise the sum of squared bin loads, then runs r"
+  },
+  {
+   "minutes": 22.26,
+   "score": 0.9519941782240652,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Expose TIME_BUDGET, PERTURB_MIN, and PERTURB_MAX as named constants and sweep them so the engine can select the best time budget and perturbation size instead of fixed guesses."
+  },
+  {
+   "minutes": 39.65,
+   "score": 0.9562235015323357,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Add a minimum-bin-slack construction that fills one bin at a time \u2014 anchor with the largest remaining item, complete it with the best-fitting pair of remaining items found by a two-pointer search, then top up with singles \u2014 run both it and best-fit-decreasing and keep the packing with fewer bins, so near-capacity triples are built directly (most valuable on the 250-500 instance where the current p"
+  },
+  {
+   "minutes": 47.8,
+   "score": null,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "exploit/diff/tune",
+   "status": "invalid",
+   "idea": "Update the default PERTURB_MIN and PERTURB_MAX to values shown effective in earlier sweeps (5 and 16 instead of 1 and 10), and add a SWEEP over TIME_BUDGET, PERTURB_MIN, PERTURB_MAX so the engine can select the best combination within the time limit."
+  },
+  {
+   "minutes": 51.25,
+   "score": 0.9605806992878588,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Remove the invalid `SWEEP:` pseudo-code block that causes a SyntaxError, keeping the module-level constants as simple assignments so the program imports and runs correctly."
+  },
+  {
+   "minutes": 51.25,
+   "score": 0.9620613690847478,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "sweep/retry/diff/fix",
+   "status": "ok",
+   "idea": "tuned TIME_BUDGET=1.736, PERTURB_MIN=6, PERTURB_MAX=21 on top of: Remove the invalid `SWEEP:` pseudo-code block that causes a SyntaxError, keeping the module-level constants as simple assignments so the program imports and runs correctly."
+  },
+  {
+   "minutes": 58.4,
+   "score": 0.9628071210678151,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Expose the hardcoded denominator `10` that controls how many of the lightest bins the local search tries to empty (`len(bins) // 10`) as a named constant `LIGHT_BIN_DENOM`, and sweep it so the engine can find the best trade-off between search effort and progress per iteration."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -10,6 +10,12 @@\n import time\n \n # OMEGA-BLOCK-START\n+TIME_BUDGET = 1.736361276032859\n+PERTURB_MIN = 6\n+PERTURB_MAX = 21\n+LIGHT_BIN_DENOM = 10\n+\n+\n def pack(sizes, capacity):\n     \"\"\"Return a list of bins; each bin is a list of item indices into sizes.\n \n@@ -19,17 +25,241 @@\n     (time.process_time(); more than 1.5 x the limit makes the program invalid).\n     Only the Python standard library may be used.\n \n-    Current method: next fit (open a new bin whenever the next item does not fit).\n+    Construction: best-fit decreasing. Improvement: a time-bounded local search that\n+    repeatedly empties the lightest bin by relocating its items (best fit) and\n+    applies 1-1 swaps between the lightest bin and another bin that raise the sum of\n+    squared bin loads, followed by randomized perturbation restarts until the time\n+    budget is nearly exhausted; the best valid packing found is returned.\n     \"\"\"\n-    bins = []\n-    current, load = [], 0\n-    for i, s in enumerate(sizes):\n-        if load + s > capacity:\n-            bins.append(current)\n-            current, load = [], 0\n-        current.append(i)\n-        load += s\n-    if current:\n-        bins.append(current)\n-    return bins\n+    start = time.process_time()\n+    deadline = start + TIME_BUDGET\n+    n = len(sizes)\n+    if n == 0:\n+        return []\n+\n+    best = None  # (bins, loads)\n+\n+    def consider(bins, loads):\n+        nonlocal best\n+        if best is None or len(bins) < len(best[0]):\n+            best = ([list(b) for b in bins], list(loads))\n+\n+    # Construction: try best-fit-decreasing and minimum-bin-slack, keep the better.\n+    def bfd_construct():\n+        order = sorted(range(n), key=lambda i: sizes[i], reverse=True)\n+        bins = []\n+        loads = []\n+        for i in order:\n+            s = sizes[i]\n+            bi = -1\n+            br = capacity + 1\n+            for b, load in enumerate(loads):\n+                room = capacity - load\n+                if s <= room and room < br:\n+                    br = room\n+                    bi = b\n+                    if room == s:\n+                        break\n+            if bi >= 0:\n+                bins[bi].append(i)\n+                loads[bi] += s\n+            else:\n+                bins.append([i])\n+                loads.append(s)\n+        return bins, loads\n+\n+    def mbs_construct():\n+        # Minimum bin slack: fill one bin at a time. Anchor each bin with the\n+        # largest remaining item, add the best-fitting pair of remaining items\n+        # (two-pointer search over items sorted by size), then greedily top up\n+        # with singles while anything fits.\n+        arr = sorted((sizes[i], i) for i in range(n))  # ascending by size\n+        used = [False] * n\n+        bins = []\n+        loads = []\n+        n_used = 0\n+        while n_used < n:\n+            a_pos = -1\n+            for p in range(n - 1, -1, -1):\n+                if not used[arr[p][1]]:\n+                    a_pos = p\n+                    break\n+            a_size, a_idx = arr[a_pos]\n+            used[a_idx] = True\n+            n_used += 1\n+            bin_items = [a_idx]\n+            load = a_size\n+            limit = capacity - load\n+            best_pair = None\n+            i = 0\n+            j = n - 1\n+            while i < j:\n+                if used[arr[i][1]] or i == a_pos:\n+                    i += 1\n+                    continue\n+                if used[arr[j][1]] or j == a_pos:\n+                    j -= 1\n+                    continue\n+                s = arr[i][0] + arr[j][0]\n+                if s <= limit:\n+                    if best_pair is None or s > best_pair[0]:\n+                        best_pair = (s, i, j)\n+                    i += 1\n+                else:\n+                    j -= 1\n+            if best_pair is not None:\n+                _, p, q = best_pair\n+                used[arr[p][1]] = True\n+                used[arr[q][1]] = True\n+                n_used += 2\n+                bin_items.append(arr[p][1])\n+                bin_items.append(arr[q][1])\n+                load += arr[p][0] + arr[q][0]\n+                limit = capacity - load\n+                while limit > 0:\n+                    sp = -1\n+                    for p2 in range(n - 1, -1, -1):\n+                        if not used[arr[p2][1]] and arr[p2][0] <= limit:\n+                            sp = p2\n+                            break\n+                    if sp < 0:\n+                        break\n+                    used[arr[sp][1]] = True\n+                    n_used += 1\n+                    bin_items.append(arr[sp][1])\n+                    load += arr[sp][0]\n+                    limit = capacity - load\n+            else:\n+                sp = -1\n+                for p2 in range(n - 1, -1, -1):\n+                    if not used[arr[p2][1]] and p2 != a_pos and arr[p2][0] <= limit:\n+                        sp = p2\n+                        break\n+                if sp >= 0:\n+                    used[arr[sp][1]] = True\n+                    n_used += 1\n+                    bin_items.append(arr[sp][1])\n+                    load += arr[sp][0]\n+            bins.append(bin_items)\n+            loads.append(load)\n+        return bins, loads\n+\n+    bins, loads = bfd_construct()\n+    consider(bins, loads)\n+    bins2, loads2 = mbs_construct()\n+    consider(bins2, loads2)\n+    bins = [list(b) for b in best[0]]\n+    loads = list(best[1])\n+\n+    def improve(bins, loads):\n+        while time.process_time() < deadline:\n+            if len(bins) <= 1:\n+                return\n+            progress = False\n+            order_b = sorted(range(len(bins)), key=lambda b: loads[b])\n+            # Try to empty the lightest bins by moving their items into others.\n+            for b in order_b[: max(1, len(bins) // LIGHT_BIN_DENOM)]:\n+                if time.process_time() > deadline:\n+                    return\n+                items = sorted(bins[b], key=lambda k: sizes[k], reverse=True)\n+                tloads = list(loads)\n+                others = [x for x in range(len(bins)) if x != b]\n+                moved = []\n+                ok = True\n+                for i in items:\n+                    s = sizes[i]\n+                    pi = -1\n+                    tr = capacity + 1\n+                    for p, x in enumerate(others):\n+                        room = capacity - tloads[x]\n+                        if s <= room and room < tr:\n+                            tr = room\n+                            pi = p\n+                    if pi < 0:\n+                        ok = False\n+                        break\n+                    tloads[others[pi]] += s\n+                    moved.append((i, others[pi]))\n+                if ok:\n+                    for i, x in moved:\n+                        bins[x].append(i)\n+                        loads[x] += sizes[i]\n+                    del bins[b]\n+                    del loads[b]\n+                    progress = True\n+                    break\n+            if progress:\n+                continue\n+            if len(bins) <= 1:\n+                return\n+            # 1-1 swaps involving the lightest bin that raise sum of squared loads.\n+            a = order_b[0]\n+            A = loads[a]\n+            best_move = None\n+            for x in range(len(bins)):\n+                if x == a:\n+                    continue\n+                B = loads[x]\n+                for i in bins[a]:\n+                    si = sizes[i]\n+                    for j in bins[x]:\n+                        sj = sizes[j]\n+                        if sj <= si:\n+                            continue\n+                        if A - si + sj > capacity:\n+                            continue\n+                        d = sj - si\n+                        delta = 2 * d * (A - B) + 2 * d * d\n+                        if delta > 0 and (best_move is None or delta > best_move[0]):\n+                            best_move = (delta, i, j, x)\n+            if best_move is None:\n+                return\n+            _, i, j, x = best_move\n+            si = sizes[i]\n+            sj = sizes[j]\n+            bins[a].remove(i)\n+            bins[x].remove(j)\n+            bins[a].append(j)\n+            bins[x].append(i)\n+            loads[a] = loads[a] - si + sj\n+            loads[x] = loads[x] - sj + si\n+\n+    improve(bins, loads)\n+    consider(bins, loads)\n+\n+    rng = random.Random(20260526)\n+    while time.process_time() < deadline:\n+        bins = [list(b) for b in best[0]]\n+        loads = list(best[1])\n+        all_items = [i for b in bins for i in b]\n+        if not all_items:\n+            break\n+        hi = min(PERTURB_MAX, len(all_items))\n+        r = hi if PERTURB_MIN > hi else rng.randint(PERTURB_MIN, hi)\n+        removed = rng.sample(all_items, r)\n+        removed_set = set(removed)\n+        bins = [[i for i in b if i not in removed_set] for b in bins]\n+        bins = [b for b in bins if b]\n+        loads = [sum(sizes[i] for i in b) for b in bins]\n+        rng.shuffle(removed)\n+        for i in removed:\n+            s = sizes[i]\n+            bi = -1\n+            br = capacity + 1\n+            for b, load in enumerate(loads):\n+                room = capacity - load\n+                if s <= room and room < br:\n+                    br = room\n+                    bi = b\n+            if bi >= 0:\n+                bins[bi].append(i)\n+                loads[bi] += s\n+            else:\n+                bins.append([i])\n+                loads.append(s)\n+        improve(bins, loads)\n+        consider(bins, loads)\n+\n+    return [list(b) for b in best[0]]\n+\n # OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "bins",
+  "instance": "u300",
+  "capacity": 1000,
+  "lower_bound": 123,
+  "bins": [
+   [
+    237,
+    682
+   ],
+   [
+    164,
+    361,
+    220
+   ],
+   [
+    607
+   ],
+   [
+    560
+   ],
+   [
+    583
+   ],
+   [
+    488,
+    314,
+    196
+   ],
+   [
+    599,
+    129
+   ],
+   [
+    499
+   ],
+   [
+    543,
+    102
+   ],
+   [
+    556,
+    372
+   ],
+   [
+    334,
+    204,
+    425
+   ],
+   [
+    131,
+    122,
+    126
+   ],
+   [
+    654,
+    109
+   ],
+   [
+    490,
+    321
+   ],
+   [
+    532,
+    129
+   ],
+   [
+    640,
+    327
+   ],
+   [
+    548
+   ],
+   [
+    607
+   ],
+   [
+    666
+   ],
+   [
+    338,
+    453
+   ],
+   [
+    336,
+    324
+   ],
+   [
+    570,
+    396
+   ],
+   [
+    122,
+    526
+   ],
+   [
+    669,
+    202
+   ],
+   [
+    290,
+    403,
+    223
+   ],
+   [
+    440
+   ],
+   [
+    612
+   ],
+   [
+    532
+   ],
+   [
+    619,
+    294
+   ],
+   [
+    410,
+    390
+   ],
+   [
+    611
+   ],
+   [
+    617
+   ],
+   [
+    502,
+    135
+   ],
+   [
+    591,
+    348
+   ],
+   [
+    513
+   ],
+   [
+    524,
+    277
+   ],
+   [
+    475
+   ],
+   [
+    661
+   ],
+   [
+    483,
+    188
+   ],
+   [
+    549
+   ],
+   [
+    620,
+    210
+   ],
+   [
+    267,
+    633
+   ],
+   [
+    502,
+    479
+   ],
+   [
+    601,
+    130
+   ],
+   [
+    580,
+    144
+   ],
+   [
+    415
+   ],
+   [
+    692
+   ],
+   [
+    503,
+    274
+   ],
+   [
+    272,
+    614
+   ],
+   [
+    332,
+    112,
+    304
+   ],
+   [
+    652
+   ],
+   [
+    661,
+    337
+   ],
+   [
+    514
+   ],
+   [
+    626
+   ],
+   [
+    452
+   ],
+   [
+    691
+   ],
+   [
+    461
+   ],
+   [
+    570,
+    375
+   ],
+   [
+    661,
+    105
+   ],
+   [
+    492
+   ],
+   [
+    624,
+    232
+   ],
+   [
+    631
+   ],
+   [
+    674,
+    310
+   ],
+   [
+    536,
+    157
+   ],
+   [
+    592
+   ],
+   [
+    473
+   ],
+   [
+    683
+   ],
+   [
+    667,
+    304
+   ],
+   [
+    616
+   ],
+   [
+    523
+   ],
+   [
+    596
+   ],
+   [
+    465,
+    524
+   ],
+   [
+    454,
+    101
+   ],
+   [
+    651
+   ],
+   [
+    653
+   ],
+   [
+    439
+   ],
+   [
+    569,
+    128
+   ],
+   [
+    335,
+    281
+   ],
+   [
+    663
+   ],
+   [
+    698,
+    285
+   ],
+   [
+    193,
+    664
+   ],
+   [
+    361,
+    133,
+    172,
+    185,
+    117
+   ],
+   [
+    563,
+    114
+   ],
+   [
+    387,
+    355
+   ],
+   [
+    375,
+    212,
+    289
+   ],
+   [
+    452,
+    397
+   ],
+   [
+    171,
+    271,
+    263
+   ],
+   [
+    361
+   ],
+   [
+    640,
+    272
+   ],
+   [
+    379,
+    401
+   ],
+   [
+    565,
+    429
+   ],
+   [
+    608
+   ],
+   [
+    585,
+    216,
+    124
+   ],
+   [
+    419,
+    495
+   ],
+   [
+    451,
+    531
+   ],
+   [
+    292,
+    364,
+    211
+   ],
+   [
+    359,
+    622
+   ],
+   [
+    314,
+    542,
+    121
+   ],
+   [
+    330,
+    118,
+    506
+   ],
+   [
+    249,
+    136,
+    264
+   ],
+   [
+    556
+   ],
+   [
+    618
+   ],
+   [
+    536
+   ],
+   [
+    657,
+    325
+   ],
+   [
+    628
+   ],
+   [
+    561,
+    328
+   ],
+   [
+    636,
+    131
+   ],
+   [
+    504
+   ],
+   [
+    689
+   ],
+   [
+    428,
+    536
+   ],
+   [
+    160,
+    405,
+    228
+   ],
+   [
+    317,
+    148,
+    413
+   ],
+   [
+    172,
+    178,
+    417
+   ],
+   [
+    405,
+    262
+   ],
+   [
+    526
+   ],
+   [
+    678
+   ],
+   [
+    358,
+    233,
+    108
+   ],
+   [
+    674,
+    138
+   ],
+   [
+    322
+   ],
+   [
+    683
+   ],
+   [
+    571,
+    275
+   ],
+   [
+    621,
+    138
+   ],
+   [
+    487,
+    305
+   ],
+   [
+    455,
+    201,
+    310
+   ],
+   [
+    687
+   ],
+   [
+    543,
+    298
+   ],
+   [
+    604,
+    206
+   ],
+   [
+    499,
+    403
+   ],
+   [
+    616
+   ],
+   [
+    611,
+    117
+   ],
+   [
+    433,
+    511
+   ],
+   [
+    388,
+    118,
+    260
+   ],
+   [
+    305,
+    435
+   ],
+   [
+    676,
+    238
+   ],
+   [
+    447,
+    539
+   ],
+   [
+    318,
+    372,
+    198
+   ],
+   [
+    488
+   ],
+   [
+    660
+   ],
+   [
+    452
+   ],
+   [
+    647
+   ],
+   [
+    596
+   ],
+   [
+    645,
+    340
+   ],
+   [
+    166,
+    141,
+    186,
+    236
+   ],
+   [
+    273,
+    270
+   ],
+   [
+    651,
+    318
+   ],
+   [
+    374,
+    440
+   ],
+   [
+    618,
+    361
+   ],
+   [
+    476,
+    446
+   ],
+   [
+    448,
+    216
+   ],
+   [
+    398,
+    340
+   ],
+   [
+    600,
+    238
+   ],
+   [
+    693
+   ],
+   [
+    664,
+    206
+   ],
+   [
+    428,
+    140
+   ],
+   [
+    516,
+    174
+   ],
+   [
+    489,
+    250,
+    228
+   ],
+   [
+    449,
+    217
+   ],
+   [
+    487,
+    178
+   ],
+   [
+    684
+   ],
+   [
+    663,
+    329
+   ],
+   [
+    679,
+    183
+   ],
+   [
+    373,
+    473
+   ],
+   [
+    402
+   ],
+   [
+    677
+   ],
+   [
+    647,
+    217
+   ],
+   [
+    568,
+    383
+   ],
+   [
+    210
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "bins",
+  "instance": "u300",
+  "capacity": 1000,
+  "lower_bound": 123,
+  "bins": [
+   [
+    698,
+    298
+   ],
+   [
+    693,
+    305
+   ],
+   [
+    692,
+    305
+   ],
+   [
+    691,
+    304
+   ],
+   [
+    689,
+    310
+   ],
+   [
+    687,
+    310
+   ],
+   [
+    684,
+    314
+   ],
+   [
+    683,
+    317
+   ],
+   [
+    683,
+    314
+   ],
+   [
+    682,
+    318
+   ],
+   [
+    679,
+    321
+   ],
+   [
+    678,
+    322
+   ],
+   [
+    677,
+    318
+   ],
+   [
+    676,
+    324
+   ],
+   [
+    674,
+    325
+   ],
+   [
+    674,
+    304
+   ],
+   [
+    669,
+    330
+   ],
+   [
+    667,
+    332
+   ],
+   [
+    666,
+    334
+   ],
+   [
+    664,
+    336
+   ],
+   [
+    664,
+    335
+   ],
+   [
+    663,
+    337
+   ],
+   [
+    663,
+    329
+   ],
+   [
+    661,
+    338
+   ],
+   [
+    661,
+    328
+   ],
+   [
+    661,
+    327
+   ],
+   [
+    660,
+    340
+   ],
+   [
+    657,
+    340
+   ],
+   [
+    654,
+    294
+   ],
+   [
+    653,
+    292
+   ],
+   [
+    652,
+    348
+   ],
+   [
+    651,
+    290
+   ],
+   [
+    651,
+    289
+   ],
+   [
+    647,
+    285
+   ],
+   [
+    647,
+    281
+   ],
+   [
+    645,
+    355
+   ],
+   [
+    640,
+    359
+   ],
+   [
+    640,
+    358
+   ],
+   [
+    636,
+    364
+   ],
+   [
+    633,
+    361
+   ],
+   [
+    631,
+    361
+   ],
+   [
+    628,
+    372
+   ],
+   [
+    626,
+    374
+   ],
+   [
+    624,
+    375
+   ],
+   [
+    622,
+    375
+   ],
+   [
+    621,
+    379
+   ],
+   [
+    620,
+    373
+   ],
+   [
+    619,
+    372
+   ],
+   [
+    618,
+    361
+   ],
+   [
+    618,
+    361
+   ],
+   [
+    617,
+    383
+   ],
+   [
+    616,
+    277,
+    105
+   ],
+   [
+    616,
+    275,
+    109
+   ],
+   [
+    614,
+    274,
+    112
+   ],
+   [
+    612,
+    388
+   ],
+   [
+    611,
+    387
+   ],
+   [
+    611,
+    273,
+    114
+   ],
+   [
+    608,
+    390
+   ],
+   [
+    607,
+    272,
+    121
+   ],
+   [
+    607,
+    272,
+    118
+   ],
+   [
+    604,
+    396
+   ],
+   [
+    601,
+    398
+   ],
+   [
+    600,
+    397
+   ],
+   [
+    599,
+    401
+   ],
+   [
+    596,
+    403
+   ],
+   [
+    596,
+    403
+   ],
+   [
+    592,
+    405
+   ],
+   [
+    591,
+    405
+   ],
+   [
+    585,
+    415
+   ],
+   [
+    583,
+    417
+   ],
+   [
+    580,
+    419
+   ],
+   [
+    571,
+    429
+   ],
+   [
+    570,
+    428
+   ],
+   [
+    570,
+    428
+   ],
+   [
+    569,
+    425
+   ],
+   [
+    568,
+    413
+   ],
+   [
+    565,
+    435
+   ],
+   [
+    563,
+    433
+   ],
+   [
+    561,
+    439
+   ],
+   [
+    560,
+    440
+   ],
+   [
+    556,
+    440
+   ],
+   [
+    556,
+    410
+   ],
+   [
+    549,
+    451
+   ],
+   [
+    548,
+    452
+   ],
+   [
+    543,
+    455
+   ],
+   [
+    543,
+    454
+   ],
+   [
+    542,
+    453
+   ],
+   [
+    539,
+    461
+   ],
+   [
+    536,
+    452
+   ],
+   [
+    536,
+    452
+   ],
+   [
+    536,
+    449
+   ],
+   [
+    532,
+    465
+   ],
+   [
+    532,
+    448
+   ],
+   [
+    531,
+    447
+   ],
+   [
+    526,
+    473
+   ],
+   [
+    526,
+    473
+   ],
+   [
+    524,
+    476
+   ],
+   [
+    524,
+    475
+   ],
+   [
+    523,
+    446
+   ],
+   [
+    516,
+    483
+   ],
+   [
+    514,
+    479
+   ],
+   [
+    513,
+    487
+   ],
+   [
+    511,
+    489
+   ],
+   [
+    506,
+    492
+   ],
+   [
+    504,
+    495
+   ],
+   [
+    503,
+    490
+   ],
+   [
+    502,
+    488
+   ],
+   [
+    502,
+    488
+   ],
+   [
+    499,
+    499
+   ],
+   [
+    487,
+    402,
+    102
+   ],
+   [
+    271,
+    270,
+    267,
+    188
+   ],
+   [
+    264,
+    263,
+    262,
+    211
+   ],
+   [
+    260,
+    250,
+    249,
+    238
+   ],
+   [
+    238,
+    237,
+    236,
+    233
+   ],
+   [
+    232,
+    228,
+    228,
+    223
+   ],
+   [
+    220,
+    217,
+    217,
+    216,
+    130
+   ],
+   [
+    216,
+    212,
+    210,
+    210,
+    148
+   ],
+   [
+    206,
+    206,
+    204,
+    202,
+    178
+   ],
+   [
+    201,
+    198,
+    196,
+    193,
+    186
+   ],
+   [
+    185,
+    183,
+    178,
+    174,
+    172,
+    108
+   ],
+   [
+    172,
+    171,
+    166,
+    164,
+    160,
+    157
+   ],
+   [
+    144,
+    141,
+    140,
+    138,
+    138,
+    136,
+    135
+   ],
+   [
+    133,
+    131,
+    131,
+    129,
+    129,
+    128,
+    126
+   ],
+   [
+    124,
+    122,
+    122,
+    118,
+    117,
+    117,
+    101
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 73.7,
+ "p90_call_seconds": 202.8,
+ "prompt_tokens_per_s": 6263.0,
+ "gen_tokens_per_s": 118.7,
+ "mean_prompt_tokens": 8323,
+ "mean_gen_tokens": 10292,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

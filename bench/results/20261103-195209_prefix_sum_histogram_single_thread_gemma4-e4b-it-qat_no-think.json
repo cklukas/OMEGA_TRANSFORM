@@ -1,0 +1,138 @@
+{
+ "schema": 4,
+ "example": "prefix_sum_histogram_single_thread",
+ "model": "gemma4:e4b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 6.1,
+ "model_params": "7.5B",
+ "started": "2026-11-03T19:52:09",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 7.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 4.34146,
+ "best_score": 4.76532,
+ "improvement": 1.0976307509455345,
+ "llm_calls": 20,
+ "mean_llm_seconds": 18.4,
+ "attempts": 20,
+ "ok": 4,
+ "statuses": {
+  "invalid": 11,
+  "compile_error": 5,
+  "ok": 4
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 2,
+ "minutes_to_best": 6.02,
+ "best_idea": "Increase the unroll factor to utilize more CPU pipeline parallelism and better exploit cache locality, as the initial factor of 4 is conservative.",
+ "progress": [
+  [
+   0.0,
+   4.34146
+  ],
+  [
+   1.03,
+   4.69908
+  ],
+  [
+   6.02,
+   4.76532
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 4.34146,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.03,
+   "score": 4.69908,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Implement loop unrolling and use private sub-histograms to reduce contention on hot bins, while maintaining the prefix sum dependency chain as much as possible."
+  },
+  {
+   "minutes": 6.02,
+   "score": 4.76532,
+   "model": "gemma4:e4b-it-qat",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Increase the unroll factor to utilize more CPU pipeline parallelism and better exploit cache locality, as the initial factor of 4 is conservative."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -30,10 +30,50 @@\n extern \"C\" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, uint64_t* hist) {\n     for (int b = 0; b < 256; ++b) hist[b] = 0;\n     int64_t sum = 0;\n-    for (size_t i = 0; i < n; ++i) {\n-        sum += in[i];\n-        out[i] = sum;\n+    constexpr size_t UNROLL_FACTOR = 8;\n+    const size_t remainder = n % UNROLL_FACTOR;\n+    uint64_t sub_hist[UNROLL_FACTOR][256];\n+\n+    // Initialize sub-histograms (only needed for correctness if caller doesn't zero them,\n+    // but the harness zeroes the main hist array, we must ensure sub_hist is clean)\n+    for (size_t k = 0; k < UNROLL_FACTOR; ++k) {\n+        for (int b = 0; b < 256; ++b) {\n+            sub_hist[k][b] = 0;\n+        }\n+    }\n+\n+    size_t i = 0;\n+    int64_t current_sum = 0;\n+    while (i + UNROLL_FACTOR <= n) {\n+        size_t idx = i % UNROLL_FACTOR;\n+        uint64_t* current_sub = sub_hist[idx];\n+      \n+        for (size_t j = 0; j < UNROLL_FACTOR; ++j) {\n+            size_t current_i = i + j;\n+            int64_t val = in[current_i];\n+          \n+            // Update prefix sum\n+            current_sum += val;\n+            out[current_i] = current_sum;\n+\n+            // Update histogram using local/private counter\n+            current_sub[val & 255]++;\n+        }\n+        i += UNROLL_FACTOR;\n+    }\n+\n+    // Handle remainder\n+    for (; i < n; ++i) {\n+        current_sum += in[i];\n+        out[i] = current_sum;\n         hist[in[i] & 255]++;\n+    }\n+\n+    // Sum up sub-histograms into the main histogram\n+    for (size_t k = 0; k < UNROLL_FACTOR; ++k) {\n+        for (int b = 0; b < 256; ++b) {\n+            hist[b] += sub_hist[k][b];\n+        }\n     }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "best_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 6.1,
+ "model_gpu_memory_gb": 6.1,
+ "context_length": 40960,
+ "load_seconds": 0.0,
+ "median_call_seconds": 18.7,
+ "p90_call_seconds": 30.4,
+ "prompt_tokens_per_s": 2467.1,
+ "gen_tokens_per_s": 39.0,
+ "mean_prompt_tokens": 4386,
+ "mean_gen_tokens": 565,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

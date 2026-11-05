@@ -315,6 +315,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/log_c
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|
 | gpt-oss:20b (no-think) | local | 29.6153 | ×2.62 | 18.3 | 3 |
+| nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | 21.4986 | ×1.90 | 1.4 | 1 |
 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | 21.4903 | ×1.90 | 1.1 | 1 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 21.4903 | ×1.90 | 23.4 | 3 |
 | gemma4:e2b (no-think) | local | 21.4570 | ×1.90 | 1.4 | 2 |
@@ -334,18 +335,17 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/log_c
 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | 11.2861 | ×1.00 | - | 0 |
 | llm-jp-4-8b-omega:q4_k_m (no-think) | local | 11.2861 | ×1.00 | - | 0 |
 | cohere/north-mini-code:free (no-think) | cloud | 11.2861 | ×1.00 | - | 0 |
-| nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | | | | failed: all 5 model requests failed … |
 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 11.2861 | ×1.00 | - | 0 |
 | nvidia/nemotron-3.5-lightning:free (no-think) | cloud | 11.2861 | ×1.00 | - | 0 |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | 11.2861 | ×1.00 | - | 0 |
-| xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 11.2861 | ×1.00 | - | 0 |
 | qwen3-coder:30b (no-think) | local | 11.2861 | ×1.00 | - | 0 |
 | frob/sarvam:30b (no-think) | local | 11.2861 | ×1.00 | - | 0 |
+| xingchen-agi/xing4.0-29b-a4b:free (think) | cloud | 11.2861 | ×1.00 | - | 0 |
+| xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 11.2861 | ×1.00 | - | 0 |
 | cohere/north-mini-code:free (think) | cloud | | | | failed: all 6 model requests failed: cohere/north-mini-code:free … |
-| nvidia/nemotron-3.5-super-vl:free (think) | cloud | | | | failed: all 5 model requests failed … |
+| nvidia/nemotron-3.5-super-vl:free (think) | cloud | | | | failed: all 6 model requests failed … |
 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | cloud | | | | failed: all 6 model requests failed … |
 | dots-studio/dots-3-note-preview:free (think) | cloud | | | | failed: all 6 model requests failed … |
 | nvidia/nemotron-3.5-lightning:free (think) | cloud | | | | failed: all 6 model requests failed … |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | cloud | | | | failed: all 6 model requests failed … |
-| xingchen-agi/xing4.0-29b-a4b:free (think) | cloud | 11.2861 | ×1.00 | - | 0 |
 | recursive/flint-v1.0:free (think) | cloud | | | | failed: all 6 model requests failed: recursive/flint-v1.0:free … |

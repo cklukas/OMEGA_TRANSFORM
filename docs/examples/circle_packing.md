@@ -73,4 +73,105 @@ def run():
 
 ## Benchmark results
 
-This example has not been benchmarked yet. See [Benchmarking models](../benchmarking.md) for how to run it.
+The best result so far comes from **gemma4:12b-it-qat (no-think)**, run locally with Ollama on 2026-11-05: a score of **2.16667** (×1.45 the starting program's 1.4901), reached after 5.76 of 60 minutes with 27 model requests.
+
+What the starting program produces (left) and what the best program by gemma4:12b-it-qat (no-think) produces (right):
+
+![circle_packing: the starting program's solution and the best one](../assets/examples/circle_packing.svg)
+
+### How it got there
+
+The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.
+
+| Step | Minute | Score | Kind | Idea |
+|--:|--:|--:|---|---|
+| 0 | 0.0 | 1.4901 | start | initial program |
+| 1 | 2.2 | invalid | rewrite | Use a more sophisticated initial layout by placing large circles in a grid and smaller ones in the gaps, then iteratively shrink radii to resolve overlaps. |
+| 2 | 5.8 | 2.16667 | fix-up | Re-calculate radii by greedily placing circles from largest to smallest to ensure zero overlap and maximize the sum of radii. |
+
+### The best program
+
+What changed compared with the starting program:
+
+```diff
+--- initial
++++ best
+@@ -9,18 +9,43 @@
+ # OMEGA-BLOCK-START
+ def construct_packing(n=26):
+     """Return a list of n circles (x, y, r) inside the unit square without overlaps."""
+-    cols = math.ceil(math.sqrt(n))
+-    rows = math.ceil(n / cols)
++    # Start with a grid-based layout but with different counts to break symmetry
++    # A 5x6 grid is 30 circles, we take 26.
++    cols = 6
++    rows = 5
+     centers = []
+     for k in range(n):
+-        i, j = k % cols, k // cols
++        i = k % cols
++        j = k // cols
+         centers.append(((i + 0.5) / cols, (j + 0.5) / rows))
+-    radii = max_radii(centers)
+-    return [(x, y, r) for (x, y), r in zip(centers, radii)]
+-
++    
++    # Sort centers by distance to center of square to prioritize larger circles
++    # in the middle for a better sum of radii.
++    sorted_indices = sorted(range(n), key=lambda i: (centers[i][0]-0.5)**2 + (centers[i][1]-0.5)**2, reverse=True)
++    
++    # Greedily assign radii based on distance to other centers
++    # This ensures no overlaps while keeping radii as large as possible
++    radii = [0.0] * n
++    # Sort indices so that we process circles that are "more central" first
++    order = sorted(range(n), key=lambda i: (centers[i][0]-0.5)**2 + (centers[i][1]-0.5)**2, reverse=True)
++    
++    for i in range(n):
++        idx = order[i]
++        x, y = centers[idx]
++        # Initial radius constrained by box boundaries
++        r = min(x, y, 1 - x, 1 - y)
++        # Constrain by all previously placed circles
++        for j in range(i):
++            prev_idx = order[j]
++            d = math.dist(centers[idx], centers[prev_idx])
++            if r + radii[prev_idx] > d + 1e-10:
++                r = max(0.0, d - radii[prev_idx])
++        radii[idx] = r
++                
++    return [(centers[i][0], centers[i][1], radii[i]) for i in range(n)]
+ 
+ def max_radii(centers):
+-    """Largest radii for fixed centers: limit by walls, then shrink overlapping pairs."""
++    # Kept for compatibility but logic moved into construct_packing
+     radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]
+     for a in range(len(centers)):
+         for b in range(a + 1, len(centers)):
+```
+
+### All models
+
+One run per model and reasoning mode; the [model benchmarks](../benchmarks/circle_packing_26.md) page has speed, memory and progress over time.
+
+| Model | Where | Best | Gain | Minutes to best | New bests |
+|---|---|--:|--:|--:|--:|
+| gemma4:12b-it-qat (no-think) | local | 2.16667 | ×1.45 | 5.8 | 2 |
+| nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | 2.07195 | ×1.39 | 7.6 | 12 |
+| qwen3.5:latest (no-think) | local | 1.95644 | ×1.31 | 5.1 | 2 |
+| cohere/north-mini-code:free (no-think) | cloud | 1.93214 | ×1.30 | 3.1 | 3 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | 1.896 | ×1.27 | 30.5 | 2 |
+| richardyoung/frognano-4b-2609:latest (no-think) | local | 1.88223 | ×1.26 | 6.1 | 2 |
+| nvidia/nemotron-3.5-lightning:free (no-think) | cloud | 1.85011 | ×1.24 | 4.4 | 4 |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | 1.60406 | ×1.08 | 0.6 | 1 |
+| qwen2.5-coder:7b (no-think) | local | 1.60406 | ×1.08 | 1.2 | 1 |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | 1.58032 | ×1.06 | 3.0 | 2 |
+| xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 1.4901 | ×1.00 | - | 0 |
+| nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 1.4901 | ×1.00 | - | 0 |
+| dots-studio/dots-3-note-preview:free (no-think) | cloud | 1.4901 | ×1.00 | - | 0 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | 1.4901 | ×1.00 | - | 0 |
+| nemotron-3-nano:4b (no-think) | local | 1.4901 | ×1.00 | - | 0 |
+| gemma4:e2b (no-think) | local | 1.4901 | ×1.00 | - | 0 |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | 1.4901 | ×1.00 | - | 0 |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | local | 1.4901 | ×1.00 | - | 0 |
+| gemma4:e4b-it-qat (no-think) | local | 1.4901 | ×1.00 | - | 0 |
+| gemma4:latest (no-think) | local | 1.4901 | ×1.00 | - | 0 |

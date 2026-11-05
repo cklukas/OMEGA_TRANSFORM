@@ -1,0 +1,138 @@
+{
+ "schema": 4,
+ "example": "matmul_f32",
+ "model": "glm-4.7-flash:latest",
+ "variant": "no-think",
+ "model_size_gb": 19.0,
+ "model_params": "29.9B",
+ "started": "2026-11-05T03:26:34",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 19.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 1.14428,
+ "best_score": 1.27475,
+ "improvement": 1.1140192959765094,
+ "llm_calls": 33,
+ "mean_llm_seconds": 27.7,
+ "attempts": 33,
+ "ok": 3,
+ "statuses": {
+  "invalid": 5,
+  "compile_error": 17,
+  "duplicate": 5,
+  "edit_error": 3,
+  "ok": 3
+ },
+ "sweeps": 1,
+ "sweep_variants": 4,
+ "improvements": 3,
+ "minutes_to_best": 17.6,
+ "best_idea": "tuned UNROLL=4 on top of: Expose the inner loop unroll factor (3) as a constant to allow the evolutionary engine to tune it for optimal performance on Apple Silicon.",
+ "progress": [
+  [
+   0.0,
+   1.14428
+  ],
+  [
+   8.7,
+   1.21471
+  ],
+  [
+   17.44,
+   1.25303
+  ],
+  [
+   17.6,
+   1.27475
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.14428,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 8.7,
+   "score": 1.21471,
+   "model": "glm-4.7-flash:latest",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Switch loop order to i-k-j for contiguous B streaming and use NEON vld1q_f32 with vfmaq_f32 to compute small micro-tiles in registers, which exploits memory bandwidth and ARM FMA."
+  },
+  {
+   "minutes": 17.6,
+   "score": 1.231,
+   "model": "glm-4.7-flash:latest",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Expose the inner loop unroll factor (3) as a constant to allow the evolutionary engine to tune it for optimal performance on Apple Silicon."
+  },
+  {
+   "minutes": 17.6,
+   "score": 1.27475,
+   "model": "glm-4.7-flash:latest",
+   "mode": "sweep/exploit/diff/tune",
+   "status": "ok",
+   "idea": "tuned UNROLL=4 on top of: Expose the inner loop unroll factor (3) as a constant to allow the evolutionary engine to tune it for optimal performance on Apple Silicon."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -22,11 +22,14 @@\n // Computes C = A * B. C is NOT zeroed by the caller. Any number of threads may be\n // used (std::thread is available); n is any size from 1 to 2048.\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n+    constexpr int UNROLL = 4;\n+    for (int i = 0; i < n; ++i) {\n+        const float* Ar = A + i * n;\n         for (int j = 0; j < n; ++j) {\n             float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n+            for (int k = 0; k < n; ++k) s += Ar[k] * B[k * n + j];\n             C[i * n + j] = s;\n         }\n+    }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 21.6,
+ "model_gpu_memory_gb": 18.9,
+ "context_length": 40960,
+ "load_seconds": 0.0,
+ "median_call_seconds": 25.9,
+ "p90_call_seconds": 40.2,
+ "prompt_tokens_per_s": 579.8,
+ "gen_tokens_per_s": 26.0,
+ "mean_prompt_tokens": 2847,
+ "mean_gen_tokens": 537,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

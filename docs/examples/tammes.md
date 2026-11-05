@@ -346,17 +346,22 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/tamme
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|
 | nvidia/nemotron-3.5-super-vl:free (think) | cloud | 38.5034 | ×12.03 | 19.6 | 4 |
+| dots-studio/dots-3-note-preview:free (no-think) | cloud | 38.4693 | ×12.02 | 15.7 | 10 |
 | gemma4:26b-a4b-it-qat (no-think) | local | 38.3889 | ×11.99 | 15.1 | 4 |
 | cohere/north-mini-code:free (think) | cloud | 38.3608 | ×11.98 | 60.7 | 5 |
+| nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | 38.2850 | ×11.96 | 5.2 | 8 |
 | gpt-oss:20b (no-think) | local | 38.2397 | ×11.94 | 50.1 | 12 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | cloud | 37.1262 | ×11.60 | 26.6 | 5 |
+| cohere/north-mini-code:free (no-think) | cloud | 37.0540 | ×11.57 | 1.0 | 4 |
 | gemma4:latest (no-think) | local | 36.8186 | ×11.50 | 8.7 | 7 |
 | nvidia/nemotron-3.5-lightning:free (think) | cloud | 36.3532 | ×11.36 | 23.0 | 5 |
 | xingchen-agi/xing4.0-29b-a4b:free (think) | cloud | 34.8992 | ×10.90 | 18.8 | 2 |
 | frob/sarvam:30b (no-think) | local | 34.5838 | ×10.80 | 32.4 | 2 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 32.7402 | ×10.23 | 6.2 | 2 |
+| nvidia/nemotron-3.5-lightning:free (no-think) | cloud | 32.7402 | ×10.23 | 6.3 | 2 |
 | qwen2.5-coder:7b (no-think) | local | 32.7402 | ×10.23 | 0.8 | 1 |
 | qwen3.5:latest (no-think) | local | 32.7402 | ×10.23 | 9.1 | 2 |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | 32.7402 | ×10.23 | 0.3 | 1 |
 | qwen3-coder:30b (no-think) | local | 30.2470 | ×9.45 | 14.4 | 5 |
 | dots-studio/dots-3-note-preview:free (think) | cloud | 22.1357 | ×6.91 | 51.0 | 4 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 21.4033 | ×6.69 | 1.6 | 2 |
@@ -365,17 +370,12 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/tamme
 | glm-4.7-flash:latest (no-think) | local | 21.4033 | ×6.69 | 1.4 | 1 |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | cloud | 21.4033 | ×6.69 | 14.7 | 3 |
 | gemma4:e4b-it-qat (no-think) | local | 21.0395 | ×6.57 | 1.0 | 2 |
-| xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 17.2191 | ×5.38 | 17.9 | 1 |
+| nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 14.3393 | ×4.48 | 8.3 | 5 |
 | underdog-saluki-27b:iq2-mix (no-think) | local | 12.9182 | ×4.04 | 14.8 | 1 |
+| xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 12.8503 | ×4.01 | 8.2 | 1 |
 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | 9.80576 | ×3.06 | 6.8 | 3 |
 | gemma4:e2b (no-think) | local | 9.55566 | ×2.98 | 1.0 | 3 |
 | nemotron-3-nano:4b (no-think) | local | 9.50191 | ×2.97 | 2.5 | 1 |
-| cohere/north-mini-code:free (no-think) | cloud | | | | failed: all 6 model requests failed: cohere/north-mini-code:free … |
-| nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
-| nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
-| dots-studio/dots-3-note-preview:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
-| nvidia/nemotron-3.5-lightning:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
-| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | 3.20136 | ×1.00 | - | 0 |
 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | 3.20136 | ×1.00 | - | 0 |
 | llm-jp-4-8b-omega:q4_k_m (no-think) | local | 3.20136 | ×1.00 | - | 0 |

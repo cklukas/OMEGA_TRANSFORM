@@ -1,0 +1,482 @@
+{
+ "schema": 4,
+ "example": "tammes_30",
+ "model": "dots-studio/dots-3-note-preview:free",
+ "variant": "no-think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-04T10:07:10",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 16.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 3.2013569883368893,
+ "best_score": 38.46927176519233,
+ "improvement": 12.016551701463694,
+ "llm_calls": 50,
+ "mean_llm_seconds": 19.1,
+ "attempts": 50,
+ "ok": 35,
+ "statuses": {
+  "edit_error": 7,
+  "ok": 35,
+  "invalid": 6,
+  "duplicate": 1,
+  "llm_error": 1
+ },
+ "sweeps": 9,
+ "sweep_variants": 136,
+ "improvements": 10,
+ "minutes_to_best": 15.68,
+ "best_idea": "tuned REPULSION_STEP_2=0.012, REPULSION_ITER_2=150 on top of: Expose the repulsion step size and iteration count as named constants and add a second repulsion phase with a smaller step size and higher",
+ "progress": [
+  [
+   0.0,
+   3.2013569883368893
+  ],
+  [
+   1.78,
+   29.47062106773393
+  ],
+  [
+   5.26,
+   37.11192408147176
+  ],
+  [
+   7.54,
+   37.191567875947236
+  ],
+  [
+   7.88,
+   37.66288193095768
+  ],
+  [
+   9.28,
+   37.76023831152516
+  ],
+  [
+   9.53,
+   37.78227369998642
+  ],
+  [
+   10.47,
+   37.91242409189372
+  ],
+  [
+   10.88,
+   38.411476264655306
+  ],
+  [
+   11.66,
+   38.44685604807358
+  ],
+  [
+   15.68,
+   38.46927176519233
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.2013569883368893,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.78,
+   "score": 29.47062106773393,
+   "model": "dots-studio/dots-3-note-preview:free",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the random initialization with a Fibonacci spiral start followed by iterative repulsion energy minimization using increasing exponents, then finish with a max-min polish that pushes apart the closest pairs."
+  },
+  {
+   "minutes": 4.1,
+   "score": 27.16000773975605,
+   "model": "dots-studio/dots-3-note-preview:free",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Replace the single-start Fibonacci initialization with a multi-start strategy that tries several random rotations of the Fibonacci spiral and keeps the configuration with the best initial minimum angle, giving the repulsion optimization a better starting point."
+  },
+  {
+   "minutes": 11.66,
+   "score": 38.076284773276605,
+   "model": "dots-studio/dots-3-note-preview:free",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the single-pair polish with a multi-pair polish that targets all pairs within a margin of the minimum distance, and tune the polish parameters (margin, iterations, move scale) to improve the minimum angle."
+  },
+  {
+   "minutes": 15.68,
+   "score": 38.380331113659345,
+   "model": "dots-studio/dots-3-note-preview:free",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Expose the repulsion step size and iteration count as named constants and add a second repulsion phase with a smaller step size and higher exponent to fine-tune the configuration before the polish phase."
+  },
+  {
+   "minutes": 15.68,
+   "score": 38.46927176519233,
+   "model": "dots-studio/dots-3-note-preview:free",
+   "mode": "sweep/exploit/diff/refine",
+   "status": "ok",
+   "idea": "tuned REPULSION_STEP_2=0.012, REPULSION_ITER_2=150 on top of: Expose the repulsion step size and iteration count as named constants and add a second repulsion phase with a smaller step size and higher exponent to fine-tune the configuration before the polish phase."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -6,6 +6,24 @@\n import random\n \n # OMEGA-BLOCK-START\n+# Copyright (c) 2026 by C. Klukas\n+# SPDX-License-Identifier: MIT\n+\"\"\"Tammes problem (spherical code): place 30 points on the unit sphere so that the\n+smallest angle between any two of them is as large as possible.\"\"\"\n+import math\n+import random\n+\n+# Hyperparameters for the optimization process\n+REPULSION_STEP_1 = 0.05\n+REPULSION_ITER_1 = 200\n+REPULSION_STEP_2 = 0.012\n+REPULSION_ITER_2 = 150\n+EXPONENTS_1 = [1.0, 2.0, 4.0, 8.0, 16.0, 32.0]\n+EXPONENTS_2 = [32.0, 64.0]\n+POLISH_ITER = 750\n+POLISH_MOVE_SCALE = 0.1\n+POLISH_MARGIN = 1.01\n+\n def construct(n=30):\n     \"\"\"Return a list of n points (x, y, z) on the unit sphere.\n \n@@ -14,14 +32,209 @@\n     start draws uniformly random points with a fixed seed, so some pairs end up\n     close together.\n     \"\"\"\n-    rng = random.Random(1)\n-    points = []\n-    for _ in range(n):\n-        z = rng.uniform(-1.0, 1.0)\n-        phi = rng.uniform(0.0, 2 * math.pi)\n-        s = math.sqrt(1.0 - z * z)\n-        points.append((s * math.cos(phi), s * math.sin(phi), z))\n-    return points\n+    # Fibonacci spiral start with multiple random rotations\n+    phi = math.pi * (3.0 - math.sqrt(5.0))  # golden angle in radians\n+    base_pts = []\n+    for i in range(n):\n+        y = 1.0 - (i / float(n - 1)) * 2.0  # from 1 to -1\n+        r = math.sqrt(max(0.0, 1.0 - y * y))\n+        theta = phi * i\n+        base_pts.append([r * math.cos(theta), r * math.sin(theta), y])\n+\n+    # Helper to rotate a point around a random axis by a random angle\n+    def rotate_point(p, axis, angle):\n+        # Rodrigues' rotation formula\n+        x, y, z = p\n+        ux, uy, uz = axis\n+        cos_a = math.cos(angle)\n+        sin_a = math.sin(angle)\n+        dot = x*ux + y*uy + z*uz\n+        cross_x = y*uz - z*uy\n+        cross_y = z*ux - x*uz\n+        cross_z = x*uy - y*ux\n+        return [\n+            x*cos_a + cross_x*sin_a + ux*dot*(1-cos_a),\n+            y*cos_a + cross_y*sin_a + uy*dot*(1-cos_a),\n+            z*cos_a + cross_z*sin_a + uz*dot*(1-cos_a)\n+        ]\n+\n+    # Generate multiple rotated versions and pick the one with the largest minimum distance\n+    rng = random.Random(42)\n+    best_pts = None\n+    best_min_d2 = float('inf')\n+    for _ in range(10):  # try 10 different rotations\n+        # Random axis and angle\n+        axis = [rng.uniform(-1, 1) for _ in range(3)]\n+        norm = math.sqrt(sum(a*a for a in axis))\n+        if norm == 0:\n+            continue\n+        axis = [a/norm for a in axis]\n+        angle = rng.uniform(0, 2*math.pi)\n+        # Rotate all base points\n+        candidate = [rotate_point(p, axis, angle) for p in base_pts]\n+        # Compute minimum squared distance\n+        min_d2 = float('inf')\n+        for i in range(n):\n+            for j in range(i+1, n):\n+                dx = candidate[i][0] - candidate[j][0]\n+                dy = candidate[i][1] - candidate[j][1]\n+                dz = candidate[i][2] - candidate[j][2]\n+                d2 = dx*dx + dy*dy + dz*dz\n+                if d2 < min_d2:\n+                    min_d2 = d2\n+        if min_d2 < best_min_d2:\n+            best_min_d2 = min_d2\n+            best_pts = candidate\n+    pts = best_pts\n+\n+    # Helper: squared distance between points i and j\n+    def sqdist(i, j):\n+        dx = pts[i][0] - pts[j][0]\n+        dy = pts[i][1] - pts[j][1]\n+        dz = pts[i][2] - pts[j][2]\n+        return dx*dx + dy*dy + dz*dz\n+\n+    # Repulsion minimization with increasing exponent (first phase)\n+    for s in EXPONENTS_1:\n+        step = REPULSION_STEP_1\n+        for _ in range(REPULSION_ITER_1):\n+            # Compute forces\n+            forces = [[0.0, 0.0, 0.0] for _ in range(n)]\n+            for i in range(n):\n+                for j in range(i + 1, n):\n+                    d2 = sqdist(i, j)\n+                    if d2 < 1e-12:\n+                        continue\n+                    d = math.sqrt(d2)\n+                    f = step / (d ** (s + 1))\n+                    dx = pts[i][0] - pts[j][0]\n+                    dy = pts[i][1] - pts[j][1]\n+                    dz = pts[i][2] - pts[j][2]\n+                    forces[i][0] += f * dx\n+                    forces[i][1] += f * dy\n+                    forces[i][2] += f * dz\n+                    forces[j][0] -= f * dx\n+                    forces[j][1] -= f * dy\n+                    forces[j][2] -= f * dz\n+            # Apply forces and project onto sphere\n+            for i in range(n):\n+                x, y, z = pts[i]\n+                fx, fy, fz = forces[i]\n+                # Project force onto tangent plane\n+                dot = x*fx + y*fy + z*fz\n+                fx -= dot * x\n+                fy -= dot * y\n+                fz -= dot * z\n+                # Update position\n+                nx = x + fx\n+                ny = y + fy\n+                nz = z + fz\n+                norm = math.sqrt(nx*nx + ny*ny + nz*nz)\n+                if norm > 0:\n+                    pts[i][0] = nx / norm\n+                    pts[i][1] = ny / norm\n+                    pts[i][2] = nz / norm\n+\n+    # Second repulsion phase with smaller step and higher exponents\n+    for s in EXPONENTS_2:\n+        step = REPULSION_STEP_2\n+        for _ in range(REPULSION_ITER_2):\n+            # Compute forces\n+            forces = [[0.0, 0.0, 0.0] for _ in range(n)]\n+            for i in range(n):\n+                for j in range(i + 1, n):\n+                    d2 = sqdist(i, j)\n+                    if d2 < 1e-12:\n+                        continue\n+                    d = math.sqrt(d2)\n+                    f = step / (d ** (s + 1))\n+                    dx = pts[i][0] - pts[j][0]\n+                    dy = pts[i][1] - pts[j][1]\n+                    dz = pts[i][2] - pts[j][2]\n+                    forces[i][0] += f * dx\n+                    forces[i][1] += f * dy\n+                    forces[i][2] += f * dz\n+                    forces[j][0] -= f * dx\n+                    forces[j][1] -= f * dy\n+                    forces[j][2] -= f * dz\n+            # Apply forces and project onto sphere\n+            for i in range(n):\n+                x, y, z = pts[i]\n+                fx, fy, fz = forces[i]\n+                # Project force onto tangent plane\n+                dot = x*fx + y*fy + z*fz\n+                fx -= dot * x\n+                fy -= dot * y\n+                fz -= dot * z\n+                # Update position\n+                nx = x + fx\n+                ny = y + fy\n+                nz = z + fz\n+                norm = math.sqrt(nx*nx + ny*ny + nz*nz)\n+                if norm > 0:\n+                    pts[i][0] = nx / norm\n+                    pts[i][1] = ny / norm\n+                    pts[i][2] = nz / norm\n+\n+    # Max-min polish: push apart all pairs within a margin of the minimum distance\n+    for it in range(POLISH_ITER):\n+        # Find minimum distance\n+        min_d2 = float('inf')\n+        for i in range(n):\n+            for j in range(i + 1, n):\n+                d2 = sqdist(i, j)\n+                if d2 < min_d2:\n+                    min_d2 = d2\n+        if min_d2 == float('inf'):\n+            break\n+        margin = min_d2 * POLISH_MARGIN\n+        # Collect all pairs within the margin\n+        close_pairs = []\n+        for i in range(n):\n+            for j in range(i + 1, n):\n+                if sqdist(i, j) <= margin:\n+                    close_pairs.append((i, j))\n+        if not close_pairs:\n+            break\n+        # Adaptive move scale: decay linearly with iteration\n+        move = POLISH_MOVE_SCALE * (1.0 - it / float(POLISH_ITER))\n+        for i, j in close_pairs:\n+            dx = pts[i][0] - pts[j][0]\n+            dy = pts[i][1] - pts[j][1]\n+            dz = pts[i][2] - pts[j][2]\n+            norm = math.sqrt(dx*dx + dy*dy + dz*dz)\n+            if norm < 1e-12:\n+                continue\n+            # For point i\n+            dot_i = pts[i][0]*dx + pts[i][1]*dy + pts[i][2]*dz\n+            tx_i = dx - dot_i * pts[i][0]\n+            ty_i = dy - dot_i * pts[i][1]\n+            tz_i = dz - dot_i * pts[i][2]\n+            t_norm_i = math.sqrt(tx_i*tx_i + ty_i*ty_i + tz_i*tz_i)\n+            if t_norm_i > 0:\n+                pts[i][0] += move * tx_i / t_norm_i\n+                pts[i][1] += move * ty_i / t_norm_i\n+                pts[i][2] += move * tz_i / t_norm_i\n+            # For point j (opposite direction)\n+            dot_j = pts[j][0]*dx + pts[j][1]*dy + pts[j][2]*dz\n+            tx_j = dx - dot_j * pts[j][0]\n+            ty_j = dy - dot_j * pts[j][1]\n+            tz_j = dz - dot_j * pts[j][2]\n+            t_norm_j = math.sqrt(tx_j*tx_j + ty_j*ty_j + tz_j*tz_j)\n+            if t_norm_j > 0:\n+                pts[j][0] -= move * tx_j / t_norm_j\n+                pts[j][1] -= move * ty_j / t_norm_j\n+                pts[j][2] -= move * tz_j / t_norm_j\n+        # Renormalize all points\n+        for i in range(n):\n+            x, y, z = pts[i]\n+            norm = math.sqrt(x*x + y*y + z*z)\n+            if norm > 0:\n+                pts[i][0] = x / norm\n+                pts[i][1] = y / norm\n+                pts[i][2] = z / norm\n+\n+    return [(p[0], p[1], p[2]) for p in pts]\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "sphere_points",
+  "points": [
+   [
+    0.3919709387244532,
+    -0.5582121095618475,
+    -0.7312715117751976
+   ],
+   [
+    -0.027052463738772504,
+    0.8490936142385189,
+    0.5275492379532281
+   ],
+   [
+    -0.9500239047545286,
+    0.31204362944230385,
+    -0.009129825816118098
+   ],
+   [
+    0.22957314306547277,
+    -0.9248645600666849,
+    0.30318594544552596
+   ],
+   [
+    0.5740391880355756,
+    0.1033386161058686,
+    -0.8122808264515302
+   ],
+   [
+    -0.6758397496085636,
+    0.3037890926411783,
+    0.6715302078397394
+   ],
+   [
+    0.8512988419434201,
+    0.011265659732678564,
+    0.524560164915884
+   ],
+   [
+    -0.17680359044518373,
+    -0.9781667833824966,
+    -0.10922561189039716
+   ],
+   [
+    0.7908900515540614,
+    -0.28321934240489055,
+    -0.5424755574590947
+   ],
+   [
+    0.5851964340381928,
+    0.11388203849293084,
+    0.8028549152229673
+   ],
+   [
+    -0.30434810274742335,
+    -0.08102906244732802,
+    -0.9491082780130784
+   ],
+   [
+    -0.3509958145626131,
+    0.3246444046695718,
+    0.8782983255570211
+   ],
+   [
+    -0.7271635298854837,
+    0.3872590786250933,
+    -0.5668012057387734
+   ],
+   [
+    0.05942052898539893,
+    0.33054331283916893,
+    -0.9419184248502641
+   ],
+   [
+    -0.9919106268324059,
+    0.02610563707090374,
+    -0.12422481269885588
+   ],
+   [
+    0.10141148542176433,
+    0.8394879795728718,
+    -0.5338310994848547
+   ],
+   [
+    -0.800348025639128,
+    0.20762133322971385,
+    -0.5624379253246229
+   ],
+   [
+    0.8990635126271509,
+    0.12213812674917045,
+    -0.4204367708190289
+   ],
+   [
+    -0.6917519647168419,
+    -0.2562101885183855,
+    0.6751559513251457
+   ],
+   [
+    0.3757097440071294,
+    0.88195886829755,
+    0.28458872586489115
+   ],
+   [
+    0.10962933743537041,
+    -0.1326097917248836,
+    0.9850868243521302
+   ],
+   [
+    -0.32373272592570945,
+    0.5659500259391612,
+    -0.7582200803883872
+   ],
+   [
+    -0.2164510454505914,
+    -0.8700158468173443,
+    0.44296881516653674
+   ],
+   [
+    -0.43065317546221576,
+    0.22938243010501777,
+    0.8728811735989193
+   ],
+   [
+    -0.3606302208330362,
+    -0.6589776995328848,
+    0.660071386548654
+   ],
+   [
+    -0.7836961589264019,
+    -0.48079575758636983,
+    -0.3932629781341648
+   ],
+   [
+    0.3660243386758451,
+    -0.5299673944570227,
+    0.7649580016637154
+   ],
+   [
+    -0.8476230763315352,
+    -0.5304935866064687,
+    0.010567641159200837
+   ],
+   [
+    0.016650981414250473,
+    0.36477107016970456,
+    -0.9309483396973168
+   ],
+   [
+    -0.6901522939672605,
+    0.4121803795407587,
+    0.5948084951086057
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "sphere_points",
+  "points": [
+   [
+    -0.5259101855933096,
+    -0.3016613635943373,
+    0.7952476962579746
+   ],
+   [
+    0.2574564323265885,
+    -0.3227914233129109,
+    -0.9107809190410666
+   ],
+   [
+    -0.8375130752505194,
+    0.20533425747214537,
+    0.5063691257302132
+   ],
+   [
+    0.16517489604807362,
+    0.7597850401096136,
+    -0.6288433402216652
+   ],
+   [
+    0.9536738147431045,
+    -0.27782981311206933,
+    0.11539865692219983
+   ],
+   [
+    -0.046903685855226376,
+    -0.80960963996578,
+    -0.5850916809592104
+   ],
+   [
+    -0.05795484282034781,
+    -0.7495549243051037,
+    0.6594002211431529
+   ],
+   [
+    -0.20046391734379004,
+    0.9719393771513618,
+    -0.12307747554205507
+   ],
+   [
+    0.794171134239468,
+    -0.30638839183849415,
+    -0.5248031658511776
+   ],
+   [
+    -0.6147721159547695,
+    -0.7289487562803293,
+    0.30114607113800546
+   ],
+   [
+    -0.8460162083612771,
+    0.5288034923340622,
+    -0.06799589462098156
+   ],
+   [
+    0.10169390562683772,
+    -0.19207231253463872,
+    0.9760976264267607
+   ],
+   [
+    0.9291377227181681,
+    0.27820949760994956,
+    -0.24352118524209818
+   ],
+   [
+    0.6983538164285392,
+    -0.12535848741002034,
+    0.7046894328099196
+   ],
+   [
+    -0.8374068024921667,
+    0.0668340048209392,
+    -0.5424786290163329
+   ],
+   [
+    0.16920418687897984,
+    0.8912897600997394,
+    0.4206810034740961
+   ],
+   [
+    -0.06407433024436288,
+    -0.9967794933769308,
+    0.048219516660430846
+   ],
+   [
+    -0.4827831519444042,
+    0.759988844668815,
+    0.43512915804113406
+   ],
+   [
+    -0.4833666336724902,
+    0.6260139561238547,
+    -0.611934003132924
+   ],
+   [
+    0.5600698243742925,
+    -0.7111984978194719,
+    0.42487467390358286
+   ],
+   [
+    -0.07854060531557933,
+    0.24484914958797313,
+    -0.9663748068232682
+   ],
+   [
+    -0.40266957703559125,
+    -0.3211297820432016,
+    -0.8571656052449049
+   ],
+   [
+    0.8093668379415266,
+    0.44369296783820644,
+    0.3847880870446212
+   ],
+   [
+    0.33839996093158237,
+    0.4125018606340422,
+    0.8457704661519914
+   ],
+   [
+    -0.9710277664923757,
+    -0.23686513820457492,
+    0.031622507872654096
+   ],
+   [
+    -0.3132452503163291,
+    0.3174889033842739,
+    0.8950297254181626
+   ],
+   [
+    0.5595161459145845,
+    0.2536521615268709,
+    -0.7890514960467635
+   ],
+   [
+    0.5145673573722278,
+    -0.8271958110977945,
+    -0.2257598831263517
+   ],
+   [
+    0.5664573922006867,
+    0.8173684384544038,
+    -0.1050469354136864
+   ],
+   [
+    -0.6522580698488275,
+    -0.6691885876862189,
+    -0.3560141070626358
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 17.7,
+ "p90_call_seconds": 29.7,
+ "prompt_tokens_per_s": 3922.0,
+ "gen_tokens_per_s": 110.5,
+ "mean_prompt_tokens": 6519,
+ "mean_gen_tokens": 1906,
+ "stopped_calls": 1,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

@@ -1,0 +1,135 @@
+{
+ "schema": 4,
+ "example": "float_parse_single_thread",
+ "model": "nvidia/nemotron-3.5-super-vl:free",
+ "variant": "no-think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-03T12:05:18",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 16.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 54.4929,
+ "best_score": 55.7267,
+ "improvement": 1.0226414817343177,
+ "llm_calls": 31,
+ "mean_llm_seconds": 29.3,
+ "attempts": 31,
+ "ok": 4,
+ "statuses": {
+  "compile_error": 3,
+  "edit_error": 6,
+  "invalid": 6,
+  "llm_error": 6,
+  "ok": 4,
+  "duplicate": 6
+ },
+ "sweeps": 1,
+ "sweep_variants": 5,
+ "improvements": 1,
+ "minutes_to_best": 8.4,
+ "best_idea": "Add a fast path for short unsigned integers without decimal point or exponent: accumulate up to 19 digits into uint64_t and cast exactly to double, falling back to std::strtod otherwise; expose the di",
+ "progress": [
+  [
+   0.0,
+   54.4929
+  ],
+  [
+   8.4,
+   55.7267
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 54.4929,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 8.4,
+   "score": 55.7267,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Add a fast path for short unsigned integers without decimal point or exponent: accumulate up to 19 digits into uint64_t and cast exactly to double, falling back to std::strtod otherwise; expose the digit threshold as a sweepable constant."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -31,14 +31,30 @@\n // spaces, no '+' sign on the mantissa, no inf/nan/hex. Every value must be\n // bit-identical to std::strtod (correctly rounded, round-half-to-even).\n extern \"C\" size_t parse_doubles(const char* buf, size_t len, double* out) {\n+    constexpr size_t FAST_INT_MAX_DIGITS = 19;\n     const char* p = buf;\n     const char* end = buf + len;\n     size_t count = 0;\n     while (p < end) {\n-        char* next;\n-        out[count++] = std::strtod(p, &next);\n-        p = next;\n-        while (p < end && *p == '\\n') ++p;\n+        const char* start = p;\n+        bool neg = false;\n+        if (*p == '-') { neg = true; ++p; }\n+        const char* dig = p;\n+        while (p < end && *p >= '0' && *p <= '9') ++p;\n+        size_t ndig = (size_t)(p - dig);\n+        bool fast = ndig >= 1 && ndig <= FAST_INT_MAX_DIGITS && p < end && *p == '\\n';\n+        if (fast) {\n+            uint64_t m = 0;\n+            const char* q = dig;\n+            while (q < p) { m = m * 10u + (uint64_t)(*q - '0'); ++q; }\n+            out[count++] = neg ? -((double)m) : (double)m;\n+            ++p; // skip newline\n+        } else {\n+            char* next;\n+            out[count++] = std::strtod(start, &next);\n+            p = next;\n+            while (p < end && *p == '\\n') ++p;\n+        }\n     }\n     return count;\n }\n",
+ "initial_solution": {
+  "kind": "parse",
+  "count": 2000000,
+  "text_mb": 28.39,
+  "head": [
+   "0",
+   "-0",
+   "1",
+   "-1.5",
+   "0.1",
+   "1e23",
+   "9007199254740993",
+   "4.9e-324"
+  ]
+ },
+ "best_solution": {
+  "kind": "parse",
+  "count": 2000000,
+  "text_mb": 28.39,
+  "head": [
+   "0",
+   "-0",
+   "1",
+   "-1.5",
+   "0.1",
+   "1e23",
+   "9007199254740993",
+   "4.9e-324"
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 24.0,
+ "p90_call_seconds": 56.5,
+ "prompt_tokens_per_s": 743.3,
+ "gen_tokens_per_s": 67.8,
+ "mean_prompt_tokens": 6866,
+ "mean_gen_tokens": 1073,
+ "stopped_calls": 6,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

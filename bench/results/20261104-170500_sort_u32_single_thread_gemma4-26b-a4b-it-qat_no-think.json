@@ -1,0 +1,156 @@
+{
+ "schema": 4,
+ "example": "sort_u32_single_thread",
+ "model": "gemma4:26b-a4b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 15.6,
+ "model_params": "25.2B",
+ "started": "2026-11-04T17:05:00",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 20.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 21.050293723581127,
+ "best_score": 151.3880870886331,
+ "improvement": 7.191732765184361,
+ "llm_calls": 24,
+ "mean_llm_seconds": 45.6,
+ "attempts": 24,
+ "ok": 20,
+ "statuses": {
+  "ok": 20,
+  "invalid": 2,
+  "llm_error": 2
+ },
+ "sweeps": 3,
+ "sweep_variants": 11,
+ "improvements": 5,
+ "minutes_to_best": 6.37,
+ "best_idea": "Use a 4-pass 8-bit Radix Sort with a single buffer, which is often faster for large random arrays due to smaller histogram sizes and better cache behavior, and implement a more robust nearly-sorted de",
+ "progress": [
+  [
+   0.0,
+   21.050293723581127
+  ],
+  [
+   1.06,
+   77.88224461834008
+  ],
+  [
+   2.45,
+   83.57655542943648
+  ],
+  [
+   3.15,
+   134.98162883324434
+  ],
+  [
+   5.3,
+   137.15332762684096
+  ],
+  [
+   6.37,
+   151.3880870886331
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 21.050293723581127,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.06,
+   "score": 77.88224461834008,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Implement a high-performance LSD Radix Sort using 11-bit digits (3 passes) with a single scratch buffer to maximize throughput across all distributions."
+  },
+  {
+   "minutes": 3.15,
+   "score": 134.98162883324434,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Implement an adaptive sort that uses a fast LSD radix sort for large random arrays, but handles nearly-sorted, reverse-sorted, or small arrays with specialized fast paths (insertion sort or a single-pass check) to improve score on non-uniform distributions."
+  },
+  {
+   "minutes": 6.37,
+   "score": 151.3880870886331,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Use a 4-pass 8-bit Radix Sort with a single buffer, which is often faster for large random arrays due to smaller histogram sizes and better cache behavior, and implement a more robust nearly-sorted detection using a sampling approach or just relying on the fast LSD."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,22 +19,103 @@\n #endif\n \n // OMEGA-BLOCK-START\n-// Sorts a[0..n) ascending, in place, on the calling thread. n is any size from\n-// 0 to 2'000'000. Extra memory may be allocated freely.\n-static void merge_sort_rec(uint32_t* a, uint32_t* tmp, size_t lo, size_t hi) {\n-    if (hi - lo < 2) return;\n-    size_t mid = lo + (hi - lo) / 2;\n-    merge_sort_rec(a, tmp, lo, mid);\n-    merge_sort_rec(a, tmp, mid, hi);\n-    size_t i = lo, j = mid, k = lo;\n-    while (i < mid && j < hi) tmp[k++] = (a[j] < a[i]) ? a[j++] : a[i++];\n-    while (i < mid) tmp[k++] = a[i++];\n-    while (j < hi) tmp[k++] = a[j++];\n-    for (size_t t = lo; t < hi; ++t) a[t] = tmp[t];\n+static void radix_sort(uint32_t* a, size_t n) {\n+    if (n < 2) return;\n+    uint32_t* tmp = new uint32_t[n];\n+    uint32_t* src = a;\n+    uint32_t* dst = tmp;\n+\n+    // 4 passes of 8 bits covers 32 bits exactly\n+    constexpr size_t BITS = 8;\n+    constexpr size_t BUCKETS = 1 << BITS;\n+    constexpr size_t MASK = BUCKETS - 1;\n+\n+    for (int pass = 0; pass < 4; ++pass) {\n+        size_t count[BUCKETS] = {0};\n+        int shift = pass * BITS;\n+\n+        // Optimization: if MSB pass (pass 3) results in only 1 bucket used, we are done.\n+        // However, we must check this during the counting of the 4th pass.\n+        \n+        for (size_t i = 0; i < n; ++i)\n+            count[(src[i] >> shift) & MASK]++;\n+\n+        size_t pref[BUCKETS];\n+        pref[0] = 0;\n+        for (size_t i = 1; i < BUCKETS; ++i)\n+            pref[i] = pref[i - 1] + count[i - 1];\n+\n+        // Optimization: Check if all elements have the same MSB digit.\n+        // If so, the sort is finished.\n+        if (pass == 3) {\n+            bool all_same = true;\n+            for (size_t i = 1; i < n; ++i) {\n+                if (((src[i] >> shift) & MASK) != ((src[0] >> shift) & MASK)) {\n+                    all_same = false;\n+                    break;\n+                }\n+            }\n+            if (all_same) {\n+                delete[] tmp;\n+                return;\n+            }\n+        }\n+\n+        // Check for total homogeneity in any pass to skip remaining passes\n+        bool all_zero = true;\n+        for(size_t i=0; i<BUCKETS; ++i) {\n+            if(count[i] > 0) {\n+                if(i != 0 || count[i] != n) { /* not all in bucket 0 */ }\n+                // Actually, simpler: if all n are in the SAME bucket, we skip.\n+            }\n+        }\n+        // Re-evaluating: Just check if count[some_digit] == n\n+        bool skip = false;\n+        for(size_t i=0; i<BUCKETS; ++i) {\n+            if(count[i] == n) {\n+                skip = true;\n+                break;\n+            }\n+        }\n+        if(skip) {\n+            delete[] tmp;\n+            return;\n+        }\n+\n+        for (size_t i = 0; i < n; ++i) {\n+            size_t digit = (src[i] >> shift) & MASK;\n+            dst[pref[digit]++] = src[i];\n+        }\n+\n+        uint32_t* temp_ptr = src;\n+        src = dst;\n+        dst = temp_ptr;\n+    }\n+\n+    if (src != a) std::memcpy(a, src, n * sizeof(uint32_t));\n+    delete[] tmp;\n }\n \n extern \"C\" void sort_u32(uint32_t* a, size_t n) {\n-    std::vector<uint32_t> tmp(n);\n-    merge_sort_rec(a, tmp.data(), 0, n);\n+    if (n < 2) return;\n+    \n+    bool sorted = true;\n+    bool reverse = true;\n+    for (size_t i = 1; i < n; ++i) {\n+        if (a[i] < a[i-1]) sorted = false;\n+        if (a[i] > a[i-1]) reverse = false;\n+        if (!sorted && !reverse) break;\n+    }\n+    if (sorted) return;\n+    if (reverse) {\n+        for (size_t i = 0; i < n / 2; ++i) std::swap(a[i], a[n - 1 - i]);\n+        return;\n+    }\n+\n+    if (n < 128) {\n+        std::sort(a, a + n);\n+        return;\n+    }\n+    radix_sort(a, n);\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "best_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 16.1,
+ "model_gpu_memory_gb": 14.4,
+ "context_length": 40960,
+ "load_seconds": 0.0,
+ "median_call_seconds": 42.7,
+ "p90_call_seconds": 66.9,
+ "prompt_tokens_per_s": 818.4,
+ "gen_tokens_per_s": 34.1,
+ "mean_prompt_tokens": 5679,
+ "mean_gen_tokens": 1096,
+ "stopped_calls": 2,
+ "provider": "ollama",
+ "cost_usd": 0
+}

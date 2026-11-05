@@ -184,6 +184,7 @@ Free OpenRouter models; times include the network and the provider's queue.
 | nvidia/nemotron-3.5-super-vl:free (think) |  | 0.623 | **0.957** | ×1.54 | 20 | 53 | 95% | 6 | 8.4 | 18.0 | no progress |
 | nvidia/nemotron-3-ultra-550b-a55b:free (think) |  | 0.623 | **0.936** | ×1.50 | 42 | 91 | 88% | 10 | 64.1 | 64.2 | time limit |
 | cohere/north-mini-code:free (think) |  | 0.623 | **0.934** | ×1.50 | 36 | 100 | 72% | 5 | 37.5 | 60.6 | time limit |
+| xingchen-agi/xing4.0-29b-a4b:free (no-think) |  | 0.623 | **0.914** | ×1.47 | 55 | 48 | 42% | 6 | 34.6 | 45.0 | no progress |
 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) |  | 0.623 | **0.885** | ×1.42 | 26 | 20 | 73% | 5 | 3.6 | 9.6 | no progress |
 | cohere/north-mini-code:free (no-think) |  | 0.623 | **0.88** | ×1.41 | 17 | 6 | 71% | 1 | 0.2 | 1.9 | no progress |
 | nvidia/nemotron-3.5-super-vl:free (no-think) |  | 0.623 | **0.877** | ×1.41 | 40 | 5 | 62% | 3 | 1.7 | 3.2 | no progress |
@@ -194,31 +195,30 @@ Free OpenRouter models; times include the network and the provider's queue.
 | dots-studio/dots-3-note-preview:free (no-think) |  | 0.623 | **0.793** | ×1.27 | 21 | 11 | 48% | 3 | 1.4 | 3.9 | no progress |
 | xingchen-agi/xing4.0-29b-a4b:free (think) |  | 0.623 | **0.788** | ×1.26 | 16 | 132 | 31% | 1 | 1.6 | 35.2 | no progress |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) |  | 0.623 | **0.764** | ×1.23 | 27 | 19 | 41% | 2 | 2.1 | 9.6 | no progress |
-| xingchen-agi/xing4.0-29b-a4b:free (no-think) |  | 0.623 | **0.678** | ×1.09 | 9 | 62 | 11% | 1 | 1.9 | 9.4 | model errors |
-| recursive/flint-v1.0:free (think) |  | | | | | | | | | | failed: all 5 model requests failed: recursive/flint-v1.0:free: requ |
+| recursive/flint-v1.0:free (think) |  | | | | | | | | | | failed: all 6 model requests failed: recursive/flint-v1.0:free: rate |
 
 ```mermaid
 xychart-beta
     title "feature_engineering, cloud: best score"
-    x-axis ["nemotron-3.5-super-vl (think)", "nemotron-3-ultra-550b-a55b (think)", "north-mini-code (think)", "nemotron-3-ultra-550b-a55b (no-think)", "north-mini-code (no-think)", "nemotron-3.5-super-vl (no-think)", "nemotron-3.5-lightning (think)", "nemotron-3.5-lightning (no-think)", "dots-3-note-preview (think)", "nemotron-3-nano-omni-30b-a3b-reasoning (think)", "dots-3-note-preview (no-think)", "xing4.0-29b-a4b (think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)", "xing4.0-29b-a4b (no-think)"]
+    x-axis ["nemotron-3.5-super-vl (think)", "nemotron-3-ultra-550b-a55b (think)", "north-mini-code (think)", "xing4.0-29b-a4b (no-think)", "nemotron-3-ultra-550b-a55b (no-think)", "north-mini-code (no-think)", "nemotron-3.5-super-vl (no-think)", "nemotron-3.5-lightning (think)", "nemotron-3.5-lightning (no-think)", "dots-3-note-preview (think)", "nemotron-3-nano-omni-30b-a3b-reasoning (think)", "dots-3-note-preview (no-think)", "xing4.0-29b-a4b (think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)"]
     y-axis "score" 0 --> 1.053
-    bar [0.957, 0.936, 0.934, 0.885, 0.88, 0.877, 0.873, 0.861, 0.849, 0.821, 0.793, 0.788, 0.764, 0.678]
+    bar [0.957, 0.936, 0.934, 0.914, 0.885, 0.88, 0.877, 0.873, 0.861, 0.849, 0.821, 0.793, 0.788, 0.764]
 ```
 
 ```mermaid
 xychart-beta
     title "feature_engineering, cloud: valid answers (%)"
-    x-axis ["nemotron-3.5-super-vl (think)", "nemotron-3-ultra-550b-a55b (think)", "north-mini-code (think)", "nemotron-3-ultra-550b-a55b (no-think)", "north-mini-code (no-think)", "nemotron-3.5-super-vl (no-think)", "nemotron-3.5-lightning (think)", "nemotron-3.5-lightning (no-think)", "dots-3-note-preview (think)", "nemotron-3-nano-omni-30b-a3b-reasoning (think)", "dots-3-note-preview (no-think)", "xing4.0-29b-a4b (think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)", "xing4.0-29b-a4b (no-think)"]
+    x-axis ["nemotron-3.5-super-vl (think)", "nemotron-3-ultra-550b-a55b (think)", "north-mini-code (think)", "xing4.0-29b-a4b (no-think)", "nemotron-3-ultra-550b-a55b (no-think)", "north-mini-code (no-think)", "nemotron-3.5-super-vl (no-think)", "nemotron-3.5-lightning (think)", "nemotron-3.5-lightning (no-think)", "dots-3-note-preview (think)", "nemotron-3-nano-omni-30b-a3b-reasoning (think)", "dots-3-note-preview (no-think)", "xing4.0-29b-a4b (think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)"]
     y-axis "% of answers" 0 --> 104.5
-    bar [95, 88.1, 72.22, 73.08, 70.59, 62.5, 26.32, 50, 71.43, 42.86, 47.62, 31.25, 40.74, 11.11]
+    bar [95, 88.1, 72.22, 41.82, 73.08, 70.59, 62.5, 26.32, 50, 71.43, 42.86, 47.62, 31.25, 40.74]
 ```
 
 ```mermaid
 xychart-beta
     title "feature_engineering, cloud: seconds per LLM call"
-    x-axis ["nemotron-3.5-super-vl (think)", "nemotron-3-ultra-550b-a55b (think)", "north-mini-code (think)", "nemotron-3-ultra-550b-a55b (no-think)", "north-mini-code (no-think)", "nemotron-3.5-super-vl (no-think)", "nemotron-3.5-lightning (think)", "nemotron-3.5-lightning (no-think)", "dots-3-note-preview (think)", "nemotron-3-nano-omni-30b-a3b-reasoning (think)", "dots-3-note-preview (no-think)", "xing4.0-29b-a4b (think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)", "xing4.0-29b-a4b (no-think)"]
+    x-axis ["nemotron-3.5-super-vl (think)", "nemotron-3-ultra-550b-a55b (think)", "north-mini-code (think)", "xing4.0-29b-a4b (no-think)", "nemotron-3-ultra-550b-a55b (no-think)", "north-mini-code (no-think)", "nemotron-3.5-super-vl (no-think)", "nemotron-3.5-lightning (think)", "nemotron-3.5-lightning (no-think)", "dots-3-note-preview (think)", "nemotron-3-nano-omni-30b-a3b-reasoning (think)", "dots-3-note-preview (no-think)", "xing4.0-29b-a4b (think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)"]
     y-axis "seconds" 0 --> 186.1
-    bar [52.7, 90.7, 100.5, 20.2, 6.5, 4.6, 159.2, 32.4, 169.2, 124.9, 10.7, 131.9, 19.1, 62.3]
+    bar [52.7, 90.7, 100.5, 48.4, 20.2, 6.5, 4.6, 159.2, 32.4, 169.2, 124.9, 10.7, 131.9, 19.1]
 ```
 
 ### Inference speed and cost
@@ -237,7 +237,7 @@ Generation speed is measured from the first to the last streamed token; the time
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | 79.6 | 112 | 228 | 9871 | 0 | 0.000 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | 72.3 | 20 | 41 | 1288 | 0 | 0.000 |
 | xingchen-agi/xing4.0-29b-a4b:free (think) | 64.8 | 75 | 408 | 2314 | 2 | 0.000 |
-| xingchen-agi/xing4.0-29b-a4b:free (no-think) | 56.7 | 74 | 76 | 23 | 0 | 0.000 |
+| xingchen-agi/xing4.0-29b-a4b:free (no-think) | 61.2 | 43 | 76 | 579 | 4 | 0.000 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | 53.2 | 68 | 197 | 4639 | 0 | 0.000 |
 | nvidia/nemotron-3.5-lightning:free (no-think) | 43.5 | 18 | 72 | 1572 | 9 | 0.000 |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | 36.8 | 9 | 24 | 684 | 2 | 0.000 |
@@ -247,7 +247,7 @@ xychart-beta
     title "feature_engineering, cloud: generation speed (tokens/s)"
     x-axis ["nemotron-3.5-super-vl (no-think)", "nemotron-3.5-super-vl (think)", "north-mini-code (think)", "north-mini-code (no-think)", "dots-3-note-preview (no-think)", "dots-3-note-preview (think)", "nemotron-3.5-lightning (think)", "nemotron-3-nano-omni-30b-a3b-reasoning (think)", "nemotron-3-ultra-550b-a55b (no-think)", "xing4.0-29b-a4b (think)", "xing4.0-29b-a4b (no-think)", "nemotron-3-ultra-550b-a55b (think)", "nemotron-3.5-lightning (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)"]
     y-axis "tokens/s" 0 --> 200.1
-    bar [181.9, 148.3, 134.1, 130.8, 106.4, 99.9, 98.6, 79.6, 72.3, 64.8, 56.7, 53.2, 43.5, 36.8]
+    bar [181.9, 148.3, 134.1, 130.8, 106.4, 99.9, 98.6, 79.6, 72.3, 64.8, 61.2, 53.2, 43.5, 36.8]
 ```
 
 ### Best score over time
@@ -257,6 +257,7 @@ xychart-beta
 | nvidia/nemotron-3.5-super-vl:free (think) | 0.957 | 0.957 | 0.957 | 0.957 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | 0.923 | 0.93 | 0.932 | 0.933 |
 | cohere/north-mini-code:free (think) | 0.879 | 0.879 | 0.934 | 0.934 |
+| xingchen-agi/xing4.0-29b-a4b:free (no-think) | 0.761 | 0.88 | 0.914 | 0.914 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | 0.885 | 0.885 | 0.885 | 0.885 |
 | cohere/north-mini-code:free (no-think) | 0.88 | 0.88 | 0.88 | 0.88 |
 | nvidia/nemotron-3.5-super-vl:free (no-think) | 0.877 | 0.877 | 0.877 | 0.877 |
@@ -267,7 +268,6 @@ xychart-beta
 | dots-studio/dots-3-note-preview:free (no-think) | 0.793 | 0.793 | 0.793 | 0.793 |
 | xingchen-agi/xing4.0-29b-a4b:free (think) | 0.788 | 0.788 | 0.788 | 0.788 |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | 0.764 | 0.764 | 0.764 | 0.764 |
-| xingchen-agi/xing4.0-29b-a4b:free (no-think) | 0.678 | 0.678 | 0.678 | 0.678 |
 
 ### Outcome of the LLM answers
 
@@ -276,6 +276,7 @@ xychart-beta
 | nvidia/nemotron-3.5-super-vl:free (think) | 1 | 0 | 0 | 0 | 19 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | 1 | 2 | 2 | 0 | 37 |
 | cohere/north-mini-code:free (think) | 1 | 9 | 0 | 0 | 26 |
+| xingchen-agi/xing4.0-29b-a4b:free (no-think) | 1 | 5 | 3 | 23 | 23 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | 1 | 1 | 5 | 0 | 19 |
 | cohere/north-mini-code:free (no-think) | 2 | 1 | 2 | 0 | 12 |
 | nvidia/nemotron-3.5-super-vl:free (no-think) | 2 | 7 | 5 | 1 | 25 |
@@ -286,13 +287,13 @@ xychart-beta
 | dots-studio/dots-3-note-preview:free (no-think) | 1 | 5 | 4 | 1 | 10 |
 | xingchen-agi/xing4.0-29b-a4b:free (think) | 0 | 0 | 0 | 11 | 5 |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | 1 | 10 | 3 | 2 | 11 |
-| xingchen-agi/xing4.0-29b-a4b:free (no-think) | 0 | 0 | 0 | 8 | 1 |
 
 ### Best idea per model
 
 - **nvidia/nemotron-3.5-super-vl:free (think)**: tuned X4_C=-0.8299, X4_S=0.3071, X5_C=-1.25, X5_S=0.5829 on top of: Add two axis-aligned soft-threshold features on x4 and x5 so the linear model can fit rectangular regions in …
 - **nvidia/nemotron-3-ultra-550b-a55b:free (think)**: Combine the best elements from both leading lineages: use Box-Cox λ=0.5 (which scored 0.933), add all three normal-pair sign features and radial sums from the 0.933 program, add …
 - **cohere/north-mini-code:free (think)**: Add interaction features that combine binary thresholds with sign features and each other to capture AND-like patterns missing from the current feature set.
+- **xingchen-agi/xing4.0-29b-a4b:free (no-think)**: Add a complementary circular feature for x4/x5 (a signed component feature) and keep the radius-bin indicators but trim to 3 thresholds, because the current program has 21 …
 - **nvidia/nemotron-3-ultra-550b-a55b:free (no-think)**: Add sign features for key pairwise products involving x3 (log-normal) and x6 (normal) to capture quadrant patterns with these variables, and add a radial feature for x1,x6 to …
 - **cohere/north-mini-code:free (no-think)**: Replace raw inputs with transformed features that capture nonlinear interactions: include pairwise products, squares, log of x3, sign of products, and simple threshold bins to …
 - **nvidia/nemotron-3.5-super-vl:free (no-think)**: Add square terms for x4/x5 and their product, plus x3*x6 interaction, since the uniform inputs matter quadratically and interact with x3; cap all values and keep exactly 30 …
@@ -303,4 +304,3 @@ xychart-beta
 - **dots-studio/dots-3-note-preview:free (no-think)**: Remove the invalid SWEEP/PAIRS/SQUARES lines that caused the syntax error, keeping the intended pairwise products and squares features.
 - **xingchen-agi/xing4.0-29b-a4b:free (think)**: Add all pairwise products, squares, and log of x3 to capture nonlinear interactions, quadratic terms, and log scaling, allowing the linear classifier to better approximate the …
 - **nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think)**: Add binarized quadrant indicators for all three input pairs (x1*x2, x1*x3, x2*x3) to capture XOR-like patterns while keeping feature count low and computation fast.
-- **xingchen-agi/xing4.0-29b-a4b:free (no-think)**: edit: # The log of x3: x3 is positive and right-skewed (lognormal-like). A linear model / # on raw inputs finds almost nothing useful; the l

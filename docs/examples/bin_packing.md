@@ -71,9 +71,9 @@ def pack(sizes, capacity):
 
 ## Benchmark results
 
-The best result so far comes from **qwen3.6:27b-coding-mtp-q4_K_M (no-think)**, run locally with Ollama on 2026-10-30: a score of **0.95304** (×1.20 the starting program's 0.79426), reached after 8.63 of 60 minutes with 15 model requests.
+The best result so far comes from **nvidia/nemotron-3-ultra-550b-a55b:free (think)**, run through OpenRouter on 2026-11-04: a score of **0.96496** (×1.21 the starting program's 0.79426), reached after 44.12 of 60 minutes with 36 model requests.
 
-What the starting program produces (left) and what the best program by qwen3.6:27b-coding-mtp-q4_K_M (no-think) produces (right), drawn for the instance `u300`:
+What the starting program produces (left) and what the best program by nvidia/nemotron-3-ultra-550b-a55b:free (think) produces (right), drawn for the instance `u300`:
 
 ![bin_packing: the starting program's solution and the best one](../assets/examples/bin_packing.svg)
 
@@ -84,8 +84,9 @@ The best program's ancestry, from the starting program on. "Edit" and "rewrite" 
 | Step | Minute | Score | Kind | Idea |
 |--:|--:|--:|---|---|
 | 0 | 0.0 | 0.79426 | start | initial program |
-| 1 | 3.0 | 0.95128 | edit | Replace the simple next-fit algorithm with a First-Fit Decreasing (FFD) heuristic, which sorts items by decreasing size before placing them using the first-fit rule; FFD is significantly better than next-fit for 1D bin packing (guaranteed 11/9 OPT + 6/9 … |
-| 2 | 8.6 | 0.95304 | edit | Implement a local search phase (swap items between bins to reduce bin count or improve density) after the initial FFD packing, which exploits the fact that FFD leaves suboptimal gaps that can be closed by moving items, significantly reducing the bin count for … |
+| 1 | 0.3 | 0.95128 | edit | Replace next-fit with First-Fit Decreasing (FFD): sort items by decreasing size, then place each item into the first bin with enough remaining capacity; this classic heuristic typically reaches ~0.95 ratio and is a major improvement over the current 0.79. |
+| 2 | 44.1 | 0.96419 | edit | Add triple-aware initial packing (forming triples for items > capacity*0.4 with two smaller items) followed by time-bounded local search that repeatedly empties the least-filled bin via direct moves, exposing key parameters as constants for sweeping. |
+| 3 | 44.1 | 0.96496 | parameter sweep | tuned TRIPLE_THRESHOLD_RATIO=0.45, LOCAL_SEARCH_TIME_RATIO=0.85, MAX_SWAP_ATTEMPTS=2000, TIME_CHECK_INTERVAL=100 on top of: Add triple-aware initial packing (forming triples for items > capacity*0.4 with two smaller items) followed by time-bounded local … |
 
 ### The best program
 
@@ -94,15 +95,26 @@ What changed compared with the starting program:
 ```diff
 --- initial
 +++ best
-@@ -19,17 +19,108 @@
+@@ -10,6 +10,12 @@
+ import time
+ 
+ # OMEGA-BLOCK-START
++# Local search parameters
++TRIPLE_THRESHOLD_RATIO = 0.45     # items > capacity * this are triple candidates
++LOCAL_SEARCH_TIME_RATIO = 0.85   # fraction of time budget for local search
++MAX_SWAP_ATTEMPTS = 2000         # max swap attempts per iteration
++TIME_CHECK_INTERVAL = 100        # check time every N swap attempts
++
+ def pack(sizes, capacity):
+     """Return a list of bins; each bin is a list of item indices into sizes.
+ 
+@@ -19,17 +25,303 @@
      (time.process_time(); more than 1.5 x the limit makes the program invalid).
      Only the Python standard library may be used.
  
 -    Current method: next fit (open a new bin whenever the next item does not fit).
-+    Current method: First-Fit Decreasing (FFD) followed by local search.
-+    1. Sort items by decreasing size and pack using FFD.
-+    2. Improve packing by trying to move items from the least loaded bins to others,
-+       effectively emptying bins if possible. Uses 1-1 swaps and moves.
++    Method: Triple-aware Best-Fit Decreasing for initial packing, then randomized
++    local search with bin emptying and swaps to reduce bin count.
      """
 -    bins = []
 -    current, load = [], 0
@@ -114,105 +126,303 @@ What changed compared with the starting program:
 -        load += s
 -    if current:
 -        bins.append(current)
+-    return bins
 +    start_time = time.process_time()
-+    time_limit = 1.8  # Leave some margin for cleanup
++    TIME_LIMIT = 1.9  # safety margin under 2.0s
 +
-+    n = len(sizes)
-+    # Sort items by decreasing size, keeping track of original indices
-+    # items: list of (size, original_index)
-+    items = sorted([(sizes[i], i) for i in range(n)], key=lambda x: -x[0])
++    # Pair each size with its original index and sort descending by size
++    items = sorted(((s, i) for i, s in enumerate(sizes)), reverse=True)
 +
-+    bins = []       # List of lists of original indices
-+    bin_loads = []  # List of current loads for each bin
++    bins = []          # list of lists of item indices
++    bin_loads = []     # parallel list of current loads for fast checking
 +
-+    for size, idx in items:
-+        # Check time limit periodically
-+        if len(bins) % 50 == 0 and time.process_time() - start_time > time_limit:
-+            return [b for b in bins if b]
++    # --- Initial packing: Triple-aware Best-Fit Decreasing ---
++    # For items > capacity*0.3, try to form good triples with two smaller items
++    triple_threshold = int(capacity * TRIPLE_THRESHOLD_RATIO)
++    large_items = [(s, i) for s, i in items if s > triple_threshold]
++    small_items = [(s, i) for s, i in items if s <= triple_threshold]
 +
-+        placed = False
-+        # First-fit: find the first bin with enough remaining space
-+        for j in range(len(bins)):
-+            if bin_loads[j] + size <= capacity:
-+                bins[j].append(idx)
-+                bin_loads[j] += size
-+                placed = True
++    # Track which items have been packed
++    packed = set()
++
++    # Phase 1: Try to form triples for each large item with two small items
++    # Sort large items descending, small items ascending for better matching
++    large_items.sort(reverse=True)
++    small_items.sort(key=lambda x: x[0])  # ascending by size
++
++    # For each large item, find best pair of small items that fit
++    for large_size, large_idx in large_items:
++        if time.process_time() - start_time > TIME_LIMIT:
++            break
++        if large_idx in packed:
++            continue
++
++        best_pair = None
++        best_sum = -1
++        # Try pairs of small items (two-pointer approach for efficiency)
++        left = 0
++        right = len(small_items) - 1
++        while left < right:
++            if time.process_time() - start_time > TIME_LIMIT:
 +                break
++            s1, idx1 = small_items[left]
++            s2, idx2 = small_items[right]
++            if idx1 in packed:
++                left += 1
++                continue
++            if idx2 in packed:
++                right -= 1
++                continue
++            total = large_size + s1 + s2
++            if total <= capacity:
++                if total > best_sum:
++                    best_sum = total
++                    best_pair = (idx1, idx2)
++                left += 1  # Try larger s1 to increase sum
++            else:
++                right -= 1  # Need smaller s2
 +
-+        if not placed:
-+            # Open a new bin
++        if best_pair is not None:
++            idx1, idx2 = best_pair
++            bins.append([large_idx, idx1, idx2])
++            bin_loads.append(best_sum)
++            packed.add(large_idx)
++            packed.add(idx1)
++            packed.add(idx2)
++        else:
++            # Could not form triple, will be handled by BFD below
++            pass
++
++    # Phase 2: Best-Fit Decreasing for remaining items
++    for size, idx in items:
++        if time.process_time() - start_time > TIME_LIMIT:
++            return bins
++        if idx in packed:
++            continue
++
++        best_bin = -1
++        best_load = -1
++        for b, load in enumerate(bin_loads):
++            if load + size <= capacity and load > best_load:
++                best_load = load
++                best_bin = b
++
++        if best_bin >= 0:
++            bins[best_bin].append(idx)
++            bin_loads[best_bin] = best_load + size
++        else:
 +            bins.append([idx])
 +            bin_loads.append(size)
 +
-+    # Local Search: Try to reduce number of bins by moving items from least loaded bins
-+    # Strategy: Iterate through bins, if a bin has low load, try to move its items to others.
-+    # If all items of a bin can be moved, remove that bin.
-+    
-+    # Convert bins to sets for faster membership checks if needed, but lists are fine for small items.
-+    # We will use a list of lists and update loads.
-+    
-+    max_iterations = 5
-+    for _ in range(max_iterations):
-+        if time.process_time() - start_time > time_limit:
-+            break
-+            
-+        # Sort bins by load ascending to target the emptiest ones first
-+        # We need to keep indices aligned.
-+        bin_indices = list(range(len(bins)))
-+        bin_indices.sort(key=lambda k: bin_loads[k])
-+        
-+        moved_any = False
-+        for b_idx in bin_indices:
-+            if time.process_time() - start_time > time_limit:
-+                break
-+            
-+            # If bin is empty, skip (shouldn't happen, but safety)
-+            if not bins[b_idx]:
-+                continue
-+                
-+            # Try to move each item in this bin to another bin
-+            items_in_bin = list(bins[b_idx])
-+            bins[b_idx] = []
-+            bin_loads[b_idx] = 0
-+            
-+            for item_idx in items_in_bin:
-+                item_size = sizes[item_idx]
-+                placed = False
-+                # Try to find a bin that can accommodate this item
-+                # Best fit: find bin with smallest slack after insertion
-+                best_j = -1
-+                best_slack = capacity + 1
-+                
-+                for j in range(len(bins)):
-+                    if j == b_idx: # Skip the bin we are emptying
-+                        continue
-+                    if bin_loads[j] + item_size <= capacity:
-+                        slack = capacity - (bin_loads[j] + item_size)
-+                        if slack < best_slack:
-+                            best_slack = slack
-+                            best_j = j
-+                
-+                if best_j != -1:
-+                    bins[best_j].append(item_idx)
-+                    bin_loads[best_j] += item_size
-+                    placed = True
-+                
-+                if not placed:
-+                    # If we can't place it elsewhere, put it back
-+                    bins[b_idx].append(item_idx)
-+                    bin_loads[b_idx] += item_size
-+                    moved_any = True # Indicate that we failed to empty this bin completely
-+            
-+            # If the bin is now empty, remove it
-+            if not bins[b_idx]:
-+                bins.pop(b_idx)
-+                bin_loads.pop(b_idx)
-+                moved_any = True
-+        
-+        if not moved_any:
-+            break
++    # --- Local search to reduce bins ---
++    best_bins = [b[:] for b in bins]
++    best_loads = bin_loads[:]
++    best_bin_count = len(bins)
++    lower_bound = (sum(sizes) + capacity - 1) // capacity  # theoretical minimum bins
 +
-     return bins
++    # Precompute sizes array for fast lookup
++    size_arr = sizes
++
++    def squared_load_sum(loads):
++        return sum(l * l for l in loads)
++
++    def try_remove_bin(bin_idx, bins, loads):
++        """Try to empty bin_idx by moving its items to other bins via best-fit.
++        Returns (success, new_bins, new_loads)"""
++        items_to_place = bins[bin_idx][:]
++        if not items_to_place:
++            return True, bins, loads
++
++        # Sort items to place by decreasing size for better packing
++        items_to_place.sort(key=lambda x: size_arr[x], reverse=True)
++
++        temp_bins = [b[:] for b in bins]
++        temp_loads = loads[:]
++        placed_items = []
++
++        for item in items_to_place:
++            item_size = size_arr[item]
++            placed = False
++            best_bin = -1
++            best_load = -1
++            for b, load in enumerate(temp_loads):
++                if b == bin_idx:
++                    continue
++                if load + item_size <= capacity and load > best_load:
++                    best_load = load
++                    best_bin = b
++            if best_bin >= 0:
++                temp_bins[best_bin].append(item)
++                temp_loads[best_bin] += item_size
++                placed_items.append((item, best_bin))
++                placed = True
++            if not placed:
++                # Restore and fail
++                for item2, b2 in placed_items:
++                    temp_bins[b2].remove(item2)
++                    temp_loads[b2] -= size_arr[item2]
++                return False, bins, loads
++
++        # Success: remove the emptied bin
++        del temp_bins[bin_idx]
++        del temp_loads[bin_idx]
++        return True, temp_bins, temp_loads
++
++    def try_random_swaps(bins, loads, max_attempts):
++        """Try random 1-1, 1-2, 2-2 swaps to improve packing (increase squared load sum).
++        Returns (improved, new_bins, new_loads)"""
++        n_bins = len(bins)
++        if n_bins < 2:
++            return False, bins, loads
++
++        current_score = squared_load_sum(loads)
++        best_score = current_score
++        best_bins = None
++        best_loads = None
++
++        bins_list = list(range(n_bins))
++        attempt = 0
++
++        while attempt < max_attempts:
++            attempt += 1
++            if attempt % TIME_CHECK_INTERVAL == 0:
++                if time.process_time() - start_time > TIME_LIMIT:
++                    break
++
++            swap_type = random.random()
++            i, j = random.sample(bins_list, 2)
++            if not bins[i] or not bins[j]:
++                continue
++
++            if swap_type < 0.5:
++                # 1-1 swap
++                item_i = random.choice(bins[i])
++                item_j = random.choice(bins[j])
++                size_i = size_arr[item_i]
++                size_j = size_arr[item_j]
++                new_load_i = loads[i] - size_i + size_j
++                new_load_j = loads[j] - size_j + size_i
++                if new_load_i <= capacity and new_load_j <= capacity:
++                    new_score = current_score - loads[i]*loads[i] - loads[j]*loads[j] + new_load_i*new_load_i + new_load_j*new_load_j
++                    if new_score > best_score:
++                        best_score = new_score
++                        new_bins = [b[:] for b in bins]
++                        new_loads = loads[:]
++                        new_bins[i].remove(item_i)
++                        new_bins[i].append(item_j)
++                        new_bins[j].remove(item_j)
++                        new_bins[j].append(item_i)
++                        new_loads[i] = new_load_i
++                        new_loads[j] = new_load_j
++                        best_bins = new_bins
++                        best_loads = new_loads
++
++            elif swap_type < 0.75 and len(bins[j]) >= 2:
++                # 1-2 swap: move one from i to j, two from j to i
++                item_i = random.choice(bins[i])
++                size_i = size_arr[item_i]
++                item_j1, item_j2 = random.sample(bins[j], 2)
++                size_j1 = size_arr[item_j1]
++                size_j2 = size_arr[item_j2]
++                new_load_i = loads[i] - size_i + size_j1 + size_j2
++                new_load_j = loads[j] - size_j1 - size_j2 + size_i
++                if new_load_i <= capacity and new_load_j <= capacity:
++                    new_score = current_score - loads[i]*loads[i] - loads[j]*loads[j] + new_load_i*new_load_i + new_load_j*new_load_j
++                    if new_score > best_score:
++                        best_score = new_score
++                        new_bins = [b[:] for b in bins]
++                        new_loads = loads[:]
++                        new_bins[i].remove(item_i)
++                        new_bins[i].extend([item_j1, item_j2])
++                        new_bins[j].remove(item_j1)
++                        new_bins[j].remove(item_j2)
++                        new_bins[j].append(item_i)
++                        new_loads[i] = new_load_i
++                        new_loads[j] = new_load_j
++                        best_bins = new_bins
++                        best_loads = new_loads
++
++            elif len(bins[i]) >= 2 and len(bins[j]) >= 2:
++                # 2-2 swap
++                item_i1, item_i2 = random.sample(bins[i], 2)
++                item_j1, item_j2 = random.sample(bins[j], 2)
++                size_i1 = size_arr[item_i1]
++                size_i2 = size_arr[item_i2]
++                size_j1 = size_arr[item_j1]
++                size_j2 = size_arr[item_j2]
++                new_load_i = loads[i] - size_i1 - size_i2 + size_j1 + size_j2
++                new_load_j = loads[j] - size_j1 - size_j2 + size_i1 + size_i2
++                if new_load_i <= capacity and new_load_j <= capacity:
++                    new_score = current_score - loads[i]*loads[i] - loads[j]*loads[j] + new_load_i*new_load_i + new_load_j*new_load_j
++                    if new_score > best_score:
++                        best_score = new_score
++                        new_bins = [b[:] for b in bins]
++                        new_loads = loads[:]
++                        new_bins[i].remove(item_i1)
++                        new_bins[i].remove(item_i2)
++                        new_bins[i].extend([item_j1, item_j2])
++                        new_bins[j].remove(item_j1)
++                        new_bins[j].remove(item_j2)
++                        new_bins[j].extend([item_i1, item_i2])
++                        new_loads[i] = new_load_i
++                        new_loads[j] = new_load_j
++                        best_bins = new_bins
++                        best_loads = new_loads
++
++        if best_bins is not None:
++            return True, best_bins, best_loads
++        return False, bins, loads
++
++    # Main local search loop
++    current_bins = bins
++    current_loads = bin_loads
++    no_improve_count = 0
++
++    while time.process_time() - start_time < TIME_LIMIT:
++        # Try to remove the least-filled bin if above theoretical lower bound
++        if len(current_bins) > lower_bound:
++            # Find bin with minimum load
++            min_load_idx = min(range(len(current_loads)), key=lambda i: current_loads[i])
++            success, new_bins, new_loads = try_remove_bin(min_load_idx, current_bins, current_loads)
++            if success:
++                current_bins = new_bins
++                current_loads = new_loads
++                if len(current_bins) < best_bin_count:
++                    best_bin_count = len(current_bins)
++                    best_bins = [b[:] for b in current_bins]
++                    best_loads = current_loads[:]
++                    no_improve_count = 0
++                continue
++
++        # Try improving random swaps
++        improved, new_bins, new_loads = try_random_swaps(current_bins, current_loads, MAX_SWAP_ATTEMPTS)
++        if improved:
++            current_bins = new_bins
++            current_loads = new_loads
++            no_improve_count = 0
++        else:
++            no_improve_count += 1
++
++        # Random perturbation if stuck
++        if no_improve_count > 3 and len(current_bins) > 1:
++            i, j = random.sample(range(len(current_bins)), 2)
++            if current_bins[i] and current_bins[j]:
++                item_i = random.choice(current_bins[i])
++                item_j = random.choice(current_bins[j])
++                size_i = size_arr[item_i]
++                size_j = size_arr[item_j]
++                new_load_i = current_loads[i] - size_i + size_j
++                new_load_j = current_loads[j] - size_j + size_i
++                if new_load_i <= capacity and new_load_j <= capacity:
++                    current_bins[i].remove(item_i)
++                    current_bins[i].append(item_j)
++                    current_bins[j].remove(item_j)
++                    current_bins[j].append(item_i)
++                    current_loads[i] = new_load_i
++                    current_loads[j] = new_load_j
++            no_improve_count = 0
++
++    return best_bins
  # OMEGA-BLOCK-END
 ```
 
@@ -222,8 +432,12 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/bin_p
 
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|
+| nvidia/nemotron-3-ultra-550b-a55b:free (think) | cloud | 0.96496 | ×1.21 | 44.1 | 5 |
+| nvidia/nemotron-3.5-super-vl:free (think) | cloud | 0.96281 | ×1.21 | 58.4 | 10 |
+| cohere/north-mini-code:free (think) | cloud | 0.95666 | ×1.20 | 23.6 | 2 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 0.95304 | ×1.20 | 8.6 | 2 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 0.95271 | ×1.20 | 5.3 | 3 |
+| dots-studio/dots-3-note-preview:free (think) | cloud | 0.95271 | ×1.20 | 40.9 | 2 |
 | gemma4:e2b (no-think) | local | 0.95128 | ×1.20 | 0.7 | 2 |
 | gemma4:e4b-it-qat (no-think) | local | 0.95128 | ×1.20 | 0.5 | 1 |
 | qwen3.5:latest (no-think) | local | 0.95128 | ×1.20 | 1.7 | 2 |
@@ -241,6 +455,10 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/bin_p
 | qwen3-coder:30b (no-think) | local | 0.95128 | ×1.20 | 1.6 | 1 |
 | frob/sarvam:30b (no-think) | local | 0.95128 | ×1.20 | 12.8 | 1 |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | 0.95128 | ×1.20 | 0.1 | 1 |
+| nvidia/nemotron-3.5-lightning:free (think) | cloud | 0.95128 | ×1.20 | 7.2 | 1 |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | cloud | 0.95128 | ×1.20 | 5.1 | 1 |
+| xingchen-agi/xing4.0-29b-a4b:free (think) | cloud | 0.95128 | ×1.20 | 34.0 | 2 |
+| recursive/flint-v1.0:free (think) | cloud | 0.95128 | ×1.20 | 0.8 | 1 |
 | nvidia/nemotron-3.5-lightning:free (no-think) | cloud | 0.94863 | ×1.19 | 3.7 | 1 |
 | qwen2.5-coder:7b (no-think) | local | 0.92325 | ×1.16 | 1.3 | 1 |
 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | 0.79587 | ×1.00 | 1.3 | 1 |
@@ -248,12 +466,4 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/bin_p
 | nemotron-3-nano:4b (no-think) | local | 0.79426 | ×1.00 | - | 0 |
 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | 0.79426 | ×1.00 | - | 0 |
 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | 0.79426 | ×1.00 | - | 0 |
-| cohere/north-mini-code:free (think) | cloud | | | | failed: all 6 model requests failed: cohere/north-mini-code:free … |
-| nvidia/nemotron-3.5-super-vl:free (think) | cloud | | | | failed: all 6 model requests failed … |
-| nvidia/nemotron-3-ultra-550b-a55b:free (think) | cloud | | | | failed: all 6 model requests failed … |
-| dots-studio/dots-3-note-preview:free (think) | cloud | | | | failed: all 6 model requests failed … |
-| nvidia/nemotron-3.5-lightning:free (think) | cloud | | | | failed: all 6 model requests failed … |
-| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | cloud | | | | failed: all 6 model requests failed … |
-| xingchen-agi/xing4.0-29b-a4b:free (think) | cloud | 0.79426 | ×1.00 | - | 0 |
-| recursive/flint-v1.0:free (think) | cloud | | | | failed: all 6 model requests failed: recursive/flint-v1.0:free … |
 | xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 0.79426 | ×1.00 | - | 0 |

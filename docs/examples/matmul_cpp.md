@@ -68,4 +68,109 @@ extern "C" void matmul(int n, const float* A, const float* B, float* C) {
 
 ## Benchmark results
 
-This example has not been benchmarked yet. See [Benchmarking models](../benchmarking.md) for how to run it.
+The best result so far comes from **gemma4:latest (no-think)**, run locally with Ollama on 2026-11-04: a score of **125.5650** (×113.83 the starting program's 1.10309), reached after 8.82 of 60 minutes with 33 model requests.
+
+What the starting program produces (left) and what the best program by gemma4:latest (no-think) produces (right):
+
+![matmul_cpp: the starting program's solution and the best one](../assets/examples/matmul_cpp.svg)
+
+### How it got there
+
+The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.
+
+| Step | Minute | Score | Kind | Idea |
+|--:|--:|--:|---|---|
+| 0 | 0.0 | 1.10309 | start | initial program |
+| 1 | 4.2 | invalid | edit | Implement loop interchange to use the i-k-j loop order, which improves memory access patterns by streaming rows of B and C consecutively. |
+| 2 | 4.7 | 19.0018 | fix-up | Initialize the elements of C to zero before starting the multiplication to ensure correctness when accumulating results. |
+| 3 | 8.8 | 125.5650 | rewrite | Implement multithreading over the row blocks using a worker function to leverage all 10 cores for parallel execution of the matrix multiplication. |
+
+### The best program
+
+What changed compared with the starting program:
+
+```diff
+--- initial
++++ best
+@@ -21,12 +21,40 @@
+ // OMEGA-BLOCK-START
+ // Computes C = A * B. C is NOT zeroed by the caller. Any number of threads may be
+ // used (std::thread is available); n is any size from 1 to 2048.
++#include <thread>
++#include <cmath>
++#include <vector>
++#if defined(__ARM_NEON)
++#include <arm_neon.h>
++#endif
++
++void matmul_worker(int n, const float* A, const float* B, float* C, int start_row, int end_row) {
++    for (int i = start_row; i < end_row; ++i) {
++        for (int k = 0; k < n; ++k) {
++            float a_ik = A[i * n + k];
++            for (int j = 0; j < n; ++j) {
++                C[i * n + j] += a_ik * B[k * n + j];
++            }
++        }
++    }
++}
++
+ extern "C" void matmul(int n, const float* A, const float* B, float* C) {
+-    for (int i = 0; i < n; ++i)
+-        for (int j = 0; j < n; ++j) {
+-            float s = 0.0f;
+-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];
+-            C[i * n + j] = s;
+-        }
++    std::memset(C, 0, n * n * sizeof(float)); // Initialize C to zero
++    std::vector<std::thread> threads;
++    const int num_threads = std::min(n, 10); // Use up to 10 cores
++    int chunk_size = n / num_threads;
++    int remainder = n % num_threads;
++    int current_row = 0;
++
++    for (int t = 0; t < num_threads; ++t) {
++        int rows_to_process = chunk_size + (t < remainder ? 1 : 0);
++        threads.emplace_back(matmul_worker, n, A, B, C, current_row, current_row + rows_to_process);
++        current_row += rows_to_process;
++    }
++
++    for (auto& t : threads) {
++        t.join();
++    }
+ }
+ // OMEGA-BLOCK-END
+```
+
+### All models
+
+One run per model and reasoning mode; the [model benchmarks](../benchmarks/matmul_f32.md) page has speed, memory and progress over time.
+
+| Model | Where | Best | Gain | Minutes to best | New bests |
+|---|---|--:|--:|--:|--:|
+| gemma4:latest (no-think) | local | 125.5650 | ×113.83 | 8.8 | 4 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 106.5050 | ×99.48 | 61.9 | 3 |
+| nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | 80.2183 | ×111.56 | 10.8 | 6 |
+| gpt-oss:20b (no-think) | local | 71.0274 | ×65.89 | 45.9 | 2 |
+| nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 37.3228 | ×50.55 | 10.6 | 2 |
+| gemma4:26b-a4b-it-qat (no-think) | local | 23.2264 | ×20.64 | 9.6 | 3 |
+| gemma4:12b-it-qat (no-think) | local | 15.5786 | ×14.43 | 35.6 | 6 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 14.8830 | ×13.04 | 6.1 | 1 |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | 9.82231 | ×13.48 | 1.2 | 1 |
+| gemma4:e4b-it-qat (no-think) | local | 9.13823 | ×8.65 | 13.1 | 4 |
+| qwen2.5-coder:7b (no-think) | local | 2.89343 | ×2.52 | 4.2 | 2 |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | 1.30779 | ×1.11 | 4.6 | 1 |
+| gemma4:e2b (no-think) | local | 1.29868 | ×1.14 | 1.7 | 1 |
+| glm-4.7-flash:latest (no-think) | local | 1.27475 | ×1.11 | 17.6 | 3 |
+| qwen3-coder:30b (no-think) | local | 1.19735 | ×1.00 | - | 0 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | 1.19455 | ×1.00 | - | 0 |
+| nemotron-3-nano:4b (no-think) | local | 1.1709 | ×1.00 | - | 0 |
+| qwen3.5:latest (no-think) | local | 1.16869 | ×1.00 | - | 0 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | 1.14809 | ×1.00 | - | 0 |
+| frob/sarvam:30b (no-think) | local | 1.13161 | ×1.00 | - | 0 |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | 1.13014 | ×1.03 | 5.2 | 1 |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | local | 1.07033 | ×1.00 | - | 0 |
+| richardyoung/frognano-4b-2609:latest (no-think) | local | 0.99504 | ×1.00 | - | 0 |
+| xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 0.82808 | ×1.00 | - | 0 |
+| cohere/north-mini-code:free (no-think) | cloud | 0.70939 | ×1.03 | 5.1 | 1 |
+| dots-studio/dots-3-note-preview:free (no-think) | cloud | 0.70404 | ×1.00 | - | 0 |
+| nvidia/nemotron-3.5-lightning:free (no-think) | cloud | 0.66865 | ×1.00 | - | 0 |

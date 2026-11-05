@@ -1,0 +1,167 @@
+{
+ "schema": 4,
+ "example": "prefix_sum_histogram_single_thread",
+ "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+ "variant": "no-think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-03T14:32:43",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 17.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 4.25777,
+ "best_score": 5.19129,
+ "improvement": 1.2192509224312258,
+ "llm_calls": 36,
+ "mean_llm_seconds": 26.6,
+ "attempts": 36,
+ "ok": 22,
+ "statuses": {
+  "compile_error": 5,
+  "ok": 22,
+  "duplicate": 5,
+  "invalid": 4
+ },
+ "sweeps": 5,
+ "sweep_variants": 74,
+ "improvements": 5,
+ "minutes_to_best": 15.98,
+ "best_idea": "Remove the invalid SWEEP directive and fix the UNROLL constant to match the actual loop unrolling factor of 8.",
+ "progress": [
+  [
+   0.0,
+   4.25777
+  ],
+  [
+   3.02,
+   4.89692
+  ],
+  [
+   3.62,
+   5.07165
+  ],
+  [
+   10.19,
+   5.10056
+  ],
+  [
+   10.53,
+   5.11293
+  ],
+  [
+   15.98,
+   5.19129
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 4.25777,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.04,
+   "score": null,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "exploit/diff/refine",
+   "status": "compile_error",
+   "idea": "Replace the naive scalar loop with NEON vectorized prefix sum and 4-way private sub-histograms to eliminate the hot-bin store-to-load dependency chain and process 4 elements per iteration."
+  },
+  {
+   "minutes": 4.0,
+   "score": 4.12446,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Fix compilation errors by guarding NEON code with proper architecture detection and using scalar fallback when NEON is not available."
+  },
+  {
+   "minutes": 14.48,
+   "score": null,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "exploit/rewrite/refine",
+   "status": "compile_error",
+   "idea": "Replace the NEON block loop with a single fully-unrolled scalar loop using 8 private sub-histograms and 8-element unrolling to break hot-bin dependency chains, expose ILP, and avoid NEON overhead that is slower than scalar on this workload."
+  },
+  {
+   "minutes": 15.98,
+   "score": 5.19129,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Remove the invalid SWEEP directive and fix the UNROLL constant to match the actual loop unrolling factor of 8."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -27,13 +27,68 @@\n // hist[b] = number of i < n with (in[i] & 255) == b for b < 256. Neither out nor\n // hist is zeroed by the caller. n is any size from 0 to 20'000'000; the sums\n // never overflow int64.\n+constexpr int HIST_SUBS = 8;  // Number of private sub-histograms (tunable)\n+constexpr int UNROLL = 8;     // Elements processed per loop iteration (tunable)\n+\n extern \"C\" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, uint64_t* hist) {\n-    for (int b = 0; b < 256; ++b) hist[b] = 0;\n-    int64_t sum = 0;\n-    for (size_t i = 0; i < n; ++i) {\n-        sum += in[i];\n-        out[i] = sum;\n-        hist[in[i] & 255]++;\n+    // Initialize histogram with 8 sub-histograms (uint32_t to avoid overflow per chunk)\n+    uint32_t sub_hist[HIST_SUBS][256];\n+    memset(sub_hist, 0, sizeof(sub_hist));\n+    \n+    // Zero main histogram\n+    memset(hist, 0, 256 * sizeof(uint64_t));\n+    \n+    int64_t running_sum = 0;\n+    size_t i = 0;\n+    \n+    // Process 8 elements per iteration\n+    const size_t vec_loop_limit = n & ~(size_t)7;\n+    \n+    for (; i < vec_loop_limit; i += 8) {\n+        // Load 8 elements\n+        int64_t v0 = in[i];\n+        int64_t v1 = in[i+1];\n+        int64_t v2 = in[i+2];\n+        int64_t v3 = in[i+3];\n+        int64_t v4 = in[i+4];\n+        int64_t v5 = in[i+5];\n+        int64_t v6 = in[i+6];\n+        int64_t v7 = in[i+7];\n+        \n+        // Inclusive scan with running sum\n+        running_sum += v0; out[i] = running_sum;\n+        running_sum += v1; out[i+1] = running_sum;\n+        running_sum += v2; out[i+2] = running_sum;\n+        running_sum += v3; out[i+3] = running_sum;\n+        running_sum += v4; out[i+4] = running_sum;\n+        running_sum += v5; out[i+5] = running_sum;\n+        running_sum += v6; out[i+6] = running_sum;\n+        running_sum += v7; out[i+7] = running_sum;\n+        \n+        // Histogram: distribute 8 elements across 8 sub-histograms\n+        // Element i+k goes to sub_hist[k][in[i+k] & 255]\n+        sub_hist[0][v0 & 255]++;\n+        sub_hist[1][v1 & 255]++;\n+        sub_hist[2][v2 & 255]++;\n+        sub_hist[3][v3 & 255]++;\n+        sub_hist[4][v4 & 255]++;\n+        sub_hist[5][v5 & 255]++;\n+        sub_hist[6][v6 & 255]++;\n+        sub_hist[7][v7 & 255]++;\n+    }\n+    \n+    // Process remaining elements\n+    for (; i < n; ++i) {\n+        running_sum += in[i];\n+        out[i] = running_sum;\n+        sub_hist[i % HIST_SUBS][in[i] & 255]++;\n+    }\n+    \n+    // Combine sub-histograms into final histogram\n+    for (int s = 0; s < HIST_SUBS; ++s) {\n+        for (int b = 0; b < 256; ++b) {\n+            hist[b] += sub_hist[s][b];\n+        }\n     }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "best_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 25.4,
+ "p90_call_seconds": 45.9,
+ "prompt_tokens_per_s": 3581.3,
+ "gen_tokens_per_s": 61.8,
+ "mean_prompt_tokens": 5953,
+ "mean_gen_tokens": 1538,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

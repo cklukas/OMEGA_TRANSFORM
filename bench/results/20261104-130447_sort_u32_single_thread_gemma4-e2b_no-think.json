@@ -1,0 +1,130 @@
+{
+ "schema": 4,
+ "example": "sort_u32_single_thread",
+ "model": "gemma4:e2b",
+ "variant": "no-think",
+ "model_size_gb": 4.6,
+ "model_params": "4.6B",
+ "started": "2026-11-04T13:04:47",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 7.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 21.75228729982719,
+ "best_score": 98.62911587883622,
+ "improvement": 4.534195163909028,
+ "llm_calls": 36,
+ "mean_llm_seconds": 10.1,
+ "attempts": 36,
+ "ok": 7,
+ "statuses": {
+  "invalid": 20,
+  "edit_error": 3,
+  "compile_error": 5,
+  "ok": 7,
+  "timeout": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 2,
+ "minutes_to_best": 3.43,
+ "best_idea": "Implement an in-place hybrid sort using an Introsort-like structure: switching to insertion sort for small partitions and using a highly optimized, iterative LSD Radix Sort for the main sorting phase ",
+ "progress": [
+  [
+   0.0,
+   21.75228729982719
+  ],
+  [
+   1.75,
+   92.49815167551058
+  ],
+  [
+   3.43,
+   98.62911587883622
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 21.75228729982719,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.43,
+   "score": 98.62911587883622,
+   "model": "gemma4:e2b",
+   "mode": "exploit/rewrite/bold",
+   "status": "ok",
+   "idea": "Implement an in-place hybrid sort using an Introsort-like structure: switching to insertion sort for small partitions and using a highly optimized, iterative LSD Radix Sort for the main sorting phase to maximize throughput."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,22 +19,78 @@\n #endif\n \n // OMEGA-BLOCK-START\n-// Sorts a[0..n) ascending, in place, on the calling thread. n is any size from\n-// 0 to 2'000'000. Extra memory may be allocated freely.\n-static void merge_sort_rec(uint32_t* a, uint32_t* tmp, size_t lo, size_t hi) {\n-    if (hi - lo < 2) return;\n-    size_t mid = lo + (hi - lo) / 2;\n-    merge_sort_rec(a, tmp, lo, mid);\n-    merge_sort_rec(a, tmp, mid, hi);\n-    size_t i = lo, j = mid, k = lo;\n-    while (i < mid && j < hi) tmp[k++] = (a[j] < a[i]) ? a[j++] : a[i++];\n-    while (i < mid) tmp[k++] = a[i++];\n-    while (j < hi) tmp[k++] = a[j++];\n-    for (size_t t = lo; t < hi; ++t) a[t] = tmp[t];\n+#include <algorithm>\n+#include <cmath>\n+#include <cstdint>\n+#include <cstdio>\n+#include <cstdlib>\n+#include <cstring>\n+#include <ctime>\n+#include <vector>\n+#if defined(__ARM_NEON)\n+#include <arm_neon.h>\n+#endif\n+\n+// Constants for small partition threshold\n+constexpr size_t INSERTION_SORT_THRESHOLD = 16;\n+\n+// Insertion sort helper for small subarrays\n+static void insertion_sort(uint32_t* a, size_t lo, size_t hi) {\n+    for (size_t i = lo + 1; i < hi; ++i) {\n+        uint32_t key = a[i];\n+        size_t j = i - 1;\n+        while (j >= lo && a[j] > key) {\n+            a[j + 1] = a[j];\n+            j--;\n+        }\n+        a[j + 1] = key;\n+    }\n+}\n+\n+// Iterative LSD Radix Sort helper (using 8 bits per pass)\n+static void counting_sort_pass(uint32_t* a, size_t n, int shift, uint32_t* output, int radix) {\n+    // Use a fixed size array for 8-bit buckets\n+    uint32_t counts[256] = {0}; \n+    \n+    // Count frequencies\n+    for (size_t i = 0; i < n; ++i) {\n+        counts[(a[i] >> shift) & 0xFF]++;\n+    }\n+    \n+    // Compute cumulative counts\n+    for (int i = 1; i < 256; ++i) {\n+        counts[i] += counts[i - 1];\n+    }\n+    \n+    // Distribute elements to output array\n+    // Iterate backwards to maintain stability (important for LSD)\n+    for (size_t i = n; i > 0; --i) {\n+        uint32_t key = a[i - 1];\n+        int bucket = (key >> shift) & 0xFF;\n+        output[--counts[bucket]] = key;\n+    }\n }\n \n extern \"C\" void sort_u32(uint32_t* a, size_t n) {\n-    std::vector<uint32_t> tmp(n);\n-    merge_sort_rec(a, tmp.data(), 0, n);\n+    if (n <= 1) return;\n+\n+    // Allocate temporary buffer for sorting/swapping in radix sort\n+    uint32_t* tmp = (uint32_t*)malloc(n * sizeof(uint32_t));\n+    if (!tmp) return; \n+    std::memcpy(tmp, a, n * sizeof(uint32_t));\n+    \n+    uint32_t* current = a;\n+    uint32_t* next = tmp;\n+\n+    // LSD Radix Sort: 4 passes of 8 bits (32 bits / 8 bits = 4 passes)\n+    for (int pass = 0; pass < 4; ++pass) {\n+        counting_sort_pass(current, n, pass * 8, next, 8);\n+        std::swap(current, next);\n+    }\n+    \n+    // Copy final result back to the original array a\n+    std::memcpy(a, current, n * sizeof(uint32_t));\n+    \n+    free(tmp);\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "best_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 0.9,
+ "model_gpu_memory_gb": 0.9,
+ "context_length": 40960,
+ "load_seconds": 0.0,
+ "median_call_seconds": 10.5,
+ "p90_call_seconds": 13.8,
+ "prompt_tokens_per_s": 3358.6,
+ "gen_tokens_per_s": 107.0,
+ "mean_prompt_tokens": 5043,
+ "mean_gen_tokens": 696,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

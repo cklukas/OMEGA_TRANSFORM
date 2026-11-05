@@ -1,0 +1,411 @@
+{
+ "schema": 4,
+ "example": "tammes_30",
+ "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+ "variant": "no-think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-04T10:35:05",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 1.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 3.2013569883368893,
+ "best_score": 32.74023108183808,
+ "improvement": 10.226985369365723,
+ "llm_calls": 20,
+ "mean_llm_seconds": 4.0,
+ "attempts": 20,
+ "ok": 6,
+ "statuses": {
+  "edit_error": 14,
+  "ok": 6
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 0.28,
+ "best_idea": "Replace the random uniform sphere generation with a Fibonacci lattice (golden spiral) to start from a highly uniform distribution of points, which should improve the minimum angle and reduce variance ",
+ "progress": [
+  [
+   0.0,
+   3.2013569883368893
+  ],
+  [
+   0.28,
+   32.74023108183808
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.2013569883368893,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 0.28,
+   "score": 32.74023108183808,
+   "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "Replace the random uniform sphere generation with a Fibonacci lattice (golden spiral) to start from a highly uniform distribution of points, which should improve the minimum angle and reduce variance in nearest-neighbor angles."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -6,21 +6,30 @@\n import random\n \n # OMEGA-BLOCK-START\n+import math\n+\n+# Named constants for Fibonacci sphere construction\n+PHI = (math.sqrt(5) + 1) / 2  # Golden ratio\n+STEP = 1.0 / math.sqrt(30)     # Step size for Fibonacci lattice\n+RADIUS = 1.0                   # Unit sphere radius (kept for clarity, not used in calculation)\n+\n def construct(n=30):\n-    \"\"\"Return a list of n points (x, y, z) on the unit sphere.\n+    \"\"\"Return a list of n points (x, y, z) on the unit sphere using a Fibonacci lattice.\n \n-    Vectors need not be normalized (the evaluator normalizes them), but none may be\n-    zero. The score is the minimum angle in degrees between any two points. This\n-    start draws uniformly random points with a fixed seed, so some pairs end up\n-    close together.\n+    This deterministic construction starts from a uniform distribution of points\n+    on the sphere, reducing clustering and improving the minimum angle.\n     \"\"\"\n-    rng = random.Random(1)\n     points = []\n-    for _ in range(n):\n-        z = rng.uniform(-1.0, 1.0)\n-        phi = rng.uniform(0.0, 2 * math.pi)\n-        s = math.sqrt(1.0 - z * z)\n-        points.append((s * math.cos(phi), s * math.sin(phi), z))\n+    for i in range(n):\n+        # Golden angle in radians\n+        theta = 2 * math.pi * (i / PHI)\n+        # Z-coordinate from Fibonacci lattice\n+        z = 1 - 2 * (i + 0.5) / n\n+        # Radius of the circle at this z\n+        r = math.sqrt(1 - z * z)\n+        x = r * math.cos(theta)\n+        y = r * math.sin(theta)\n+        points.append((x, y, z))\n     return points\n # OMEGA-BLOCK-END\n \n",
+ "initial_solution": {
+  "kind": "sphere_points",
+  "points": [
+   [
+    0.3919709387244532,
+    -0.5582121095618475,
+    -0.7312715117751976
+   ],
+   [
+    -0.027052463738772504,
+    0.8490936142385189,
+    0.5275492379532281
+   ],
+   [
+    -0.9500239047545286,
+    0.31204362944230385,
+    -0.009129825816118098
+   ],
+   [
+    0.22957314306547277,
+    -0.9248645600666849,
+    0.30318594544552596
+   ],
+   [
+    0.5740391880355756,
+    0.1033386161058686,
+    -0.8122808264515302
+   ],
+   [
+    -0.6758397496085636,
+    0.3037890926411783,
+    0.6715302078397394
+   ],
+   [
+    0.8512988419434201,
+    0.011265659732678564,
+    0.524560164915884
+   ],
+   [
+    -0.17680359044518373,
+    -0.9781667833824966,
+    -0.10922561189039716
+   ],
+   [
+    0.7908900515540614,
+    -0.28321934240489055,
+    -0.5424755574590947
+   ],
+   [
+    0.5851964340381928,
+    0.11388203849293084,
+    0.8028549152229673
+   ],
+   [
+    -0.30434810274742335,
+    -0.08102906244732802,
+    -0.9491082780130784
+   ],
+   [
+    -0.3509958145626131,
+    0.3246444046695718,
+    0.8782983255570211
+   ],
+   [
+    -0.7271635298854837,
+    0.3872590786250933,
+    -0.5668012057387734
+   ],
+   [
+    0.05942052898539893,
+    0.33054331283916893,
+    -0.9419184248502641
+   ],
+   [
+    -0.9919106268324059,
+    0.02610563707090374,
+    -0.12422481269885588
+   ],
+   [
+    0.10141148542176433,
+    0.8394879795728718,
+    -0.5338310994848547
+   ],
+   [
+    -0.800348025639128,
+    0.20762133322971385,
+    -0.5624379253246229
+   ],
+   [
+    0.8990635126271509,
+    0.12213812674917045,
+    -0.4204367708190289
+   ],
+   [
+    -0.6917519647168419,
+    -0.2562101885183855,
+    0.6751559513251457
+   ],
+   [
+    0.3757097440071294,
+    0.88195886829755,
+    0.28458872586489115
+   ],
+   [
+    0.10962933743537041,
+    -0.1326097917248836,
+    0.9850868243521302
+   ],
+   [
+    -0.32373272592570945,
+    0.5659500259391612,
+    -0.7582200803883872
+   ],
+   [
+    -0.2164510454505914,
+    -0.8700158468173443,
+    0.44296881516653674
+   ],
+   [
+    -0.43065317546221576,
+    0.22938243010501777,
+    0.8728811735989193
+   ],
+   [
+    -0.3606302208330362,
+    -0.6589776995328848,
+    0.660071386548654
+   ],
+   [
+    -0.7836961589264019,
+    -0.48079575758636983,
+    -0.3932629781341648
+   ],
+   [
+    0.3660243386758451,
+    -0.5299673944570227,
+    0.7649580016637154
+   ],
+   [
+    -0.8476230763315352,
+    -0.5304935866064687,
+    0.010567641159200837
+   ],
+   [
+    0.016650981414250473,
+    0.36477107016970456,
+    -0.9309483396973168
+   ],
+   [
+    -0.6901522939672605,
+    0.4121803795407587,
+    0.5948084951086057
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "sphere_points",
+  "points": [
+   [
+    0.25603819159562036,
+    0.0,
+    0.9666666666666667
+   ],
+   [
+    -0.3214116423655361,
+    -0.2944393930028532,
+    0.9
+   ],
+   [
+    0.04832638765184341,
+    0.5506542615944049,
+    0.8333333333333334
+   ],
+   [
+    0.3906453370752513,
+    -0.5095276664162464,
+    0.7666666666666666
+   ],
+   [
+    -0.7032260878001112,
+    0.12439079321778757,
+    0.7000000000000001
+   ],
+   [
+    0.6529646031459665,
+    0.41536263183791516,
+    0.6333333333333334
+   ],
+   [
+    -0.2139002244567671,
+    -0.7956981732203698,
+    0.5666666666666668
+   ],
+   [
+    -0.3991571921844758,
+    0.7685528842749896,
+    0.5000000000000001
+   ],
+   [
+    0.846548028327842,
+    -0.30915798219755763,
+    0.43333333333333335
+   ],
+   [
+    -0.8599670903723812,
+    -0.35498191366887455,
+    0.3666666666666667
+   ],
+   [
+    0.4043233100397768,
+    0.8640154286576592,
+    0.30000000000000004
+   ],
+   [
+    0.29102267498715734,
+    -0.927826146537634,
+    0.23333333333333328
+   ],
+   [
+    -0.8531097576887026,
+    0.49439454240368147,
+    0.16666666666666666
+   ],
+   [
+    0.9717801248864265,
+    0.21364313439874788,
+    0.09999999999999999
+   ],
+   [
+    -0.5748098239863421,
+    -0.8176078247776739,
+    0.03333333333333333
+   ],
+   [
+    -0.12843927512838746,
+    0.991157021613318,
+    -0.03333333333333344
+   ],
+   [
+    0.7608161442749528,
+    -0.6412166518506786,
+    -0.10000000000000009
+   ],
+   [
+    -0.9851712950793737,
+    -0.040739926041315225,
+    -0.16666666666666677
+   ],
+   [
+    0.6892634611050502,
+    0.6859092044440303,
+    -0.2333333333333334
+   ],
+   [
+    -0.044063831052655385,
+    -0.9529209719556827,
+    -0.30000000000000004
+   ],
+   [
+    -0.5960852794831356,
+    0.7143093833480473,
+    -0.3666666666666667
+   ],
+   [
+    0.8931851759015079,
+    -0.12017680213757788,
+    -0.43333333333333335
+   ],
+   [
+    -0.7108841727207103,
+    -0.49461469142676234,
+    -0.5
+   ],
+   [
+    0.18084104639056306,
+    0.8038565822516198,
+    -0.5666666666666668
+   ],
+   [
+    0.3847578968801001,
+    -0.6714538328711002,
+    -0.6333333333333334
+   ],
+   [
+    -0.6803587282739858,
+    0.21705299090637942,
+    -0.7000000000000001
+   ],
+   [
+    0.5828430695608112,
+    0.26928828137732563,
+    -0.7666666666666666
+   ],
+   [
+    -0.21340329263845983,
+    -0.50991625807246,
+    -0.8333333333333334
+   ],
+   [
+    -0.14752792834415315,
+    0.41016522324361265,
+    -0.8999999999999999
+   ],
+   [
+    0.22664230277226316,
+    -0.11911684242642429,
+    -0.9666666666666666
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 3.7,
+ "p90_call_seconds": 7.6,
+ "prompt_tokens_per_s": 3929.5,
+ "gen_tokens_per_s": 130.8,
+ "mean_prompt_tokens": 2297,
+ "mean_gen_tokens": 443,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

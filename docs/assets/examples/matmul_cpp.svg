@@ -17,18 +17,18 @@
 <text x="16.00" y="154.00" font-size="11" fill="#5d6178" text-anchor="start" font-weight="normal">each element of C: a row of A times a column of B; one product = 2n³ = 2.15 GFLOP · all 10 cores</text>
 <g transform="translate(0 188.00)">
 <rect x="0.5" y="0.5" width="399" height="419" rx="10" fill="#fbfbfe" stroke="#dcdfea"/>
-<text x="16" y="26" font-size="15" font-weight="600" fill="#1d2033">Starting program · score 0.87418</text>
-<text x="16" y="46" font-size="12" fill="#5d6178">0.8742 GFLOP/s · 2.46 s for one 1024×1024 product</text>
+<text x="16" y="26" font-size="15" font-weight="600" fill="#1d2033">Starting program · score 1.10309</text>
+<text x="16" y="46" font-size="12" fill="#5d6178">1.103 GFLOP/s · 1.95 s for one 1024×1024 product</text>
 <rect x="40.00" y="76.00" width="270.00" height="270.00" fill="#fff" stroke="#1d2033" stroke-width="1.2"/>
-<rect x="40.00" y="76.00" width="147.46" height="4.22" fill="#7b6cff" fill-opacity="0.75"/>
+<rect x="40.00" y="76.00" width="151.81" height="4.22" fill="#7b6cff" fill-opacity="0.75"/>
 <text x="175.00" y="71.00" font-size="11" fill="#5d6178" text-anchor="middle" font-weight="normal">C</text>
-<text x="200.00" y="376.00" font-size="11" fill="#1d2033" text-anchor="middle" font-weight="normal">within 21 ms, the faster program's time: 0.85% done</text>
+<text x="200.00" y="376.00" font-size="11" fill="#1d2033" text-anchor="middle" font-weight="normal">within 17.1 ms, the faster program's time: 0.88% done</text>
 <rect x="420.5" y="0.5" width="399" height="419" rx="10" fill="#fbfbfe" stroke="#dcdfea"/>
-<text x="436" y="26" font-size="15" font-weight="600" fill="#1d2033">Best · score 102.4430</text>
-<text x="436" y="46" font-size="12" fill="#5d6178">102.4 GFLOP/s · 21 ms for one 1024×1024 product</text>
+<text x="436" y="26" font-size="15" font-weight="600" fill="#1d2033">Best · score 125.5650</text>
+<text x="436" y="46" font-size="12" fill="#5d6178">125.6 GFLOP/s · 17.1 ms for one 1024×1024 product</text>
 <rect x="460.00" y="76.00" width="270.00" height="270.00" fill="#fff" stroke="#1d2033" stroke-width="1.2"/>
 <rect x="460.00" y="76.00" width="270.00" height="270.00" fill="#7b6cff" fill-opacity="0.75"/>
 <text x="595.00" y="71.00" font-size="11" fill="#5d6178" text-anchor="middle" font-weight="normal">C</text>
-<text x="620.00" y="376.00" font-size="11" fill="#1d2033" text-anchor="middle" font-weight="normal">within 21 ms, the faster program's time: all done</text>
+<text x="620.00" y="376.00" font-size="11" fill="#1d2033" text-anchor="middle" font-weight="normal">within 17.1 ms, the faster program's time: all done</text>
 </g>
 </svg>

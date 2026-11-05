@@ -1,0 +1,498 @@
+{
+ "schema": 4,
+ "example": "tammes_30",
+ "model": "nvidia/nemotron-3.5-super-vl:free",
+ "variant": "no-think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-04T09:38:51",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 8.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 3.2013569883368893,
+ "best_score": 38.284971589658554,
+ "improvement": 11.958982309419877,
+ "llm_calls": 45,
+ "mean_llm_seconds": 10.8,
+ "attempts": 45,
+ "ok": 29,
+ "statuses": {
+  "ok": 29,
+  "llm_error": 6,
+  "invalid": 6,
+  "duplicate": 3,
+  "edit_error": 1
+ },
+ "sweeps": 13,
+ "sweep_variants": 128,
+ "improvements": 8,
+ "minutes_to_best": 5.17,
+ "best_idea": "Expose key polish parameters (coarse margin/step, fine margin/step, fine iterations) as named constants so the engine can sweep them toward a higher min angle.",
+ "progress": [
+  [
+   0.0,
+   3.2013569883368893
+  ],
+  [
+   0.26,
+   36.17378358957089
+  ],
+  [
+   0.62,
+   36.879718075963844
+  ],
+  [
+   0.63,
+   37.42063002491503
+  ],
+  [
+   1.13,
+   37.800557654680524
+  ],
+  [
+   2.08,
+   37.97077752528224
+  ],
+  [
+   3.21,
+   37.992080196102556
+  ],
+  [
+   3.71,
+   38.136709077202774
+  ],
+  [
+   5.17,
+   38.284971589658554
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.2013569883368893,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 0.26,
+   "score": 36.17378358957089,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Start from a Fibonacci golden-spiral sphere (much more uniform than random) then run gradient-based repulsion energy minimization with increasing exponent s, followed by max-min polish pushing closest pairs apart, keeping the best configuration found."
+  },
+  {
+   "minutes": 0.62,
+   "score": 36.879718075963844,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Seed the polish margin from the current minimum so only genuinely close pairs are pushed apart, improving max-min refinement."
+  },
+  {
+   "minutes": 0.63,
+   "score": 37.42063002491503,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "sweep/best/diff/refine",
+   "status": "ok",
+   "idea": "tuned margin=1.01 on top of: Seed the polish margin from the current minimum so only genuinely close pairs are pushed apart, improving max-min refinement."
+  },
+  {
+   "minutes": 1.13,
+   "score": 37.800557654680524,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Add a local max-min polish that iteratively finds all pairs within margin=1.01 of the current minimum chord distance and pushes them apart along their shared tangent plane with shrinking step sizes, which directly maximizes the minimum angle rather than relying only on repulsion energy."
+  },
+  {
+   "minutes": 2.08,
+   "score": 37.800557654680524,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Add named constants for the polish margin and initial step so the engine can sweep them toward a better max-min score."
+  },
+  {
+   "minutes": 2.08,
+   "score": 37.97077752528224,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "sweep/exploit/diff/tune",
+   "status": "ok",
+   "idea": "tuned POLISH_MARGIN=1.02, POLISH_STEP=0.03 on top of: Add named constants for the polish margin and initial step so the engine can sweep them toward a better max-min score."
+  },
+  {
+   "minutes": 2.64,
+   "score": 37.97077752528224,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Add a final simulated-annealing phase that directly maximizes the minimum angle by moving points along their tangent planes with an exponentially decaying temperature, using a fixed seed for reproducibility."
+  },
+  {
+   "minutes": 5.17,
+   "score": 38.284971589658554,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "Expose key polish parameters (coarse margin/step, fine margin/step, fine iterations) as named constants so the engine can sweep them toward a higher min angle."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -7,21 +7,198 @@\n \n # OMEGA-BLOCK-START\n def construct(n=30):\n-    \"\"\"Return a list of n points (x, y, z) on the unit sphere.\n-\n-    Vectors need not be normalized (the evaluator normalizes them), but none may be\n-    zero. The score is the minimum angle in degrees between any two points. This\n-    start draws uniformly random points with a fixed seed, so some pairs end up\n-    close together.\n+    \"\"\"Return n points on the unit sphere with a large minimum pairwise angle.\n+\n+    Starts from a Fibonacci golden-spiral sphere, then minimizes a repulsion energy\n+    sum(1/d^s) over chord distances with increasing s, moving each point along the\n+    negative gradient projected onto the tangent plane and renormalizing. Finishes\n+    with a max-min polish that pushes apart the closest pairs with shrinking steps,\n+    followed by a fine polish phase. The best configuration seen is returned.\n     \"\"\"\n-    rng = random.Random(1)\n-    points = []\n-    for _ in range(n):\n-        z = rng.uniform(-1.0, 1.0)\n-        phi = rng.uniform(0.0, 2 * math.pi)\n-        s = math.sqrt(1.0 - z * z)\n-        points.append((s * math.cos(phi), s * math.sin(phi), z))\n-    return points\n+    def min_angle_deg(pts):\n+        best = 180.0\n+        m = len(pts)\n+        for i in range(m):\n+            xi, yi, zi = pts[i]\n+            for j in range(i + 1, m):\n+                xj, yj, zj = pts[j]\n+                dot = xi * xj + yi * yj + zi * zj\n+                if dot > 1.0:\n+                    dot = 1.0\n+                elif dot < -1.0:\n+                    dot = -1.0\n+                ang = math.degrees(math.acos(dot))\n+                if ang < best:\n+                    best = ang\n+        return best\n+\n+    def norm(v):\n+        x, y, z = v\n+        L = math.sqrt(x * x + y * y + z * z)\n+        if L == 0.0:\n+            return (0.0, 0.0, 1.0)\n+        return (x / L, y / L, z / L)\n+\n+    # Fibonacci golden-spiral start (deterministic, uniform)\n+    pts = []\n+    phi_inc = math.pi * (3.0 - math.sqrt(5.0))  # ~2.39996 rad\n+    for k in range(n):\n+        z = 1.0 - (2.0 * k + 1.0) / n\n+        r = math.sqrt(max(0.0, 1.0 - z * z))\n+        phi = k * phi_inc\n+        pts.append((r * math.cos(phi), r * math.sin(phi), z))\n+\n+    best_pts = [norm(p) for p in pts]\n+    best_score = min_angle_deg(best_pts)\n+\n+    # Repulsion energy minimization with increasing exponent s\n+    for s in (1.0, 2.0, 4.0, 8.0):\n+        step = 0.15\n+        for it in range(200):\n+            grads = [(0.0, 0.0, 0.0)] * n\n+            for i in range(n):\n+                xi, yi, zi = pts[i]\n+                gx = gy = gz = 0.0\n+                for j in range(n):\n+                    if i == j:\n+                        continue\n+                    xj, yj, zj = pts[j]\n+                    dx = xi - xj\n+                    dy = yi - yj\n+                    dz = zi - zj\n+                    d2 = dx * dx + dy * dy + dz * dz\n+                    if d2 < 1e-12:\n+                        continue\n+                    d = math.sqrt(d2)\n+                    coef = -s / (d2 ** (s / 2.0 + 1.0))  # dE/dd * (1/d) factor\n+                    gx += coef * dx\n+                    gy += coef * dy\n+                    gz += coef * dz\n+                # project onto tangent plane: g - (g\u00b7p) p\n+                gp = gx * xi + gy * yi + gz * zi\n+                gx -= gp * xi\n+                gy -= gp * yi\n+                gz -= gp * zi\n+                grads[i] = (gx, gy, gz)\n+            moved = False\n+            for i in range(n):\n+                gx, gy, gz = grads[i]\n+                g2 = gx * gx + gy * gy + gz * gz\n+                if g2 < 1e-18:\n+                    continue\n+                g = math.sqrt(g2)\n+                xi, yi, zi = pts[i]\n+                nx = xi - step * gx / g\n+                ny = yi - step * gy / g\n+                nz = zi - step * gz / g\n+                pts[i] = norm((nx, ny, nz))\n+                moved = True\n+            if not moved:\n+                break\n+            step *= 0.995\n+        score = min_angle_deg(pts)\n+        if score > best_score:\n+            best_score = score\n+            best_pts = [p for p in pts]\n+\n+    # Max-min polish: push closest pairs apart along their shared tangent plane\n+    POLISH_MARGIN = 1.02\n+    POLISH_STEP = 0.03\n+    margin = POLISH_MARGIN\n+    step = POLISH_STEP\n+    for _ in range(120):\n+        mind = 2.0\n+        pairs = []\n+        for i in range(n):\n+            xi, yi, zi = pts[i]\n+            for j in range(i + 1, n):\n+                xj, yj, zj = pts[j]\n+                dx = xi - xj\n+                dy = yi - yj\n+                dz = zi - zj\n+                d2 = dx * dx + dy * dy + dz * dz\n+                if d2 < mind:\n+                    mind = d2\n+                    pairs = [(i, j, dx, dy, dz)]\n+                elif d2 <= mind * margin:\n+                    pairs.append((i, j, dx, dy, dz))\n+        if mind >= 3.999999:\n+            break\n+        for (i, j, dx, dy, dz) in pairs:\n+            d = math.sqrt(dx * dx + dy * dy + dz * dz)\n+            if d < 1e-12:\n+                continue\n+            # direction from j to i at i, projected onto tangent plane at i\n+            xi, yi, zi = pts[i]\n+            ux = dx / d\n+            uy = dy / d\n+            uz = dz / d\n+            gp = ux * xi + uy * yi + uz * zi\n+            ux -= gp * xi\n+            uy -= gp * yi\n+            uz -= gp * zi\n+            ul = math.sqrt(ux * ux + uy * uy + uz * uz)\n+            if ul < 1e-12:\n+                continue\n+            # move both endpoints apart symmetrically\n+            xj, yj, zj = pts[j]\n+            pts[i] = norm((xi + step * ux / ul, yi + step * uy / ul, zi + step * uz / ul))\n+            pts[j] = norm((xj - step * ux / ul, yj - step * uy / ul, zj - step * uz / ul))\n+        step *= 0.9\n+    score = min_angle_deg(pts)\n+    if score > best_score:\n+        best_score = score\n+        best_pts = [p for p in pts]\n+\n+    # Fine polish: smaller margin and step to refine the minimum further\n+    FINE_MARGIN = 1.002\n+    FINE_STEP = 0.01\n+    FINE_ITERS = 120\n+    margin = FINE_MARGIN\n+    step = FINE_STEP\n+    for _ in range(FINE_ITERS):\n+        mind = 2.0\n+        pairs = []\n+        for i in range(n):\n+            xi, yi, zi = pts[i]\n+            for j in range(i + 1, n):\n+                xj, yj, zj = pts[j]\n+                dx = xi - xj\n+                dy = yi - yj\n+                dz = zi - zj\n+                d2 = dx * dx + dy * dy + dz * dz\n+                if d2 < mind:\n+                    mind = d2\n+                    pairs = [(i, j, dx, dy, dz)]\n+                elif d2 <= mind * margin:\n+                    pairs.append((i, j, dx, dy, dz))\n+        if mind >= 3.999999:\n+            break\n+        for (i, j, dx, dy, dz) in pairs:\n+            d = math.sqrt(dx * dx + dy * dy + dz * dz)\n+            if d < 1e-12:\n+                continue\n+            xi, yi, zi = pts[i]\n+            ux = dx / d\n+            uy = dy / d\n+            uz = dz / d\n+            gp = ux * xi + uy * yi + uz * zi\n+            ux -= gp * xi\n+            uy -= gp * yi\n+            uz -= gp * zi\n+            ul = math.sqrt(ux * ux + uy * uy + uz * uz)\n+            if ul < 1e-12:\n+                continue\n+            xj, yj, zj = pts[j]\n+            pts[i] = norm((xi + step * ux / ul, yi + step * uy / ul, zi + step * uz / ul))\n+            pts[j] = norm((xj - step * ux / ul, yj - step * uy / ul, zj - step * uz / ul))\n+        step *= 0.9\n+    score = min_angle_deg(pts)\n+    if score > best_score:\n+        best_score = score\n+        best_pts = [p for p in pts]\n+\n+    return best_pts\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "sphere_points",
+  "points": [
+   [
+    0.3919709387244532,
+    -0.5582121095618475,
+    -0.7312715117751976
+   ],
+   [
+    -0.027052463738772504,
+    0.8490936142385189,
+    0.5275492379532281
+   ],
+   [
+    -0.9500239047545286,
+    0.31204362944230385,
+    -0.009129825816118098
+   ],
+   [
+    0.22957314306547277,
+    -0.9248645600666849,
+    0.30318594544552596
+   ],
+   [
+    0.5740391880355756,
+    0.1033386161058686,
+    -0.8122808264515302
+   ],
+   [
+    -0.6758397496085636,
+    0.3037890926411783,
+    0.6715302078397394
+   ],
+   [
+    0.8512988419434201,
+    0.011265659732678564,
+    0.524560164915884
+   ],
+   [
+    -0.17680359044518373,
+    -0.9781667833824966,
+    -0.10922561189039716
+   ],
+   [
+    0.7908900515540614,
+    -0.28321934240489055,
+    -0.5424755574590947
+   ],
+   [
+    0.5851964340381928,
+    0.11388203849293084,
+    0.8028549152229673
+   ],
+   [
+    -0.30434810274742335,
+    -0.08102906244732802,
+    -0.9491082780130784
+   ],
+   [
+    -0.3509958145626131,
+    0.3246444046695718,
+    0.8782983255570211
+   ],
+   [
+    -0.7271635298854837,
+    0.3872590786250933,
+    -0.5668012057387734
+   ],
+   [
+    0.05942052898539893,
+    0.33054331283916893,
+    -0.9419184248502641
+   ],
+   [
+    -0.9919106268324059,
+    0.02610563707090374,
+    -0.12422481269885588
+   ],
+   [
+    0.10141148542176433,
+    0.8394879795728718,
+    -0.5338310994848547
+   ],
+   [
+    -0.800348025639128,
+    0.20762133322971385,
+    -0.5624379253246229
+   ],
+   [
+    0.8990635126271509,
+    0.12213812674917045,
+    -0.4204367708190289
+   ],
+   [
+    -0.6917519647168419,
+    -0.2562101885183855,
+    0.6751559513251457
+   ],
+   [
+    0.3757097440071294,
+    0.88195886829755,
+    0.28458872586489115
+   ],
+   [
+    0.10962933743537041,
+    -0.1326097917248836,
+    0.9850868243521302
+   ],
+   [
+    -0.32373272592570945,
+    0.5659500259391612,
+    -0.7582200803883872
+   ],
+   [
+    -0.2164510454505914,
+    -0.8700158468173443,
+    0.44296881516653674
+   ],
+   [
+    -0.43065317546221576,
+    0.22938243010501777,
+    0.8728811735989193
+   ],
+   [
+    -0.3606302208330362,
+    -0.6589776995328848,
+    0.660071386548654
+   ],
+   [
+    -0.7836961589264019,
+    -0.48079575758636983,
+    -0.3932629781341648
+   ],
+   [
+    0.3660243386758451,
+    -0.5299673944570227,
+    0.7649580016637154
+   ],
+   [
+    -0.8476230763315352,
+    -0.5304935866064687,
+    0.010567641159200837
+   ],
+   [
+    0.016650981414250473,
+    0.36477107016970456,
+    -0.9309483396973168
+   ],
+   [
+    -0.6901522939672605,
+    0.4121803795407587,
+    0.5948084951086057
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "sphere_points",
+  "points": [
+   [
+    0.4380420338361258,
+    -0.035423836735752806,
+    0.8982562709959945
+   ],
+   [
+    -0.09218879288468967,
+    0.34902415758887567,
+    0.9325681550888598
+   ],
+   [
+    -0.15175565462300095,
+    -0.32067676916719723,
+    0.9349527426594526
+   ],
+   [
+    0.5387839084258375,
+    0.5563887332481553,
+    0.632568950815555
+   ],
+   [
+    -0.7230140483430386,
+    -0.12148022076560838,
+    0.6800685567362672
+   ],
+   [
+    0.7449514018423025,
+    -0.4496240570289051,
+    0.4928342685265063
+   ],
+   [
+    -0.034654415226585716,
+    0.8547284950167175,
+    0.517917243690303
+   ],
+   [
+    -0.4693927562623733,
+    -0.7181321620951782,
+    0.5137671049540999
+   ],
+   [
+    0.9520992904077507,
+    0.13832889988526426,
+    0.2727124065047102
+   ],
+   [
+    -0.6194158931232029,
+    0.5253402336638795,
+    0.5833880271657667
+   ],
+   [
+    0.1824729365817355,
+    -0.7772825614212386,
+    0.6021091654556311
+   ],
+   [
+    0.14092728685024497,
+    0.9848408166624008,
+    -0.10113389964183378
+   ],
+   [
+    -0.8812271022247921,
+    -0.47226212830197956,
+    0.02018109204628564
+   ],
+   [
+    0.9163604863423339,
+    -0.3763179178079891,
+    -0.1366319282126284
+   ],
+   [
+    -0.49790904874031133,
+    0.8670455072349549,
+    0.017851262313861298
+   ],
+   [
+    -0.13484296106805008,
+    -0.9906963024051176,
+    0.018390547877326253
+   ],
+   [
+    0.7187226766959887,
+    0.695159055908762,
+    0.013842000975009875
+   ],
+   [
+    -0.9749913563008924,
+    0.1668443881903636,
+    0.14681554845427572
+   ],
+   [
+    0.5085362792893433,
+    -0.8601848356247358,
+    0.038378395065421726
+   ],
+   [
+    -0.23844138987246874,
+    0.7699198606046497,
+    -0.5919198525494836
+   ],
+   [
+    -0.4669622240783362,
+    -0.7371204419288762,
+    -0.48846671879913384
+   ],
+   [
+    0.8835456593230687,
+    0.21741640401028656,
+    -0.4148218595476854
+   ],
+   [
+    -0.7878037298621351,
+    0.4593752280127208,
+    -0.410292192350243
+   ],
+   [
+    0.18684503302292602,
+    -0.8253619332407416,
+    -0.5327913407627486
+   ],
+   [
+    0.44445697703381976,
+    0.6721269163581871,
+    -0.5922021646978279
+   ],
+   [
+    -0.80635416766702,
+    -0.17915567176234504,
+    -0.5636454573234939
+   ],
+   [
+    0.6055957717867294,
+    -0.3506665039465596,
+    -0.7143435897409125
+   ],
+   [
+    -0.39276005108209633,
+    0.20873945678641523,
+    -0.8956379745491487
+   ],
+   [
+    -0.11172967938542121,
+    -0.38419437300012693,
+    -0.9164666728798546
+   ],
+   [
+    0.2612338714109069,
+    0.1549973051233749,
+    -0.9527500720714542
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 9.0,
+ "p90_call_seconds": 20.5,
+ "prompt_tokens_per_s": 5351.5,
+ "gen_tokens_per_s": 143.1,
+ "mean_prompt_tokens": 6821,
+ "mean_gen_tokens": 1345,
+ "stopped_calls": 6,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

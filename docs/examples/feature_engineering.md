@@ -162,6 +162,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/featu
 | cohere/north-mini-code:free (think) | cloud | 0.934 | ×1.50 | 37.5 | 5 |
 | gpt-oss:20b (no-think) | local | 0.929 | ×1.49 | 15.6 | 4 |
 | frob/sarvam:30b (no-think) | local | 0.928 | ×1.49 | 30.4 | 3 |
+| xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 0.914 | ×1.47 | 34.6 | 6 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 0.885 | ×1.42 | 3.6 | 5 |
 | gemma4:26b-a4b-it-qat (no-think) | local | 0.882 | ×1.42 | 2.8 | 2 |
 | cohere/north-mini-code:free (no-think) | cloud | 0.88 | ×1.41 | 0.2 | 1 |
@@ -189,6 +190,5 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/featu
 | qwen3-coder:30b (no-think) | local | 0.753 | ×1.21 | 1.5 | 1 |
 | qwen2.5-coder:7b (no-think) | local | 0.75 | ×1.20 | 3.1 | 5 |
 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | 0.703 | ×1.13 | 15.8 | 4 |
-| xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 0.678 | ×1.09 | 1.9 | 1 |
 | nemotron-3-nano:4b (no-think) | local | 0.623 | ×1.00 | - | 0 |
-| recursive/flint-v1.0:free (think) | cloud | | | | failed: all 5 model requests failed: recursive/flint-v1.0:free … |
+| recursive/flint-v1.0:free (think) | cloud | | | | failed: all 6 model requests failed: recursive/flint-v1.0:free … |

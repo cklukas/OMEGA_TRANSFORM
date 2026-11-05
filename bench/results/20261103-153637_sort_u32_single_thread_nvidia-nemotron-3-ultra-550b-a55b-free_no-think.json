@@ -1,0 +1,169 @@
+{
+ "schema": 4,
+ "example": "sort_u32_single_thread",
+ "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+ "variant": "no-think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-03T15:36:37",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 44.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 18.39712239837611,
+ "best_score": 158.54109980848568,
+ "improvement": 8.617711855984602,
+ "llm_calls": 56,
+ "mean_llm_seconds": 46.0,
+ "attempts": 56,
+ "ok": 37,
+ "statuses": {
+  "compile_error": 3,
+  "ok": 37,
+  "invalid": 6,
+  "duplicate": 10
+ },
+ "sweeps": 1,
+ "sweep_variants": 7,
+ "improvements": 6,
+ "minutes_to_best": 26.83,
+ "best_idea": "Optimize the NEON counting pass by unrolling the loop 4x (processing 16 elements per iteration) and reducing store/reload overhead by accumulating byte histograms directly from vector registers using ",
+ "progress": [
+  [
+   0.0,
+   18.39712239837611
+  ],
+  [
+   1.43,
+   104.76107434980207
+  ],
+  [
+   1.9,
+   134.29049515917455
+  ],
+  [
+   12.32,
+   135.42097764253126
+  ],
+  [
+   15.92,
+   138.79380041713455
+  ],
+  [
+   18.47,
+   142.9202143596965
+  ],
+  [
+   26.83,
+   158.54109980848568
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 18.39712239837611,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.9,
+   "score": 134.29049515917455,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Replace the merge sort with an optimized LSD radix sort using 8-bit passes (4 passes) with single histogram computation, NEON-accelerated counting, and early-exit for already-sorted data. This will be significantly faster than O(n log n) merge sort for large arrays."
+  },
+  {
+   "minutes": 12.32,
+   "score": 135.42097764253126,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Optimize the counting pass using NEON vector operations to extract bytes directly instead of storing to array and extracting scalars, reducing memory operations and improving throughput on ARM targets."
+  },
+  {
+   "minutes": 15.92,
+   "score": 138.79380041713455,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Optimize the NEON counting pass by using `vld1q_u8` to load 16 bytes at once and `vtbl1q_u8` with shuffle masks to extract all four byte positions directly into 8-bit lanes, avoiding 32-bit shifts and 4x `vst1q_u32` stores; this reduces instructions and register pressure, and the final `vst1q_u8` to a 16-byte stack buffer lets scalar `++hist[buf[k]]` accumulate with zero overhead."
+  },
+  {
+   "minutes": 26.83,
+   "score": 158.54109980848568,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Optimize the NEON counting pass by unrolling the loop 4x (processing 16 elements per iteration) and reducing store/reload overhead by accumulating byte histograms directly from vector registers using vtbl and scalar updates, avoiding repeated 16-byte buffer stores."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -21,20 +21,220 @@\n // OMEGA-BLOCK-START\n // Sorts a[0..n) ascending, in place, on the calling thread. n is any size from\n // 0 to 2'000'000. Extra memory may be allocated freely.\n-static void merge_sort_rec(uint32_t* a, uint32_t* tmp, size_t lo, size_t hi) {\n-    if (hi - lo < 2) return;\n-    size_t mid = lo + (hi - lo) / 2;\n-    merge_sort_rec(a, tmp, lo, mid);\n-    merge_sort_rec(a, tmp, mid, hi);\n-    size_t i = lo, j = mid, k = lo;\n-    while (i < mid && j < hi) tmp[k++] = (a[j] < a[i]) ? a[j++] : a[i++];\n-    while (i < mid) tmp[k++] = a[i++];\n-    while (j < hi) tmp[k++] = a[j++];\n-    for (size_t t = lo; t < hi; ++t) a[t] = tmp[t];\n-}\n+#include <algorithm>\n+#include <cstdint>\n+#include <vector>\n+#if defined(__ARM_NEON) || defined(__aarch64__)\n+#include <arm_neon.h>\n+#endif\n+\n+namespace {\n+constexpr size_t INSERTION_SORT_THRESHOLD = 32;\n+\n+void insertion_sort(uint32_t* a, size_t n) {\n+    for (size_t i = 1; i < n; ++i) {\n+        uint32_t key = a[i];\n+        size_t j = i;\n+        while (j > 0 && a[j - 1] > key) {\n+            a[j] = a[j - 1];\n+            --j;\n+        }\n+        a[j] = key;\n+    }\n+}\n+\n+bool is_sorted(const uint32_t* a, size_t n) {\n+    for (size_t i = 1; i < n; ++i) {\n+        if (a[i - 1] > a[i]) return false;\n+    }\n+    return true;\n+}\n+\n+void radix_sort_pass(const uint32_t* src, uint32_t* dst, size_t n, uint32_t shift, const uint32_t* hist) {\n+    uint32_t offsets[256];\n+    offsets[0] = 0;\n+    for (int i = 1; i < 256; ++i) {\n+        offsets[i] = offsets[i - 1] + hist[(i - 1) + (shift == 0 ? 0 : shift == 8 ? 256 : shift == 16 ? 512 : 768)];\n+    }\n+    \n+    for (size_t i = 0; i < n; ++i) {\n+        uint32_t byte = (src[i] >> shift) & 0xFF;\n+        dst[offsets[byte]++] = src[i];\n+    }\n+}\n+\n+#if defined(__ARM_NEON) || defined(__aarch64__)\n+void count_bytes_neon(const uint32_t* a, size_t n, uint32_t* hist) {\n+    // Shuffle masks to extract byte 0,1,2,3 from each 32-bit lane\n+    const uint8x16_t mask_b0 = {0, 4, 8, 12,  0, 4, 8, 12,  0, 4, 8, 12,  0, 4, 8, 12};\n+    const uint8x16_t mask_b1 = {1, 5, 9, 13,  1, 5, 9, 13,  1, 5, 9, 13,  1, 5, 9, 13};\n+    const uint8x16_t mask_b2 = {2, 6, 10, 14, 2, 6, 10, 14, 2, 6, 10, 14, 2, 6, 10, 14};\n+    const uint8x16_t mask_b3 = {3, 7, 11, 15, 3, 7, 11, 15, 3, 7, 11, 15, 3, 7, 11, 15};\n+\n+    size_t i = 0;\n+    // Process 16 elements per iteration (4 vectors \u00d7 4 elements)\n+    for (; i + 15 < n; i += 16) {\n+        // Load 4 vectors (16 uint32_t = 64 bytes)\n+        uint8x16_t v0 = vld1q_u8(reinterpret_cast<const uint8_t*>(a + i + 0));\n+        uint8x16_t v1 = vld1q_u8(reinterpret_cast<const uint8_t*>(a + i + 4));\n+        uint8x16_t v2 = vld1q_u8(reinterpret_cast<const uint8_t*>(a + i + 8));\n+        uint8x16_t v3 = vld1q_u8(reinterpret_cast<const uint8_t*>(a + i + 12));\n+\n+        // Extract byte 0 from all 4 vectors\n+        uint8x16_t b0_0 = vqtbl1q_u8(v0, mask_b0);\n+        uint8x16_t b0_1 = vqtbl1q_u8(v1, mask_b0);\n+        uint8x16_t b0_2 = vqtbl1q_u8(v2, mask_b0);\n+        uint8x16_t b0_3 = vqtbl1q_u8(v3, mask_b0);\n+\n+        // Store and accumulate byte 0 histogram\n+        uint8_t buf[16];\n+        vst1q_u8(buf, b0_0);\n+        for (int k = 0; k < 16; ++k) ++hist[buf[k]];\n+        vst1q_u8(buf, b0_1);\n+        for (int k = 0; k < 16; ++k) ++hist[buf[k]];\n+        vst1q_u8(buf, b0_2);\n+        for (int k = 0; k < 16; ++k) ++hist[buf[k]];\n+        vst1q_u8(buf, b0_3);\n+        for (int k = 0; k < 16; ++k) ++hist[buf[k]];\n+\n+        // Extract byte 1 from all 4 vectors\n+        uint8x16_t b1_0 = vqtbl1q_u8(v0, mask_b1);\n+        uint8x16_t b1_1 = vqtbl1q_u8(v1, mask_b1);\n+        uint8x16_t b1_2 = vqtbl1q_u8(v2, mask_b1);\n+        uint8x16_t b1_3 = vqtbl1q_u8(v3, mask_b1);\n+\n+        // Store and accumulate byte 1 histogram\n+        vst1q_u8(buf, b1_0);\n+        for (int k = 0; k < 16; ++k) ++hist[256 + buf[k]];\n+        vst1q_u8(buf, b1_1);\n+        for (int k = 0; k < 16; ++k) ++hist[256 + buf[k]];\n+        vst1q_u8(buf, b1_2);\n+        for (int k = 0; k < 16; ++k) ++hist[256 + buf[k]];\n+        vst1q_u8(buf, b1_3);\n+        for (int k = 0; k < 16; ++k) ++hist[256 + buf[k]];\n+\n+        // Extract byte 2 from all 4 vectors\n+        uint8x16_t b2_0 = vqtbl1q_u8(v0, mask_b2);\n+        uint8x16_t b2_1 = vqtbl1q_u8(v1, mask_b2);\n+        uint8x16_t b2_2 = vqtbl1q_u8(v2, mask_b2);\n+        uint8x16_t b2_3 = vqtbl1q_u8(v3, mask_b2);\n+\n+        // Store and accumulate byte 2 histogram\n+        vst1q_u8(buf, b2_0);\n+        for (int k = 0; k < 16; ++k) ++hist[512 + buf[k]];\n+        vst1q_u8(buf, b2_1);\n+        for (int k = 0; k < 16; ++k) ++hist[512 + buf[k]];\n+        vst1q_u8(buf, b2_2);\n+        for (int k = 0; k < 16; ++k) ++hist[512 + buf[k]];\n+        vst1q_u8(buf, b2_3);\n+        for (int k = 0; k < 16; ++k) ++hist[512 + buf[k]];\n+\n+        // Extract byte 3 from all 4 vectors\n+        uint8x16_t b3_0 = vqtbl1q_u8(v0, mask_b3);\n+        uint8x16_t b3_1 = vqtbl1q_u8(v1, mask_b3);\n+        uint8x16_t b3_2 = vqtbl1q_u8(v2, mask_b3);\n+        uint8x16_t b3_3 = vqtbl1q_u8(v3, mask_b3);\n+\n+        // Store and accumulate byte 3 histogram\n+        vst1q_u8(buf, b3_0);\n+        for (int k = 0; k < 16; ++k) ++hist[768 + buf[k]];\n+        vst1q_u8(buf, b3_1);\n+        for (int k = 0; k < 16; ++k) ++hist[768 + buf[k]];\n+        vst1q_u8(buf, b3_2);\n+        for (int k = 0; k < 16; ++k) ++hist[768 + buf[k]];\n+        vst1q_u8(buf, b3_3);\n+        for (int k = 0; k < 16; ++k) ++hist[768 + buf[k]];\n+    }\n+\n+    // Handle remaining elements in groups of 4\n+    for (; i + 3 < n; i += 4) {\n+        uint8x16_t v = vld1q_u8(reinterpret_cast<const uint8_t*>(a + i));\n+\n+        uint8x16_t b0 = vqtbl1q_u8(v, mask_b0);\n+        uint8x16_t b1 = vqtbl1q_u8(v, mask_b1);\n+        uint8x16_t b2 = vqtbl1q_u8(v, mask_b2);\n+        uint8x16_t b3 = vqtbl1q_u8(v, mask_b3);\n+\n+        uint8_t buf[16];\n+        vst1q_u8(buf, b0);\n+        for (int k = 0; k < 16; ++k) ++hist[buf[k]];\n+        vst1q_u8(buf, b1);\n+        for (int k = 0; k < 16; ++k) ++hist[256 + buf[k]];\n+        vst1q_u8(buf, b2);\n+        for (int k = 0; k < 16; ++k) ++hist[512 + buf[k]];\n+        vst1q_u8(buf, b3);\n+        for (int k = 0; k < 16; ++k) ++hist[768 + buf[k]];\n+    }\n+\n+    // Handle remaining elements\n+    for (; i < n; ++i) {\n+        uint32_t v = a[i];\n+        hist[(v >> 0) & 0xFF]++;\n+        hist[256 + ((v >> 8) & 0xFF)]++;\n+        hist[512 + ((v >> 16) & 0xFF)]++;\n+        hist[768 + ((v >> 24) & 0xFF)]++;\n+    }\n+}\n+#else\n+void count_bytes_scalar(const uint32_t* a, size_t n, uint32_t* hist) {\n+    for (size_t i = 0; i < n; ++i) {\n+        uint32_t v = a[i];\n+        hist[(v >> 0) & 0xFF]++;\n+        hist[256 + ((v >> 8) & 0xFF)]++;\n+        hist[512 + ((v >> 16) & 0xFF)]++;\n+        hist[768 + ((v >> 24) & 0xFF)]++;\n+    }\n+}\n+#endif\n+\n+void lsd_radix_sort(uint32_t* a, size_t n, uint32_t* tmp) {\n+    if (n < INSERTION_SORT_THRESHOLD) {\n+        insertion_sort(a, n);\n+        return;\n+    }\n+    \n+    // Check if already sorted\n+    if (is_sorted(a, n)) return;\n+    \n+    // Single counting pass for all 4 bytes\n+    uint32_t hist[1024] = {0};\n+    \n+#if defined(__ARM_NEON) || defined(__aarch64__)\n+    count_bytes_neon(a, n, hist);\n+#else\n+    count_bytes_scalar(a, n, hist);\n+#endif\n+    \n+    // Check if we can skip any passes (all elements have same byte value)\n+    bool skip_pass[4] = {false};\n+    for (int pass = 0; pass < 4; ++pass) {\n+        uint32_t base = pass * 256;\n+        uint32_t count = hist[base];\n+        if (count == n) {\n+            skip_pass[pass] = true;\n+        }\n+    }\n+    \n+    uint32_t* src = a;\n+    uint32_t* dst = tmp;\n+    \n+    for (int pass = 0; pass < 4; ++pass) {\n+        if (skip_pass[pass]) continue;\n+        \n+        radix_sort_pass(src, dst, n, pass * 8, hist);\n+        std::swap(src, dst);\n+    }\n+    \n+    // If final result is in tmp, copy back to a\n+    if (src != a) {\n+        std::copy(tmp, tmp + n, a);\n+    }\n+}\n+} // namespace\n \n extern \"C\" void sort_u32(uint32_t* a, size_t n) {\n+    if (n < 2) return;\n     std::vector<uint32_t> tmp(n);\n-    merge_sort_rec(a, tmp.data(), 0, n);\n+    lsd_radix_sort(a, n, tmp.data());\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "best_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 38.4,
+ "p90_call_seconds": 79.6,
+ "prompt_tokens_per_s": 4603.6,
+ "gen_tokens_per_s": 50.1,
+ "mean_prompt_tokens": 8216,
+ "mean_gen_tokens": 2213,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

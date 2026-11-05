@@ -81,13 +81,164 @@ extern "C" size_t parse_doubles(const char* buf, size_t len, double* out) {
 
 ## Benchmark results
 
-The best result so far comes from **richardyoung/frognano-4b-2609:latest (no-think)**, run locally with Ollama on 2026-11-03: a score of **65.2254** (×1.00 the starting program's 65.2254), reached after no improvement with 15 model requests.
+The best result so far comes from **nvidia/nemotron-3-ultra-550b-a55b:free (no-think)**, run through OpenRouter on 2026-11-03: a score of **77.5919** (×1.44 the starting program's 53.8025), reached after 4.79 of 60 minutes with 33 model requests.
 
-What the starting program produces; no model improved on it:
+What the starting program produces (left) and what the best program by nvidia/nemotron-3-ultra-550b-a55b:free (no-think) produces (right):
 
-![float_parse_cpp: the starting program's solution](../assets/examples/float_parse_cpp.svg)
+![float_parse_cpp: the starting program's solution and the best one](../assets/examples/float_parse_cpp.svg)
 
-No model improved on the starting program.
+### How it got there
+
+The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.
+
+| Step | Minute | Score | Kind | Idea |
+|--:|--:|--:|---|---|
+| 0 | 0.0 | 53.8025 | start | initial program |
+| 1 | 0.5 | invalid | edit | Implement a fast path for integers and simple decimals using direct parsing with 64-bit integer accumulation, falling back to strtod only when necessary. This avoids strtod's overhead for the common cases while maintaining exact correctness. |
+| 2 | 2.4 | 62.8008 | fix-up | Fix the fast path to correctly handle numbers with more than 19 significant digits by falling back to strtod, and ensure the exponent calculation accounts for all digits when mantissa is truncated. |
+| 3 | 4.8 | 77.5919 | edit | Add a fast path for scientific notation with small exponents using Clinger's algorithm, and increase the mantissa digit limit to 19 to handle more cases without fallback. |
+
+### The best program
+
+What changed compared with the starting program:
+
+```diff
+--- initial
++++ best
+@@ -30,15 +30,128 @@
+ // optionally 'e' or 'E', an optional '+' or '-', and one or more digits. No
+ // spaces, no '+' sign on the mantissa, no inf/nan/hex. Every value must be
+ // bit-identical to std::strtod (correctly rounded, round-half-to-even).
++#include <cstdint>
++#include <cmath>
++
++namespace {
++
++// Powers of 10 for fast path (exactly representable up to 10^22)
++constexpr double POW10[23] = {
++    1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9,
++    1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19,
++    1e20, 1e21, 1e22
++};
++
++// Maximum significant digits for fast path
++constexpr int MAX_FAST_DIGITS = 19;
++
++// Fast path: parse integer, simple decimal, or scientific notation with small exponent
++// Returns true if successfully parsed, false if fallback needed
++bool parse_fast(const char*& p, const char* end, double& result) {
++    const char* start = p;
++    bool neg = false;
++    if (p < end && *p == '-') {
++        neg = true;
++        ++p;
++    }
++    if (p >= end || *p < '0' || *p > '9') return false;
++    
++    uint64_t mantissa = 0;
++    int total_digits = 0;
++    int digits_after_dot = 0;
++    int exp10 = 0;
++    bool has_dot = false;
++    bool has_exp = false;
++    
++    // Parse digits before decimal point
++    while (p < end && *p >= '0' && *p <= '9') {
++        if (total_digits < MAX_FAST_DIGITS) {
++            mantissa = mantissa * 10 + (*p - '0');
++        }
++        ++total_digits;
++        ++p;
++    }
++    
++    // Parse fractional part
++    if (p < end && *p == '.') {
++        has_dot = true;
++        ++p;
++        while (p < end && *p >= '0' && *p <= '9') {
++            if (total_digits < MAX_FAST_DIGITS) {
++                mantissa = mantissa * 10 + (*p - '0');
++            }
++            ++total_digits;
++            ++digits_after_dot;
++            ++p;
++        }
++    }
++    
++    // Parse exponent
++    if (p < end && (*p == 'e' || *p == 'E')) {
++        has_exp = true;
++        ++p;
++        bool exp_neg = false;
++        if (p < end && *p == '+') {
++            ++p;
++        } else if (p < end && *p == '-') {
++            exp_neg = true;
++            ++p;
++        }
++        if (p >= end || *p < '0' || *p > '9') return false;
++        int exp_val = 0;
++        while (p < end && *p >= '0' && *p <= '9') {
++            exp_val = exp_val * 10 + (*p - '0');
++            if (exp_val > 350) return false; // Too large for fast path
++            ++p;
++        }
++        exp10 = exp_neg ? -exp_val : exp_val;
++    }
++    
++    // Skip trailing newline
++    if (p >= end || *p != '\n') return false;
++    ++p;
++    
++    // If we have more than MAX_FAST_DIGITS significant digits, we cannot use fast path
++    if (total_digits > MAX_FAST_DIGITS) return false;
++    
++    // Adjust exponent for decimal point
++    exp10 -= digits_after_dot;
++    
++    // Clinger's fast path: mantissa < 2^53 and |exp10| <= 22
++    if (mantissa < (1ull << 53) && exp10 >= -22 && exp10 <= 22) {
++        double val = (double)mantissa;
++        if (exp10 < 0) {
++            val /= POW10[-exp10];
++        } else if (exp10 > 0) {
++            val *= POW10[exp10];
++        }
++        result = neg ? -val : val;
++        return true;
++    }
++    
++    return false;
++}
++
++} // namespace
++
+ extern "C" size_t parse_doubles(const char* buf, size_t len, double* out) {
+     const char* p = buf;
+     const char* end = buf + len;
+     size_t count = 0;
++    
+     while (p < end) {
+-        char* next;
+-        out[count++] = std::strtod(p, &next);
+-        p = next;
+-        while (p < end && *p == '\n') ++p;
++        const char* start = p;
++        double val;
++        if (parse_fast(p, end, val)) {
++            out[count++] = val;
++        } else {
++            // Fallback to strtod
++            char* next;
++            val = std::strtod(start, &next);
++            out[count++] = val;
++            p = next;
++            while (p < end && *p == '\n') ++p;
++        }
+     }
+     return count;
+ }
+```
 
 ### All models
 
@@ -95,6 +246,38 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/float
 
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|
+| nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 77.5919 | ×1.44 | 4.8 | 3 |
+| qwen3-coder:30b (no-think) | local | 76.3399 | ×1.12 | 50.0 | 5 |
+| gpt-oss:20b (no-think) | local | 75.2210 | ×1.23 | 12.0 | 1 |
+| dots-studio/dots-3-note-preview:free (no-think) | cloud | 71.5623 | ×1.27 | 16.4 | 7 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 69.7649 | ×1.24 | 39.3 | 1 |
 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | | | | failed: all 16 model requests failed … |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | cloud | | | | failed: all 6 model requests failed … |
+| recursive/flint-v1.0:free (think) | cloud | 66.7858 | ×1.35 | 18.3 | 2 |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | local | 66.4300 | ×1.00 | - | 0 |
+| frob/sarvam:30b (no-think) | local | 66.0620 | ×1.00 | - | 0 |
+| gemma4:e4b-it-qat (no-think) | local | 65.7656 | ×1.00 | - | 0 |
+| cohere/north-mini-code:free (think) | cloud | | | | failed: all 6 model requests failed: cohere/north-mini-code:free … |
 | richardyoung/frognano-4b-2609:latest (no-think) | local | 65.2254 | ×1.00 | - | 0 |
+| qwen3.5:latest (no-think) | local | 64.9445 | ×1.00 | - | 0 |
+| nvidia/nemotron-3-ultra-550b-a55b:free (think) | cloud | | | | failed: all 6 model requests failed … |
+| nvidia/nemotron-3.5-super-vl:free (think) | cloud | | | | failed: all 5 model requests failed … |
+| dots-studio/dots-3-note-preview:free (think) | cloud | | | | failed: all 6 model requests failed … |
+| nvidia/nemotron-3.5-lightning:free (think) | cloud | | | | failed: all 6 model requests failed … |
+| xingchen-agi/xing4.0-29b-a4b:free (think) | cloud | | | | failed: all 16 model requests failed … |
+| gemma4:e2b (no-think) | local | 62.2964 | ×1.00 | - | 0 |
+| glm-4.7-flash:latest (no-think) | local | 62.0608 | ×1.00 | - | 0 |
 | nemotron-3-nano:4b (no-think) | local | 60.7376 | ×1.00 | - | 0 |
+| qwen2.5-coder:7b (no-think) | local | 60.5379 | ×1.00 | 11.8 | 1 |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | 59.8966 | ×1.02 | 3.8 | 1 |
+| gemma4:12b-it-qat (no-think) | local | 59.8440 | ×1.00 | - | 0 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 58.9552 | ×1.00 | - | 0 |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | 58.4558 | ×1.00 | - | 0 |
+| gemma4:26b-a4b-it-qat (no-think) | local | 56.7909 | ×1.03 | 10.6 | 1 |
+| cohere/north-mini-code:free (no-think) | cloud | 56.1693 | ×1.07 | 5.8 | 1 |
+| nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | 55.7267 | ×1.02 | 8.4 | 1 |
+| gemma4:latest (no-think) | local | 55.7216 | ×1.00 | - | 0 |
+| xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 55.1384 | ×1.00 | - | 0 |
+| nvidia/nemotron-3.5-lightning:free (no-think) | cloud | 53.8589 | ×1.00 | - | 0 |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | 51.9664 | ×1.00 | - | 0 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | 50.0479 | ×1.00 | - | 0 |

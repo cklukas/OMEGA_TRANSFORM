@@ -378,7 +378,9 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/tsp_h
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|
 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | cloud | 1.18849 | ×1.19 | 60.5 | 9 |
+| nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | 1.16709 | ×1.17 | 2.6 | 5 |
 | cohere/north-mini-code:free (think) | cloud | 1.16178 | ×1.16 | 33.6 | 2 |
+| dots-studio/dots-3-note-preview:free (no-think) | cloud | 1.14974 | ×1.15 | 3.6 | 2 |
 | gemma4:12b-it-qat (no-think) | local | 1.13768 | ×1.14 | 3.2 | 2 |
 | gemma4:e4b-it-qat (no-think) | local | 1.13508 | ×1.14 | 19.5 | 5 |
 | nvidia/nemotron-3.5-super-vl:free (think) | cloud | 1.09539 | ×1.10 | 27.3 | 1 |
@@ -387,13 +389,6 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/tsp_h
 | nvidia/nemotron-3.5-lightning:free (think) | cloud | 1.08723 | ×1.09 | 28.2 | 2 |
 | gpt-oss:20b (no-think) | local | 1.08584 | ×1.09 | 19.8 | 5 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 1.03857 | ×1.04 | 25.8 | 1 |
-| cohere/north-mini-code:free (no-think) | cloud | | | | failed: all 6 model requests failed: cohere/north-mini-code:free … |
-| nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
-| nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
-| dots-studio/dots-3-note-preview:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
-| nvidia/nemotron-3.5-lightning:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
-| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
-| xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | | | | failed: all 6 model requests failed … |
 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | 1 | ×1.00 | - | 0 |
 | nemotron-3-nano:4b (no-think) | local | 1 | ×1.00 | - | 0 |
 | richardyoung/frognano-4b-2609:latest (no-think) | local | 1 | ×1.00 | - | 0 |
@@ -412,3 +407,8 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/tsp_h
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | cloud | 1 | ×1.00 | - | 0 |
 | xingchen-agi/xing4.0-29b-a4b:free (think) | cloud | 1 | ×1.00 | - | 0 |
 | recursive/flint-v1.0:free (think) | cloud | | | | failed: all 6 model requests failed: recursive/flint-v1.0:free … |
+| xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 1 | ×1.00 | - | 0 |
+| cohere/north-mini-code:free (no-think) | cloud | 1 | ×1.00 | - | 0 |
+| nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 1 | ×1.00 | - | 0 |
+| nvidia/nemotron-3.5-lightning:free (no-think) | cloud | 1 | ×1.00 | - | 0 |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | 1 | ×1.00 | - | 0 |

@@ -1,0 +1,144 @@
+{
+ "schema": 4,
+ "example": "matmul_f32_single_thread",
+ "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+ "variant": "no-think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-04T13:10:36",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 19.9,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 1.09136,
+ "best_score": 23.8871,
+ "improvement": 21.887461515906757,
+ "llm_calls": 35,
+ "mean_llm_seconds": 30.3,
+ "attempts": 35,
+ "ok": 26,
+ "statuses": {
+  "compile_error": 4,
+  "ok": 26,
+  "duplicate": 5
+ },
+ "sweeps": 18,
+ "sweep_variants": 265,
+ "improvements": 5,
+ "minutes_to_best": 9.99,
+ "best_idea": "tuned TILE_SIZE=144 on top of: Add cache blocking with a tunable tile size to improve data reuse and reduce cache misses, combined with NEON vectorization for the inner loop to maximize SIMD utilizati",
+ "progress": [
+  [
+   0.0,
+   1.09136
+  ],
+  [
+   0.89,
+   21.6607
+  ],
+  [
+   2.18,
+   22.8001
+  ],
+  [
+   2.18,
+   22.8472
+  ],
+  [
+   6.21,
+   23.715
+  ],
+  [
+   9.99,
+   23.8871
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.09136,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.03,
+   "score": 2.61019,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Change loop order to i-k-j with register tiling (4x4) and NEON vectorization to improve cache locality and utilize SIMD units for higher FLOPS."
+  },
+  {
+   "minutes": 9.99,
+   "score": 14.9639,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Add cache blocking with a tunable tile size to improve data reuse and reduce cache misses, combined with NEON vectorization for the inner loop to maximize SIMD utilization."
+  },
+  {
+   "minutes": 9.99,
+   "score": 23.8871,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "sweep/exploit/diff/tune",
+   "status": "ok",
+   "idea": "tuned TILE_SIZE=144 on top of: Add cache blocking with a tunable tile size to improve data reuse and reduce cache misses, combined with NEON vectorization for the inner loop to maximize SIMD utilization."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -23,12 +23,50 @@\n // OMEGA-BLOCK-START\n // Computes C = A * B on the calling thread. C is NOT zeroed by the caller.\n // n is any size from 1 to 2048.\n+constexpr int TILE_SIZE = 144;\n+\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+    // Initialize C to zero\n+    for (int i = 0; i < n * n; ++i) {\n+        C[i] = 0.0f;\n+    }\n+\n+#if defined(__ARM_NEON)\n+    // Cache-blocked i-k-j loop with NEON vectorization\n+    for (int i = 0; i < n; i += TILE_SIZE) {\n+        int i_end = std::min(i + TILE_SIZE, n);\n+        for (int k = 0; k < n; k += TILE_SIZE) {\n+            int k_end = std::min(k + TILE_SIZE, n);\n+            for (int ii = i; ii < i_end; ++ii) {\n+                for (int kk = k; kk < k_end; ++kk) {\n+                    float a_ik = A[ii * n + kk];\n+                    float32x4_t a_vec = vdupq_n_f32(a_ik);\n+                    int j = 0;\n+                    // Process 4 elements at a time using NEON\n+                    for (; j <= n - 4; j += 4) {\n+                        float32x4_t b_vec = vld1q_f32(&B[kk * n + j]);\n+                        float32x4_t c_vec = vld1q_f32(&C[ii * n + j]);\n+                        c_vec = vfmaq_f32(c_vec, a_vec, b_vec);\n+                        vst1q_f32(&C[ii * n + j], c_vec);\n+                    }\n+                    // Handle remainder elements\n+                    for (; j < n; ++j) {\n+                        C[ii * n + j] += a_ik * B[kk * n + j];\n+                    }\n+                }\n+            }\n         }\n+    }\n+#else\n+    // Fallback for non-NEON platforms\n+    for (int i = 0; i < n; ++i) {\n+        for (int k = 0; k < n; ++k) {\n+            float a_ik = A[i * n + k];\n+            for (int j = 0; j < n; ++j) {\n+                C[i * n + j] += a_ik * B[k * n + j];\n+            }\n+        }\n+    }\n+#endif\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 768,
+  "cores": "one core, CPU time"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 768,
+  "cores": "one core, CPU time"
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 25.0,
+ "p90_call_seconds": 51.8,
+ "prompt_tokens_per_s": 3564.0,
+ "gen_tokens_per_s": 54.0,
+ "mean_prompt_tokens": 6057,
+ "mean_gen_tokens": 1544,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

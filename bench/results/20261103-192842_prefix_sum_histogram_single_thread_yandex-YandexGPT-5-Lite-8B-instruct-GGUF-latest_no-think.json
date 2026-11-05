@@ -1,0 +1,136 @@
+{
+ "schema": 4,
+ "example": "prefix_sum_histogram_single_thread",
+ "model": "yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest",
+ "variant": "no-think",
+ "model_size_gb": 4.9,
+ "model_params": "8.0B",
+ "started": "2026-11-03T19:28:42",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 7.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 4.15145,
+ "best_score": 4.56958,
+ "improvement": 1.100719025882523,
+ "llm_calls": 24,
+ "mean_llm_seconds": 16.0,
+ "attempts": 24,
+ "ok": 16,
+ "statuses": {
+  "compile_error": 2,
+  "invalid": 3,
+  "ok": 16,
+  "edit_error": 1,
+  "duplicate": 2
+ },
+ "sweeps": 3,
+ "sweep_variants": 9,
+ "improvements": 1,
+ "minutes_to_best": 2.45,
+ "best_idea": "Unroll the main loop for more iterations to reduce loop overhead further.",
+ "progress": [
+  [
+   0.0,
+   4.15145
+  ],
+  [
+   2.45,
+   4.56958
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 4.15145,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 0.97,
+   "score": 4.14238,
+   "model": "yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Unroll the main loop for the first few iterations to reduce loop overhead."
+  },
+  {
+   "minutes": 2.45,
+   "score": 4.56958,
+   "model": "yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Unroll the main loop for more iterations to reduce loop overhead further."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -31,9 +31,15 @@\n     for (int b = 0; b < 256; ++b) hist[b] = 0;\n     int64_t sum = 0;\n     for (size_t i = 0; i < n; ++i) {\n-        sum += in[i];\n-        out[i] = sum;\n-        hist[in[i] & 255]++;\n+        if (i < 32) { // Unroll for the first 32 iterations\n+            sum += in[i];\n+            out[i] = sum;\n+            hist[in[i] & 255]++;\n+        } else {\n+            sum += in[i];\n+            out[i] = sum;\n+            hist[in[i] & 255]++;\n+        }\n     }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "best_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 10.2,
+ "model_gpu_memory_gb": 10.2,
+ "context_length": 32768,
+ "load_seconds": 0.1,
+ "median_call_seconds": 18.4,
+ "p90_call_seconds": 20.3,
+ "prompt_tokens_per_s": 2292.8,
+ "gen_tokens_per_s": 43.4,
+ "mean_prompt_tokens": 4918,
+ "mean_gen_tokens": 506,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

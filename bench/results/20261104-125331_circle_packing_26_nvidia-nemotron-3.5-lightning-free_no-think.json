@@ -1,0 +1,395 @@
+{
+ "schema": 4,
+ "example": "circle_packing_26",
+ "model": "nvidia/nemotron-3.5-lightning:free",
+ "variant": "no-think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-04T12:53:31",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 7.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 1.8501131545340608,
+ "improvement": 1.2416017005207078,
+ "llm_calls": 27,
+ "mean_llm_seconds": 16.6,
+ "attempts": 27,
+ "ok": 8,
+ "statuses": {
+  "edit_error": 9,
+  "invalid": 6,
+  "ok": 8,
+  "llm_error": 4
+ },
+ "sweeps": 1,
+ "sweep_variants": 16,
+ "improvements": 4,
+ "minutes_to_best": 4.44,
+ "best_idea": "tuned cols=5, rows=6, lr=0.05, iters=10000 on top of: Replace the static grid initialization and single-pass max_radii shrink with a hexagonal-like initial placement and a joint penalty-based optimiza",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   2.69,
+   1.6132364148846954
+  ],
+  [
+   3.79,
+   1.8501117292438987
+  ],
+  [
+   4.44,
+   1.8501131545339826
+  ],
+  [
+   4.44,
+   1.8501131545340608
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 4.44,
+   "score": 1.8501131545339826,
+   "model": "nvidia/nemotron-3.5-lightning:free",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "Replace the static grid initialization and single-pass max_radii shrink with a hexagonal-like initial placement and a joint penalty-based optimization of centers and radii, allowing larger interior circles while small ones settle in corners and gaps."
+  },
+  {
+   "minutes": 4.44,
+   "score": 1.8501131545340608,
+   "model": "nvidia/nemotron-3.5-lightning:free",
+   "mode": "sweep/exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "tuned cols=5, rows=6, lr=0.05, iters=10000 on top of: Replace the static grid initialization and single-pass max_radii shrink with a hexagonal-like initial placement and a joint penalty-based optimization of centers and radii, allowing larger interior circles while small ones settle in corners and g"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -9,27 +9,72 @@\n # OMEGA-BLOCK-START\n def construct_packing(n=26):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n-    cols = math.ceil(math.sqrt(n))\n-    rows = math.ceil(n / cols)\n-    centers = []\n+    # Hexagonal-like initial placement: staggered rows with spacing ~0.5\n+    cols = 5\n+    rows = 6\n+    init_centers = []\n     for k in range(n):\n-        i, j = k % cols, k // cols\n-        centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n-    radii = max_radii(centers)\n-    return [(x, y, r) for (x, y), r in zip(centers, radii)]\n+        i = k % cols\n+        j = k // cols\n+        offset = (i % 2) * 0.5 * 0.5 / cols\n+        x = (i + 0.5) / cols\n+        y = (j + 0.5 + offset) / rows\n+        init_centers.append((x, y))\n+    # Initial radii proportional to distance to nearest boundary\n+    radii = [min(x, y, 1 - x, 1 - y) * 0.4 for x, y in init_centers]\n+    centers = [list(c) for c in init_centers]\n \n+    # Joint penalty-based optimization of centers and radii\n+    lr = 0.05\n+    iters = 10000\n+    for _ in range(iters):\n+        total_penalty = 0.0\n+        # Overlap terms: push apart overlapping circles\n+        for a in range(n):\n+            for b in range(a + 1, n):\n+                dx = centers[a][0] - centers[b][0]\n+                dy = centers[a][1] - centers[b][1]\n+                d = (dx * dx + dy * dy) ** 0.5\n+                target = radii[a] + radii[b]\n+                if d < target:\n+                    move = (target - d) * 0.1\n+                    nx = dx / d if d > 1e-12 else 0.0\n+                    ny = dy / d if d > 1e-12 else 0.0\n+                    centers[a][0] += nx * move\n+                    centers[a][1] += ny * move\n+                    centers[b][0] -= nx * move\n+                    centers[b][1] -= ny * move\n+                    total_penalty += target - d\n+        # Boundary terms: keep centers at least R from edges\n+        for a in range(n):\n+            x, y = centers[a]\n+            r = radii[a]\n+            if x < r:\n+                centers[a][0] += (r - x) * 0.5\n+            if x > 1 - r:\n+                centers[a][0] -= (x + r - 1) * 0.5\n+            if y < r:\n+                centers[a][1] += (r - y) * 0.5\n+            if y > 1 - r:\n+                centers[a][1] -= (y + r - 1) * 0.5\n+        # Decay learning rate implicitly via penalty scaling\n+        if total_penalty == 0:\n+            break\n \n-def max_radii(centers):\n-    \"\"\"Largest radii for fixed centers: limit by walls, then shrink overlapping pairs.\"\"\"\n-    radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n-    for a in range(len(centers)):\n-        for b in range(a + 1, len(centers)):\n-            d = math.dist(centers[a], centers[b])\n-            if radii[a] + radii[b] > d:\n-                s = d / (radii[a] + radii[b])\n-                radii[a] *= s\n-                radii[b] *= s\n-    return radii\n+    # Compute exact feasible radii from final centers: wall limits then pairwise shrink\n+    r = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n+    changed = True\n+    while changed:\n+        changed = False\n+        for a in range(n):\n+            for b in range(a + 1, n):\n+                d = ((centers[a][0] - centers[b][0]) ** 2 + (centers[a][1] - centers[b][1]) ** 2) ** 0.5\n+                if r[a] + r[b] > d:\n+                    s = d / (r[a] + r[b])\n+                    r[a] *= s\n+                    r[b] *= s\n+                    changed = True\n+    return [(x, y, r_) for (x, y), r_ in zip(centers, r)]\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.083333,
+    0.1,
+    0.060545
+   ],
+   [
+    0.25,
+    0.1,
+    0.039234
+   ],
+   [
+    0.416667,
+    0.1,
+    0.034262
+   ],
+   [
+    0.583333,
+    0.1,
+    0.040566
+   ],
+   [
+    0.75,
+    0.1,
+    0.05694
+   ],
+   [
+    0.916667,
+    0.1,
+    0.080973
+   ],
+   [
+    0.083333,
+    0.3,
+    0.047978
+   ],
+   [
+    0.25,
+    0.3,
+    0.032893
+   ],
+   [
+    0.416667,
+    0.3,
+    0.029299
+   ],
+   [
+    0.583333,
+    0.3,
+    0.040366
+   ],
+   [
+    0.75,
+    0.3,
+    0.058083
+   ],
+   [
+    0.916667,
+    0.3,
+    0.076636
+   ],
+   [
+    0.083333,
+    0.5,
+    0.05004
+   ],
+   [
+    0.25,
+    0.5,
+    0.036525
+   ],
+   [
+    0.416667,
+    0.5,
+    0.03396
+   ],
+   [
+    0.583333,
+    0.5,
+    0.041209
+   ],
+   [
+    0.75,
+    0.5,
+    0.058085
+   ],
+   [
+    0.916667,
+    0.5,
+    0.076976
+   ],
+   [
+    0.083333,
+    0.7,
+    0.059259
+   ],
+   [
+    0.25,
+    0.7,
+    0.06822
+   ],
+   [
+    0.416667,
+    0.7,
+    0.065257
+   ],
+   [
+    0.583333,
+    0.7,
+    0.069461
+   ],
+   [
+    0.75,
+    0.7,
+    0.089736
+   ],
+   [
+    0.916667,
+    0.7,
+    0.07693
+   ],
+   [
+    0.083333,
+    0.9,
+    0.075758
+   ],
+   [
+    0.25,
+    0.9,
+    0.090909
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.1,
+    0.083333,
+    0.044053
+   ],
+   [
+    0.24956,
+    0.036667,
+    0.036667
+   ],
+   [
+    0.561371,
+    0.033333,
+    0.0269
+   ],
+   [
+    0.696215,
+    0.041796,
+    0.028605
+   ],
+   [
+    0.9,
+    0.083333,
+    0.066408
+   ],
+   [
+    0.066947,
+    0.267077,
+    0.044355
+   ],
+   [
+    0.191522,
+    0.196186,
+    0.075862
+   ],
+   [
+    0.370666,
+    0.1,
+    0.076652
+   ],
+   [
+    0.766692,
+    0.162763,
+    0.069909
+   ],
+   [
+    0.9,
+    0.25,
+    0.059206
+   ],
+   [
+    0.05512,
+    0.420759,
+    0.043706
+   ],
+   [
+    0.215738,
+    0.418203,
+    0.06781
+   ],
+   [
+    0.53856,
+    0.307178,
+    0.128529
+   ],
+   [
+    0.805859,
+    0.410759,
+    0.083581
+   ],
+   [
+    0.96,
+    0.453661,
+    0.04
+   ],
+   [
+    0.060997,
+    0.567672,
+    0.046335
+   ],
+   [
+    0.193617,
+    0.657181,
+    0.080759
+   ],
+   [
+    0.479442,
+    0.635227,
+    0.150801
+   ],
+   [
+    0.784985,
+    0.64985,
+    0.078842
+   ],
+   [
+    0.93095,
+    0.57335,
+    0.054327
+   ],
+   [
+    0.079382,
+    0.76921,
+    0.067921
+   ],
+   [
+    0.301907,
+    0.846641,
+    0.12009
+   ],
+   [
+    0.511167,
+    0.9,
+    0.085409
+   ],
+   [
+    0.701293,
+    0.8497,
+    0.111258
+   ],
+   [
+    0.905517,
+    0.755073,
+    0.081158
+   ],
+   [
+    0.1,
+    0.916667,
+    0.08097
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 15.0,
+ "p90_call_seconds": 30.0,
+ "prompt_tokens_per_s": 7016.5,
+ "gen_tokens_per_s": 81.8,
+ "mean_prompt_tokens": 3125,
+ "mean_gen_tokens": 1205,
+ "stopped_calls": 4,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

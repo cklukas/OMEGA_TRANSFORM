@@ -1,0 +1,137 @@
+{
+ "schema": 4,
+ "example": "sort_u32_single_thread",
+ "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 17.8,
+ "model_params": "27.3B",
+ "started": "2026-11-04T17:25:20",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 66.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 21.16752067272003,
+ "best_score": 190.7860569482674,
+ "improvement": 9.01315085021487,
+ "llm_calls": 11,
+ "mean_llm_seconds": 351.5,
+ "attempts": 11,
+ "ok": 5,
+ "statuses": {
+  "compile_error": 4,
+  "ok": 5,
+  "duplicate": 1,
+  "invalid": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 2,
+ "minutes_to_best": 46.41,
+ "best_idea": "Fix the compile error by moving the declaration of loop variable `i` outside the `#if defined(__ARM_NEON)` block so it is visible to the remainder loop, and optimize the radix sort by using a single 3",
+ "progress": [
+  [
+   0.0,
+   21.16752067272003
+  ],
+  [
+   20.87,
+   133.46287932243993
+  ],
+  [
+   46.41,
+   190.7860569482674
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 21.16752067272003,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 16.91,
+   "score": null,
+   "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+   "mode": "best/diff/refine",
+   "status": "compile_error",
+   "idea": "Replace the slow recursive mergesort with a hybrid approach: for large arrays use a fast 8-bit LSD radix sort with NEON-accelerated histograms, and for small arrays or already-sorted data use insertion sort, while detecting sorted/reverse runs to skip work."
+  },
+  {
+   "minutes": 46.41,
+   "score": 190.7860569482674,
+   "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Fix the compile error by moving the declaration of loop variable `i` outside the `#if defined(__ARM_NEON)` block so it is visible to the remainder loop, and optimize the radix sort by using a single 32-bit histogram pass with NEON-parallelized counting and skipping passes where all digits are identical, while also improving the small-n fallback to insertion sort only after detecting that radix wou"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -21,20 +21,136 @@\n // OMEGA-BLOCK-START\n // Sorts a[0..n) ascending, in place, on the calling thread. n is any size from\n // 0 to 2'000'000. Extra memory may be allocated freely.\n-static void merge_sort_rec(uint32_t* a, uint32_t* tmp, size_t lo, size_t hi) {\n-    if (hi - lo < 2) return;\n-    size_t mid = lo + (hi - lo) / 2;\n-    merge_sort_rec(a, tmp, lo, mid);\n-    merge_sort_rec(a, tmp, mid, hi);\n-    size_t i = lo, j = mid, k = lo;\n-    while (i < mid && j < hi) tmp[k++] = (a[j] < a[i]) ? a[j++] : a[i++];\n-    while (i < mid) tmp[k++] = a[i++];\n-    while (j < hi) tmp[k++] = a[j++];\n-    for (size_t t = lo; t < hi; ++t) a[t] = tmp[t];\n+\n+static constexpr size_t INSERTION_THRESHOLD = 64;\n+\n+// Insertion sort for small partitions\n+static void insertion_sort(uint32_t* a, size_t n) {\n+    for (size_t i = 1; i < n; ++i) {\n+        uint32_t key = a[i];\n+        size_t j = i;\n+        while (j > 0 && a[j-1] > key) {\n+            a[j] = a[j-1];\n+            --j;\n+        }\n+        a[j] = key;\n+    }\n+}\n+\n+// Check if array is already sorted or reverse sorted\n+static bool check_sorted(uint32_t* a, size_t n) {\n+    if (n <= 1) return true;\n+    bool asc = true, desc = true;\n+    for (size_t i = 1; i < n; ++i) {\n+        if (a[i] < a[i-1]) asc = false;\n+        if (a[i] > a[i-1]) desc = false;\n+        if (!asc && !desc) return false;\n+    }\n+    if (desc) {\n+        size_t i = 0, j = n - 1;\n+        while (i < j) {\n+            uint32_t t = a[i]; a[i] = a[j]; a[j] = t;\n+            ++i; --j;\n+        }\n+    }\n+    return true;\n+}\n+\n+// LSD radix sort using 8-bit digits (4 passes for full 32-bit)\n+static void radix_sort_lsd(uint32_t* a, uint32_t* buf, size_t n) {\n+    uint32_t* src = a;\n+    uint32_t* dst = buf;\n+    \n+    for (int pass = 0; pass < 4; ++pass) {\n+        uint32_t shift = pass * 8;\n+        uint32_t mask = 0xFF;\n+        \n+        // Compute histogram\n+        uint32_t hist[256] = {0};\n+        \n+        size_t i = 0;\n+#if defined(__ARM_NEON)\n+        // Process 8 elements at a time with NEON for histogram\n+        for (; i + 7 < n; i += 8) {\n+            uint32x4_t v0 = vld1q_u32(src + i);\n+            uint32x4_t v1 = vld1q_u32(src + i + 4);\n+            \n+            uint32x4_t s0 = vshlq_n_u32(v0, -shift);\n+            uint32x4_t d0 = vandq_u32(s0, vdupq_n_u32(mask));\n+            uint32_t digits0[4];\n+            vst1q_u32(digits0, d0);\n+            for (int k = 0; k < 4; ++k) hist[digits0[k]]++;\n+            \n+            uint32x4_t s1 = vshlq_n_u32(v1, -shift);\n+            uint32x4_t d1 = vandq_u32(s1, vdupq_n_u32(mask));\n+            uint32_t digits1[4];\n+            vst1q_u32(digits1, d1);\n+            for (int k = 0; k < 4; ++k) hist[digits1[k]]++;\n+        }\n+#endif\n+        // Remainder\n+        for (; i < n; ++i) {\n+            uint32_t digit = (src[i] >> shift) & mask;\n+            hist[digit]++;\n+        }\n+        \n+        // Check if all elements have same digit (skip pass if so)\n+        bool all_same = true;\n+        for (int d = 0; d < 256; ++d) {\n+            if (hist[d] > 0) {\n+                if (all_same) all_same = false;\n+                else { all_same = false; break; }\n+            }\n+        }\n+        // If only one bucket has elements, all digits are the same\n+        int nonzero_count = 0;\n+        for (int d = 0; d < 256; ++d) {\n+            if (hist[d] > 0) {\n+                nonzero_count++;\n+                if (nonzero_count > 1) break;\n+            }\n+        }\n+        if (nonzero_count <= 1) {\n+            std::swap(src, dst);\n+            continue;\n+        }\n+        \n+        // Compute prefix sums\n+        uint32_t pos[256];\n+        pos[0] = 0;\n+        for (int d = 1; d < 256; ++d) {\n+            pos[d] = pos[d-1] + hist[d-1];\n+        }\n+        \n+        // Scatter elements\n+        for (size_t i = 0; i < n; ++i) {\n+            uint32_t digit = (src[i] >> shift) & mask;\n+            dst[pos[digit]++] = src[i];\n+        }\n+        \n+        std::swap(src, dst);\n+    }\n+    \n+    // If result is in buf, copy back to a\n+    if (src != a) {\n+        std::memcpy(a, buf, n * sizeof(uint32_t));\n+    }\n }\n \n extern \"C\" void sort_u32(uint32_t* a, size_t n) {\n-    std::vector<uint32_t> tmp(n);\n-    merge_sort_rec(a, tmp.data(), 0, n);\n+    if (n == 0) return;\n+    if (n <= INSERTION_THRESHOLD) {\n+        insertion_sort(a, n);\n+        return;\n+    }\n+    \n+    // Check if already sorted or reverse sorted\n+    if (check_sorted(a, n)) return;\n+    \n+    // Allocate scratch buffer\n+    std::vector<uint32_t> buf(n);\n+    \n+    // Use radix sort for larger arrays\n+    radix_sort_lsd(a, buf.data(), n);\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "best_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": 20.4,
+ "model_gpu_memory_gb": 14.9,
+ "context_length": 40960,
+ "load_seconds": 0.0,
+ "median_call_seconds": 371.4,
+ "p90_call_seconds": 490.9,
+ "prompt_tokens_per_s": 193.1,
+ "gen_tokens_per_s": 5.9,
+ "mean_prompt_tokens": 4695,
+ "mean_gen_tokens": 1912,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

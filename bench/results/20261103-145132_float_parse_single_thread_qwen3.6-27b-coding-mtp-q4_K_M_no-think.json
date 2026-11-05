@@ -1,0 +1,133 @@
+{
+ "schema": 4,
+ "example": "float_parse_single_thread",
+ "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 17.8,
+ "model_params": "27.3B",
+ "started": "2026-11-03T14:51:32",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 63.8,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 56.0714,
+ "best_score": 69.7649,
+ "improvement": 1.2442154110651775,
+ "llm_calls": 6,
+ "mean_llm_seconds": 617.3,
+ "attempts": 6,
+ "ok": 1,
+ "statuses": {
+  "invalid": 3,
+  "compile_error": 1,
+  "ok": 1,
+  "llm_error": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 39.29,
+ "best_idea": "Implement a custom fast-path parser using SWAR digit accumulation and Clinger's algorithm for exact conversion of short mantissas, falling back to `std::strtod` for complex cases to ensure correctness",
+ "progress": [
+  [
+   0.0,
+   56.0714
+  ],
+  [
+   39.29,
+   69.7649
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 56.0714,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 39.29,
+   "score": 69.7649,
+   "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "Implement a custom fast-path parser using SWAR digit accumulation and Clinger's algorithm for exact conversion of short mantissas, falling back to `std::strtod` for complex cases to ensure correctness while gaining significant speed on the common cases."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -30,16 +30,125 @@\n // optionally 'e' or 'E', an optional '+' or '-', and one or more digits. No\n // spaces, no '+' sign on the mantissa, no inf/nan/hex. Every value must be\n // bit-identical to std::strtod (correctly rounded, round-half-to-even).\n+\n+#include <cstdint>\n+#include <cmath>\n+#include <cstring>\n+\n+// Lookup table for powers of 10 for Clinger's fast path (10^0 to 10^22)\n+static const double pow10_int[23] = {\n+    1.0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12,\n+    1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22\n+};\n+\n+// Helper to convert ASCII digits to integer value\n+inline int digit_val(char c) {\n+    return c - '0';\n+}\n+\n extern \"C\" size_t parse_doubles(const char* buf, size_t len, double* out) {\n     const char* p = buf;\n     const char* end = buf + len;\n     size_t count = 0;\n+\n     while (p < end) {\n-        char* next;\n-        out[count++] = std::strtod(p, &next);\n-        p = next;\n+        const char* start = p;\n+        \n+        // Parse sign\n+        bool negative = false;\n+        if (*p == '-') {\n+            negative = true;\n+            ++p;\n+        }\n+        \n+        // Parse integer part\n+        uint64_t mantissa = 0;\n+        int exponent = 0;\n+        int num_digits = 0;\n+        \n+        // Accumulate digits until we hit '.', 'e', 'E', or '\\n'\n+        // We can accumulate up to 19-20 digits safely in uint64_t\n+        // 10^19 < 2^64, so 19 digits fit. 20 digits might overflow if > 18446744073709551615\n+        // But we can handle up to ~19 significant digits for exact conversion.\n+        \n+        // Fast path: try to accumulate digits\n+        // To avoid branches, we can process in chunks or just loop carefully.\n+        \n+        // Integer part\n+        while (p < end && *p >= '0' && *p <= '9') {\n+            if (num_digits < 19) {\n+                mantissa = mantissa * 10 + digit_val(*p);\n+            }\n+            ++num_digits;\n+            ++p;\n+        }\n+        \n+        // Decimal part\n+        if (p < end && *p == '.') {\n+            ++p;\n+            while (p < end && *p >= '0' && *p <= '9') {\n+                if (num_digits < 19) {\n+                    mantissa = mantissa * 10 + digit_val(*p);\n+                }\n+                ++num_digits;\n+                ++exponent; // This digit is in 10^-k position relative to integer part\n+                ++p;\n+            }\n+        }\n+        \n+        // Exponent part\n+        int sci_exp = 0;\n+        if (p < end && (*p == 'e' || *p == 'E')) {\n+            ++p;\n+            bool exp_neg = false;\n+            if (p < end && (*p == '+' || *p == '-')) {\n+                if (*p == '-') exp_neg = true;\n+                ++p;\n+            }\n+            int exp_val = 0;\n+            while (p < end && *p >= '0' && *p <= '9') {\n+                exp_val = exp_val * 10 + digit_val(*p);\n+                ++p;\n+            }\n+            sci_exp = exp_neg ? -exp_val : exp_val;\n+        }\n+        \n+        // The total exponent adjustment for the mantissa is (exponent - sci_exp)\n+        // Wait, 'exponent' tracks how many decimal places we shifted right for fractional digits.\n+        // So the value is mantissa * 10^(sci_exp - exponent).\n+        int total_exp = sci_exp - exponent;\n+        \n+        // Check if we can use Clinger's fast path\n+        // Clinger's condition: mantissa < 2^53 and |total_exp| <= 22 (for positive exp) or similar for negative\n+        // Actually, Clinger's theorem: if the integer value of the mantissa (when interpreted as integer)\n+        // is less than 2^53, and the exponent is small enough, we can do exact conversion.\n+        // Specifically, if we have M * 10^E, and M < 2^53, and we can compute 10^E exactly as a double,\n+        // then M * 10^E is exact if the result is within the range where doubles have integer precision.\n+        // For M < 2^53, if E >= 0 and E <= 22, 10^E is exact and M*10^E is exact.\n+        // If E < 0 and E >= -22, we can do M / 10^|E|, but division is not always exact.\n+        // However, if M < 2^53 * 10^|E| and the result is within double range, it might still be exact.\n+        // Standard fast path: M < 2^53 and |E| <= 22.\n+        \n+        if (num_digits <= 19 && mantissa < (1ULL << 53) && total_exp >= -22 && total_exp <= 22) {\n+            double val;\n+            if (total_exp >= 0) {\n+                val = (double)mantissa * pow10_int[total_exp];\n+            } else {\n+                val = (double)mantissa / pow10_int[-total_exp];\n+            }\n+            if (negative) val = -val;\n+            out[count++] = val;\n+        } else {\n+            // Fallback to strtod for correctness\n+            char* next;\n+            out[count++] = std::strtod(start, &next);\n+            p = next;\n+        }\n+        \n+        // Skip newline\n         while (p < end && *p == '\\n') ++p;\n     }\n+    \n     return count;\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "parse",
+  "count": 2000000,
+  "text_mb": 28.39,
+  "head": [
+   "0",
+   "-0",
+   "1",
+   "-1.5",
+   "0.1",
+   "1e23",
+   "9007199254740993",
+   "4.9e-324"
+  ]
+ },
+ "best_solution": {
+  "kind": "parse",
+  "count": 2000000,
+  "text_mb": 28.39,
+  "head": [
+   "0",
+   "-0",
+   "1",
+   "-1.5",
+   "0.1",
+   "1e23",
+   "9007199254740993",
+   "4.9e-324"
+  ]
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": 20.4,
+ "model_gpu_memory_gb": 14.9,
+ "context_length": 40960,
+ "load_seconds": 0.0,
+ "median_call_seconds": 613.4,
+ "p90_call_seconds": 1079.4,
+ "prompt_tokens_per_s": 218.0,
+ "gen_tokens_per_s": 5.1,
+ "mean_prompt_tokens": 5416,
+ "mean_gen_tokens": 2549,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -1,0 +1,122 @@
+{
+ "schema": 4,
+ "example": "matmul_f32_single_thread",
+ "model": "dots-studio/dots-3-note-preview:free",
+ "variant": "no-think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-04T13:30:30",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 5.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 1.28678,
+ "best_score": 25.3679,
+ "improvement": 19.714247967795583,
+ "llm_calls": 18,
+ "mean_llm_seconds": 14.9,
+ "attempts": 18,
+ "ok": 3,
+ "statuses": {
+  "invalid": 4,
+  "compile_error": 6,
+  "edit_error": 3,
+  "llm_error": 2,
+  "ok": 3
+ },
+ "sweeps": 1,
+ "sweep_variants": 12,
+ "improvements": 1,
+ "minutes_to_best": 4.47,
+ "best_idea": "Fix the NEON compilation errors by removing the invalid intrinsics and implementing a clean, high-performance tiled matmul with proper loop order (i-k-j) and cache blocking, using scalar accumulation ",
+ "progress": [
+  [
+   0.0,
+   1.28678
+  ],
+  [
+   4.47,
+   25.3679
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.28678,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.07,
+   "score": null,
+   "model": "dots-studio/dots-3-note-preview:free",
+   "mode": "explore/rewrite/bold",
+   "status": "compile_error",
+   "idea": "Implement a tiled matrix multiplication with NEON FMA intrinsics and register blocking (4x8 micro-kernel) to exploit Apple Silicon's NEON units, using cache blocking and loop order i-k-j for high data reuse."
+  },
+  {
+   "minutes": 4.47,
+   "score": 25.3679,
+   "model": "dots-studio/dots-3-note-preview:free",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Fix the NEON compilation errors by removing the invalid intrinsics and implementing a clean, high-performance tiled matmul with proper loop order (i-k-j) and cache blocking, using scalar accumulation to ensure correctness while maintaining the tiling structure for speed."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -21,14 +21,67 @@\n #endif\n \n // OMEGA-BLOCK-START\n-// Computes C = A * B on the calling thread. C is NOT zeroed by the caller.\n-// n is any size from 1 to 2048.\n+// Tunable constants for the micro-kernel and tiling\n+constexpr int MR = 4;   // rows in micro-kernel\n+constexpr int NR = 8;   // cols in micro-kernel (2 NEON registers of 4 floats)\n+constexpr int MC = 64;  // A panel height\n+constexpr int NC = 256; // B panel width\n+constexpr int KC = 256; // inner dimension panel\n+\n+static inline void pack_panel(const float* A, float* buf, int rows, int inner, int stride) {\n+    for (int i = 0; i < rows; ++i) {\n+        const float* row = A + i * stride;\n+        float* dst = buf + i * inner;\n+        for (int k = 0; k < inner; ++k) dst[k] = row[k];\n+    }\n+}\n+\n+static inline void pack_panel_b(const float* B, float* buf, int inner, int cols, int stride) {\n+    for (int k = 0; k < inner; ++k) {\n+        const float* row = B + k * stride;\n+        float* dst = buf + k * cols;\n+        for (int j = 0; j < cols; ++j) dst[j] = row[j];\n+    }\n+}\n+\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+    // Zero C first (the harness does not)\n+    std::fill(C, C + (size_t)n * n, 0.0f);\n+\n+    // Allocate packing buffers\n+    std::vector<float> bufA((size_t)MC * KC);\n+    std::vector<float> bufB((size_t)KC * NC);\n+\n+    for (int ii = 0; ii < n; ii += MC) {\n+        int imax = std::min(ii + MC, n);\n+        for (int jj = 0; jj < n; jj += NC) {\n+            int jmax = std::min(jj + NC, n);\n+            for (int kk = 0; kk < n; kk += KC) {\n+                int kmax = std::min(kk + KC, n);\n+\n+                int m = imax - ii;\n+                int n_ = jmax - jj;\n+                int k = kmax - kk;\n+\n+                // Pack A panel\n+                pack_panel(A + ii * n + kk, bufA.data(), m, k, n);\n+                // Pack B panel\n+                pack_panel_b(B + kk * n + jj, bufB.data(), k, n_, n);\n+\n+                // Micro-kernel over packed panels: loop order i-k-j for streaming\n+                for (int i = 0; i < m; ++i) {\n+                    const float* arow = bufA.data() + i * k;\n+                    float* crow = C + (ii + i) * n + jj;\n+                    for (int pk = 0; pk < k; ++pk) {\n+                        float a = arow[pk];\n+                        const float* brow = bufB.data() + pk * n_;\n+                        for (int j = 0; j < n_; ++j) {\n+                            crow[j] += a * brow[j];\n+                        }\n+                    }\n+                }\n+            }\n         }\n+    }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 768,
+  "cores": "one core, CPU time"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 768,
+  "cores": "one core, CPU time"
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 14.3,
+ "p90_call_seconds": 30.8,
+ "prompt_tokens_per_s": 1616.4,
+ "gen_tokens_per_s": 103.7,
+ "mean_prompt_tokens": 3058,
+ "mean_gen_tokens": 1286,
+ "stopped_calls": 2,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

@@ -1,0 +1,352 @@
+{
+ "schema": 4,
+ "example": "circles_in_circle_21",
+ "model": "nvidia/nemotron-3.5-super-vl:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-04T21:17:14",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 34.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 3.1890454825108625,
+ "best_score": 4.054515761324856,
+ "improvement": 1.2713885027856593,
+ "llm_calls": 22,
+ "mean_llm_seconds": 89.4,
+ "attempts": 22,
+ "ok": 11,
+ "statuses": {
+  "ok": 11,
+  "edit_error": 5,
+  "llm_error": 6
+ },
+ "sweeps": 6,
+ "sweep_variants": 53,
+ "improvements": 2,
+ "minutes_to_best": 23.1,
+ "best_idea": "Add the proven two-ring layout (center circle plus two rings with per-circle feasible radii, golden-section tuned ring radii, sizes and offset) as an extra candidate and keep the best result, since th",
+ "progress": [
+  [
+   0.0,
+   3.1890454825108625
+  ],
+  [
+   5.26,
+   4.021889163252803
+  ],
+  [
+   23.1,
+   4.054515761324856
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.1890454825108625,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 5.26,
+   "score": 4.021889163252803,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Give each circle its own largest feasible radius (wall limit and half of every center distance) instead of one shared equal radius, then tune the ring sizes, ring radii and relative offset with golden-section coordinate descent to maximize the sum of radii."
+  },
+  {
+   "minutes": 12.58,
+   "score": 3.902453390461982,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Replace ring coordinate descent with penalized gradient ascent over centers and radii, exact asymmetric feasible radii via constraint propagation (big circles next to small ones), several ring/random restarts, and a hill-climb polish \u2014 a different algorithm class that allows non-ring layouts and mixed sizes to raise the sum of radii."
+  },
+  {
+   "minutes": 12.58,
+   "score": 3.9254209394499817,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "sweep/explore/diff/bold",
+   "status": "ok",
+   "idea": "tuned OPT_ITERS=1200, NREST=6 on top of: Replace ring coordinate descent with penalized gradient ascent over centers and radii, exact asymmetric feasible radii via constraint propagation (big circles next to small ones), several ring/random restarts, and a hill-climb polish \u2014 a different algorithm c"
+  },
+  {
+   "minutes": 23.1,
+   "score": 4.054515761324856,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Add the proven two-ring layout (center circle plus two rings with per-circle feasible radii, golden-section tuned ring radii, sizes and offset) as an extra candidate and keep the best result, since the gradient-only search stays below the best-known 4.02189 sum."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -4,24 +4,314 @@\n import math\n \n # OMEGA-BLOCK-START\n+OPT_ITERS = 1200\n+NREST = 6\n+SEED = 20260421\n+\n+\n+def _radii_sym(centers):\n+    \"\"\"Symmetric feasible radii: r_i = min(wall gap, half distance to every\n+    other center). Guarantees r_i + r_j <= dist(i, j).\"\"\"\n+    n = len(centers)\n+    r = [1.0 - math.hypot(x, y) for (x, y) in centers]\n+    for a in range(n):\n+        xa, ya = centers[a]\n+        ra = r[a]\n+        for b in range(a + 1, n):\n+            xb, yb = centers[b]\n+            d = 0.5 * math.hypot(xa - xb, ya - yb)\n+            if d < ra:\n+                ra = d\n+            if d < r[b]:\n+                r[b] = d\n+        r[a] = ra\n+    return r\n+\n+\n+def _radii_cp(xs, ys, start, iters):\n+    \"\"\"Constraint-propagation (asymmetric) feasible radii: r_i = min(wall,\n+    d_ij - r_j). A linear-program heuristic that can exceed the symmetric\n+    half-distance sum by placing large circles next to small ones.\"\"\"\n+    n = len(xs)\n+    w = [1.0 - math.hypot(xs[i], ys[i]) for i in range(n)]\n+    r = [start[i] if start[i] < w[i] else w[i] for i in range(n)]\n+    for i in range(n):\n+        if r[i] < 0.0:\n+            r[i] = 0.0\n+    for _ in range(iters):\n+        swept = False\n+        for i in range(n):\n+            xi, yi = xs[i], ys[i]\n+            best = w[i]\n+            for j in range(n):\n+                if j == i:\n+                    continue\n+                d = math.hypot(xi - xs[j], yi - ys[j])\n+                v = d - r[j]\n+                if v < best:\n+                    best = v\n+            if best < 0.0:\n+                best = 0.0\n+            if best != r[i]:\n+                swept = True\n+                r[i] = best\n+        if not swept:\n+            break\n+    return r\n+\n+\n+def _seed_ring(n, c1, rho1, rho2, delta):\n+    \"\"\"Center circle plus two rings; second ring rotated by delta.\"\"\"\n+    c2 = n - 1 - c1\n+    xs = [0.0]\n+    ys = [0.0]\n+    two_pi = 2.0 * math.pi\n+    for k in range(c1):\n+        a = two_pi * k / c1\n+        xs.append(rho1 * math.cos(a))\n+        ys.append(rho1 * math.sin(a))\n+    for k in range(c2):\n+        a = two_pi * k / c2 + delta\n+        xs.append(rho2 * math.cos(a))\n+        ys.append(rho2 * math.sin(a))\n+    return xs, ys\n+\n+\n+def _ring_centers(n, c1, rho1, rho2, delta):\n+    \"\"\"Center circle plus two rings; second ring rotated by delta.\"\"\"\n+    c2 = n - 1 - c1\n+    centers = [(0.0, 0.0)]\n+    two_pi = 2.0 * math.pi\n+    for k in range(c1):\n+        a = two_pi * k / c1\n+        centers.append((rho1 * math.cos(a), rho1 * math.sin(a)))\n+    for k in range(c2):\n+        a = two_pi * k / c2 + delta\n+        centers.append((rho2 * math.cos(a), rho2 * math.sin(a)))\n+    return centers\n+\n+\n+def _golden_max(f, lo, hi, tol=1e-7, max_iter=48):\n+    \"\"\"Maximize a unimodal function f on [lo, hi] with golden-section search.\"\"\"\n+    gr = 0.6180339887498949\n+    c = hi - gr * (hi - lo)\n+    d = lo + gr * (hi - lo)\n+    fc = f(c)\n+    fd = f(d)\n+    for _ in range(max_iter):\n+        if hi - lo <= tol:\n+            break\n+        if fc < fd:\n+            lo = c\n+            c = d\n+            fc = fd\n+            d = lo + gr * (hi - lo)\n+            fd = f(d)\n+        else:\n+            hi = d\n+            d = c\n+            fd = fc\n+            c = hi - gr * (hi - lo)\n+            fc = f(c)\n+    return 0.5 * (lo + hi)\n+\n+\n def construct(n=21):\n-    \"\"\"Return a list of n circles (x, y, r) inside the unit circle (center (0,0),\n-    radius 1) without overlaps.\n-\n-    This start places one circle at the center and two concentric rings of 7 and\n-    13 circles, all with the same radius: the largest one that keeps every pair\n-    apart and every circle inside the container.\n-    \"\"\"\n-    centers = [(0.0, 0.0)]\n-    for count, ring in ((7, 0.35), (n - 8, 0.75)):\n-        centers += [(ring * math.cos(2 * math.pi * k / count),\n-                     ring * math.sin(2 * math.pi * k / count)) for k in range(count)]\n-    r = min(1.0 - math.hypot(x, y) for x, y in centers)\n-    for a in range(n):\n-        for b in range(a + 1, n):\n-            r = min(r, math.dist(centers[a], centers[b]) / 2)\n-    r *= 1 - 1e-12  # stay strictly feasible despite rounding\n-    return [(x, y, r) for x, y in centers]\n+    \"\"\"Pack n circles by penalized gradient ascent over centers and radii with\n+    exact feasible radii after each candidate, over several ring/random\n+    restarts, followed by a local hill-climb polish and a safety shrink.\"\"\"\n+    import random\n+\n+    random.seed(SEED)\n+    two_pi = 2.0 * math.pi\n+    if n <= 0:\n+        return []\n+    if n == 1:\n+        return [(0.0, 0.0, 1.0 - 1e-9)]\n+\n+    def seed_random():\n+        xs = [0.0] * n\n+        ys = [0.0] * n\n+        for i in range(n):\n+            rad = math.sqrt(random.random())\n+            ang = two_pi * random.random()\n+            xs[i] = rad * math.cos(ang)\n+            ys[i] = rad * math.sin(ang)\n+        return xs, ys\n+\n+    best_sum = -1.0\n+    best_xs = [0.0] * n\n+    best_ys = [0.0] * n\n+    best_rs = [0.0] * n\n+\n+    seeds = []\n+    ring_specs = (\n+        (7, 0.35, 0.75, 0.0),\n+        (6, 0.30, 0.70, 0.0),\n+        (8, 0.38, 0.78, 0.0),\n+        (7, 0.35, 0.75, math.pi / 14.0),\n+        (6, 0.30, 0.70, math.pi / 12.0),\n+        (5, 0.28, 0.66, 0.0),\n+    )\n+    for spec in ring_specs:\n+        if len(seeds) >= NREST:\n+            break\n+        c1, rho1, rho2, delta = spec\n+        c2 = n - 1 - c1\n+        if c2 >= 1:\n+            seeds.append(_seed_ring(n, c1, rho1, rho2, delta))\n+    while len(seeds) < NREST:\n+        seeds.append(seed_random())\n+\n+    for xs0, ys0 in seeds:\n+        xs = xs0[:]\n+        ys = ys0[:]\n+        rs_sym = _radii_sym(list(zip(xs, ys)))\n+        s_sym = sum(rs_sym)\n+        rs_cp = _radii_cp(xs, ys, rs_sym, 300)\n+        s_cp = sum(rs_cp)\n+        if s_cp >= s_sym:\n+            r = rs_cp\n+            cur_sum = s_cp\n+        else:\n+            r = rs_sym\n+            cur_sum = s_sym\n+        if cur_sum > best_sum:\n+            best_sum = cur_sum\n+            best_xs = xs[:]\n+            best_ys = ys[:]\n+            best_rs = r[:]\n+\n+        # penalized gradient ascent over centers and radii\n+        rho = 0.25\n+        lr = 0.05\n+        for _ in range(OPT_ITERS):\n+            gx = [0.0] * n\n+            gy = [0.0] * n\n+            gr = [1.0] * n\n+            for i in range(n):\n+                xi = xs[i]\n+                yi = ys[i]\n+                ri = r[i]\n+                wi = math.hypot(xi, yi)\n+                wv = ri + wi - 1.0\n+                if wv > 0.0:\n+                    gr[i] -= 2.0 * rho * wv\n+                    if wi > 0.0:\n+                        gx[i] -= 2.0 * rho * wv * (xi / wi)\n+                        gy[i] -= 2.0 * rho * wv * (yi / wi)\n+                for j in range(i + 1, n):\n+                    dx = xi - xs[j]\n+                    dy = yi - ys[j]\n+                    d = math.hypot(dx, dy)\n+                    if d < 1e-12:\n+                        d = 1e-12\n+                    ov = ri + r[j] - d\n+                    if ov > 0.0:\n+                        gr[i] -= 2.0 * rho * ov\n+                        gr[j] -= 2.0 * rho * ov\n+                        gx[i] += 2.0 * rho * ov * (dx / d)\n+                        gx[j] -= 2.0 * rho * ov * (dx / d)\n+                        gy[i] += 2.0 * rho * ov * (dy / d)\n+                        gy[j] -= 2.0 * rho * ov * (dy / d)\n+            for i in range(n):\n+                xs[i] += lr * gx[i]\n+                ys[i] += lr * gy[i]\n+                r[i] += lr * gr[i]\n+                if r[i] < 0.0:\n+                    r[i] = 0.0\n+            lr *= 0.9992\n+            if rho < 40.0:\n+                rho *= 1.002\n+\n+        rf = _radii_cp(xs, ys, r, 300)\n+        s = sum(rf)\n+        if s > best_sum:\n+            best_sum = s\n+            best_xs = xs[:]\n+            best_ys = ys[:]\n+            best_rs = rf[:]\n+\n+    # local hill-climb polish of the best layout\n+    xs = best_xs[:]\n+    ys = best_ys[:]\n+    r = _radii_cp(xs, ys, best_rs, 300)\n+    cur_sum = sum(r)\n+    step = 0.04\n+    for _ in range(OPT_ITERS // 4):\n+        i = random.randrange(n)\n+        ox = xs[i]\n+        oy = ys[i]\n+        xs[i] = ox + random.gauss(0.0, step)\n+        ys[i] = oy + random.gauss(0.0, step)\n+        if math.hypot(xs[i], ys[i]) > 1.0:\n+            xs[i] = ox\n+            ys[i] = oy\n+            continue\n+        rn = _radii_cp(xs, ys, r, 80)\n+        s = sum(rn)\n+        if s >= cur_sum:\n+            r = rn\n+            cur_sum = s\n+            best_xs = xs[:]\n+            best_ys = ys[:]\n+            best_rs = r[:]\n+        else:\n+            xs[i] = ox\n+            ys[i] = oy\n+        step *= 0.999\n+\n+    # two-ring layout candidate: center circle plus two rings, per-circle\n+    # feasible radii; ring sizes, radii and relative offset tuned to maximize\n+    # the sum of radii (this layout is known to reach ~4.02189 for n=21)\n+    for c1 in range(3, 12):\n+        c2 = n - 1 - c1\n+        if c2 < 1:\n+            continue\n+\n+        def evaluate(rho1, rho2, delta, c1=c1, c2=c2):\n+            return sum(_radii_sym(_ring_centers(n, c1, rho1, rho2, delta)))\n+\n+        period = math.pi / c2\n+        for start in ((0.35, 0.75, 0.0), (0.42, 0.81, 0.5 * period)):\n+            rho1, rho2, delta = start\n+            for _ in range(15):\n+                prev = (rho1, rho2, delta)\n+                rho1 = _golden_max(lambda p, r2=rho2, d=delta:\n+                                   evaluate(p, r2, d), 0.05, 0.75)\n+                rho2 = _golden_max(lambda p, r1=rho1, d=delta:\n+                                   evaluate(r1, p, d), 0.50, 0.98)\n+                delta = _golden_max(lambda p, r1=rho1, r2=rho2:\n+                                    evaluate(r1, r2, p), 0.0, period)\n+                if (abs(rho1 - prev[0]) + abs(rho2 - prev[1])\n+                        + abs(delta - prev[2])) < 1e-7:\n+                    break\n+            score = evaluate(rho1, rho2, delta)\n+            if score > best_sum:\n+                best_sum = score\n+                centers = _ring_centers(n, c1, rho1, rho2, delta)\n+                best_xs = [c[0] for c in centers]\n+                best_ys = [c[1] for c in centers]\n+                best_rs = _radii_sym(centers)\n+\n+    # exact feasibility pass, then shrink for rounding safety\n+    r = _radii_cp(best_xs, best_ys, best_rs, 500)\n+    mx = 0.0\n+    for i in range(n):\n+        v = r[i] + math.hypot(best_xs[i], best_ys[i]) - 1.0\n+        if v > mx:\n+            mx = v\n+    for i in range(n):\n+        xi = best_xs[i]\n+        yi = best_ys[i]\n+        for j in range(i + 1, n):\n+            d = math.hypot(xi - best_xs[j], yi - best_ys[j])\n+            v = r[i] + r[j] - d\n+            if v > mx:\n+                mx = v\n+    scale = 1.0 / (1.0 + mx + 1e-7)\n+    r = [ri * scale * (1.0 - 1e-10) for ri in r]\n+    return [(best_xs[i], best_ys[i], r[i]) for i in range(n)]\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.0,
+    0.0,
+    0.151859
+   ],
+   [
+    0.35,
+    0.0,
+    0.151859
+   ],
+   [
+    0.218221,
+    0.273641,
+    0.151859
+   ],
+   [
+    -0.077882,
+    0.341225,
+    0.151859
+   ],
+   [
+    -0.315339,
+    0.151859,
+    0.151859
+   ],
+   [
+    -0.315339,
+    -0.151859,
+    0.151859
+   ],
+   [
+    -0.077882,
+    -0.341225,
+    0.151859
+   ],
+   [
+    0.218221,
+    -0.273641,
+    0.151859
+   ],
+   [
+    0.75,
+    0.0,
+    0.151859
+   ],
+   [
+    0.664092,
+    0.348542,
+    0.151859
+   ],
+   [
+    0.426049,
+    0.617238,
+    0.151859
+   ],
+   [
+    0.090403,
+    0.744532,
+    0.151859
+   ],
+   [
+    -0.265954,
+    0.701262,
+    0.151859
+   ],
+   [
+    -0.561383,
+    0.497342,
+    0.151859
+   ],
+   [
+    -0.728206,
+    0.179487,
+    0.151859
+   ],
+   [
+    -0.728206,
+    -0.179487,
+    0.151859
+   ],
+   [
+    -0.561383,
+    -0.497342,
+    0.151859
+   ],
+   [
+    -0.265954,
+    -0.701262,
+    0.151859
+   ],
+   [
+    0.090403,
+    -0.744532,
+    0.151859
+   ],
+   [
+    0.426049,
+    -0.617238,
+    0.151859
+   ],
+   [
+    0.664092,
+    -0.348542,
+    0.151859
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.0,
+    0.0,
+    0.24487
+   ],
+   [
+    0.432544,
+    0.0,
+    0.187674
+   ],
+   [
+    0.269687,
+    0.338177,
+    0.187674
+   ],
+   [
+    -0.09625,
+    0.4217,
+    0.187674
+   ],
+   [
+    -0.389709,
+    0.187674,
+    0.187674
+   ],
+   [
+    -0.389709,
+    -0.187674,
+    0.187674
+   ],
+   [
+    -0.09625,
+    -0.4217,
+    0.187674
+   ],
+   [
+    0.269687,
+    -0.338177,
+    0.187297
+   ],
+   [
+    0.803496,
+    0.074007,
+    0.190588
+   ],
+   [
+    0.677068,
+    0.438933,
+    0.193103
+   ],
+   [
+    0.395531,
+    0.703305,
+    0.193103
+   ],
+   [
+    0.023384,
+    0.806558,
+    0.193103
+   ],
+   [
+    -0.354121,
+    0.725039,
+    0.193103
+   ],
+   [
+    -0.650501,
+    0.477422,
+    0.193103
+   ],
+   [
+    -0.797859,
+    0.120433,
+    0.193103
+   ],
+   [
+    -0.762437,
+    -0.264145,
+    0.192818
+   ],
+   [
+    -0.55235,
+    -0.588211,
+    0.193103
+   ],
+   [
+    -0.215726,
+    -0.777525,
+    0.187674
+   ],
+   [
+    0.170318,
+    -0.788717,
+    0.193103
+   ],
+   [
+    0.517344,
+    -0.619224,
+    0.187297
+   ],
+   [
+    0.745853,
+    -0.307874,
+    0.193103
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "model errors",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 71.0,
+ "p90_call_seconds": 161.8,
+ "prompt_tokens_per_s": 5685.2,
+ "gen_tokens_per_s": 155.5,
+ "mean_prompt_tokens": 3664,
+ "mean_gen_tokens": 10811,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}
