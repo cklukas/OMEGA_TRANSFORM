@@ -1,0 +1,146 @@
+{
+ "schema": 4,
+ "example": "matmul_f32",
+ "model": "recursive/flint-v1.0:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-06T06:17:59",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 62.8,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 0.97209,
+ "best_score": 31.5335,
+ "improvement": 32.43886882901789,
+ "llm_calls": 49,
+ "mean_llm_seconds": 70.5,
+ "attempts": 49,
+ "ok": 22,
+ "statuses": {
+  "compile_error": 13,
+  "edit_error": 6,
+  "ok": 22,
+  "duplicate": 7,
+  "llm_error": 1
+ },
+ "sweeps": 3,
+ "sweep_variants": 29,
+ "improvements": 5,
+ "minutes_to_best": 62.01,
+ "best_idea": "tuned RB=27 on top of: I will add single-thread cache blocking over row blocks of tunable size to reuse B tiles across multiple output rows, reducing memory traffic.",
+ "progress": [
+  [
+   0.0,
+   0.97209
+  ],
+  [
+   9.12,
+   15.0299
+  ],
+  [
+   27.89,
+   15.6647
+  ],
+  [
+   51.24,
+   16.2505
+  ],
+  [
+   52.22,
+   21.383
+  ],
+  [
+   62.01,
+   31.5335
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.97209,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 17.31,
+   "score": 12.8832,
+   "model": "recursive/flint-v1.0:free",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Switch to an i-k-j loop order that streams contiguous rows of B and C, which should greatly reduce memory traffic and enable better vectorization."
+  },
+  {
+   "minutes": 62.01,
+   "score": 21.1808,
+   "model": "recursive/flint-v1.0:free",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "I will add single-thread cache blocking over row blocks of tunable size to reuse B tiles across multiple output rows, reducing memory traffic."
+  },
+  {
+   "minutes": 62.01,
+   "score": 31.5335,
+   "model": "recursive/flint-v1.0:free",
+   "mode": "sweep/exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "tuned RB=27 on top of: I will add single-thread cache blocking over row blocks of tunable size to reuse B tiles across multiple output rows, reducing memory traffic."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,14 +19,24 @@\n #endif\n \n // OMEGA-BLOCK-START\n-// Computes C = A * B. C is NOT zeroed by the caller. Any number of threads may be\n-// used (std::thread is available); n is any size from 1 to 2048.\n+// Computes C = A * B. Accumulates over k in cache-blocked i-k-j order.\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+    constexpr int RB = 27;\n+    for (int i0 = 0; i0 < n; i0 += RB) {\n+        int i1 = i0 + RB;\n+        if (i1 > n) i1 = n;\n+        for (int i = i0; i < i1; ++i) {\n+            float* ci = C + (size_t)i * n;\n+            for (int j = 0; j < n; ++j) ci[j] = 0.0f;\n         }\n+        for (int k = 0; k < n; ++k) {\n+            const float* bk = B + (size_t)k * n;\n+            for (int i = i0; i < i1; ++i) {\n+                float a = A[(size_t)i * n + k];\n+                float* ci = C + (size_t)i * n;\n+                for (int j = 0; j < n; ++j) ci[j] += a * bk[j];\n+            }\n+        }\n+    }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 66.8,
+ "p90_call_seconds": 129.7,
+ "prompt_tokens_per_s": 2522.6,
+ "gen_tokens_per_s": 166.2,
+ "mean_prompt_tokens": 3277,
+ "mean_gen_tokens": 11314,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

@@ -1,0 +1,150 @@
+{
+ "schema": 4,
+ "example": "sort_u32_single_thread",
+ "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-05T18:18:05",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 39.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 17.72803744547999,
+ "best_score": 237.60996728596865,
+ "improvement": 13.403060999656823,
+ "llm_calls": 22,
+ "mean_llm_seconds": 105.3,
+ "attempts": 22,
+ "ok": 7,
+ "statuses": {
+  "llm_error": 1,
+  "edit_error": 11,
+  "ok": 7,
+  "compile_error": 1,
+  "invalid": 2
+ },
+ "sweeps": 6,
+ "sweep_variants": 65,
+ "improvements": 3,
+ "minutes_to_best": 11.63,
+ "best_idea": "tuned INSERTION_SORT_THRESHOLD=16, COUNTING_RANGE=2000 on top of: Implement a hybrid LSD radix sort with early sorted/reverse detection, a reduced insertion\u2011sort threshold, and a fast counting\u2011sort pa",
+ "progress": [
+  [
+   0.0,
+   17.72803744547999
+  ],
+  [
+   7.02,
+   168.78289998794537
+  ],
+  [
+   11.63,
+   226.13696443894682
+  ],
+  [
+   11.63,
+   237.60996728596865
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 17.72803744547999,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 7.02,
+   "score": 168.78289998794537,
+   "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "Replace the recursive merge sort with a 4\u2011pass LSD radix sort, add early sorted/reverse detection and a small\u2011n std::sort fallback to cut recursion overhead and improve cache locality, which should raise the score."
+  },
+  {
+   "minutes": 11.63,
+   "score": 226.13696443894682,
+   "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+   "mode": "explore/rewrite/bold",
+   "status": "ok",
+   "idea": "Implement a hybrid LSD radix sort with early sorted/reverse detection, a reduced insertion\u2011sort threshold, and a fast counting\u2011sort path for small value ranges to improve throughput."
+  },
+  {
+   "minutes": 11.63,
+   "score": 237.60996728596865,
+   "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+   "mode": "sweep/explore/rewrite/bold",
+   "status": "ok",
+   "idea": "tuned INSERTION_SORT_THRESHOLD=16, COUNTING_RANGE=2000 on top of: Implement a hybrid LSD radix sort with early sorted/reverse detection, a reduced insertion\u2011sort threshold, and a fast counting\u2011sort path for small value ranges to improve throughput."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,22 +19,83 @@\n #endif\n \n // OMEGA-BLOCK-START\n-// Sorts a[0..n) ascending, in place, on the calling thread. n is any size from\n-// 0 to 2'000'000. Extra memory may be allocated freely.\n-static void merge_sort_rec(uint32_t* a, uint32_t* tmp, size_t lo, size_t hi) {\n-    if (hi - lo < 2) return;\n-    size_t mid = lo + (hi - lo) / 2;\n-    merge_sort_rec(a, tmp, lo, mid);\n-    merge_sort_rec(a, tmp, mid, hi);\n-    size_t i = lo, j = mid, k = lo;\n-    while (i < mid && j < hi) tmp[k++] = (a[j] < a[i]) ? a[j++] : a[i++];\n-    while (i < mid) tmp[k++] = a[i++];\n-    while (j < hi) tmp[k++] = a[j++];\n-    for (size_t t = lo; t < hi; ++t) a[t] = tmp[t];\n-}\n+#define INSERTION_SORT_THRESHOLD 16\n+#define COUNTING_RANGE 2000\n+\n+constexpr int RADIX_BITS = 8;\n+constexpr int RADIX_PASSES = 4;\n+\n+static thread_local std::vector<uint32_t> radix_buf;\n \n extern \"C\" void sort_u32(uint32_t* a, size_t n) {\n-    std::vector<uint32_t> tmp(n);\n-    merge_sort_rec(a, tmp.data(), 0, n);\n+    if (n <= 1) return;\n+\n+    // early checks: sorted ascending, reverse, small n\n+    bool is_sorted = true;\n+    bool is_reverse = true;\n+    uint32_t min_val = a[0];\n+    uint32_t max_val = a[0];\n+    for (size_t i = 1; i < n; ++i) {\n+        if (a[i] < a[i-1]) is_sorted = false;\n+        if (a[i] > a[i-1]) is_reverse = false;\n+        if (a[i] < min_val) min_val = a[i];\n+        if (a[i] > max_val) max_val = a[i];\n+    }\n+    if (is_sorted) return;\n+    if (is_reverse) { std::reverse(a, a + n); return; }\n+\n+    // tiny arrays: use std::sort\n+    if (n <= INSERTION_SORT_THRESHOLD) {\n+        std::sort(a, a + n);\n+        return;\n+    }\n+\n+    // fast path for small range (dups1000 etc.)\n+    if (max_val - min_val <= COUNTING_RANGE) {\n+        // counting sort\n+        static std::vector<uint32_t> cnt;\n+        cnt.assign(COUNTING_RANGE + 1, 0);\n+        for (size_t i = 0; i < n; ++i) {\n+            cnt[a[i] - min_val]++;\n+        }\n+        uint32_t sum = 0;\n+        for (int i = 0; i <= COUNTING_RANGE; ++i) {\n+            uint32_t tmp = cnt[i];\n+            cnt[i] = sum;\n+            sum += tmp;\n+        }\n+        for (size_t i = 0; i < n; ++i) {\n+            uint32_t idx = a[i] - min_val;\n+            radix_buf[ cnt[idx]++ ] = a[i];\n+        }\n+        for (size_t i = 0; i < n; ++i) a[i] = radix_buf[i];\n+        return;\n+    }\n+\n+    // radix sort (LSD 4 passes of 8 bits)\n+    if (radix_buf.size() < n)\n+        radix_buf.resize(n);\n+    uint32_t* src = a;\n+    uint32_t* dst = radix_buf.data();\n+\n+    for (int p = 0; p < RADIX_PASSES; ++p) {\n+        uint32_t cnt[256] = {0};\n+        uint32_t shift = p * RADIX_BITS;\n+        for (size_t i = 0; i < n; ++i) {\n+            uint32_t digit = (src[i] >> shift) & 0xFF;\n+            cnt[digit]++;\n+        }\n+        uint32_t sum = 0;\n+        for (int i = 0; i < 256; ++i) {\n+            uint32_t tmp = cnt[i];\n+            cnt[i] = sum;\n+            sum += tmp;\n+        }\n+        for (size_t i = 0; i < n; ++i) {\n+            uint32_t digit = (src[i] >> shift) & 0xFF;\n+            dst[ cnt[digit]++ ] = src[i];\n+        }\n+        std::swap(src, dst);\n+    }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "best_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 92.5,
+ "p90_call_seconds": 190.2,
+ "prompt_tokens_per_s": 8621.6,
+ "gen_tokens_per_s": 122.5,
+ "mean_prompt_tokens": 5531,
+ "mean_gen_tokens": 12534,
+ "stopped_calls": 1,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

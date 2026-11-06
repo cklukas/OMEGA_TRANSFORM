@@ -1,0 +1,142 @@
+{
+ "schema": 4,
+ "example": "prefix_sum_histogram_single_thread",
+ "model": "recursive/flint-v1.0:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-05T12:05:42",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 61.9,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 5.04166,
+ "best_score": 5.5055,
+ "improvement": 1.0920014439688515,
+ "llm_calls": 34,
+ "mean_llm_seconds": 107.6,
+ "attempts": 34,
+ "ok": 21,
+ "statuses": {
+  "ok": 21,
+  "edit_error": 10,
+  "duplicate": 3
+ },
+ "sweeps": 9,
+ "sweep_variants": 124,
+ "improvements": 3,
+ "minutes_to_best": 38.24,
+ "best_idea": "Use a 16-element block-wise local prefix sum to break the global serial dependency chain while retaining the private sub-histogram updates.",
+ "progress": [
+  [
+   0.0,
+   5.04166
+  ],
+  [
+   1.85,
+   5.30178
+  ],
+  [
+   30.05,
+   5.40877
+  ],
+  [
+   38.24,
+   5.5055
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 5.04166,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 24.37,
+   "score": 4.93055,
+   "model": "recursive/flint-v1.0:free",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Use four private uint32 sub-histograms selected by element index modulo four to break the hot-bin store-to-load dependency chain while keeping the prefix sum exact."
+  },
+  {
+   "minutes": 38.24,
+   "score": 5.5055,
+   "model": "recursive/flint-v1.0:free",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Use a 16-element block-wise local prefix sum to break the global serial dependency chain while retaining the private sub-histogram updates."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -29,11 +29,31 @@\n // never overflow int64.\n extern \"C\" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, uint64_t* hist) {\n     for (int b = 0; b < 256; ++b) hist[b] = 0;\n-    int64_t sum = 0;\n-    for (size_t i = 0; i < n; ++i) {\n-        sum += in[i];\n-        out[i] = sum;\n-        hist[in[i] & 255]++;\n+    constexpr int SUBS = 4;\n+    uint32_t sub[SUBS][256] = {};\n+    constexpr int BLOCK = 16;\n+    int64_t block_start = 0;\n+    size_t i = 0;\n+    for (; i + BLOCK <= n; i += BLOCK) {\n+        int64_t local = 0;\n+        for (int j = 0; j < BLOCK; ++j) {\n+            int64_t v = in[i + j];\n+            local += v;\n+            out[i + j] = block_start + local;\n+            ++sub[j % SUBS][(int)(v & 255)];\n+        }\n+        block_start += local;\n+    }\n+    int64_t local = 0;\n+    for (; i < n; ++i) {\n+        local += in[i];\n+        out[i] = block_start + local;\n+        ++sub[i % SUBS][(int)(in[i] & 255)];\n+    }\n+    for (int b = 0; b < 256; ++b) {\n+        uint64_t total = 0;\n+        for (int k = 0; k < SUBS; ++k) total += sub[k][b];\n+        hist[b] = total;\n     }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "best_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 128.6,
+ "p90_call_seconds": 146.6,
+ "prompt_tokens_per_s": 8160.5,
+ "gen_tokens_per_s": 166.1,
+ "mean_prompt_tokens": 5294,
+ "mean_gen_tokens": 17763,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

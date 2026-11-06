@@ -1,0 +1,117 @@
+{
+ "schema": 4,
+ "example": "matmul_f32",
+ "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-06T01:30:38",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 68.8,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 0.75758,
+ "best_score": 38.2588,
+ "improvement": 50.50133319253412,
+ "llm_calls": 17,
+ "mean_llm_seconds": 237.1,
+ "attempts": 17,
+ "ok": 5,
+ "statuses": {
+  "compile_error": 5,
+  "invalid": 6,
+  "ok": 5,
+  "duplicate": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 2,
+ "minutes_to_best": 67.79,
+ "best_idea": "Change loop order to i-k-j for better memory locality, add cache blocking with 64x64 tiles, and parallelize over row blocks using std::thread to utilize all 10 cores.",
+ "progress": [
+  [
+   0.0,
+   0.75758
+  ],
+  [
+   26.53,
+   8.92666
+  ],
+  [
+   67.79,
+   38.2588
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.75758,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 67.79,
+   "score": 38.2588,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Change loop order to i-k-j for better memory locality, add cache blocking with 64x64 tiles, and parallelize over row blocks using std::thread to utilize all 10 cores."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -21,12 +21,49 @@\n // OMEGA-BLOCK-START\n // Computes C = A * B. C is NOT zeroed by the caller. Any number of threads may be\n // used (std::thread is available); n is any size from 1 to 2048.\n+#include <thread>\n+\n+constexpr int TILE = 64;\n+\n+static void matmul_tile(int n, const float* A, const float* B, float* C,\n+                        int i0, int i1, int j0, int j1, int k0, int k1) {\n+    for (int i = i0; i < i1; ++i) {\n+        for (int k = k0; k < k1; ++k) {\n+            float aik = A[i * n + k];\n+            for (int j = j0; j < j1; ++j) {\n+                C[i * n + j] += aik * B[k * n + j];\n+            }\n+        }\n+    }\n+}\n+\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n-        }\n+    // Zero C first\n+    int total = n * n;\n+    for (int i = 0; i < total; ++i) C[i] = 0.0f;\n+\n+    const int num_threads = std::thread::hardware_concurrency();\n+    std::vector<std::thread> threads;\n+    threads.reserve(num_threads);\n+\n+    int rows_per_thread = (n + num_threads - 1) / num_threads;\n+\n+    for (int t = 0; t < num_threads; ++t) {\n+        int i_start = t * rows_per_thread;\n+        int i_end = std::min(i_start + rows_per_thread, n);\n+        if (i_start >= i_end) break;\n+\n+        threads.emplace_back([=]() {\n+            for (int jj = 0; jj < n; jj += TILE) {\n+                int j_end = std::min(jj + TILE, n);\n+                for (int kk = 0; kk < n; kk += TILE) {\n+                    int k_end = std::min(kk + TILE, n);\n+                    matmul_tile(n, A, B, C, i_start, i_end, jj, j_end, kk, k_end);\n+                }\n+            }\n+        });\n+    }\n+\n+    for (auto& th : threads) th.join();\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 164.0,
+ "p90_call_seconds": 285.0,
+ "prompt_tokens_per_s": 293.1,
+ "gen_tokens_per_s": 12.5,
+ "mean_prompt_tokens": 3104,
+ "mean_gen_tokens": 2840,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

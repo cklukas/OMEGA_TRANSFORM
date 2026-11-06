@@ -73,9 +73,9 @@ def run():
 
 ## Benchmark results
 
-The best result so far comes from **gemma4:12b-it-qat (no-think)**, run locally with Ollama on 2026-11-05: a score of **2.16667** (×1.45 the starting program's 1.4901), reached after 5.76 of 60 minutes with 27 model requests.
+The best result so far comes from **gpt-oss:20b (no-think)**, run locally with Ollama on 2026-11-05: a score of **2.34047** (×1.57 the starting program's 1.4901), reached after 20.05 of 60 minutes with 18 model requests.
 
-What the starting program produces (left) and what the best program by gemma4:12b-it-qat (no-think) produces (right):
+What the starting program produces (left) and what the best program by gpt-oss:20b (no-think) produces (right):
 
 ![circle_packing: the starting program's solution and the best one](../assets/examples/circle_packing.svg)
 
@@ -86,8 +86,8 @@ The best program's ancestry, from the starting program on. "Edit" and "rewrite" 
 | Step | Minute | Score | Kind | Idea |
 |--:|--:|--:|---|---|
 | 0 | 0.0 | 1.4901 | start | initial program |
-| 1 | 2.2 | invalid | rewrite | Use a more sophisticated initial layout by placing large circles in a grid and smaller ones in the gaps, then iteratively shrink radii to resolve overlaps. |
-| 2 | 5.8 | 2.16667 | fix-up | Re-calculate radii by greedily placing circles from largest to smallest to ensure zero overlap and maximize the sum of radii. |
+| 1 | 6.3 | 2.34006 | edit | Use a hexagonal‑like layout with 5 rows (6,5,6,5,4) and iteratively shrink overlapping radii by reducing only the larger circle, which keeps more total radius. |
+| 2 | 20.1 | 2.34047 | edit | Add a small random jitter to circle centers to break symmetry and allow larger radii, and increase the shrink iterations for better convergence. |
 
 ### The best program
 
@@ -96,57 +96,78 @@ What changed compared with the starting program:
 ```diff
 --- initial
 +++ best
-@@ -9,18 +9,43 @@
+@@ -7,28 +7,59 @@
+ import math
+ 
  # OMEGA-BLOCK-START
++import random
  def construct_packing(n=26):
      """Return a list of n circles (x, y, r) inside the unit square without overlaps."""
 -    cols = math.ceil(math.sqrt(n))
 -    rows = math.ceil(n / cols)
-+    # Start with a grid-based layout but with different counts to break symmetry
-+    # A 5x6 grid is 30 circles, we take 26.
-+    cols = 6
-+    rows = 5
++    row_counts = [6,5,6,5,4]
      centers = []
-     for k in range(n):
+-    for k in range(n):
 -        i, j = k % cols, k // cols
-+        i = k % cols
-+        j = k // cols
-         centers.append(((i + 0.5) / cols, (j + 0.5) / rows))
--    radii = max_radii(centers)
--    return [(x, y, r) for (x, y), r in zip(centers, radii)]
--
-+    
-+    # Sort centers by distance to center of square to prioritize larger circles
-+    # in the middle for a better sum of radii.
-+    sorted_indices = sorted(range(n), key=lambda i: (centers[i][0]-0.5)**2 + (centers[i][1]-0.5)**2, reverse=True)
-+    
-+    # Greedily assign radii based on distance to other centers
-+    # This ensures no overlaps while keeping radii as large as possible
-+    radii = [0.0] * n
-+    # Sort indices so that we process circles that are "more central" first
-+    order = sorted(range(n), key=lambda i: (centers[i][0]-0.5)**2 + (centers[i][1]-0.5)**2, reverse=True)
-+    
-+    for i in range(n):
-+        idx = order[i]
-+        x, y = centers[idx]
-+        # Initial radius constrained by box boundaries
-+        r = min(x, y, 1 - x, 1 - y)
-+        # Constrain by all previously placed circles
-+        for j in range(i):
-+            prev_idx = order[j]
-+            d = math.dist(centers[idx], centers[prev_idx])
-+            if r + radii[prev_idx] > d + 1e-10:
-+                r = max(0.0, d - radii[prev_idx])
-+        radii[idx] = r
-+                
-+    return [(centers[i][0], centers[i][1], radii[i]) for i in range(n)]
+-        centers.append(((i + 0.5) / cols, (j + 0.5) / rows))
++    rows = len(row_counts)
++    for j, m in enumerate(row_counts):
++        offset = 0.5/m if j % 2 else 0.0
++        y = (j + 0.5) / rows
++        for i in range(m):
++            x = (i + 0.5 + offset) / m
++            centers.append((x, y))
++            if len(centers) == n:
++                break
++        if len(centers) == n:
++            break
++    # jitter centers slightly to improve packing
++    random.seed(42)
++    jitter = 0.001
++    for idx, (x, y) in enumerate(centers):
++        nx = x + jitter * (random.random() - 0.5)
++        ny = y + jitter * (random.random() - 0.5)
++        centers[idx] = (max(0.0, min(1.0, nx)), max(0.0, min(1.0, ny)))
+     radii = max_radii(centers)
+     return [(x, y, r) for (x, y), r in zip(centers, radii)]
+ 
  
  def max_radii(centers):
 -    """Largest radii for fixed centers: limit by walls, then shrink overlapping pairs."""
-+    # Kept for compatibility but logic moved into construct_packing
++    """Largest radii for fixed centers: limit by walls, then iteratively shrink overlapping pairs."""
      radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]
-     for a in range(len(centers)):
-         for b in range(a + 1, len(centers)):
+-    for a in range(len(centers)):
+-        for b in range(a + 1, len(centers)):
+-            d = math.dist(centers[a], centers[b])
+-            if radii[a] + radii[b] > d:
+-                s = d / (radii[a] + radii[b])
+-                radii[a] *= s
+-                radii[b] *= s
++    max_iter = 50
++    eps = 1e-14
++    for _ in range(max_iter):
++        changed = False
++        for a in range(len(centers)):
++            for b in range(a + 1, len(centers)):
++                d = math.dist(centers[a], centers[b])
++                if radii[a] + radii[b] > d + eps:
++                    overlap = radii[a] + radii[b] - d
++                    if radii[a] >= radii[b]:
++                        new_a = radii[a] - overlap
++                        if new_a < 0: new_a = 0
++                        if new_a != radii[a]:
++                            radii[a] = new_a
++                            changed = True
++                    else:
++                        new_b = radii[b] - overlap
++                        if new_b < 0: new_b = 0
++                        if new_b != radii[b]:
++                            radii[b] = new_b
++                            changed = True
++        if not changed:
++            break
+     return radii
+ # OMEGA-BLOCK-END
 ```
 
 ### All models
@@ -155,16 +176,23 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/circl
 
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|
+| gpt-oss:20b (no-think) | local | 2.34047 | ×1.57 | 20.1 | 2 |
+| gemma4:26b-a4b-it-qat (no-think) | local | 2.33505 | ×1.57 | 54.5 | 12 |
 | gemma4:12b-it-qat (no-think) | local | 2.16667 | ×1.45 | 5.8 | 2 |
 | nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | 2.07195 | ×1.39 | 7.6 | 12 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 2.06524 | ×1.39 | 27.0 | 2 |
 | qwen3.5:latest (no-think) | local | 1.95644 | ×1.31 | 5.1 | 2 |
 | cohere/north-mini-code:free (no-think) | cloud | 1.93214 | ×1.30 | 3.1 | 3 |
 | underdog-saluki-27b:iq2-mix (no-think) | local | 1.896 | ×1.27 | 30.5 | 2 |
 | richardyoung/frognano-4b-2609:latest (no-think) | local | 1.88223 | ×1.26 | 6.1 | 2 |
 | nvidia/nemotron-3.5-lightning:free (no-think) | cloud | 1.85011 | ×1.24 | 4.4 | 4 |
+| qwen3-coder:30b (no-think) | local | 1.83699 | ×1.23 | 24.2 | 2 |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | 1.60406 | ×1.08 | 0.6 | 1 |
 | qwen2.5-coder:7b (no-think) | local | 1.60406 | ×1.08 | 1.2 | 1 |
+| frob/sarvam:30b (no-think) | local | 1.60406 | ×1.08 | 36.1 | 1 |
 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | 1.58032 | ×1.06 | 3.0 | 2 |
+| glm-4.7-flash:latest (no-think) | local | 1.50813 | ×1.01 | 1.3 | 1 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 1.49777 | ×1.01 | 6.1 | 2 |
 | xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 1.4901 | ×1.00 | - | 0 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 1.4901 | ×1.00 | - | 0 |
 | dots-studio/dots-3-note-preview:free (no-think) | cloud | 1.4901 | ×1.00 | - | 0 |

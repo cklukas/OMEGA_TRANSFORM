@@ -1,0 +1,468 @@
+{
+ "schema": 4,
+ "example": "circle_packing_26",
+ "model": "gemma4:26b-a4b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 15.6,
+ "model_params": "25.2B",
+ "started": "2026-11-05T07:36:37",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 63.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 2.3350496922865154,
+ "improvement": 1.567040189751766,
+ "llm_calls": 72,
+ "mean_llm_seconds": 49.4,
+ "attempts": 72,
+ "ok": 46,
+ "statuses": {
+  "invalid": 11,
+  "timeout": 4,
+  "ok": 46,
+  "edit_error": 8,
+  "duplicate": 3
+ },
+ "sweeps": 12,
+ "sweep_variants": 183,
+ "improvements": 12,
+ "minutes_to_best": 54.48,
+ "best_idea": "tuned RESTARTS=12, LOCAL_ITERS=3000, ACCEPTANCE_PROB=0.01 on top of: Improve the radii solver by using an iterative approach that respects the $r_i + r_j \\le d_{ij}$ constraint more strictly and uses ",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   7.74,
+   1.9582173175720077
+  ],
+  [
+   8.97,
+   2.04303961524132
+  ],
+  [
+   10.89,
+   2.0645964223015354
+  ],
+  [
+   18.65,
+   2.070622264622156
+  ],
+  [
+   25.1,
+   2.1289906119268207
+  ],
+  [
+   30.15,
+   2.2122720884831035
+  ],
+  [
+   30.15,
+   2.238248106670559
+  ],
+  [
+   31.47,
+   2.2762671588382344
+  ],
+  [
+   43.33,
+   2.287138290835943
+  ],
+  [
+   47.84,
+   2.290979064419913
+  ],
+  [
+   49.48,
+   2.2946315082753532
+  ],
+  [
+   54.48,
+   2.3350496922865154
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 3.48,
+   "score": null,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "exploit/rewrite/tune",
+   "status": "invalid",
+   "idea": "Implement a simple stochastic local search (Hill Climbing) that iteratively moves circle centers to increase the sum of radii, using a greedy approach for radii calculation to handle constraints."
+  },
+  {
+   "minutes": 8.97,
+   "score": 2.04303961524132,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Import the `random` module to fix the `NameError`."
+  },
+  {
+   "minutes": 10.89,
+   "score": 2.0645964223015354,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Implement a more robust iterative constraint satisfaction (Iterative Proportional Fitting style) for the radii and use a stochastic local search with a multi-start approach and cooling schedule to explore the configuration space better."
+  },
+  {
+   "minutes": 34.48,
+   "score": 2.137009542081423,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "Increase the number of restarts and the local search iterations while introducing a more aggressive cooling schedule to better explore the configuration space within the time limit."
+  },
+  {
+   "minutes": 47.84,
+   "score": 2.290979064419913,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Implement a much faster distance-matrix-based radii solver with a single-pass projection for the inner loop to allow more restarts and iterations."
+  },
+  {
+   "minutes": 54.48,
+   "score": 2.2496241258576903,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Improve the radii solver by using an iterative approach that respects the $r_i + r_j \\le d_{ij}$ constraint more strictly and uses a single-pass projection with a small epsilon to prevent infinitesimal radii while maximizing the sum."
+  },
+  {
+   "minutes": 54.48,
+   "score": 2.3350496922865154,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "sweep/exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "tuned RESTARTS=12, LOCAL_ITERS=3000, ACCEPTANCE_PROB=0.01 on top of: Improve the radii solver by using an iterative approach that respects the $r_i + r_j \\le d_{ij}$ constraint more strictly and uses a single-pass projection with a small epsilon to prevent infinitesimal radii while maximizing the su"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -7,29 +7,142 @@\n import math\n \n # OMEGA-BLOCK-START\n+import math\n+import random\n+\n def construct_packing(n=26):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n-    cols = math.ceil(math.sqrt(n))\n-    rows = math.ceil(n / cols)\n-    centers = []\n-    for k in range(n):\n-        i, j = k % cols, k // cols\n-        centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n-    radii = max_radii(centers)\n-    return [(x, y, r) for (x, y), r in zip(centers, radii)]\n+    \n+    def get_radii(pts):\n+        \"\"\"Find radii that maximize sum(r_i) using a fast iterative projection.\"\"\"\n+        r = [min(p[0], p[1], 1 - p[0], 1 - p[1]) for p in pts]\n+        # Precompute distances\n+        dists = [[0.0]*n for _ in range(n)]\n+        for i in range(n):\n+            for j in range(i + 1, n):\n+                dists[i][j] = dists[j][i] = math.sqrt((pts[i][0]-pts[j][0])**2 + (pts[i][1]-pts[j][1])**2)\n+        \n+        # Iterative solver for radii\n+        for _ in range(30):\n+            changed = False\n+            for i in range(n):\n+                # Wall constraints\n+                limit = min(pts[i][0], pts[i][1], 1 - pts[i][0], 1 - pts[i][1])\n+                if r[i] > limit:\n+                    r[i] = limit\n+                    changed = True\n+                \n+                # Inter-circle constraints: r_i + r_j <= d_ij\n+                for j in range(n):\n+                    if i == j: continue\n+                    d = dists[i][j]\n+                    if r[i] + r[j] > d:\n+                        # We want to maximize sum(r_i) subject to r_i + r_j <= d\n+                        # The most effective way for sum(r) is to adjust r[i] and r[j] \n+                        # proportionally to their current sizes to maintain relative scale\n+                        # but here simple reduction is often more stable for the sum.\n+                        # We'll use a faster projection:\n+                        s = (r[i] + r[j] - d) / 2.0\n+                        # Ensure we don't shrink below 0\n+                        shrink_i = min(r[i], s)\n+                        shrink_j = min(r[j], s)\n+                        # Actually, for sum(r), if r_i + r_j > d, the gradient \n+                        # of sum(r) is (1, 1) which points in the direction of the constraint.\n+                        # A standard projection onto r_i + r_j <= d for sum(r_i) \n+                        # isn't a single point, but we can move them towards the boundary.\n+                        # Let's use the proportional shrink for stability.\n+                        total_r = r[i] + r[j]\n+                        if total_r > d:\n+                            factor = d / total_r\n+                            r[i] *= factor\n+                            r[j] *= factor\n+                            changed = True\n+            if not changed: break\n+        \n+        # Final safety pass to ensure no overlaps (due to float precision)\n+        for _ in range(5):\n+            for i in range(n):\n+                limit = min(pts[i][0], pts[i][1], 1 - pts[i][0], 1 - pts[i][1])\n+                if r[i] > limit: r[i] = limit\n+                for j in range(i + 1, n):\n+                    d = dists[i][j]\n+                    if r[i] + r[j] > d:\n+                        # Shrink both to satisfy exactly\n+                        ratio = d / (r[i] + r[j])\n+                        r[i] *= ratio\n+                        r[j] *= ratio\n+        return r\n \n+    def get_sum(pts):\n+        return sum(get_radii(pts))\n+\n+    best_centers = []\n+    best_sum_r = -1.0\n+    best_r = []\n+\n+    # Optimization constants\n+    RESTARTS = 12\n+    LOCAL_ITERS = 3000\n+    INITIAL_STEP = 0.15\n+    ACCEPTANCE_PROB = 0.01\n+\n+    for restart in range(RESTARTS):\n+        # Improved initialization: grid-based with jitter\n+        curr_centers = []\n+        cols = math.ceil(math.sqrt(n))\n+        rows = math.ceil(n / cols)\n+        for k in range(n):\n+            i, j = k % cols, k // cols\n+            base_x = (i + 0.5) / cols\n+            base_y = (j + 0.5) / rows\n+            curr_centers.append([base_x + random.uniform(-0.1, 0.1), \n+                                  base_y + random.uniform(-0.1, 0.1)])\n+        \n+        # Clamp to valid square\n+        for i in range(n):\n+            curr_centers[i][0] = max(0.0, min(1.0, curr_centers[i][0]))\n+            curr_centers[i][1] = max(0.0, min(1.0, curr_centers[i][1]))\n+\n+        curr_r = get_radii(curr_centers)\n+        curr_sum = sum(curr_r)\n+        \n+        # Local search / Simulated Annealing\n+        for i in range(LOCAL_ITERS):\n+            idx = random.randint(0, n - 1)\n+            old_pos = list(curr_centers[idx])\n+            \n+            # Temperature-based step size\n+            curr_step = INITIAL_STEP * (1.0 - i / LOCAL_ITERS)\n+            curr_centers[idx][0] = max(0.0, min(1.0, curr_centers[idx][0] + random.uniform(-curr_step, curr_step)))\n+            curr_centers[idx][1] = max(0.0, min(1.0, curr_centers[idx][1] + random.uniform(-curr_step, curr_step)))\n+            \n+            new_r = get_radii(curr_centers)\n+            new_sum = sum(new_r)\n+            \n+            if new_sum > curr_sum:\n+                curr_sum = new_sum\n+                curr_r = new_r\n+            else:\n+                if random.random() < ACCEPTANCE_PROB:\n+                    curr_sum = new_sum\n+                    curr_r = new_r\n+                else:\n+                    curr_centers[idx] = old_pos\n+        \n+        if curr_sum > best_sum_r:\n+            best_sum_r = curr_sum\n+            best_centers = [tuple(c) for c in curr_centers]\n+            best_r = curr_r\n+\n+    # Final tightening pass on best configuration\n+    final_r = get_radii(best_centers)\n+    return [(c[0], c[1], r) for c, r in zip(best_centers, final_r)]\n+\n+def get_radii_fast(centers):\n+    return []\n \n def max_radii(centers):\n-    \"\"\"Largest radii for fixed centers: limit by walls, then shrink overlapping pairs.\"\"\"\n-    radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n-    for a in range(len(centers)):\n-        for b in range(a + 1, len(centers)):\n-            d = math.dist(centers[a], centers[b])\n-            if radii[a] + radii[b] > d:\n-                s = d / (radii[a] + radii[b])\n-                radii[a] *= s\n-                radii[b] *= s\n-    return radii\n+    return []\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.083333,
+    0.1,
+    0.060545
+   ],
+   [
+    0.25,
+    0.1,
+    0.039234
+   ],
+   [
+    0.416667,
+    0.1,
+    0.034262
+   ],
+   [
+    0.583333,
+    0.1,
+    0.040566
+   ],
+   [
+    0.75,
+    0.1,
+    0.05694
+   ],
+   [
+    0.916667,
+    0.1,
+    0.080973
+   ],
+   [
+    0.083333,
+    0.3,
+    0.047978
+   ],
+   [
+    0.25,
+    0.3,
+    0.032893
+   ],
+   [
+    0.416667,
+    0.3,
+    0.029299
+   ],
+   [
+    0.583333,
+    0.3,
+    0.040366
+   ],
+   [
+    0.75,
+    0.3,
+    0.058083
+   ],
+   [
+    0.916667,
+    0.3,
+    0.076636
+   ],
+   [
+    0.083333,
+    0.5,
+    0.05004
+   ],
+   [
+    0.25,
+    0.5,
+    0.036525
+   ],
+   [
+    0.416667,
+    0.5,
+    0.03396
+   ],
+   [
+    0.583333,
+    0.5,
+    0.041209
+   ],
+   [
+    0.75,
+    0.5,
+    0.058085
+   ],
+   [
+    0.916667,
+    0.5,
+    0.076976
+   ],
+   [
+    0.083333,
+    0.7,
+    0.059259
+   ],
+   [
+    0.25,
+    0.7,
+    0.06822
+   ],
+   [
+    0.416667,
+    0.7,
+    0.065257
+   ],
+   [
+    0.583333,
+    0.7,
+    0.069461
+   ],
+   [
+    0.75,
+    0.7,
+    0.089736
+   ],
+   [
+    0.916667,
+    0.7,
+    0.07693
+   ],
+   [
+    0.083333,
+    0.9,
+    0.075758
+   ],
+   [
+    0.25,
+    0.9,
+    0.090909
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.093619,
+    0.081142,
+    0.067475
+   ],
+   [
+    0.213858,
+    0.044529,
+    0.043132
+   ],
+   [
+    0.394714,
+    0.481036,
+    0.002858
+   ],
+   [
+    0.532714,
+    0.103656,
+    0.037319
+   ],
+   [
+    0.750782,
+    0.319654,
+    0.06899
+   ],
+   [
+    0.904895,
+    0.090543,
+    0.090166
+   ],
+   [
+    0.093547,
+    0.261735,
+    0.091017
+   ],
+   [
+    0.282099,
+    0.317184,
+    0.102771
+   ],
+   [
+    0.348283,
+    0.101621,
+    0.096852
+   ],
+   [
+    0.553394,
+    0.666781,
+    0.145254
+   ],
+   [
+    0.614606,
+    0.392681,
+    0.083884
+   ],
+   [
+    0.909088,
+    0.271289,
+    0.089528
+   ],
+   [
+    0.096236,
+    0.446364,
+    0.090865
+   ],
+   [
+    0.276702,
+    0.6197,
+    0.129036
+   ],
+   [
+    0.489457,
+    0.247941,
+    0.10647
+   ],
+   [
+    0.472045,
+    0.461203,
+    0.07429
+   ],
+   [
+    0.694034,
+    0.133902,
+    0.125107
+   ],
+   [
+    0.916044,
+    0.916486,
+    0.083514
+   ],
+   [
+    0.071995,
+    0.605258,
+    0.067644
+   ],
+   [
+    0.499822,
+    0.905458,
+    0.09446
+   ],
+   [
+    0.287364,
+    0.880593,
+    0.119384
+   ],
+   [
+    0.712739,
+    0.879052,
+    0.120088
+   ],
+   [
+    0.863876,
+    0.490625,
+    0.134327
+   ],
+   [
+    0.894633,
+    0.728264,
+    0.105295
+   ],
+   [
+    0.101287,
+    0.767311,
+    0.096962
+   ],
+   [
+    0.082687,
+    0.931587,
+    0.068363
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": 16.1,
+ "model_gpu_memory_gb": 14.4,
+ "context_length": 40960,
+ "load_seconds": 0.1,
+ "median_call_seconds": 45.8,
+ "p90_call_seconds": 78.4,
+ "prompt_tokens_per_s": 768.6,
+ "gen_tokens_per_s": 33.5,
+ "mean_prompt_tokens": 5611,
+ "mean_gen_tokens": 1327,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

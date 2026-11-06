@@ -530,6 +530,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/symbo
 |---|---|--:|--:|--:|--:|
 | nvidia/nemotron-3.5-super-vl:free (think) | cloud | 0.99881 | ×3.19 | 19.3 | 4 |
 | cohere/north-mini-code:free (think) | cloud | 0.99872 | ×3.19 | 36.7 | 5 |
+| recursive/flint-v1.0:free (think) | cloud | 0.99872 | ×3.19 | 7.9 | 5 |
 | dots-studio/dots-3-note-preview:free (think) | cloud | 0.99867 | ×3.19 | 61.9 | 2 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 0.99856 | ×3.19 | 20.8 | 2 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | cloud | 0.99853 | ×3.19 | 20.6 | 5 |
@@ -562,4 +563,3 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/symbo
 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | | | | failed: all 7 model requests failed … |
 | frob/sarvam:30b (no-think) | local | 0.31284 | ×1.00 | - | 0 |
 | xingchen-agi/xing4.0-29b-a4b:free (think) | cloud | 0.31284 | ×1.00 | - | 0 |
-| recursive/flint-v1.0:free (think) | cloud | | | | failed: all 5 model requests failed: recursive/flint-v1.0:free … |

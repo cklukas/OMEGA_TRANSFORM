@@ -242,6 +242,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/circl
 | nvidia/nemotron-3.5-super-vl:free (think) | cloud | 4.05452 | ×1.27 | 23.1 | 2 |
 | dots-studio/dots-3-note-preview:free (no-think) | cloud | 4.03488 | ×1.27 | 12.0 | 8 |
 | gpt-oss:20b (no-think) | local | 4.03445 | ×1.27 | 22.1 | 6 |
+| nemotron-3-nano:4b (think) | local | 4.02448 | ×1.26 | 12.3 | 4 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 4.01734 | ×1.26 | 6.6 | 6 |
 | cohere/north-mini-code:free (no-think) | cloud | 3.9615 | ×1.24 | 6.1 | 3 |
 | gemma4:12b-it-qat (no-think) | local | 3.95426 | ×1.24 | 9.4 | 2 |
@@ -249,6 +250,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/circl
 | gemma4:26b-a4b-it-qat (no-think) | local | 3.73964 | ×1.17 | 2.6 | 1 |
 | gemma4:e2b (no-think) | local | 3.64462 | ×1.14 | 2.7 | 1 |
 | gemma4:latest (no-think) | local | 3.57134 | ×1.12 | 1.7 | 1 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (think) | local | 3.57134 | ×1.12 | 48.3 | 1 |
 | nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | 3.57134 | ×1.12 | 0.6 | 1 |
 | underdog-saluki-27b:iq2-mix (no-think) | local | 3.55408 | ×1.11 | 53.7 | 9 |
 | cohere/north-mini-code:free (think) | cloud | 3.49368 | ×1.10 | 56.1 | 2 |
@@ -272,3 +274,4 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/circl
 | nvidia/nemotron-3.5-lightning:free (think) | cloud | | | | failed: all 6 model requests failed … |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | cloud | | | | failed: all 6 model requests failed … |
 | recursive/flint-v1.0:free (think) | cloud | | | | failed: all 6 model requests failed: recursive/flint-v1.0:free … |
+| richardyoung/frognano-4b-2609:latest (think) | local | 3.18905 | ×1.00 | - | 0 |

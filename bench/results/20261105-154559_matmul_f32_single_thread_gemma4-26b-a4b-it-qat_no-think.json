@@ -1,0 +1,163 @@
+{
+ "schema": 4,
+ "example": "matmul_f32_single_thread",
+ "model": "gemma4:26b-a4b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 15.6,
+ "model_params": "25.2B",
+ "started": "2026-11-05T15:46:00",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 62.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 1.41257,
+ "best_score": 43.3708,
+ "improvement": 30.70346956257035,
+ "llm_calls": 64,
+ "mean_llm_seconds": 55.6,
+ "attempts": 64,
+ "ok": 28,
+ "statuses": {
+  "ok": 28,
+  "edit_error": 5,
+  "compile_error": 6,
+  "llm_error": 15,
+  "duplicate": 7,
+  "invalid": 3
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 9,
+ "minutes_to_best": 40.44,
+ "best_idea": "Implement a 4-row micro-kernel with register blocking to maximize the reuse of $B$ elements loaded into registers and reduce the ratio of loads/stores of $C$ per $k$-iteration.",
+ "progress": [
+  [
+   0.0,
+   1.41257
+  ],
+  [
+   0.71,
+   19.0692
+  ],
+  [
+   0.93,
+   19.9477
+  ],
+  [
+   2.21,
+   20.117
+  ],
+  [
+   4.69,
+   20.9622
+  ],
+  [
+   5.1,
+   21.6815
+  ],
+  [
+   15.08,
+   29.894
+  ],
+  [
+   25.35,
+   31.3481
+  ],
+  [
+   26.67,
+   34.6491
+  ],
+  [
+   40.44,
+   43.3708
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.41257,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.21,
+   "score": 20.117,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Change loop order to i-k-j to improve cache locality and enable contiguous memory access for B and C, which is essential for vectorization."
+  },
+  {
+   "minutes": 5.1,
+   "score": 21.6815,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Implement a micro-kernel with SIMD vectorization and loop unrolling to process multiple elements of C per step, improving instruction throughput."
+  },
+  {
+   "minutes": 40.44,
+   "score": 43.3708,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Implement a 4-row micro-kernel with register blocking to maximize the reuse of $B$ elements loaded into registers and reduce the ratio of loads/stores of $C$ per $k$-iteration."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -24,11 +24,76 @@\n // Computes C = A * B on the calling thread. C is NOT zeroed by the caller.\n // n is any size from 1 to 2048.\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+    for (int i = 0; i < n * n; ++i) C[i] = 0.0f;\n+    int i = 0;\n+    for (; i <= n - 4; i += 4) {\n+        float* c0 = &C[i * n];\n+        float* c1 = &C[(i + 1) * n];\n+        float* c2 = &C[(i + 2) * n];\n+        float* c3 = &C[(i + 3) * n];\n+        for (int k = 0; k < n; ++k) {\n+            float a0 = A[i * n + k];\n+            float a1 = A[(i + 1) * n + k];\n+            float a2 = A[(i + 2) * n + k];\n+            float a3 = A[(i + 3) * n + k];\n+            const float* b_row = &B[k * n];\n+#if defined(__ARM_NEON)\n+            float32x4_t va0 = vdupq_n_f32(a0);\n+            float32x4_t va1 = vdupq_n_f32(a1);\n+            float32x4_t va2 = vdupq_n_f32(a2);\n+            float32x4_t va3 = vdupq_n_f32(a3);\n+            int j = 0;\n+            for (; j <= n - 4; j += 4) {\n+                float32x4_t vb = vld1q_f32(&b_row[j]);\n+                float32x4_t vc0 = vld1q_f32(&c0[j]);\n+                float32x4_t vc1 = vld1q_f32(&c1[j]);\n+                float32x4_t vc2 = vld1q_f32(&c2[j]);\n+                float32x4_t vc3 = vld1q_f32(&c3[j]);\n+                vc0 = vfmaq_f32(vc0, va0, vb);\n+                vc1 = vfmaq_f32(vc1, va1, vb);\n+                vc2 = vfmaq_f32(vc2, va2, vb);\n+                vc3 = vfmaq_f32(vc3, va3, vb);\n+                vst1q_f32(&c0[j], vc0);\n+                vst1q_f32(&c1[j], vc1);\n+                vst1q_f32(&c2[j], vc2);\n+                vst1q_f32(&c3[j], vc3);\n+            }\n+            for (; j < n; ++j) {\n+                c0[j] += a0 * b_row[j];\n+                c1[j] += a1 * b_row[j];\n+                c2[j] += a2 * b_row[j];\n+                c3[j] += a3 * b_row[j];\n+            }\n+#else\n+            for (int j = 0; j < n; ++j) {\n+                c0[j] += a0 * b_row[j];\n+                c1[j] += a1 * b_row[j];\n+                c2[j] += a2 * b_row[j];\n+                c3[j] += a3 * b_row[j];\n+            }\n+#endif\n         }\n+    }\n+    // Handle remaining rows\n+    for (; i < n; ++i) {\n+        float* c_row = &C[i * n];\n+        for (int k = 0; k < n; ++k) {\n+            float a = A[i * n + k];\n+            const float* b_row = &B[k * n];\n+            int j = 0;\n+#if defined(__ARM_NEON)\n+            float32x4_t va = vdupq_n_f32(a);\n+            for (; j <= n - 4; j += 4) {\n+                float32x4_t vb = vld1q_f32(&b_row[j]);\n+                float32x4_t vc = vld1q_f32(&c_row[j]);\n+                vc = vfmaq_f32(vc, va, vb);\n+                vst1q_f32(&c_row[j], vc);\n+            }\n+#endif\n+            for (; j < n; ++j) {\n+                c_row[j] += a * b_row[j];\n+            }\n+        }\n+    }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 768,
+  "cores": "one core, CPU time"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 768,
+  "cores": "one core, CPU time"
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": 16.1,
+ "model_gpu_memory_gb": 14.4,
+ "context_length": 40960,
+ "load_seconds": 0.0,
+ "median_call_seconds": 56.4,
+ "p90_call_seconds": 102.0,
+ "prompt_tokens_per_s": 798.0,
+ "gen_tokens_per_s": 35.6,
+ "mean_prompt_tokens": 5484,
+ "mean_gen_tokens": 1245,
+ "stopped_calls": 15,
+ "provider": "ollama",
+ "cost_usd": 0
+}

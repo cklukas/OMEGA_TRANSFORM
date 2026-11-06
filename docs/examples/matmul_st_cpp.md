@@ -70,9 +70,9 @@ extern "C" void matmul(int n, const float* A, const float* B, float* C) {
 
 ## Benchmark results
 
-The best result so far comes from **dots-studio/dots-3-note-preview:free (no-think)**, run through OpenRouter on 2026-11-04: a score of **25.3679** (×19.71 the starting program's 1.28678), reached after 4.47 of 60 minutes with 18 model requests.
+The best result so far comes from **gemma4:26b-a4b-it-qat (no-think)**, run locally with Ollama on 2026-11-05: a score of **43.3708** (×30.70 the starting program's 1.41257), reached after 40.44 of 60 minutes with 64 model requests.
 
-What the starting program produces (left) and what the best program by dots-studio/dots-3-note-preview:free (no-think) produces (right):
+What the starting program produces (left) and what the best program by gemma4:26b-a4b-it-qat (no-think) produces (right):
 
 ![matmul_st_cpp: the starting program's solution and the best one](../assets/examples/matmul_st_cpp.svg)
 
@@ -82,9 +82,10 @@ The best program's ancestry, from the starting program on. "Edit" and "rewrite" 
 
 | Step | Minute | Score | Kind | Idea |
 |--:|--:|--:|---|---|
-| 0 | 0.0 | 1.28678 | start | initial program |
-| 1 | 3.1 | compile error | rewrite | Implement a tiled matrix multiplication with NEON FMA intrinsics and register blocking (4x8 micro-kernel) to exploit Apple Silicon's NEON units, using cache blocking and loop order i-k-j for high data reuse. |
-| 2 | 4.5 | 25.3679 | fix-up | Fix the NEON compilation errors by removing the invalid intrinsics and implementing a clean, high-performance tiled matmul with proper loop order (i-k-j) and cache blocking, using scalar accumulation to ensure correctness while maintaining the tiling … |
+| 0 | 0.0 | 1.41257 | start | initial program |
+| 1 | 2.2 | 20.1170 | edit | Change loop order to i-k-j to improve cache locality and enable contiguous memory access for B and C, which is essential for vectorization. |
+| 2 | 5.1 | 21.6815 | edit | Implement a micro-kernel with SIMD vectorization and loop unrolling to process multiple elements of C per step, improving instruction throughput. |
+| 3 | 40.4 | 43.3708 | edit | Implement a 4-row micro-kernel with register blocking to maximize the reuse of $B$ elements loaded into registers and reduce the ratio of loads/stores of $C$ per $k$-iteration. |
 
 ### The best program
 
@@ -93,78 +94,85 @@ What changed compared with the starting program:
 ```diff
 --- initial
 +++ best
-@@ -21,14 +21,67 @@
- #endif
- 
- // OMEGA-BLOCK-START
--// Computes C = A * B on the calling thread. C is NOT zeroed by the caller.
--// n is any size from 1 to 2048.
-+// Tunable constants for the micro-kernel and tiling
-+constexpr int MR = 4;   // rows in micro-kernel
-+constexpr int NR = 8;   // cols in micro-kernel (2 NEON registers of 4 floats)
-+constexpr int MC = 64;  // A panel height
-+constexpr int NC = 256; // B panel width
-+constexpr int KC = 256; // inner dimension panel
-+
-+static inline void pack_panel(const float* A, float* buf, int rows, int inner, int stride) {
-+    for (int i = 0; i < rows; ++i) {
-+        const float* row = A + i * stride;
-+        float* dst = buf + i * inner;
-+        for (int k = 0; k < inner; ++k) dst[k] = row[k];
-+    }
-+}
-+
-+static inline void pack_panel_b(const float* B, float* buf, int inner, int cols, int stride) {
-+    for (int k = 0; k < inner; ++k) {
-+        const float* row = B + k * stride;
-+        float* dst = buf + k * cols;
-+        for (int j = 0; j < cols; ++j) dst[j] = row[j];
-+    }
-+}
-+
+@@ -24,11 +24,76 @@
+ // Computes C = A * B on the calling thread. C is NOT zeroed by the caller.
+ // n is any size from 1 to 2048.
  extern "C" void matmul(int n, const float* A, const float* B, float* C) {
 -    for (int i = 0; i < n; ++i)
 -        for (int j = 0; j < n; ++j) {
 -            float s = 0.0f;
 -            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];
 -            C[i * n + j] = s;
-+    // Zero C first (the harness does not)
-+    std::fill(C, C + (size_t)n * n, 0.0f);
-+
-+    // Allocate packing buffers
-+    std::vector<float> bufA((size_t)MC * KC);
-+    std::vector<float> bufB((size_t)KC * NC);
-+
-+    for (int ii = 0; ii < n; ii += MC) {
-+        int imax = std::min(ii + MC, n);
-+        for (int jj = 0; jj < n; jj += NC) {
-+            int jmax = std::min(jj + NC, n);
-+            for (int kk = 0; kk < n; kk += KC) {
-+                int kmax = std::min(kk + KC, n);
-+
-+                int m = imax - ii;
-+                int n_ = jmax - jj;
-+                int k = kmax - kk;
-+
-+                // Pack A panel
-+                pack_panel(A + ii * n + kk, bufA.data(), m, k, n);
-+                // Pack B panel
-+                pack_panel_b(B + kk * n + jj, bufB.data(), k, n_, n);
-+
-+                // Micro-kernel over packed panels: loop order i-k-j for streaming
-+                for (int i = 0; i < m; ++i) {
-+                    const float* arow = bufA.data() + i * k;
-+                    float* crow = C + (ii + i) * n + jj;
-+                    for (int pk = 0; pk < k; ++pk) {
-+                        float a = arow[pk];
-+                        const float* brow = bufB.data() + pk * n_;
-+                        for (int j = 0; j < n_; ++j) {
-+                            crow[j] += a * brow[j];
-+                        }
-+                    }
-+                }
++    for (int i = 0; i < n * n; ++i) C[i] = 0.0f;
++    int i = 0;
++    for (; i <= n - 4; i += 4) {
++        float* c0 = &C[i * n];
++        float* c1 = &C[(i + 1) * n];
++        float* c2 = &C[(i + 2) * n];
++        float* c3 = &C[(i + 3) * n];
++        for (int k = 0; k < n; ++k) {
++            float a0 = A[i * n + k];
++            float a1 = A[(i + 1) * n + k];
++            float a2 = A[(i + 2) * n + k];
++            float a3 = A[(i + 3) * n + k];
++            const float* b_row = &B[k * n];
++#if defined(__ARM_NEON)
++            float32x4_t va0 = vdupq_n_f32(a0);
++            float32x4_t va1 = vdupq_n_f32(a1);
++            float32x4_t va2 = vdupq_n_f32(a2);
++            float32x4_t va3 = vdupq_n_f32(a3);
++            int j = 0;
++            for (; j <= n - 4; j += 4) {
++                float32x4_t vb = vld1q_f32(&b_row[j]);
++                float32x4_t vc0 = vld1q_f32(&c0[j]);
++                float32x4_t vc1 = vld1q_f32(&c1[j]);
++                float32x4_t vc2 = vld1q_f32(&c2[j]);
++                float32x4_t vc3 = vld1q_f32(&c3[j]);
++                vc0 = vfmaq_f32(vc0, va0, vb);
++                vc1 = vfmaq_f32(vc1, va1, vb);
++                vc2 = vfmaq_f32(vc2, va2, vb);
++                vc3 = vfmaq_f32(vc3, va3, vb);
++                vst1q_f32(&c0[j], vc0);
++                vst1q_f32(&c1[j], vc1);
++                vst1q_f32(&c2[j], vc2);
++                vst1q_f32(&c3[j], vc3);
 +            }
++            for (; j < n; ++j) {
++                c0[j] += a0 * b_row[j];
++                c1[j] += a1 * b_row[j];
++                c2[j] += a2 * b_row[j];
++                c3[j] += a3 * b_row[j];
++            }
++#else
++            for (int j = 0; j < n; ++j) {
++                c0[j] += a0 * b_row[j];
++                c1[j] += a1 * b_row[j];
++                c2[j] += a2 * b_row[j];
++                c3[j] += a3 * b_row[j];
++            }
++#endif
          }
++    }
++    // Handle remaining rows
++    for (; i < n; ++i) {
++        float* c_row = &C[i * n];
++        for (int k = 0; k < n; ++k) {
++            float a = A[i * n + k];
++            const float* b_row = &B[k * n];
++            int j = 0;
++#if defined(__ARM_NEON)
++            float32x4_t va = vdupq_n_f32(a);
++            for (; j <= n - 4; j += 4) {
++                float32x4_t vb = vld1q_f32(&b_row[j]);
++                float32x4_t vc = vld1q_f32(&c_row[j]);
++                vc = vfmaq_f32(vc, va, vb);
++                vst1q_f32(&c_row[j], vc);
++            }
++#endif
++            for (; j < n; ++j) {
++                c_row[j] += a * b_row[j];
++            }
++        }
 +    }
  }
  // OMEGA-BLOCK-END
@@ -176,8 +184,28 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/matmu
 
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|
+| gemma4:26b-a4b-it-qat (no-think) | local | 43.3708 | ×30.70 | 40.4 | 9 |
+| gemma4:12b-it-qat (no-think) | local | 36.3552 | ×25.59 | 21.1 | 5 |
+| gpt-oss:20b (no-think) | local | 33.1122 | ×24.49 | 23.4 | 6 |
+| qwen3.5:latest (no-think) | local | 25.5709 | ×20.49 | 10.3 | 1 |
 | dots-studio/dots-3-note-preview:free (no-think) | cloud | 25.3679 | ×19.71 | 4.5 | 1 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 23.8871 | ×21.89 | 10.0 | 5 |
+| gemma4:latest (no-think) | local | 22.2128 | ×15.63 | 1.5 | 2 |
+| qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 21.2526 | ×15.53 | 19.8 | 3 |
+| gemma4:e4b-it-qat (no-think) | local | 20.3136 | ×15.17 | 2.7 | 1 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 4.47988 | ×3.24 | 7.6 | 1 |
+| underdog-saluki-27b:iq2-mix (no-think) | local | 1.4541 | ×1.00 | - | 0 |
+| yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | 1.41454 | ×1.00 | - | 0 |
+| nemotron-3-nano:4b (no-think) | local | 1.39198 | ×1.00 | - | 0 |
+| frob/sarvam:30b (no-think) | local | 1.37406 | ×1.00 | - | 0 |
+| qwen3-coder:30b (no-think) | local | 1.36668 | ×1.00 | - | 0 |
+| MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | 1.36613 | ×1.00 | - | 0 |
+| llm-jp-4-8b-omega:q4_k_m (no-think) | local | 1.36103 | ×1.00 | - | 0 |
+| richardyoung/frognano-4b-2609:latest (no-think) | local | 1.36101 | ×1.00 | - | 0 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | 1.35459 | ×1.00 | - | 0 |
+| gemma4:e2b (no-think) | local | 1.31572 | ×1.00 | - | 0 |
+| qwen2.5-coder:7b (no-think) | local | 1.31214 | ×1.00 | - | 0 |
+| glm-4.7-flash:latest (no-think) | local | 1.25269 | ×1.00 | - | 0 |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | 1.21895 | ×1.00 | - | 0 |
 | xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 1.2102 | ×1.00 | - | 0 |
 | nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | 1.19245 | ×1.00 | - | 0 |

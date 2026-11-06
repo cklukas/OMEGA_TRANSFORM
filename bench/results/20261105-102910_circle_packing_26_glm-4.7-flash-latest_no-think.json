@@ -1,0 +1,383 @@
+{
+ "schema": 4,
+ "example": "circle_packing_26",
+ "model": "glm-4.7-flash:latest",
+ "variant": "no-think",
+ "model_size_gb": 19.0,
+ "model_params": "29.9B",
+ "started": "2026-11-05T10:29:10",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 12.7,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 1.5081280915247217,
+ "improvement": 1.0120972322429218,
+ "llm_calls": 17,
+ "mean_llm_seconds": 36.6,
+ "attempts": 17,
+ "ok": 6,
+ "statuses": {
+  "invalid": 8,
+  "ok": 6,
+  "edit_error": 1,
+  "duplicate": 2
+ },
+ "sweeps": 3,
+ "sweep_variants": 32,
+ "improvements": 1,
+ "minutes_to_best": 1.31,
+ "best_idea": "tuned HEX_ROWS=5, HEX_COLS=5 on top of: Initialize centers using a hexagonal lattice packing to better place large circles in the interior and small ones in the corners, as suggested by the expert hin",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   1.31,
+   1.5081280915247217
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.31,
+   "score": 1.2589372071856295,
+   "model": "glm-4.7-flash:latest",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Initialize centers using a hexagonal lattice packing to better place large circles in the interior and small ones in the corners, as suggested by the expert hints."
+  },
+  {
+   "minutes": 1.31,
+   "score": 1.5081280915247217,
+   "model": "glm-4.7-flash:latest",
+   "mode": "sweep/exploit/diff/refine",
+   "status": "ok",
+   "idea": "tuned HEX_ROWS=5, HEX_COLS=5 on top of: Initialize centers using a hexagonal lattice packing to better place large circles in the interior and small ones in the corners, as suggested by the expert hints."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -7,23 +7,46 @@\n import math\n \n # OMEGA-BLOCK-START\n+HEX_ROWS = 5\n+HEX_COLS = 5\n+\n def construct_packing(n=26):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n-    cols = math.ceil(math.sqrt(n))\n-    rows = math.ceil(n / cols)\n-    centers = []\n-    for k in range(n):\n-        i, j = k % cols, k // cols\n-        centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n+    centers = hex_grid_centers(n, HEX_ROWS, HEX_COLS)\n     radii = max_radii(centers)\n     return [(x, y, r) for (x, y), r in zip(centers, radii)]\n \n \n+def hex_grid_centers(n, rows, cols):\n+    \"\"\"Generate a hexagonal grid arrangement of centers inside [0,1].\"\"\"\n+    centers = []\n+    # Fill grid with dummy positions, then overwrite them\n+    for k in range(n):\n+        i = k % cols\n+        j = k // cols\n+        centers.append((0.0, 0.0))\n+\n+    # Hex grid spacing\n+    dx = 1.0 / cols\n+    dy = 1.0 / rows\n+    # Odd row offset\n+    offset = 0.0\n+    \n+    for j in range(rows):\n+        if j % 2 == 1:\n+            offset = dx / 2.0\n+        for i in range(cols):\n+            idx = j * cols + i\n+            if idx < n:\n+                centers[idx] = (i * dx + offset + dx/2, j * dy + dy/2)\n+    return centers\n+\n def max_radii(centers):\n     \"\"\"Largest radii for fixed centers: limit by walls, then shrink overlapping pairs.\"\"\"\n     radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n-    for a in range(len(centers)):\n-        for b in range(a + 1, len(centers)):\n+    n = len(centers)\n+    for a in range(n):\n+        for b in range(a + 1, n):\n             d = math.dist(centers[a], centers[b])\n             if radii[a] + radii[b] > d:\n                 s = d / (radii[a] + radii[b])\n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.083333,
+    0.1,
+    0.060545
+   ],
+   [
+    0.25,
+    0.1,
+    0.039234
+   ],
+   [
+    0.416667,
+    0.1,
+    0.034262
+   ],
+   [
+    0.583333,
+    0.1,
+    0.040566
+   ],
+   [
+    0.75,
+    0.1,
+    0.05694
+   ],
+   [
+    0.916667,
+    0.1,
+    0.080973
+   ],
+   [
+    0.083333,
+    0.3,
+    0.047978
+   ],
+   [
+    0.25,
+    0.3,
+    0.032893
+   ],
+   [
+    0.416667,
+    0.3,
+    0.029299
+   ],
+   [
+    0.583333,
+    0.3,
+    0.040366
+   ],
+   [
+    0.75,
+    0.3,
+    0.058083
+   ],
+   [
+    0.916667,
+    0.3,
+    0.076636
+   ],
+   [
+    0.083333,
+    0.5,
+    0.05004
+   ],
+   [
+    0.25,
+    0.5,
+    0.036525
+   ],
+   [
+    0.416667,
+    0.5,
+    0.03396
+   ],
+   [
+    0.583333,
+    0.5,
+    0.041209
+   ],
+   [
+    0.75,
+    0.5,
+    0.058085
+   ],
+   [
+    0.916667,
+    0.5,
+    0.076976
+   ],
+   [
+    0.083333,
+    0.7,
+    0.059259
+   ],
+   [
+    0.25,
+    0.7,
+    0.06822
+   ],
+   [
+    0.416667,
+    0.7,
+    0.065257
+   ],
+   [
+    0.583333,
+    0.7,
+    0.069461
+   ],
+   [
+    0.75,
+    0.7,
+    0.089736
+   ],
+   [
+    0.916667,
+    0.7,
+    0.07693
+   ],
+   [
+    0.083333,
+    0.9,
+    0.075758
+   ],
+   [
+    0.25,
+    0.9,
+    0.090909
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.1,
+    0.1,
+    0.071753
+   ],
+   [
+    0.3,
+    0.1,
+    0.048261
+   ],
+   [
+    0.5,
+    0.1,
+    0.044414
+   ],
+   [
+    0.7,
+    0.1,
+    0.061569
+   ],
+   [
+    0.9,
+    0.1,
+    0.086326
+   ],
+   [
+    0.2,
+    0.3,
+    0.043133
+   ],
+   [
+    0.4,
+    0.3,
+    0.036389
+   ],
+   [
+    0.6,
+    0.3,
+    0.054236
+   ],
+   [
+    0.8,
+    0.3,
+    0.070256
+   ],
+   [
+    1.0,
+    0.3,
+    0.0
+   ],
+   [
+    0.2,
+    0.5,
+    0.050034
+   ],
+   [
+    0.4,
+    0.5,
+    0.042383
+   ],
+   [
+    0.6,
+    0.5,
+    0.056445
+   ],
+   [
+    0.8,
+    0.5,
+    0.069047
+   ],
+   [
+    1.0,
+    0.5,
+    0.0
+   ],
+   [
+    0.2,
+    0.7,
+    0.095897
+   ],
+   [
+    0.4,
+    0.7,
+    0.08407
+   ],
+   [
+    0.6,
+    0.7,
+    0.093915
+   ],
+   [
+    0.8,
+    0.7,
+    0.102953
+   ],
+   [
+    1.0,
+    0.7,
+    0.0
+   ],
+   [
+    0.2,
+    0.9,
+    0.1
+   ],
+   [
+    0.4,
+    0.9,
+    0.1
+   ],
+   [
+    0.6,
+    0.9,
+    0.1
+   ],
+   [
+    0.8,
+    0.9,
+    0.097047
+   ],
+   [
+    1.0,
+    0.9,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 21.6,
+ "model_gpu_memory_gb": 18.9,
+ "context_length": 40960,
+ "load_seconds": 0.0,
+ "median_call_seconds": 33.6,
+ "p90_call_seconds": 71.0,
+ "prompt_tokens_per_s": 434.2,
+ "gen_tokens_per_s": 25.3,
+ "mean_prompt_tokens": 2434,
+ "mean_gen_tokens": 730,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -1,0 +1,395 @@
+{
+ "schema": 4,
+ "example": "circle_packing_26",
+ "model": "qwen3-coder:30b",
+ "variant": "no-think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-11-05T09:51:33",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 37.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 1.836992565100094,
+ "improvement": 1.2327965384617687,
+ "llm_calls": 32,
+ "mean_llm_seconds": 66.8,
+ "attempts": 32,
+ "ok": 16,
+ "statuses": {
+  "ok": 16,
+  "invalid": 7,
+  "duplicate": 8,
+  "llm_error": 1
+ },
+ "sweeps": 4,
+ "sweep_variants": 64,
+ "improvements": 2,
+ "minutes_to_best": 24.23,
+ "best_idea": "Adjust the hexagonal packing parameters to better fit within the unit square while maintaining non-overlapping constraints, which should increase the total radius sum by optimizing the spatial arrange",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   2.81,
+   1.8311338526558205
+  ],
+  [
+   24.23,
+   1.836992565100094
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.81,
+   "score": 1.0254482454313034,
+   "model": "qwen3-coder:30b",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "Replace the simple grid-based center placement with a more sophisticated hexagonal packing pattern that better utilizes space and allows for larger total radius sum, while keeping the same optimization procedure for radii."
+  },
+  {
+   "minutes": 2.81,
+   "score": 1.8311338526558205,
+   "model": "qwen3-coder:30b",
+   "mode": "sweep/exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "tuned HEX_ROWS=6, HEX_COLS=9, HEX_SPACING_X=1.06, HEX_SPACING_Y=0.3593 on top of: Replace the simple grid-based center placement with a more sophisticated hexagonal packing pattern that better utilizes space and allows for larger total radius sum, while keeping the same optimization procedure for ra"
+  },
+  {
+   "minutes": 24.23,
+   "score": 1.836992565100094,
+   "model": "qwen3-coder:30b",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Adjust the hexagonal packing parameters to better fit within the unit square while maintaining non-overlapping constraints, which should increase the total radius sum by optimizing the spatial arrangement."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -7,14 +7,31 @@\n import math\n \n # OMEGA-BLOCK-START\n+# Constants for hexagonal packing\n+HEX_ROWS = 6\n+HEX_COLS = 9\n+HEX_SPACING_X = 1.08\n+HEX_SPACING_Y = 0.36\n+\n def construct_packing(n=26):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n-    cols = math.ceil(math.sqrt(n))\n-    rows = math.ceil(n / cols)\n     centers = []\n-    for k in range(n):\n-        i, j = k % cols, k // cols\n-        centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n+    for j in range(HEX_ROWS):\n+        for i in range(HEX_COLS):\n+            x = (i + (j % 2) * 0.5) * HEX_SPACING_X\n+            y = j * HEX_SPACING_Y\n+            if x <= 1 and y <= 1:\n+                centers.append((x, y))\n+    # Trim to n centers if needed\n+    if len(centers) > n:\n+        centers = centers[:n]\n+    elif len(centers) < n:\n+        # Fill remaining with grid-based centers\n+        cols = math.ceil(math.sqrt(n - len(centers)))\n+        rows = math.ceil((n - len(centers)) / cols)\n+        for k in range(n - len(centers)):\n+            i, j = k % cols, k // cols\n+            centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n     radii = max_radii(centers)\n     return [(x, y, r) for (x, y), r in zip(centers, radii)]\n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.083333,
+    0.1,
+    0.060545
+   ],
+   [
+    0.25,
+    0.1,
+    0.039234
+   ],
+   [
+    0.416667,
+    0.1,
+    0.034262
+   ],
+   [
+    0.583333,
+    0.1,
+    0.040566
+   ],
+   [
+    0.75,
+    0.1,
+    0.05694
+   ],
+   [
+    0.916667,
+    0.1,
+    0.080973
+   ],
+   [
+    0.083333,
+    0.3,
+    0.047978
+   ],
+   [
+    0.25,
+    0.3,
+    0.032893
+   ],
+   [
+    0.416667,
+    0.3,
+    0.029299
+   ],
+   [
+    0.583333,
+    0.3,
+    0.040366
+   ],
+   [
+    0.75,
+    0.3,
+    0.058083
+   ],
+   [
+    0.916667,
+    0.3,
+    0.076636
+   ],
+   [
+    0.083333,
+    0.5,
+    0.05004
+   ],
+   [
+    0.25,
+    0.5,
+    0.036525
+   ],
+   [
+    0.416667,
+    0.5,
+    0.03396
+   ],
+   [
+    0.583333,
+    0.5,
+    0.041209
+   ],
+   [
+    0.75,
+    0.5,
+    0.058085
+   ],
+   [
+    0.916667,
+    0.5,
+    0.076976
+   ],
+   [
+    0.083333,
+    0.7,
+    0.059259
+   ],
+   [
+    0.25,
+    0.7,
+    0.06822
+   ],
+   [
+    0.416667,
+    0.7,
+    0.065257
+   ],
+   [
+    0.583333,
+    0.7,
+    0.069461
+   ],
+   [
+    0.75,
+    0.7,
+    0.089736
+   ],
+   [
+    0.916667,
+    0.7,
+    0.07693
+   ],
+   [
+    0.083333,
+    0.9,
+    0.075758
+   ],
+   [
+    0.25,
+    0.9,
+    0.090909
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.54,
+    0.36,
+    0.001712
+   ],
+   [
+    0.0,
+    0.72,
+    0.0
+   ],
+   [
+    0.1,
+    0.1,
+    0.1
+   ],
+   [
+    0.3,
+    0.1,
+    0.067659
+   ],
+   [
+    0.5,
+    0.1,
+    0.069793
+   ],
+   [
+    0.7,
+    0.1,
+    0.076509
+   ],
+   [
+    0.9,
+    0.1,
+    0.1
+   ],
+   [
+    0.1,
+    0.3,
+    0.068502
+   ],
+   [
+    0.3,
+    0.3,
+    0.069408
+   ],
+   [
+    0.5,
+    0.3,
+    0.054502
+   ],
+   [
+    0.7,
+    0.3,
+    0.068768
+   ],
+   [
+    0.9,
+    0.3,
+    0.089489
+   ],
+   [
+    0.1,
+    0.5,
+    0.063434
+   ],
+   [
+    0.3,
+    0.5,
+    0.045433
+   ],
+   [
+    0.5,
+    0.5,
+    0.04438
+   ],
+   [
+    0.7,
+    0.5,
+    0.060685
+   ],
+   [
+    0.9,
+    0.5,
+    0.096127
+   ],
+   [
+    0.1,
+    0.7,
+    0.082444
+   ],
+   [
+    0.3,
+    0.7,
+    0.089832
+   ],
+   [
+    0.5,
+    0.7,
+    0.088317
+   ],
+   [
+    0.7,
+    0.7,
+    0.105519
+   ],
+   [
+    0.9,
+    0.7,
+    0.094481
+   ],
+   [
+    0.1,
+    0.9,
+    0.1
+   ],
+   [
+    0.3,
+    0.9,
+    0.1
+   ],
+   [
+    0.5,
+    0.9,
+    0.1
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 23.0,
+ "model_gpu_memory_gb": 19.0,
+ "context_length": 40960,
+ "load_seconds": 105.1,
+ "median_call_seconds": 46.7,
+ "p90_call_seconds": 73.7,
+ "prompt_tokens_per_s": 590.0,
+ "gen_tokens_per_s": 25.5,
+ "mean_prompt_tokens": 2971,
+ "mean_gen_tokens": 850,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -131,10 +131,10 @@
 <text x="16.00" y="134.00" font-size="11" fill="#5d6178" text-anchor="start" font-weight="normal">→ ascending, element for element identical to std::sort; one core, measured in CPU time</text>
 <g transform="translate(0 168.00)">
 <rect x="0.5" y="0.5" width="399" height="419" rx="10" fill="#fbfbfe" stroke="#dcdfea"/>
-<text x="16" y="26" font-size="15" font-weight="600" fill="#1d2033">Starting program · score 21.3555</text>
-<text x="16" y="46" font-size="12" fill="#5d6178">21.36 M values/s · 234 ms for 5 × 1,000,000 values</text>
+<text x="16" y="26" font-size="15" font-weight="600" fill="#1d2033">Starting program · score 18.0532</text>
+<text x="16" y="46" font-size="12" fill="#5d6178">18.05 M values/s · 277 ms for 5 × 1,000,000 values</text>
 <rect x="40.00" y="76.00" width="270.00" height="28.00" fill="#fff" stroke="#d5d7e3"/>
-<rect x="40.00" y="76.00" width="137.18" height="28.00" fill="#7b6cff" fill-opacity="0.75"/>
+<rect x="40.00" y="76.00" width="87.63" height="28.00" fill="#7b6cff" fill-opacity="0.75"/>
 <text x="44.00" y="115.00" font-size="10" fill="#5d6178" text-anchor="start" font-weight="normal">uniform</text>
 <rect x="40.00" y="130.00" width="270.00" height="28.00" fill="#fff" stroke="#d5d7e3"/>
 <text x="44.00" y="169.00" font-size="10" fill="#5d6178" text-anchor="start" font-weight="normal">dups1000</text>
@@ -144,10 +144,10 @@
 <text x="44.00" y="277.00" font-size="10" fill="#5d6178" text-anchor="start" font-weight="normal">reverse</text>
 <rect x="40.00" y="292.00" width="270.00" height="28.00" fill="#fff" stroke="#d5d7e3"/>
 <text x="44.00" y="331.00" font-size="10" fill="#5d6178" text-anchor="start" font-weight="normal">nearly_sorted</text>
-<text x="200.00" y="376.00" font-size="11" fill="#1d2033" text-anchor="middle" font-weight="normal">within 23.8 ms, the faster program's time: 10% done</text>
+<text x="200.00" y="376.00" font-size="11" fill="#1d2033" text-anchor="middle" font-weight="normal">within 18 ms, the faster program's time: 6.5% done</text>
 <rect x="420.5" y="0.5" width="399" height="419" rx="10" fill="#fbfbfe" stroke="#dcdfea"/>
-<text x="436" y="26" font-size="15" font-weight="600" fill="#1d2033">Best · score 210.1563</text>
-<text x="436" y="46" font-size="12" fill="#5d6178">210.2 M values/s · 23.8 ms for 5 × 1,000,000 values</text>
+<text x="436" y="26" font-size="15" font-weight="600" fill="#1d2033">Best · score 278.1298</text>
+<text x="436" y="46" font-size="12" fill="#5d6178">278.1 M values/s · 18 ms for 5 × 1,000,000 values</text>
 <rect x="460.00" y="76.00" width="270.00" height="28.00" fill="#fff" stroke="#d5d7e3"/>
 <rect x="460.00" y="76.00" width="270.00" height="28.00" fill="#7b6cff" fill-opacity="0.75"/>
 <text x="464.00" y="115.00" font-size="10" fill="#5d6178" text-anchor="start" font-weight="normal">uniform</text>
@@ -163,6 +163,6 @@
 <rect x="460.00" y="292.00" width="270.00" height="28.00" fill="#fff" stroke="#d5d7e3"/>
 <rect x="460.00" y="292.00" width="270.00" height="28.00" fill="#7b6cff" fill-opacity="0.75"/>
 <text x="464.00" y="331.00" font-size="10" fill="#5d6178" text-anchor="start" font-weight="normal">nearly_sorted</text>
-<text x="620.00" y="376.00" font-size="11" fill="#1d2033" text-anchor="middle" font-weight="normal">within 23.8 ms, the faster program's time: all done</text>
+<text x="620.00" y="376.00" font-size="11" fill="#1d2033" text-anchor="middle" font-weight="normal">within 18 ms, the faster program's time: all done</text>
 </g>
 </svg>

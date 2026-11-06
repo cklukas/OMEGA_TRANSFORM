@@ -75,13 +75,106 @@ extern "C" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, ui
 
 ## Benchmark results
 
-The best result so far comes from **glm-4.7-flash:latest (no-think)**, run locally with Ollama on 2026-11-04: a score of **5.31132** (×1.00 the starting program's 5.31132), reached after no improvement with 15 model requests.
+The best result so far comes from **nvidia/nemotron-3-ultra-550b-a55b:free (think)**, run through OpenRouter on 2026-11-05: a score of **6.67211** (×1.38 the starting program's 4.82159), reached after 38.32 of 60 minutes with 45 model requests.
 
-What the starting program produces; no model improved on it:
+What the starting program produces (left) and what the best program by nvidia/nemotron-3-ultra-550b-a55b:free (think) produces (right):
 
-![prefix_sum_cpp: the starting program's solution](../assets/examples/prefix_sum_cpp.svg)
+![prefix_sum_cpp: the starting program's solution and the best one](../assets/examples/prefix_sum_cpp.svg)
 
-No model improved on the starting program.
+### How it got there
+
+The best program's ancestry, from the starting program on. "Edit" and "rewrite" are the model's changes; a parameter sweep is the engine trying values for the constants the model exposed.
+
+| Step | Minute | Score | Kind | Idea |
+|--:|--:|--:|---|---|
+| 0 | 0.0 | 4.82159 | start | initial program |
+| 1 | 2.1 | compile error | edit | Add 4 private sub-histograms (uint32_t[4][256]) to break store-to-load dependency chains on hot bins, unroll the main loop by 4, and use NEON for vectorized prefix sum with pairwise accumulation. |
+| 2 | 5.5 | 5.30747 | fix-up | Add back the `__ARM_NEON` guard and provide a scalar fallback for non-NEON targets while keeping the 4 sub-histograms and loop unrolling optimization. |
+| 3 | 29.6 | 6.05374 | edit | Replace the complex NEON prefix sum with a simple flat 8x unrolled loop using 8 sub-histograms and prefetching, matching the structure of the best-scoring programs, and expose the key parameters as tunable constants for sweeping. |
+| 4 | 29.6 | 6.33744 | parameter sweep | tuned SUB_HIST_COUNT=11, UNROLL_FACTOR=8, PREFETCH_DISTANCE=237 on top of: Replace the complex NEON prefix sum with a simple flat 8x unrolled loop using 8 sub-histograms and prefetching, matching the structure of the best-scoring programs, and expose the key … |
+| 5 | 38.3 | 6.12398 | edit | Fix the remainder loop's broken modulo operation (using bitwise AND on non-power-of-2 SUB_HIST_COUNT) by aligning sub-histogram assignment with the main loop's fixed 8-element stride, and sweep PREFETCH_DISTANCE with SUB_HIST_COUNT=8 for correct power-of-2 … |
+| 6 | 38.3 | 6.67211 | parameter sweep | tuned PREFETCH_DISTANCE=320, SUB_HIST_COUNT=8 on top of: Fix the remainder loop's broken modulo operation (using bitwise AND on non-power-of-2 SUB_HIST_COUNT) by aligning sub-histogram assignment with the main loop's fixed 8-element stride, and sweep … |
+
+### The best program
+
+What changed compared with the starting program:
+
+```diff
+--- initial
++++ best
+@@ -27,13 +27,68 @@
+ // hist[b] = number of i < n with (in[i] & 255) == b for b < 256. Neither out nor
+ // hist is zeroed by the caller. n is any size from 0 to 20'000'000; the sums
+ // never overflow int64.
++
++// Tunable constants for sweep
++constexpr int SUB_HIST_COUNT = 8;  // must be power of 2, >= UNROLL_FACTOR
++constexpr int UNROLL_FACTOR = 8;
++constexpr int PREFETCH_DISTANCE = 320;  // elements ahead to prefetch
++
+ extern "C" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, uint64_t* hist) {
+-    for (int b = 0; b < 256; ++b) hist[b] = 0;
++    // SUB_HIST_COUNT private sub-histograms (uint32_t is enough: n <= 20M, each gets <= 20M/SUB_HIST_COUNT)
++    uint32_t sub_hist[SUB_HIST_COUNT][256] = {};
++    
+     int64_t sum = 0;
+-    for (size_t i = 0; i < n; ++i) {
++    size_t i = 0;
++    
++    // Process UNROLL_FACTOR elements per iteration to break histogram dependency chains and increase ILP
++    for (; i + UNROLL_FACTOR - 1 < n; i += UNROLL_FACTOR) {
++        // Prefetch ahead
++        if (i + PREFETCH_DISTANCE < n) {
++            __builtin_prefetch(in + i + PREFETCH_DISTANCE, 0, 1);
++        }
++        
++        int64_t v0 = in[i];
++        int64_t v1 = in[i + 1];
++        int64_t v2 = in[i + 2];
++        int64_t v3 = in[i + 3];
++        int64_t v4 = in[i + 4];
++        int64_t v5 = in[i + 5];
++        int64_t v6 = in[i + 6];
++        int64_t v7 = in[i + 7];
++        
++        sum += v0; out[i] = sum;
++        sum += v1; out[i + 1] = sum;
++        sum += v2; out[i + 2] = sum;
++        sum += v3; out[i + 3] = sum;
++        sum += v4; out[i + 4] = sum;
++        sum += v5; out[i + 5] = sum;
++        sum += v6; out[i + 6] = sum;
++        sum += v7; out[i + 7] = sum;
++        
++        sub_hist[0][v0 & 255]++;
++        sub_hist[1][v1 & 255]++;
++        sub_hist[2][v2 & 255]++;
++        sub_hist[3][v3 & 255]++;
++        sub_hist[4][v4 & 255]++;
++        sub_hist[5][v5 & 255]++;
++        sub_hist[6][v6 & 255]++;
++        sub_hist[7][v7 & 255]++;
++    }
++    
++    // Remainder elements - use same sub-histogram assignment as main loop (modulo UNROLL_FACTOR)
++    for (; i < n; ++i) {
+         sum += in[i];
+         out[i] = sum;
+-        hist[in[i] & 255]++;
++        sub_hist[i & (UNROLL_FACTOR - 1)][in[i] & 255]++;
++    }
++    
++    // Combine sub-histograms into final hist (also zeroes hist)
++    for (int b = 0; b < 256; ++b) {
++        uint64_t total = 0;
++        for (int s = 0; s < SUB_HIST_COUNT; ++s) {
++            total += sub_hist[s][b];
++        }
++        hist[b] = total;
+     }
+ }
+ // OMEGA-BLOCK-END
+```
 
 ### All models
 
@@ -89,8 +182,13 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/prefi
 
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|
+| nvidia/nemotron-3-ultra-550b-a55b:free (think) | cloud | 6.67211 | ×1.38 | 38.3 | 7 |
+| nvidia/nemotron-3.5-super-vl:free (think) | cloud | 5.82027 | ×1.12 | 12.0 | 3 |
+| recursive/flint-v1.0:free (think) | cloud | 5.5055 | ×1.09 | 38.2 | 3 |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | cloud | 5.47409 | ×1.26 | 19.6 | 1 |
 | glm-4.7-flash:latest (no-think) | local | 5.31132 | ×1.00 | - | 0 |
 | frob/sarvam:30b (no-think) | local | 5.30545 | ×1.00 | - | 0 |
+| xingchen-agi/xing4.0-29b-a4b:free (think) | cloud | 5.28155 | ×1.20 | 58.9 | 2 |
 | cohere/north-mini-code:free (think) | cloud | 5.22357 | ×1.19 | 22.3 | 2 |
 | qwen3-coder:30b (no-think) | local | 5.20055 | ×1.00 | - | 0 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 5.19129 | ×1.22 | 16.0 | 5 |
@@ -104,6 +202,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/prefi
 | xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 4.79928 | ×1.00 | - | 0 |
 | nemotron-3-nano:4b (no-think) | local | 4.78129 | ×1.00 | - | 0 |
 | gemma4:e4b-it-qat (no-think) | local | 4.76532 | ×1.10 | 6.0 | 2 |
+| nvidia/nemotron-3.5-lightning:free (think) | cloud | 4.7024 | ×1.10 | 14.0 | 1 |
 | llm-jp-4-8b-omega:q4_k_m (no-think) | local | 4.69476 | ×1.00 | - | 0 |
 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | 4.69193 | ×1.00 | - | 0 |
 | gemma4:12b-it-qat (no-think) | local | 4.68777 | ×1.07 | 3.8 | 2 |
@@ -115,5 +214,6 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/prefi
 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | 4.56958 | ×1.10 | 2.5 | 1 |
 | nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | 4.45235 | ×1.00 | - | 0 |
 | gemma4:e2b (no-think) | local | 4.3636 | ×1.00 | - | 0 |
+| dots-studio/dots-3-note-preview:free (think) | cloud | 4.16299 | ×1.00 | - | 0 |
 | cohere/north-mini-code:free (no-think) | cloud | 3.99453 | ×1.00 | - | 0 |
 | gemma4:26b-a4b-it-qat (no-think) | local | | | | failed: RuntimeError: the initial program does not pass the … |

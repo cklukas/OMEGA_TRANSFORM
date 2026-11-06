@@ -1,0 +1,161 @@
+{
+ "schema": 4,
+ "example": "sort_u32_single_thread",
+ "model": "xingchen-agi/xing4.0-29b-a4b:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-05T18:57:27",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 61.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 18.34022834310755,
+ "best_score": 104.55254198949774,
+ "improvement": 5.700721933965979,
+ "llm_calls": 26,
+ "mean_llm_seconds": 137.4,
+ "attempts": 26,
+ "ok": 3,
+ "statuses": {
+  "llm_error": 20,
+  "compile_error": 1,
+  "invalid": 2,
+  "ok": 3
+ },
+ "sweeps": 2,
+ "sweep_variants": 22,
+ "improvements": 4,
+ "minutes_to_best": 56.6,
+ "best_idea": "tuned PASS_BITS=8, PASSES=4, COUNTING_BUCKETS=1000, SMALL_THRESHOLD=16 on top of: Sweep the radix sort's bits-per-pass and number-of-passes parameters to find the fastest configuration covering the fu",
+ "progress": [
+  [
+   0.0,
+   18.34022834310755
+  ],
+  [
+   28.74,
+   81.3475870002931
+  ],
+  [
+   40.0,
+   83.56528183777753
+  ],
+  [
+   56.6,
+   103.83004818920577
+  ],
+  [
+   56.6,
+   104.55254198949774
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 18.34022834310755,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 28.74,
+   "score": 81.3475870002931,
+   "model": "xingchen-agi/xing4.0-29b-a4b:free",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Replace the O(n log n) merge sort with an O(n) LSD radix sort using 4 passes of 8 bits each, with integrated skip-detection (skip a pass when all keys share that digit) and insertion-sort fallback for small n, which should dramatically speed up uniform and nearly-sorted distributions while matching std::sort on all inputs."
+  },
+  {
+   "minutes": 40.0,
+   "score": 83.56528183777753,
+   "model": "xingchen-agi/xing4.0-29b-a4b:free",
+   "mode": "best/diff/bold",
+   "status": "ok",
+   "idea": "Add a direct counting-sort branch for inputs whose maximum value is below 1000 (the many-duplicate distribution), replacing the 4-pass radix path for that case; this leaves the full-range radix unchanged and gives a large speedup on that distribution, raising the geometric mean."
+  },
+  {
+   "minutes": 56.6,
+   "score": 103.83004818920577,
+   "model": "xingchen-agi/xing4.0-29b-a4b:free",
+   "mode": "best/rewrite/tune",
+   "status": "ok",
+   "idea": "Sweep the radix sort's bits-per-pass and number-of-passes parameters to find the fastest configuration covering the full 32-bit range, alongside sweeping the counting-sort bucket count and insertion-sort threshold."
+  },
+  {
+   "minutes": 56.6,
+   "score": 104.55254198949774,
+   "model": "xingchen-agi/xing4.0-29b-a4b:free",
+   "mode": "sweep/best/rewrite/tune",
+   "status": "ok",
+   "idea": "tuned PASS_BITS=8, PASSES=4, COUNTING_BUCKETS=1000, SMALL_THRESHOLD=16 on top of: Sweep the radix sort's bits-per-pass and number-of-passes parameters to find the fastest configuration covering the full 32-bit range, alongside sweeping the counting-sort bucket count and insertion-sort threshold."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,22 +19,101 @@\n #endif\n \n // OMEGA-BLOCK-START\n-// Sorts a[0..n) ascending, in place, on the calling thread. n is any size from\n-// 0 to 2'000'000. Extra memory may be allocated freely.\n-static void merge_sort_rec(uint32_t* a, uint32_t* tmp, size_t lo, size_t hi) {\n-    if (hi - lo < 2) return;\n-    size_t mid = lo + (hi - lo) / 2;\n-    merge_sort_rec(a, tmp, lo, mid);\n-    merge_sort_rec(a, tmp, mid, hi);\n-    size_t i = lo, j = mid, k = lo;\n-    while (i < mid && j < hi) tmp[k++] = (a[j] < a[i]) ? a[j++] : a[i++];\n-    while (i < mid) tmp[k++] = a[i++];\n-    while (j < hi) tmp[k++] = a[j++];\n-    for (size_t t = lo; t < hi; ++t) a[t] = tmp[t];\n+// LSD radix sort for the full 32-bit key range, plus a direct counting sort when\n+// the key range fits in COUNTING_BUCKETS buckets (used for the many-duplicate\n+// distribution with values below 1000).\n+\n+static constexpr int PASS_BITS = 8;   // bits processed per pass\n+static constexpr int PASSES = 4;     // number of passes (must satisfy PASS_BITS * PASSES <= 32)\n+static constexpr int BUCKETS = 1 << PASS_BITS;\n+static constexpr int COUNTING_BUCKETS = 1000;\n+static constexpr size_t SMALL_THRESHOLD = 16;\n+\n+static std::vector<uint32_t> g_scratch;\n+\n+static void insertion_sort(uint32_t* a, size_t n) {\n+    for (size_t i = 1; i < n; ++i) {\n+        uint32_t key = a[i];\n+        size_t j = i;\n+        while (j > 0 && a[j-1] > key) {\n+            a[j] = a[j-1];\n+            --j;\n+        }\n+        a[j] = key;\n+    }\n+}\n+\n+static void lsd_radix_sort(uint32_t* a, size_t n) {\n+    if (n < SMALL_THRESHOLD) {\n+        insertion_sort(a, n);\n+        return;\n+    }\n+\n+    uint32_t* tmp = new uint32_t[n];\n+    uint32_t* src = a;\n+    uint32_t* dst = tmp;\n+\n+    for (int pass = 0; pass < PASSES; ++pass) {\n+        const int shift = pass * PASS_BITS;\n+        const uint32_t mask = BUCKETS - 1;\n+\n+        uint32_t hist[BUCKETS] = {};\n+        uint32_t first_digit = UINT32_MAX;\n+        bool all_same = true;\n+        for (size_t i = 0; i < n; ++i) {\n+            uint32_t d = (src[i] >> shift) & mask;\n+            if (first_digit == UINT32_MAX) first_digit = d;\n+            else if (d != first_digit) all_same = false;\n+            hist[d]++;\n+        }\n+        if (all_same) continue;\n+\n+        uint32_t total = 0;\n+        for (int b = 0; b < BUCKETS; ++b) {\n+            uint32_t old = hist[b];\n+            hist[b] = total;\n+            total += old;\n+        }\n+\n+        for (size_t i = 0; i < n; ++i) {\n+            uint32_t digit = (src[i] >> shift) & mask;\n+            dst[hist[digit]++] = src[i];\n+        }\n+\n+        std::swap(src, dst);\n+    }\n+\n+    std::memcpy(a, src, n * sizeof(uint32_t));\n+    delete[] tmp;\n }\n \n extern \"C\" void sort_u32(uint32_t* a, size_t n) {\n-    std::vector<uint32_t> tmp(n);\n-    merge_sort_rec(a, tmp.data(), 0, n);\n+    if (n < SMALL_THRESHOLD) {\n+        insertion_sort(a, n);\n+        return;\n+    }\n+\n+    uint32_t maxv = 0;\n+    for (size_t i = 0; i < n; ++i) {\n+        if (a[i] > maxv) maxv = a[i];\n+    }\n+    if (maxv < COUNTING_BUCKETS) {\n+        g_scratch.resize(n);\n+        const uint32_t* src = a;\n+        uint32_t* dst = g_scratch.data();\n+        uint32_t hist[COUNTING_BUCKETS] = {};\n+        for (size_t i = 0; i < n; ++i) hist[src[i]]++;\n+        uint32_t total = 0;\n+        for (int b = 0; b < COUNTING_BUCKETS; ++b) {\n+            uint32_t old = hist[b];\n+            hist[b] = total;\n+            total += old;\n+        }\n+        for (size_t i = 0; i < n; ++i) dst[hist[src[i]]++] = src[i];\n+        std::memcpy(a, dst, n * sizeof(uint32_t));\n+        return;\n+    }\n+\n+    lsd_radix_sort(a, n);\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "best_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 87.8,
+ "p90_call_seconds": 265.3,
+ "prompt_tokens_per_s": 2282.1,
+ "gen_tokens_per_s": 104.0,
+ "mean_prompt_tokens": 1740,
+ "mean_gen_tokens": 4986,
+ "stopped_calls": 7,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

@@ -1,0 +1,122 @@
+{
+ "schema": 4,
+ "example": "matmul_f32_single_thread",
+ "model": "qwen3.5:latest",
+ "variant": "no-think",
+ "model_size_gb": 6.6,
+ "model_params": "9.0B",
+ "started": "2026-11-05T13:06:43",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 27.8,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 1.24815,
+ "best_score": 25.5709,
+ "improvement": 20.48704082041421,
+ "llm_calls": 22,
+ "mean_llm_seconds": 71.5,
+ "attempts": 22,
+ "ok": 4,
+ "statuses": {
+  "invalid": 7,
+  "llm_error": 3,
+  "ok": 4,
+  "edit_error": 4,
+  "compile_error": 4
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 10.3,
+ "best_idea": "Fix the loop bounds to iterate over all rows $i \\in [0, n)$ (instead of just one block at 0) and implement a correct `i-k-j` implementation that initializes `C` to zero before accumulating, ensuring c",
+ "progress": [
+  [
+   0.0,
+   1.24815
+  ],
+  [
+   10.3,
+   25.5709
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.24815,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 1.81,
+   "score": null,
+   "model": "qwen3.5:latest",
+   "mode": "explore/diff/bold",
+   "status": "invalid",
+   "idea": "Switch from a naive scalar implementation to a blocked algorithm using NEON `vfmaq_f32` intrinsics in an i-k-j order (streaming rows of B) to maximize cache reuse and leverage SIMD throughput for the innermost accumulation loop."
+  },
+  {
+   "minutes": 10.3,
+   "score": 25.5709,
+   "model": "qwen3.5:latest",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Fix the loop bounds to iterate over all rows $i \\in [0, n)$ (instead of just one block at 0) and implement a correct `i-k-j` implementation that initializes `C` to zero before accumulating, ensuring correctness for all $n$ while using contiguous memory access patterns suitable for NEON auto-vectorization."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -24,11 +24,36 @@\n // Computes C = A * B on the calling thread. C is NOT zeroed by the caller.\n // n is any size from 1 to 2048.\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+    // The harness fills C with garbage (e.g., 12345.0f), so we must zero it first.\n+    // We use a simple memset for initialization which is fast and correct.\n+    std::fill(C, C + static_cast<size_t>(n) * n, 0.0f);\n+\n+    // Use the i-k-j loop order recommended in the hints:\n+    // Outer loop over rows of A (and thus rows of C).\n+    // Middle loop over columns of A (rows of B).\n+    // Inner loop over columns of B (streaming rows of B).\n+    // This order ensures that for a fixed k, we access A[i,k] and B[k,:] contiguously.\n+    // We iterate i from 0 to n, updating the entire row C[i,:] for each k.\n+\n+    for (int i = 0; i < n; ++i) {\n+        const float* A_row = A + static_cast<size_t>(i) * n;\n+        for (int k = 0; k < n; ++k) {\n+            // Scalar multiplier: A[i, k]\n+            float a_val = A_row[k];\n+\n+            // Inner loop over j (columns). \n+            // Access pattern for B is row-major: B[k*n + j].\n+            // Since k is fixed in this inner loop, B[k*n + :] is contiguous memory.\n+            // C[i*n + :] is also contiguous.\n+            // This allows the compiler or explicit intrinsics to vectorize efficiently (e.g., VFMA).\n+            \n+            const float* B_row = B + static_cast<size_t>(k) * n;\n+            float* C_row = C + static_cast<size_t>(i) * n;\n+\n+            for (int j = 0; j < n; ++j) {\n+                C_row[j] += a_val * B_row[j];\n+            }\n         }\n+    }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 768,
+  "cores": "one core, CPU time"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 768,
+  "cores": "one core, CPU time"
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 9.4,
+ "model_gpu_memory_gb": 9.4,
+ "context_length": 40960,
+ "load_seconds": 0.0,
+ "median_call_seconds": 50.7,
+ "p90_call_seconds": 111.2,
+ "prompt_tokens_per_s": 1259.8,
+ "gen_tokens_per_s": 37.2,
+ "mean_prompt_tokens": 3932,
+ "mean_gen_tokens": 1757,
+ "stopped_calls": 3,
+ "provider": "ollama",
+ "cost_usd": 0
+}

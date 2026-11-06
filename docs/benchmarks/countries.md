@@ -10,17 +10,17 @@ Each country is represented by its best model in the [overall ranking](../benchm
 
 | # | Country | Best model | Released | Developer | Share | Lag behind #1 | Models |
 |--:|---|---|---|---|--:|--:|--:|
-| 1 | USA | gpt-oss:20b (no-think) | 2025-08-04 | OpenAI | **81%** | – | 10 |
-| 2 | China | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 2026-04-21 | Alibaba (Qwen) | **76%** | −7% | 6 |
-| 3 | India | frob/sarvam:30b (no-think) | 2026-03-03 | Sarvam AI | **37%** | −54% | 1 |
-| 4 | Russia | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 2025-03-28 | Yandex | **24%** | −70% | 1 |
-| 5 | Japan | llm-jp-4-8b-omega:q4_k_m (no-think) | 2026-03-16 | NII (LLM-jp) | **14%** | −83% | 1 |
-| 6 | Switzerland | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 2025-08-13 | Swiss AI Initiative | **13%** | −84% | 1 |
+| 1 | USA | gpt-oss:20b (no-think) | 2025-08-04 | OpenAI | **82%** | – | 10 |
+| 2 | China | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 2026-04-21 | Alibaba (Qwen) | **73%** | −11% | 6 |
+| 3 | India | frob/sarvam:30b (no-think) | 2026-03-03 | Sarvam AI | **33%** | −59% | 1 |
+| 4 | Russia | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 2025-03-28 | Yandex | **22%** | −73% | 1 |
+| 5 | Japan | llm-jp-4-8b-omega:q4_k_m (no-think) | 2026-03-16 | NII (LLM-jp) | **13%** | −84% | 1 |
+| 6 | Switzerland | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 2025-08-13 | Swiss AI Initiative | **12%** | −85% | 1 |
 
 ## Cloud models (OpenRouter)
 
 | # | Country | Best model | Released | Developer | Share | Lag behind #1 | Models |
 |--:|---|---|---|---|--:|--:|--:|
-| 1 | USA | nvidia/nemotron-3.5-super-vl:free (no-think) | 2026-10-15 | NVIDIA | **70%** | – | 4 |
-| 2 | unknown | dots-studio/dots-3-note-preview:free (no-think) | 2026-08-14 | other | **64%** | −9% | 2 |
-| 3 | Canada | cohere/north-mini-code:free (no-think) | 2026-06-17 | Cohere | **43%** | −39% | 1 |
+| 1 | USA | nvidia/nemotron-3.5-super-vl:free (think) | 2026-10-15 | NVIDIA | **73%** | – | 8 |
+| 2 | unknown | dots-studio/dots-3-note-preview:free (no-think) | 2026-08-14 | other | **62%** | −15% | 5 |
+| 3 | Canada | cohere/north-mini-code:free (think) | 2026-06-17 | Cohere | **59%** | −19% | 2 |

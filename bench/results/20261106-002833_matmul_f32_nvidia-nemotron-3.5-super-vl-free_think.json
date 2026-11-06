@@ -1,0 +1,126 @@
+{
+ "schema": 4,
+ "example": "matmul_f32",
+ "model": "nvidia/nemotron-3.5-super-vl:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-06T00:28:33",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 62.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 0.980073,
+ "best_score": 74.6131,
+ "improvement": 76.13014540753598,
+ "llm_calls": 33,
+ "mean_llm_seconds": 104.3,
+ "attempts": 33,
+ "ok": 15,
+ "statuses": {
+  "edit_error": 8,
+  "compile_error": 7,
+  "ok": 15,
+  "invalid": 2,
+  "duplicate": 1
+ },
+ "sweeps": 4,
+ "sweep_variants": 25,
+ "improvements": 4,
+ "minutes_to_best": 35.65,
+ "best_idea": "Replace the naive i-j-k triple loop with a cache-friendly i-k-j order that streams rows of B and C, uses NEON 4-wide FMA (vfmaq_f32) for the inner loop, zero-initializes each C row (caller fills C wit",
+ "progress": [
+  [
+   0.0,
+   0.980073
+  ],
+  [
+   25.28,
+   10.8892
+  ],
+  [
+   28.85,
+   67.603
+  ],
+  [
+   33.19,
+   69.4309
+  ],
+  [
+   35.65,
+   74.6131
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.980073,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 35.65,
+   "score": 74.6131,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the naive i-j-k triple loop with a cache-friendly i-k-j order that streams rows of B and C, uses NEON 4-wide FMA (vfmaq_f32) for the inner loop, zero-initializes each C row (caller fills C with garbage), and parallelizes over row blocks with std::thread (capped at 10 cores). Handles any n from 1 to 2048 via scalar tails."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,14 +19,80 @@\n #endif\n \n // OMEGA-BLOCK-START\n-// Computes C = A * B. C is NOT zeroed by the caller. Any number of threads may be\n-// used (std::thread is available); n is any size from 1 to 2048.\n-extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+#if defined(__ARM_NEON) || defined(__aarch64__)\n+#include <arm_neon.h>\n+#endif\n+\n+namespace {\n+\n+void matmul_row_block(int n, const float* __restrict A, const float* __restrict B,\n+                      float* __restrict C, int i_start, int i_end) {\n+    for (int i = i_start; i < i_end; ++i) {\n+        float* Ci = C + (size_t)i * n;\n+        const float* Ai = A + (size_t)i * n;\n+\n+        // Zero the output row (caller fills C with garbage)\n+        int j = 0;\n+#if defined(__ARM_NEON) || defined(__aarch64__)\n+        for (; j + 3 < n; j += 4)\n+            vst1q_f32(Ci + j, vdupq_n_f32(0.0f));\n+#endif\n+        for (; j < n; ++j)\n+            Ci[j] = 0.0f;\n+\n+        // i-k-j: inner loop streams rows of B and C; A[i,k] is loop-invariant\n+        for (int k = 0; k < n; ++k) {\n+            float a = Ai[k];\n+            const float* Bk = B + (size_t)k * n;\n+#if defined(__ARM_NEON) || defined(__aarch64__)\n+            float32x4_t va = vdupq_n_f32(a);\n+            j = 0;\n+            for (; j + 3 < n; j += 4) {\n+                float32x4_t c = vld1q_f32(Ci + j);\n+                float32x4_t b = vld1q_f32(Bk + j);\n+                c = vfmaq_f32(c, va, b);\n+                vst1q_f32(Ci + j, c);\n+            }\n+            for (; j < n; ++j)\n+                Ci[j] += a * Bk[j];\n+#else\n+            for (j = 0; j < n; ++j)\n+                Ci[j] += a * Bk[j];\n+#endif\n         }\n+    }\n+}\n+\n+} // namespace\n+\n+extern \"C\" void matmul(int n, const float* __restrict A, const float* __restrict B,\n+                       float* __restrict C) {\n+    if (n <= 0) return;\n+\n+    unsigned int num_threads = std::thread::hardware_concurrency();\n+    if (num_threads == 0 || num_threads > 16) num_threads = 10;\n+    if (num_threads > (unsigned int)n) num_threads = (unsigned int)n;\n+\n+    // Single thread for tiny matrices (thread creation overhead dominates)\n+    if (num_threads < 2 || n < 32) {\n+        matmul_row_block(n, A, B, C, 0, n);\n+        return;\n+    }\n+\n+    std::vector<std::thread> threads;\n+    threads.reserve(num_threads);\n+\n+    int rows_per_thread = (n + (int)num_threads - 1) / (int)num_threads;\n+\n+    for (unsigned int t = 0; t < num_threads; ++t) {\n+        int start = (int)t * rows_per_thread;\n+        int end = start + rows_per_thread;\n+        if (end > n) end = n;\n+        if (start >= end) break;\n+        threads.emplace_back(matmul_row_block, n, A, B, C, start, end);\n+    }\n+\n+    for (auto& th : threads)\n+        th.join();\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 105.9,
+ "p90_call_seconds": 193.2,
+ "prompt_tokens_per_s": 4528.5,
+ "gen_tokens_per_s": 130.6,
+ "mean_prompt_tokens": 4049,
+ "mean_gen_tokens": 13501,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

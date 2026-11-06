@@ -383,6 +383,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/tsp_h
 | dots-studio/dots-3-note-preview:free (no-think) | cloud | 1.14974 | ×1.15 | 3.6 | 2 |
 | gemma4:12b-it-qat (no-think) | local | 1.13768 | ×1.14 | 3.2 | 2 |
 | gemma4:e4b-it-qat (no-think) | local | 1.13508 | ×1.14 | 19.5 | 5 |
+| recursive/flint-v1.0:free (think) | cloud | 1.11907 | ×1.12 | 37.5 | 6 |
 | nvidia/nemotron-3.5-super-vl:free (think) | cloud | 1.09539 | ×1.10 | 27.3 | 1 |
 | gemma4:26b-a4b-it-qat (no-think) | local | 1.09374 | ×1.09 | 38.1 | 7 |
 | gemma4:latest (no-think) | local | 1.08936 | ×1.09 | 7.7 | 4 |
@@ -406,7 +407,6 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/tsp_h
 | dots-studio/dots-3-note-preview:free (think) | cloud | 1 | ×1.00 | - | 0 |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | cloud | 1 | ×1.00 | - | 0 |
 | xingchen-agi/xing4.0-29b-a4b:free (think) | cloud | 1 | ×1.00 | - | 0 |
-| recursive/flint-v1.0:free (think) | cloud | | | | failed: all 6 model requests failed: recursive/flint-v1.0:free … |
 | xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 1 | ×1.00 | - | 0 |
 | cohere/north-mini-code:free (no-think) | cloud | 1 | ×1.00 | - | 0 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 1 | ×1.00 | - | 0 |

@@ -4,7 +4,7 @@
 
 # sort_u32_single_thread
 
-27 models, each run at most 60 minutes, ended earlier after 15 answers in a row without progress; one run per model. The [overall ranking](../benchmarks.md#overall-ranking) compares the models over all examples.
+35 models, each run at most 60 minutes, ended earlier after 15 answers in a row without progress; one run per model. The [overall ranking](../benchmarks.md#overall-ranking) compares the models over all examples.
 
 Machine: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz (MS-7A98), 12 cores, 64 GB, 2x NVIDIA GeForce GTX 1080 Ti, 11264 MiB.
 
@@ -181,36 +181,44 @@ Free OpenRouter models; times include the network and the provider's queue.
 
 | Model | Params | Initial | Best | Gain | LLM calls | s/call | Valid | New bests | Min to best | Minutes | Stopped by |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|---|
+| nvidia/nemotron-3.5-super-vl:free (think) |  | 18.0532 | **278.1298** | ×15.41 | 24 | 144 | 88% | 3 | 23.9 | 59.0 | no progress |
+| nvidia/nemotron-3-ultra-550b-a55b:free (think) |  | 20.0554 | **268.5245** | ×13.39 | 38 | 96 | 71% | 11 | 37.3 | 62.4 | time limit |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) |  | 17.7280 | **237.6100** | ×13.40 | 22 | 105 | 32% | 3 | 11.6 | 39.4 | no progress |
+| cohere/north-mini-code:free (think) |  | 20.9346 | **220.1253** | ×10.51 | 31 | 117 | 45% | 5 | 35.8 | 61.8 | time limit |
+| recursive/flint-v1.0:free (think) |  | 20.4022 | **193.1179** | ×9.47 | 19 | 99 | 74% | 2 | 5.1 | 32.1 | no progress |
 | dots-studio/dots-3-note-preview:free (no-think) |  | 18.2791 | **190.7624** | ×10.44 | 43 | 12 | 67% | 5 | 8.8 | 9.8 | no progress |
+| dots-studio/dots-3-note-preview:free (think) |  | 18.3752 | **177.3926** | ×9.65 | 14 | 270 | 14% | 1 | 50.2 | 63.7 | time limit |
 | nvidia/nemotron-3.5-super-vl:free (no-think) |  | 18.0175 | **176.1989** | ×9.78 | 25 | 8 | 76% | 3 | 2.3 | 6.5 | no progress |
+| nvidia/nemotron-3.5-lightning:free (think) |  | 17.9114 | **164.3294** | ×9.17 | 17 | 222 | 24% | 2 | 19.0 | 63.5 | time limit |
 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) |  | 18.3971 | **158.5411** | ×8.62 | 56 | 46 | 66% | 6 | 26.8 | 44.4 | no progress |
 | cohere/north-mini-code:free (no-think) |  | 18.1012 | **111.5420** | ×6.16 | 36 | 10 | 14% | 2 | 3.5 | 6.7 | no progress |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) |  | 18.1163 | **105.6055** | ×5.83 | 27 | 8 | 19% | 2 | 1.7 | 4.1 | no progress |
+| xingchen-agi/xing4.0-29b-a4b:free (think) |  | 18.3402 | **104.5525** | ×5.70 | 26 | 137 | 12% | 4 | 56.6 | 61.5 | time limit |
 | xingchen-agi/xing4.0-29b-a4b:free (no-think) |  | 17.9483 | **17.9483** | ×1.00 | 16 | 54 | 0% | 0 | - | 15.1 | no progress |
 | nvidia/nemotron-3.5-lightning:free (no-think) |  | 17.8017 | **17.8017** | ×1.00 | 16 | 23 | 0% | 0 | - | 6.7 | no progress |
 
 ```mermaid
 xychart-beta
     title "sort_u32_single_thread, cloud: best score"
-    x-axis ["dots-3-note-preview (no-think)", "nemotron-3.5-super-vl (no-think)", "nemotron-3-ultra-550b-a55b (no-think)", "north-mini-code (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)", "xing4.0-29b-a4b (no-think)", "nemotron-3.5-lightning (no-think)"]
-    y-axis "score" 0 --> 209.8
-    bar [190.8, 176.2, 158.5, 111.5, 105.6, 17.95, 17.8]
+    x-axis ["nemotron-3.5-super-vl (think)", "nemotron-3-ultra-550b-a55b (think)", "nemotron-3-nano-omni-30b-a3b-reasoning (think)", "north-mini-code (think)", "flint-v1.0 (think)", "dots-3-note-preview (no-think)", "dots-3-note-preview (think)", "nemotron-3.5-super-vl (no-think)", "nemotron-3.5-lightning (think)", "nemotron-3-ultra-550b-a55b (no-think)", "north-mini-code (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)", "xing4.0-29b-a4b (think)", "xing4.0-29b-a4b (no-think)", "nemotron-3.5-lightning (no-think)"]
+    y-axis "score" 0 --> 305.9
+    bar [278.1, 268.5, 237.6, 220.1, 193.1, 190.8, 177.4, 176.2, 164.3, 158.5, 111.5, 105.6, 104.6, 17.95, 17.8]
 ```
 
 ```mermaid
 xychart-beta
     title "sort_u32_single_thread, cloud: valid answers (%)"
-    x-axis ["dots-3-note-preview (no-think)", "nemotron-3.5-super-vl (no-think)", "nemotron-3-ultra-550b-a55b (no-think)", "north-mini-code (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)", "xing4.0-29b-a4b (no-think)", "nemotron-3.5-lightning (no-think)"]
-    y-axis "% of answers" 0 --> 83.6
-    bar [67.44, 76, 66.07, 13.89, 18.52, 0, 0]
+    x-axis ["nemotron-3.5-super-vl (think)", "nemotron-3-ultra-550b-a55b (think)", "nemotron-3-nano-omni-30b-a3b-reasoning (think)", "north-mini-code (think)", "flint-v1.0 (think)", "dots-3-note-preview (no-think)", "dots-3-note-preview (think)", "nemotron-3.5-super-vl (no-think)", "nemotron-3.5-lightning (think)", "nemotron-3-ultra-550b-a55b (no-think)", "north-mini-code (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)", "xing4.0-29b-a4b (think)", "xing4.0-29b-a4b (no-think)", "nemotron-3.5-lightning (no-think)"]
+    y-axis "% of answers" 0 --> 96.25
+    bar [87.5, 71.05, 31.82, 45.16, 73.68, 67.44, 14.29, 76, 23.53, 66.07, 13.89, 18.52, 11.54, 0, 0]
 ```
 
 ```mermaid
 xychart-beta
     title "sort_u32_single_thread, cloud: seconds per LLM call"
-    x-axis ["dots-3-note-preview (no-think)", "nemotron-3.5-super-vl (no-think)", "nemotron-3-ultra-550b-a55b (no-think)", "north-mini-code (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)", "xing4.0-29b-a4b (no-think)", "nemotron-3.5-lightning (no-think)"]
-    y-axis "seconds" 0 --> 59.73
-    bar [12.3, 8.5, 46, 9.6, 7.5, 54.3, 22.6]
+    x-axis ["nemotron-3.5-super-vl (think)", "nemotron-3-ultra-550b-a55b (think)", "nemotron-3-nano-omni-30b-a3b-reasoning (think)", "north-mini-code (think)", "flint-v1.0 (think)", "dots-3-note-preview (no-think)", "dots-3-note-preview (think)", "nemotron-3.5-super-vl (no-think)", "nemotron-3.5-lightning (think)", "nemotron-3-ultra-550b-a55b (no-think)", "north-mini-code (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)", "xing4.0-29b-a4b (think)", "xing4.0-29b-a4b (no-think)", "nemotron-3.5-lightning (no-think)"]
+    y-axis "seconds" 0 --> 297.6
+    bar [144, 96.1, 105.3, 117, 99.3, 12.3, 270.5, 8.5, 221.9, 46, 9.6, 7.5, 137.4, 54.3, 22.6]
 ```
 
 ### Inference speed and cost
@@ -221,29 +229,45 @@ Generation speed is measured from the first to the last streamed token; the time
 |---|--:|--:|--:|--:|--:|--:|
 | nvidia/nemotron-3.5-super-vl:free (no-think) | 159.2 | 8 | 12 | 1179 | 1 | 0.000 |
 | xingchen-agi/xing4.0-29b-a4b:free (no-think) | 150.7 | 74 | 76 | 460 | 1 | 0.000 |
+| cohere/north-mini-code:free (think) | 149.8 | 115 | 173 | 17339 | 0 | 0.000 |
 | cohere/north-mini-code:free (no-think) | 131.1 | 8 | 17 | 1182 | 1 | 0.000 |
+| recursive/flint-v1.0:free (think) | 127.7 | 102 | 193 | 12519 | 0 | 0.000 |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | 122.5 | 92 | 190 | 12534 | 1 | 0.000 |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | 115.6 | 7 | 13 | 659 | 4 | 0.000 |
 | dots-studio/dots-3-note-preview:free (no-think) | 104.6 | 11 | 19 | 947 | 0 | 0.000 |
+| xingchen-agi/xing4.0-29b-a4b:free (think) | 104.0 | 88 | 265 | 4986 | 7 | 0.000 |
+| nvidia/nemotron-3.5-super-vl:free (think) | 102.5 | 161 | 229 | 14578 | 0 | 0.000 |
+| dots-studio/dots-3-note-preview:free (think) | 88.1 | 282 | 299 | 23631 | 0 | 0.000 |
+| nvidia/nemotron-3.5-lightning:free (think) | 69.8 | 192 | 380 | 15433 | 0 | 0.000 |
 | nvidia/nemotron-3.5-lightning:free (no-think) | 69.6 | 21 | 36 | 1196 | 7 | 0.000 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | 50.1 | 38 | 80 | 2213 | 0 | 0.000 |
+| nvidia/nemotron-3-ultra-550b-a55b:free (think) | 46.0 | 67 | 240 | 4184 | 2 | 0.000 |
 
 ```mermaid
 xychart-beta
     title "sort_u32_single_thread, cloud: generation speed (tokens/s)"
-    x-axis ["nemotron-3.5-super-vl (no-think)", "xing4.0-29b-a4b (no-think)", "north-mini-code (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)", "dots-3-note-preview (no-think)", "nemotron-3.5-lightning (no-think)", "nemotron-3-ultra-550b-a55b (no-think)"]
+    x-axis ["nemotron-3.5-super-vl (no-think)", "xing4.0-29b-a4b (no-think)", "north-mini-code (think)", "north-mini-code (no-think)", "flint-v1.0 (think)", "nemotron-3-nano-omni-30b-a3b-reasoning (think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)", "dots-3-note-preview (no-think)", "xing4.0-29b-a4b (think)", "nemotron-3.5-super-vl (think)", "dots-3-note-preview (think)", "nemotron-3.5-lightning (think)", "nemotron-3.5-lightning (no-think)", "nemotron-3-ultra-550b-a55b (no-think)", "nemotron-3-ultra-550b-a55b (think)"]
     y-axis "tokens/s" 0 --> 175.1
-    bar [159.2, 150.7, 131.1, 115.6, 104.6, 69.6, 50.1]
+    bar [159.2, 150.7, 149.8, 131.1, 127.7, 122.5, 115.6, 104.6, 104, 102.5, 88.1, 69.8, 69.6, 50.1, 46]
 ```
 
 ### Best score over time
 
 | Model | 15 min | 30 min | 45 min | 60 min |
 |---|--:|--:|--:|--:|
+| nvidia/nemotron-3.5-super-vl:free (think) | 269.5259 | 278.1298 | 278.1298 | 278.1298 |
+| nvidia/nemotron-3-ultra-550b-a55b:free (think) | 247.9010 | 251.1741 | 268.5245 | 268.5245 |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | 237.6100 | 237.6100 | 237.6100 | 237.6100 |
+| cohere/north-mini-code:free (think) | 195.8426 | 206.3283 | 220.1253 | 220.1253 |
+| recursive/flint-v1.0:free (think) | 193.1179 | 193.1179 | 193.1179 | 193.1179 |
 | dots-studio/dots-3-note-preview:free (no-think) | 190.7624 | 190.7624 | 190.7624 | 190.7624 |
+| dots-studio/dots-3-note-preview:free (think) | 18.3752 | 18.3752 | 18.3752 | 177.3926 |
 | nvidia/nemotron-3.5-super-vl:free (no-think) | 176.1989 | 176.1989 | 176.1989 | 176.1989 |
+| nvidia/nemotron-3.5-lightning:free (think) | 17.9114 | 164.3294 | 164.3294 | 164.3294 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | 135.4210 | 158.5411 | 158.5411 | 158.5411 |
 | cohere/north-mini-code:free (no-think) | 111.5420 | 111.5420 | 111.5420 | 111.5420 |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | 105.6055 | 105.6055 | 105.6055 | 105.6055 |
+| xingchen-agi/xing4.0-29b-a4b:free (think) | 18.3402 | 81.3476 | 83.5653 | 104.5525 |
 | xingchen-agi/xing4.0-29b-a4b:free (no-think) | 17.9483 | 17.9483 | 17.9483 | 17.9483 |
 | nvidia/nemotron-3.5-lightning:free (no-think) | 17.8017 | 17.8017 | 17.8017 | 17.8017 |
 
@@ -251,20 +275,36 @@ xychart-beta
 
 | Model | compile error | duplicate | edit error | invalid | llm error | ok | timeout |
 |---|--:|--:|--:|--:|--:|--:|--:|
+| nvidia/nemotron-3.5-super-vl:free (think) | 0 | 0 | 3 | 0 | 0 | 21 | 0 |
+| nvidia/nemotron-3-ultra-550b-a55b:free (think) | 1 | 2 | 0 | 6 | 2 | 27 | 0 |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | 1 | 0 | 11 | 2 | 1 | 7 | 0 |
+| cohere/north-mini-code:free (think) | 0 | 2 | 15 | 0 | 0 | 14 | 0 |
+| recursive/flint-v1.0:free (think) | 1 | 0 | 4 | 0 | 0 | 14 | 0 |
 | dots-studio/dots-3-note-preview:free (no-think) | 3 | 4 | 5 | 1 | 1 | 29 | 0 |
+| dots-studio/dots-3-note-preview:free (think) | 0 | 0 | 12 | 0 | 0 | 2 | 0 |
 | nvidia/nemotron-3.5-super-vl:free (no-think) | 0 | 2 | 2 | 1 | 1 | 19 | 0 |
+| nvidia/nemotron-3.5-lightning:free (think) | 0 | 2 | 11 | 0 | 0 | 4 | 0 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | 3 | 10 | 0 | 6 | 0 | 37 | 0 |
 | cohere/north-mini-code:free (no-think) | 8 | 3 | 8 | 10 | 1 | 5 | 1 |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | 0 | 1 | 13 | 4 | 4 | 5 | 0 |
+| xingchen-agi/xing4.0-29b-a4b:free (think) | 1 | 0 | 0 | 2 | 20 | 3 | 0 |
 | xingchen-agi/xing4.0-29b-a4b:free (no-think) | 2 | 0 | 2 | 2 | 10 | 0 | 0 |
 | nvidia/nemotron-3.5-lightning:free (no-think) | 5 | 0 | 4 | 0 | 7 | 0 | 0 |
 
 ### Best idea per model
 
+- **nvidia/nemotron-3.5-super-vl:free (think)**: tuned kInsertionThreshold=64 on top of: Replace the O(n log n) merge sort with a 4-pass LSD byte radix sort: one combined pass counts all four byte histograms, passes with a …
+- **nvidia/nemotron-3-ultra-550b-a55b:free (think)**: tuned INSERTION_SORT_THRESHOLD=226 on top of: Fix the buggy pass-skipping logic (it incorrectly resets skip=false after finding a full bucket), combine the two sorted-check loops …
+- **nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think)**: tuned INSERTION_SORT_THRESHOLD=16, COUNTING_RANGE=2000 on top of: Implement a hybrid LSD radix sort with early sorted/reverse detection, a reduced insertion‑sort threshold, and a …
+- **cohere/north-mini-code:free (think)**: Replace std::sort with a custom hybrid LSD radix sort that uses static buffers, early detection of sorted/reverse runs, and insertion sort for small arrays to drastically reduce …
+- **recursive/flint-v1.0:free (think)**: Add a single O(n) scan that early-outs for already-sorted and reverse-sorted inputs before running the radix passes, so the sorted/reverse benchmark distributions skip nearly all …
 - **dots-studio/dots-3-note-preview:free (no-think)**: Replace the scalar scatter loop with an unrolled, branchless scatter that processes 4 elements at once using NEON scatter-like operations (vst4q_u32) to reduce loop overhead and …
+- **dots-studio/dots-3-note-preview:free (think)**: Replace the O(n log n) merge sort with an LSD radix sort (4 passes of 8 bits) that computes all histograms in a single pass, skips constant bytes, and includes a fast early-exit …
 - **nvidia/nemotron-3.5-super-vl:free (no-think)**: Replace std::sort fallback with a 4-pass 8-bit LSD radix sort: one counting pass builds all histograms, zero-digit passes are skipped, and data pings-pongs between input and …
+- **nvidia/nemotron-3.5-lightning:free (think)**: tuned INSERTION_SORT_THRESHOLD=256 on top of: Replace merge sort with LSD radix sort using 4 passes of 8 bits each, with early detection of already-sorted/reverse-sorted data and …
 - **nvidia/nemotron-3-ultra-550b-a55b:free (no-think)**: Optimize the NEON counting pass by unrolling the loop 4x (processing 16 elements per iteration) and reducing store/reload overhead by accumulating byte histograms directly from …
 - **cohere/north-mini-code:free (no-think)**: Optimize the LSD radix sort by using branchless placement and a single counting pass per bit‑layer to reduce memory writes and improve NEON utilization.
 - **nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think)**: Replace the recursive merge sort with a bottom-up LSD radix sort using 4 passes of 8 bits and a static scratch buffer to minimize memory traffic and CPU overhead, leveraging NEON …
+- **xingchen-agi/xing4.0-29b-a4b:free (think)**: tuned PASS_BITS=8, PASSES=4, COUNTING_BUCKETS=1000, SMALL_THRESHOLD=16 on top of: Sweep the radix sort's bits-per-pass and number-of-passes parameters to find the fastest …
 - **xingchen-agi/xing4.0-29b-a4b:free (no-think)**: initial program
 - **nvidia/nemotron-3.5-lightning:free (no-think)**: initial program

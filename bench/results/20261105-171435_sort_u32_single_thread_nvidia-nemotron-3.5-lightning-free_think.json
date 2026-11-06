@@ -1,0 +1,136 @@
+{
+ "schema": 4,
+ "example": "sort_u32_single_thread",
+ "model": "nvidia/nemotron-3.5-lightning:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-05T17:14:35",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 63.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 17.911404813640463,
+ "best_score": 164.32944580073917,
+ "improvement": 9.174570476772082,
+ "llm_calls": 17,
+ "mean_llm_seconds": 221.9,
+ "attempts": 17,
+ "ok": 4,
+ "statuses": {
+  "edit_error": 11,
+  "ok": 4,
+  "duplicate": 2
+ },
+ "sweeps": 2,
+ "sweep_variants": 20,
+ "improvements": 2,
+ "minutes_to_best": 19.01,
+ "best_idea": "tuned INSERTION_SORT_THRESHOLD=256 on top of: Replace merge sort with LSD radix sort using 4 passes of 8 bits each, with early detection of already-sorted/reverse-sorted data and per-pass skip when al",
+ "progress": [
+  [
+   0.0,
+   17.911404813640463
+  ],
+  [
+   19.01,
+   152.69154137571778
+  ],
+  [
+   19.01,
+   164.32944580073917
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 17.911404813640463,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 19.01,
+   "score": 152.69154137571778,
+   "model": "nvidia/nemotron-3.5-lightning:free",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "Replace merge sort with LSD radix sort using 4 passes of 8 bits each, with early detection of already-sorted/reverse-sorted data and per-pass skip when all keys share the same digit. Insertion sort for small n. This should significantly improve throughput across all distributions, especially the duplicate-heavy case, while matching std::sort exactly."
+  },
+  {
+   "minutes": 19.01,
+   "score": 164.32944580073917,
+   "model": "nvidia/nemotron-3.5-lightning:free",
+   "mode": "sweep/exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "tuned INSERTION_SORT_THRESHOLD=256 on top of: Replace merge sort with LSD radix sort using 4 passes of 8 bits each, with early detection of already-sorted/reverse-sorted data and per-pass skip when all keys share the same digit. Insertion sort for small n. This should significantly improve throughpu"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -21,20 +21,99 @@\n // OMEGA-BLOCK-START\n // Sorts a[0..n) ascending, in place, on the calling thread. n is any size from\n // 0 to 2'000'000. Extra memory may be allocated freely.\n-static void merge_sort_rec(uint32_t* a, uint32_t* tmp, size_t lo, size_t hi) {\n-    if (hi - lo < 2) return;\n-    size_t mid = lo + (hi - lo) / 2;\n-    merge_sort_rec(a, tmp, lo, mid);\n-    merge_sort_rec(a, tmp, mid, hi);\n-    size_t i = lo, j = mid, k = lo;\n-    while (i < mid && j < hi) tmp[k++] = (a[j] < a[i]) ? a[j++] : a[i++];\n-    while (i < mid) tmp[k++] = a[i++];\n-    while (j < hi) tmp[k++] = a[j++];\n-    for (size_t t = lo; t < hi; ++t) a[t] = tmp[t];\n-}\n+\n+static constexpr int RADIX_BITS = 8;\n+static constexpr int RADIX = 1 << RADIX_BITS;      // 256\n+static constexpr int PASSES = 4;                    // 32 / 8 = 4\n+static constexpr size_t INSERTION_SORT_THRESHOLD = 256;\n \n extern \"C\" void sort_u32(uint32_t* a, size_t n) {\n+    if (n < 2) return;\n+    \n+    // Fast path for small n: insertion sort\n+    if (n < INSERTION_SORT_THRESHOLD) {\n+        for (size_t i = 1; i < n; ++i) {\n+            uint32_t key = a[i];\n+            size_t j = i;\n+            while (j > 0 && a[j - 1] > key) {\n+                a[j] = a[j - 1];\n+                --j;\n+            }\n+            a[j] = key;\n+        }\n+        return;\n+    }\n+    \n+    // Early detection: check ascending and descending in one pass\n+    bool asc = true, desc = true;\n+    for (size_t i = 1; i < n; ++i) {\n+        if (a[i] < a[i-1]) asc = false;\n+        if (a[i] > a[i-1]) desc = false;\n+        if (!asc && !desc) break;\n+    }\n+    if (asc) return;  // already sorted ascending\n+    if (desc) {\n+        // reverse the array to make it ascending\n+        for (size_t i = 0; i < n / 2; ++i) {\n+            std::swap(a[i], a[n - 1 - i]);\n+        }\n+        return;\n+    }\n+    \n+    // Allocate scratch space\n     std::vector<uint32_t> tmp(n);\n-    merge_sort_rec(a, tmp.data(), 0, n);\n+    uint32_t* src = a;\n+    uint32_t* dst = tmp.data();\n+    \n+    // LSD radix sort: 4 passes of 8 bits each\n+    for (int pass = 0; pass < PASSES; ++pass) {\n+        // Histogram for 256 buckets\n+        size_t hist[RADIX] = {0};\n+        \n+        // Count frequencies of current byte\n+        for (size_t i = 0; i < n; ++i) {\n+            uint8_t byte = (src[i] >> (pass * RADIX_BITS)) & 0xFF;\n+            hist[byte]++;\n+        }\n+        \n+        // Check if pass can be skipped (all keys share the same digit)\n+        int dominant = 0;\n+        for (int b = 1; b < RADIX; ++b) {\n+            if (hist[b] > hist[dominant]) {\n+                dominant = b;\n+            }\n+        }\n+        if (hist[dominant] == n) {\n+            // All elements have the same byte value at this position.\n+            // Relative order preserved, skip this pass (don't swap buffers).\n+            continue;\n+        }\n+        \n+        // Prefix sum (exclusive scan) over histogram\n+        uint64_t total = 0;\n+        for (int b = 0; b < RADIX; ++b) {\n+            uint64_t count = hist[b];\n+            hist[b] = total;\n+            total += count;\n+        }\n+        \n+        // Copy histogram for position tracking during placement\n+        uint64_t pos[RADIX];\n+        for (int b = 0; b < RADIX; ++b) pos[b] = hist[b];\n+        \n+        // Place elements into dst according to current byte\n+        for (size_t i = 0; i < n; ++i) {\n+            uint8_t byte = (src[i] >> (pass * RADIX_BITS)) & 0xFF;\n+            dst[pos[byte]++] = src[i];\n+        }\n+        \n+        // Swap src and dst for next pass (ping-pong buffering)\n+        std::swap(src, dst);\n+    }\n+    \n+    // If the final sorted result is in dst (scratch buffer), copy back\n+    if (src != a) {\n+        std::copy(src, src + n, a);\n+    }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "best_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 192.2,
+ "p90_call_seconds": 380.5,
+ "prompt_tokens_per_s": 7925.2,
+ "gen_tokens_per_s": 69.8,
+ "mean_prompt_tokens": 5417,
+ "mean_gen_tokens": 15433,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

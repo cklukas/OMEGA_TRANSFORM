@@ -179,6 +179,7 @@ Free OpenRouter models; times include the network and the provider's queue.
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|---|
 | nvidia/nemotron-3.5-super-vl:free (think) |  | 0.31284 | **0.99881** | ×3.19 | 12 | 120 | 75% | 4 | 19.3 | 24.4 | no progress |
 | cohere/north-mini-code:free (think) |  | 0.31284 | **0.99872** | ×3.19 | 19 | 152 | 68% | 5 | 36.7 | 48.6 | no progress |
+| recursive/flint-v1.0:free (think) |  | 0.31284 | **0.99872** | ×3.19 | 16 | 97 | 88% | 5 | 7.9 | 26.2 | no progress |
 | dots-studio/dots-3-note-preview:free (think) |  | 0.31284 | **0.99867** | ×3.19 | 16 | 231 | 25% | 2 | 61.9 | 62.0 | time limit |
 | nvidia/nemotron-3-ultra-550b-a55b:free (think) |  | 0.31284 | **0.99853** | ×3.19 | 15 | 88 | 87% | 5 | 20.6 | 22.5 | no progress |
 | nvidia/nemotron-3.5-super-vl:free (no-think) |  | 0.31284 | **0.99852** | ×3.19 | 16 | 10 | 50% | 1 | 0.2 | 2.8 | no progress |
@@ -191,30 +192,29 @@ Free OpenRouter models; times include the network and the provider's queue.
 | nvidia/nemotron-3.5-lightning:free (no-think) |  | 0.31284 | **0.37589** | ×1.20 | 16 | 25 | 6% | 1 | 6.6 | 6.6 | no progress |
 | xingchen-agi/xing4.0-29b-a4b:free (no-think) |  | 0.31284 | **0.31284** | ×1.00 | 16 | 75 | 0% | 0 | - | 20.1 | no progress |
 | xingchen-agi/xing4.0-29b-a4b:free (think) |  | 0.31284 | **0.31284** | ×1.00 | 15 | 184 | 0% | 0 | - | 45.9 | no progress |
-| recursive/flint-v1.0:free (think) |  | | | | | | | | | | failed: all 5 model requests failed: recursive/flint-v1.0:free: requ |
 
 ```mermaid
 xychart-beta
     title "symbolic_regression, cloud: best score"
-    x-axis ["nemotron-3.5-super-vl (think)", "north-mini-code (think)", "dots-3-note-preview (think)", "nemotron-3-ultra-550b-a55b (think)", "nemotron-3.5-super-vl (no-think)", "nemotron-3-ultra-550b-a55b (no-think)", "nemotron-3.5-lightning (think)", "dots-3-note-preview (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)", "north-mini-code (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (think)", "nemotron-3.5-lightning (no-think)", "xing4.0-29b-a4b (no-think)", "xing4.0-29b-a4b (think)"]
+    x-axis ["nemotron-3.5-super-vl (think)", "north-mini-code (think)", "flint-v1.0 (think)", "dots-3-note-preview (think)", "nemotron-3-ultra-550b-a55b (think)", "nemotron-3.5-super-vl (no-think)", "nemotron-3-ultra-550b-a55b (no-think)", "nemotron-3.5-lightning (think)", "dots-3-note-preview (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)", "north-mini-code (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (think)", "nemotron-3.5-lightning (no-think)", "xing4.0-29b-a4b (no-think)", "xing4.0-29b-a4b (think)"]
     y-axis "score" 0 --> 1.099
-    bar [0.9988, 0.9987, 0.9987, 0.9985, 0.9985, 0.998, 0.9909, 0.9894, 0.4957, 0.3794, 0.3788, 0.3759, 0.3128, 0.3128]
+    bar [0.9988, 0.9987, 0.9987, 0.9987, 0.9985, 0.9985, 0.998, 0.9909, 0.9894, 0.4957, 0.3794, 0.3788, 0.3759, 0.3128, 0.3128]
 ```
 
 ```mermaid
 xychart-beta
     title "symbolic_regression, cloud: valid answers (%)"
-    x-axis ["nemotron-3.5-super-vl (think)", "north-mini-code (think)", "dots-3-note-preview (think)", "nemotron-3-ultra-550b-a55b (think)", "nemotron-3.5-super-vl (no-think)", "nemotron-3-ultra-550b-a55b (no-think)", "nemotron-3.5-lightning (think)", "dots-3-note-preview (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)", "north-mini-code (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (think)", "nemotron-3.5-lightning (no-think)", "xing4.0-29b-a4b (no-think)", "xing4.0-29b-a4b (think)"]
-    y-axis "% of answers" 0 --> 95.33
-    bar [75, 68.42, 25, 86.67, 50, 71.43, 40.91, 72.73, 20.69, 52, 40.91, 6.25, 0, 0]
+    x-axis ["nemotron-3.5-super-vl (think)", "north-mini-code (think)", "flint-v1.0 (think)", "dots-3-note-preview (think)", "nemotron-3-ultra-550b-a55b (think)", "nemotron-3.5-super-vl (no-think)", "nemotron-3-ultra-550b-a55b (no-think)", "nemotron-3.5-lightning (think)", "dots-3-note-preview (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)", "north-mini-code (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (think)", "nemotron-3.5-lightning (no-think)", "xing4.0-29b-a4b (no-think)", "xing4.0-29b-a4b (think)"]
+    y-axis "% of answers" 0 --> 96.25
+    bar [75, 68.42, 87.5, 25, 86.67, 50, 71.43, 40.91, 72.73, 20.69, 52, 40.91, 6.25, 0, 0]
 ```
 
 ```mermaid
 xychart-beta
     title "symbolic_regression, cloud: seconds per LLM call"
-    x-axis ["nemotron-3.5-super-vl (think)", "north-mini-code (think)", "dots-3-note-preview (think)", "nemotron-3-ultra-550b-a55b (think)", "nemotron-3.5-super-vl (no-think)", "nemotron-3-ultra-550b-a55b (no-think)", "nemotron-3.5-lightning (think)", "dots-3-note-preview (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)", "north-mini-code (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (think)", "nemotron-3.5-lightning (no-think)", "xing4.0-29b-a4b (no-think)", "xing4.0-29b-a4b (think)"]
+    x-axis ["nemotron-3.5-super-vl (think)", "north-mini-code (think)", "flint-v1.0 (think)", "dots-3-note-preview (think)", "nemotron-3-ultra-550b-a55b (think)", "nemotron-3.5-super-vl (no-think)", "nemotron-3-ultra-550b-a55b (no-think)", "nemotron-3.5-lightning (think)", "dots-3-note-preview (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)", "north-mini-code (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (think)", "nemotron-3.5-lightning (no-think)", "xing4.0-29b-a4b (no-think)", "xing4.0-29b-a4b (think)"]
     y-axis "seconds" 0 --> 253.9
-    bar [120.2, 151.7, 230.8, 87.7, 10.4, 21.9, 179.2, 13.3, 4.9, 7.4, 91.7, 24.6, 75.2, 183.5]
+    bar [120.2, 151.7, 96.8, 230.8, 87.7, 10.4, 21.9, 179.2, 13.3, 4.9, 7.4, 91.7, 24.6, 75.2, 183.5]
 ```
 
 ### Inference speed and cost
@@ -225,6 +225,7 @@ Generation speed is measured from the first to the last streamed token; the time
 |---|--:|--:|--:|--:|--:|--:|
 | nvidia/nemotron-3.5-super-vl:free (no-think) | 172.2 | 10 | 20 | 1641 | 2 | 0.000 |
 | cohere/north-mini-code:free (no-think) | 161.7 | 6 | 16 | 1120 | 0 | 0.000 |
+| recursive/flint-v1.0:free (think) | 139.9 | 99 | 150 | 13330 | 0 | 0.000 |
 | nvidia/nemotron-3.5-super-vl:free (think) | 134.3 | 125 | 208 | 15993 | 0 | 0.000 |
 | cohere/north-mini-code:free (think) | 109.3 | 180 | 256 | 15445 | 0 | 0.000 |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | 109.2 | 75 | 189 | 8962 | 2 | 0.000 |
@@ -241,9 +242,9 @@ Generation speed is measured from the first to the last streamed token; the time
 ```mermaid
 xychart-beta
     title "symbolic_regression, cloud: generation speed (tokens/s)"
-    x-axis ["nemotron-3.5-super-vl (no-think)", "north-mini-code (no-think)", "nemotron-3.5-super-vl (think)", "north-mini-code (think)", "nemotron-3-nano-omni-30b-a3b-reasoning (think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)", "dots-3-note-preview (no-think)", "nemotron-3.5-lightning (no-think)", "dots-3-note-preview (think)", "xing4.0-29b-a4b (no-think)", "nemotron-3.5-lightning (think)", "xing4.0-29b-a4b (think)", "nemotron-3-ultra-550b-a55b (no-think)", "nemotron-3-ultra-550b-a55b (think)"]
+    x-axis ["nemotron-3.5-super-vl (no-think)", "north-mini-code (no-think)", "flint-v1.0 (think)", "nemotron-3.5-super-vl (think)", "north-mini-code (think)", "nemotron-3-nano-omni-30b-a3b-reasoning (think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)", "dots-3-note-preview (no-think)", "nemotron-3.5-lightning (no-think)", "dots-3-note-preview (think)", "xing4.0-29b-a4b (no-think)", "nemotron-3.5-lightning (think)", "xing4.0-29b-a4b (think)", "nemotron-3-ultra-550b-a55b (no-think)", "nemotron-3-ultra-550b-a55b (think)"]
     y-axis "tokens/s" 0 --> 189.4
-    bar [172.2, 161.7, 134.3, 109.3, 109.2, 108.8, 102.5, 102.1, 91.4, 71.7, 65.9, 64.2, 59, 51.9]
+    bar [172.2, 161.7, 139.9, 134.3, 109.3, 109.2, 108.8, 102.5, 102.1, 91.4, 71.7, 65.9, 64.2, 59, 51.9]
 ```
 
 ### Best score over time
@@ -252,6 +253,7 @@ xychart-beta
 |---|--:|--:|--:|--:|
 | nvidia/nemotron-3.5-super-vl:free (think) | 0.99881 | 0.99881 | 0.99881 | 0.99881 |
 | cohere/north-mini-code:free (think) | 0.49907 | 0.99872 | 0.99872 | 0.99872 |
+| recursive/flint-v1.0:free (think) | 0.99872 | 0.99872 | 0.99872 | 0.99872 |
 | dots-studio/dots-3-note-preview:free (think) | 0.31284 | 0.31284 | 0.31284 | 0.99867 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | 0.99853 | 0.99853 | 0.99853 | 0.99853 |
 | nvidia/nemotron-3.5-super-vl:free (no-think) | 0.99852 | 0.99852 | 0.99852 | 0.99852 |
@@ -271,6 +273,7 @@ xychart-beta
 |---|--:|--:|--:|--:|--:|--:|
 | nvidia/nemotron-3.5-super-vl:free (think) | 1 | 2 | 0 | 0 | 9 | 0 |
 | cohere/north-mini-code:free (think) | 0 | 5 | 0 | 1 | 13 | 0 |
+| recursive/flint-v1.0:free (think) | 0 | 2 | 0 | 0 | 14 | 0 |
 | dots-studio/dots-3-note-preview:free (think) | 0 | 11 | 1 | 0 | 4 | 0 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | 1 | 0 | 1 | 0 | 13 | 0 |
 | nvidia/nemotron-3.5-super-vl:free (no-think) | 1 | 1 | 4 | 2 | 8 | 0 |
@@ -288,6 +291,7 @@ xychart-beta
 
 - **nvidia/nemotron-3.5-super-vl:free (think)**: Add Gaussian (exp(-x^2)) and sum-angle trig candidates to the dictionary; LASSO will zero useless ones, while any true term of this form improves extrapolation without overfitting …
 - **cohere/north-mini-code:free (think)**: tuned MAX_TERMS=6, TOL=1e-05, RIDGE=0.1 on top of: Adjust suboptimal constants MAX_TERMS, TOL, RIDGE to better defaults (MAX_TERMS=6, RIDGE=0.01) and sweep them to find optimal …
+- **recursive/flint-v1.0:free (think)**: tuned _MAX_TERMS=5, _GAIN_REL=1e-05 on top of: Replace the fixed broad symbolic basis with greedy forward selection over the polynomial/interaction/trigonometric columns …
 - **dots-studio/dots-3-note-preview:free (think)**: Expose key hyperparameters (max terms, ridge regularization, random seed, and extra basis terms) as named constants and sweep them to find the optimal combination for feature …
 - **nvidia/nemotron-3-ultra-550b-a55b:free (think)**: tuned RIDGE=0.001 on top of: Replace the fixed basis with a larger pool of candidate functions (including exponentials, logarithms, and trigonometric products) and use forward …
 - **nvidia/nemotron-3.5-super-vl:free (no-think)**: Expand the linear model to a broad library of elementary basis functions (polynomials, trigonometric terms, exponentials, logs, and pairwise interactions), fit coefficients by …

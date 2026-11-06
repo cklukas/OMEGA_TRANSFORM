@@ -1,0 +1,126 @@
+{
+ "schema": 4,
+ "example": "prefix_sum_histogram_single_thread",
+ "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-05T10:22:39",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 39.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 4.35053,
+ "best_score": 5.47409,
+ "improvement": 1.2582581892321165,
+ "llm_calls": 28,
+ "mean_llm_seconds": 82.0,
+ "attempts": 28,
+ "ok": 10,
+ "statuses": {
+  "edit_error": 16,
+  "ok": 10,
+  "compile_error": 2
+ },
+ "sweeps": 5,
+ "sweep_variants": 41,
+ "improvements": 1,
+ "minutes_to_best": 19.65,
+ "best_idea": "Use eight sub\u2011histograms and process eight elements per iteration to break histogram contention and reduce memory traffic while keeping the prefix sum in a register.",
+ "progress": [
+  [
+   0.0,
+   4.35053
+  ],
+  [
+   19.65,
+   5.47409
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 4.35053,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 19.65,
+   "score": 5.47409,
+   "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Use eight sub\u2011histograms and process eight elements per iteration to break histogram contention and reduce memory traffic while keeping the prefix sum in a register."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -23,17 +23,89 @@\n #endif\n \n // OMEGA-BLOCK-START\n-// Computes, on the calling thread, out[i] = in[0] + ... + in[i] for i < n, and\n-// hist[b] = number of i < n with (in[i] & 255) == b for b < 256. Neither out nor\n-// hist is zeroed by the caller. n is any size from 0 to 20'000'000; the sums\n-// never overflow int64.\n extern \"C\" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, uint64_t* hist) {\n-    for (int b = 0; b < 256; ++b) hist[b] = 0;\n+    // zero histogram bins 0..255\n+    for (size_t b = 0; b < 256; ++b) hist[b] = 0;\n+\n+    constexpr size_t SUB_COUNT = 8;\n+    uint32_t sub_hist[SUB_COUNT][256];\n+    std::memset(sub_hist, 0, sizeof(sub_hist));\n+\n     int64_t sum = 0;\n-    for (size_t i = 0; i < n; ++i) {\n-        sum += in[i];\n+    size_t i = 0;\n+\n+    // process 8 elements per iteration\n+    for (; i + 7 < n; i += 8) {\n+        int64_t v0 = in[i + 0];\n+        int64_t v1 = in[i + 1];\n+        int64_t v2 = in[i + 2];\n+        int64_t v3 = in[i + 3];\n+        int64_t v4 = in[i + 4];\n+        int64_t v5 = in[i + 5];\n+        int64_t v6 = in[i + 6];\n+        int64_t v7 = in[i + 7];\n+\n+        // inclusive prefix sum\n+        sum += v0; out[i + 0] = sum;\n+        sum += v1; out[i + 1] = sum;\n+        sum += v2; out[i + 2] = sum;\n+        sum += v3; out[i + 3] = sum;\n+        sum += v4; out[i + 4] = sum;\n+        sum += v5; out[i + 5] = sum;\n+        sum += v6; out[i + 6] = sum;\n+        sum += v7; out[i + 7] = sum;\n+\n+        // histogram increments\n+        size_t sub0 = (i + 0) & (SUB_COUNT - 1);\n+        uint8_t low0 = static_cast<uint8_t>(v0 & 0xFF);\n+        sub_hist[sub0][low0]++;\n+\n+        size_t sub1 = (i + 1) & (SUB_COUNT - 1);\n+        uint8_t low1 = static_cast<uint8_t>(v1 & 0xFF);\n+        sub_hist[sub1][low1]++;\n+\n+        size_t sub2 = (i + 2) & (SUB_COUNT - 1);\n+        uint8_t low2 = static_cast<uint8_t>(v2 & 0xFF);\n+        sub_hist[sub2][low2]++;\n+\n+        size_t sub3 = (i + 3) & (SUB_COUNT - 1);\n+        uint8_t low3 = static_cast<uint8_t>(v3 & 0xFF);\n+        sub_hist[sub3][low3]++;\n+\n+        size_t sub4 = (i + 4) & (SUB_COUNT - 1);\n+        uint8_t low4 = static_cast<uint8_t>(v4 & 0xFF);\n+        sub_hist[sub4][low4]++;\n+\n+        size_t sub5 = (i + 5) & (SUB_COUNT - 1);\n+        uint8_t low5 = static_cast<uint8_t>(v5 & 0xFF);\n+        sub_hist[sub5][low5]++;\n+\n+        size_t sub6 = (i + 6) & (SUB_COUNT - 1);\n+        uint8_t low6 = static_cast<uint8_t>(v6 & 0xFF);\n+        sub_hist[sub6][low6]++;\n+\n+        size_t sub7 = (i + 7) & (SUB_COUNT - 1);\n+        uint8_t low7 = static_cast<uint8_t>(v7 & 0xFF);\n+        sub_hist[sub7][low7]++;\n+    }\n+\n+    // remainder\n+    for (; i < n; ++i) {\n+        int64_t v = in[i];\n+        sum += v;\n         out[i] = sum;\n-        hist[in[i] & 255]++;\n+        size_t sub = (i) & (SUB_COUNT - 1);\n+        uint8_t low = static_cast<uint8_t>(v & 0xFF);\n+        sub_hist[sub][low]++;\n+    }\n+\n+    // combine sub\u2011histograms into final histogram\n+    for (size_t b = 0; b < 256; ++b) {\n+        uint64_t total = 0;\n+        for (size_t s = 0; s < SUB_COUNT; ++s) {\n+            total += sub_hist[s][b];\n+        }\n+        hist[b] = total;\n     }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "best_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 72.6,
+ "p90_call_seconds": 171.6,
+ "prompt_tokens_per_s": 9095.1,
+ "gen_tokens_per_s": 128.7,
+ "mean_prompt_tokens": 5375,
+ "mean_gen_tokens": 10480,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

@@ -1,0 +1,136 @@
+{
+ "schema": 4,
+ "example": "sort_u32_single_thread",
+ "model": "recursive/flint-v1.0:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-05T19:58:55",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 32.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 20.402239441642553,
+ "best_score": 193.11787690352472,
+ "improvement": 9.46552350078571,
+ "llm_calls": 19,
+ "mean_llm_seconds": 99.3,
+ "attempts": 19,
+ "ok": 14,
+ "statuses": {
+  "ok": 14,
+  "compile_error": 1,
+  "edit_error": 4
+ },
+ "sweeps": 1,
+ "sweep_variants": 5,
+ "improvements": 2,
+ "minutes_to_best": 5.11,
+ "best_idea": "Add a single O(n) scan that early-outs for already-sorted and reverse-sorted inputs before running the radix passes, so the sorted/reverse benchmark distributions skip nearly all work.",
+ "progress": [
+  [
+   0.0,
+   20.402239441642553
+  ],
+  [
+   2.31,
+   116.95967134970924
+  ],
+  [
+   5.11,
+   193.11787690352472
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 20.402239441642553,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.31,
+   "score": 116.95967134970924,
+   "model": "recursive/flint-v1.0:free",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Replace the O(n log n) merge sort with a four-pass LSD radix sort (8-bit digits via counting sort with skip of constant-digit passes), which gives linear-time sorting and should substantially cut CPU time on random data."
+  },
+  {
+   "minutes": 5.11,
+   "score": 193.11787690352472,
+   "model": "recursive/flint-v1.0:free",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Add a single O(n) scan that early-outs for already-sorted and reverse-sorted inputs before running the radix passes, so the sorted/reverse benchmark distributions skip nearly all work."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -21,20 +21,33 @@\n // OMEGA-BLOCK-START\n // Sorts a[0..n) ascending, in place, on the calling thread. n is any size from\n // 0 to 2'000'000. Extra memory may be allocated freely.\n-static void merge_sort_rec(uint32_t* a, uint32_t* tmp, size_t lo, size_t hi) {\n-    if (hi - lo < 2) return;\n-    size_t mid = lo + (hi - lo) / 2;\n-    merge_sort_rec(a, tmp, lo, mid);\n-    merge_sort_rec(a, tmp, mid, hi);\n-    size_t i = lo, j = mid, k = lo;\n-    while (i < mid && j < hi) tmp[k++] = (a[j] < a[i]) ? a[j++] : a[i++];\n-    while (i < mid) tmp[k++] = a[i++];\n-    while (j < hi) tmp[k++] = a[j++];\n-    for (size_t t = lo; t < hi; ++t) a[t] = tmp[t];\n-}\n-\n extern \"C\" void sort_u32(uint32_t* a, size_t n) {\n+    if (n < 2) return;\n+    bool asc = true, desc = true;\n+    for (size_t i = 1; i < n; ++i) {\n+        uint32_t x = a[i - 1];\n+        uint32_t y = a[i];\n+        if (x > y) asc = false;\n+        if (x < y) desc = false;\n+        if (!asc && !desc) break;\n+    }\n+    if (asc) return;\n+    if (desc) { std::reverse(a, a + n); return; }\n     std::vector<uint32_t> tmp(n);\n-    merge_sort_rec(a, tmp.data(), 0, n);\n+    uint32_t* src = a;\n+    uint32_t* dst = tmp.data();\n+    for (int pass = 0; pass < 4; ++pass) {\n+        const uint32_t shift = (uint32_t)(pass * 8);\n+        uint32_t cnt[256];\n+        std::memset(cnt, 0, sizeof(cnt));\n+        for (size_t i = 0; i < n; ++i) ++cnt[(src[i] >> shift) & 255u];\n+        uint32_t sum = 0;\n+        int distinct = 0;\n+        for (int b = 0; b < 256; ++b) { uint32_t c = cnt[b]; if (c) ++distinct; cnt[b] = sum; sum += c; }\n+        if (distinct <= 1) continue;\n+        for (size_t i = 0; i < n; ++i) { uint32_t d = (src[i] >> shift) & 255u; dst[cnt[d]++] = src[i]; }\n+        std::swap(src, dst);\n+    }\n+    if (src != a) std::memcpy(a, src, n * sizeof(uint32_t));\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "best_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 101.6,
+ "p90_call_seconds": 192.6,
+ "prompt_tokens_per_s": 3313.5,
+ "gen_tokens_per_s": 127.7,
+ "mean_prompt_tokens": 4178,
+ "mean_gen_tokens": 12519,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

@@ -1,0 +1,546 @@
+{
+ "schema": 4,
+ "example": "tammes_30",
+ "model": "recursive/flint-v1.0:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-05T21:58:13",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 54.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 3.2013569883368893,
+ "best_score": 37.74041045639569,
+ "improvement": 11.788879089052141,
+ "llm_calls": 44,
+ "mean_llm_seconds": 73.2,
+ "attempts": 44,
+ "ok": 29,
+ "statuses": {
+  "ok": 29,
+  "edit_error": 6,
+  "duplicate": 3,
+  "invalid": 4,
+  "llm_error": 2
+ },
+ "sweeps": 15,
+ "sweep_variants": 168,
+ "improvements": 12,
+ "minutes_to_best": 35.42,
+ "best_idea": "tuned FINAL_ITERS=300, FINAL_DECAY=0.999 on top of: Extend the final closest-pair polish convergence by increasing final iterations and loosening decay, then sweep the final-polish hyperparameters to ",
+ "progress": [
+  [
+   0.0,
+   3.2013569883368893
+  ],
+  [
+   0.95,
+   36.30056779307607
+  ],
+  [
+   7.51,
+   36.36582515661455
+  ],
+  [
+   7.51,
+   36.377478841768536
+  ],
+  [
+   11.97,
+   36.556913492346716
+  ],
+  [
+   11.97,
+   36.721869437031444
+  ],
+  [
+   16.48,
+   36.84373791054657
+  ],
+  [
+   16.48,
+   37.04503022129253
+  ],
+  [
+   21.95,
+   37.068959624238886
+  ],
+  [
+   21.95,
+   37.318681219092674
+  ],
+  [
+   28.77,
+   37.406331561466374
+  ],
+  [
+   35.42,
+   37.55689631356644
+  ],
+  [
+   35.42,
+   37.74041045639569
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.2013569883368893,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 0.95,
+   "score": 36.30056779307607,
+   "model": "recursive/flint-v1.0:free",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Replace uniform random initialization with a Fibonacci lattice and add closest-pair repulsion refinement to raise the minimum angle."
+  },
+  {
+   "minutes": 3.63,
+   "score": 36.133179596648716,
+   "model": "recursive/flint-v1.0:free",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Lengthen and finetune the closest-pair repulsion polish so the final minimum-angle convergence runs longer with a slower step decay and finer final steps."
+  },
+  {
+   "minutes": 3.63,
+   "score": 36.13516918145842,
+   "model": "recursive/flint-v1.0:free",
+   "mode": "sweep/best/diff/refine",
+   "status": "ok",
+   "idea": "tuned REFINE_ITERS=2000 on top of: Lengthen and finetune the closest-pair repulsion polish so the final minimum-angle convergence runs longer with a slower step decay and finer final steps."
+  },
+  {
+   "minutes": 11.97,
+   "score": 36.556913492346716,
+   "model": "recursive/flint-v1.0:free",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Replace the greedy closest-pair repulsion with a tangent-projected gradient descent on the pairwise repulsion energy to better maximize the minimum angle."
+  },
+  {
+   "minutes": 11.97,
+   "score": 36.721869437031444,
+   "model": "recursive/flint-v1.0:free",
+   "mode": "sweep/explore/diff/bold",
+   "status": "ok",
+   "idea": "tuned ENERGY_ITERS=439, ENERGY_STEP=0.001705, ENERGY_DECAY=0.9965, s=1.76 on top of: Replace the greedy closest-pair repulsion with a tangent-projected gradient descent on the pairwise repulsion energy to better maximize the minimum angle."
+  },
+  {
+   "minutes": 16.48,
+   "score": 36.84373791054657,
+   "model": "recursive/flint-v1.0:free",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Add a final max-min polish that pushes apart the closest pair after the energy loop to sharpen the minimum angle."
+  },
+  {
+   "minutes": 16.48,
+   "score": 37.04503022129253,
+   "model": "recursive/flint-v1.0:free",
+   "mode": "sweep/exploit/diff/tune",
+   "status": "ok",
+   "idea": "tuned FINAL_STEP=0.0005, FINAL_ITERS=50, FINAL_DECAY=0.9694 on top of: Add a final max-min polish that pushes apart the closest pair after the energy loop to sharpen the minimum angle."
+  },
+  {
+   "minutes": 21.95,
+   "score": 37.068959624238886,
+   "model": "recursive/flint-v1.0:free",
+   "mode": "best/rewrite/refine",
+   "status": "ok",
+   "idea": "Increase final polish iterations and loosen the decay slightly to let the closest-pair push converge further, which should raise the minimum angle."
+  },
+  {
+   "minutes": 21.95,
+   "score": 37.318681219092674,
+   "model": "recursive/flint-v1.0:free",
+   "mode": "sweep/best/rewrite/refine",
+   "status": "ok",
+   "idea": "tuned FINAL_ITERS=80, FINAL_DECAY=0.99 on top of: Increase final polish iterations and loosen the decay slightly to let the closest-pair push converge further, which should raise the minimum angle."
+  },
+  {
+   "minutes": 28.77,
+   "score": 37.406331561466374,
+   "model": "recursive/flint-v1.0:free",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Increase final polish iterations and loosen the decay slightly to let the closest-pair push converge further, which should raise the minimum angle."
+  },
+  {
+   "minutes": 35.42,
+   "score": 37.55689631356644,
+   "model": "recursive/flint-v1.0:free",
+   "mode": "explore/diff/refine",
+   "status": "ok",
+   "idea": "Extend the final closest-pair polish convergence by increasing final iterations and loosening decay, then sweep the final-polish hyperparameters to avoid overfitting."
+  },
+  {
+   "minutes": 35.42,
+   "score": 37.74041045639569,
+   "model": "recursive/flint-v1.0:free",
+   "mode": "sweep/explore/diff/refine",
+   "status": "ok",
+   "idea": "tuned FINAL_ITERS=300, FINAL_DECAY=0.999 on top of: Extend the final closest-pair polish convergence by increasing final iterations and loosening decay, then sweep the final-polish hyperparameters to avoid overfitting."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -14,14 +14,108 @@\n     start draws uniformly random points with a fixed seed, so some pairs end up\n     close together.\n     \"\"\"\n-    rng = random.Random(1)\n     points = []\n-    for _ in range(n):\n-        z = rng.uniform(-1.0, 1.0)\n-        phi = rng.uniform(0.0, 2 * math.pi)\n-        s = math.sqrt(1.0 - z * z)\n-        points.append((s * math.cos(phi), s * math.sin(phi), z))\n-    return points\n+    golden = (math.sqrt(5.0) - 1.0) / 2.0\n+    for i in range(n):\n+        y = 1.0 - (2.0 * i + 1.0) / n\n+        r = math.sqrt(max(0.0, 1.0 - y * y))\n+        phi = i * 2.0 * math.pi * golden\n+        points.append([r * math.cos(phi), r * math.sin(phi), y])\n+    ENERGY_ITERS = 439\n+    ENERGY_STEP = 0.001705480865428321\n+    ENERGY_DECAY = 0.996471030024931\n+    s = 1.7596134019455951\n+    step = ENERGY_STEP\n+    for _ in range(ENERGY_ITERS):\n+        w = [[0.0, 0.0, 0.0] for _ in range(n)]\n+        for i in range(n):\n+            xi, yi, zi = points[i]\n+            for j in range(i + 1, n):\n+                xj, yj, zj = points[j]\n+                dx = xi - xj\n+                dy = yi - yj\n+                dz = zi - zj\n+                d2 = dx * dx + dy * dy + dz * dz\n+                d = math.sqrt(d2)\n+                if d == 0.0:\n+                    continue\n+                f = s / (d2 * d)\n+                w[i][0] += f * dx\n+                w[i][1] += f * dy\n+                w[i][2] += f * dz\n+                w[j][0] -= f * dx\n+                w[j][1] -= f * dy\n+                w[j][2] -= f * dz\n+        for i in range(n):\n+            xi, yi, zi = points[i]\n+            gx = w[i][0]\n+            gy = w[i][1]\n+            gz = w[i][2]\n+            dot = gx * xi + gy * yi + gz * zi\n+            tx = gx - dot * xi\n+            ty = gy - dot * yi\n+            tz = gz - dot * zi\n+            norm = math.sqrt(tx * tx + ty * ty + tz * tz)\n+            if norm > 0.0:\n+                tx /= norm\n+                ty /= norm\n+                tz /= norm\n+                points[i][0] += step * tx\n+                points[i][1] += step * ty\n+                points[i][2] += step * tz\n+                li = math.sqrt(points[i][0] * points[i][0] + points[i][1] * points[i][1] + points[i][2] * points[i][2])\n+                points[i][0] /= li\n+                points[i][1] /= li\n+                points[i][2] /= li\n+        step *= ENERGY_DECAY\n+    FINAL_STEP = 0.0005\n+    FINAL_ITERS = 300\n+    FINAL_DECAY = 0.999\n+    step = FINAL_STEP\n+    for _ in range(FINAL_ITERS):\n+        bi = bj = -1\n+        bd = 1e30\n+        for i in range(n):\n+            xi, yi, zi = points[i]\n+            for j in range(i + 1, n):\n+                xj, yj, zj = points[j]\n+                dx = xi - xj\n+                dy = yi - yj\n+                dz = zi - zj\n+                d = (xi - xj) * (xi - xj) + (yi - yj) * (yi - yj) + (zi - zj) * (zi - zj)\n+                if d < bd:\n+                    bd = d\n+                    bi = i\n+                    bj = j\n+        if bi < 0 or bd <= 0.0:\n+            break\n+        pi = points[bi]\n+        pj = points[bj]\n+        dx = pi[0] - pj[0]\n+        dy = pi[1] - pj[1]\n+        dz = pi[2] - pj[2]\n+        dist = math.sqrt(dx * dx + dy * dy + dz * dz)\n+        if dist == 0.0:\n+            break\n+        ux = dx / dist\n+        uy = dy / dist\n+        uz = dz / dist\n+        pi[0] += step * ux\n+        pi[1] += step * uy\n+        pi[2] += step * uz\n+        pj[0] -= step * ux\n+        pj[1] -= step * uy\n+        pj[2] -= step * uz\n+        li = math.sqrt(pi[0] * pi[0] + pi[1] * pi[1] + pi[2] * pi[2])\n+        pi[0] /= li\n+        pi[1] /= li\n+        pi[2] /= li\n+        lj = math.sqrt(pj[0] * pj[0] + pj[1] * pj[1] + pj[2] * pj[2])\n+        pj[0] /= lj\n+        pj[1] /= lj\n+        pj[2] /= lj\n+        step *= FINAL_DECAY\n+    return [(p[0], p[1], p[2]) for p in points]\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "sphere_points",
+  "points": [
+   [
+    0.3919709387244532,
+    -0.5582121095618475,
+    -0.7312715117751976
+   ],
+   [
+    -0.027052463738772504,
+    0.8490936142385189,
+    0.5275492379532281
+   ],
+   [
+    -0.9500239047545286,
+    0.31204362944230385,
+    -0.009129825816118098
+   ],
+   [
+    0.22957314306547277,
+    -0.9248645600666849,
+    0.30318594544552596
+   ],
+   [
+    0.5740391880355756,
+    0.1033386161058686,
+    -0.8122808264515302
+   ],
+   [
+    -0.6758397496085636,
+    0.3037890926411783,
+    0.6715302078397394
+   ],
+   [
+    0.8512988419434201,
+    0.011265659732678564,
+    0.524560164915884
+   ],
+   [
+    -0.17680359044518373,
+    -0.9781667833824966,
+    -0.10922561189039716
+   ],
+   [
+    0.7908900515540614,
+    -0.28321934240489055,
+    -0.5424755574590947
+   ],
+   [
+    0.5851964340381928,
+    0.11388203849293084,
+    0.8028549152229673
+   ],
+   [
+    -0.30434810274742335,
+    -0.08102906244732802,
+    -0.9491082780130784
+   ],
+   [
+    -0.3509958145626131,
+    0.3246444046695718,
+    0.8782983255570211
+   ],
+   [
+    -0.7271635298854837,
+    0.3872590786250933,
+    -0.5668012057387734
+   ],
+   [
+    0.05942052898539893,
+    0.33054331283916893,
+    -0.9419184248502641
+   ],
+   [
+    -0.9919106268324059,
+    0.02610563707090374,
+    -0.12422481269885588
+   ],
+   [
+    0.10141148542176433,
+    0.8394879795728718,
+    -0.5338310994848547
+   ],
+   [
+    -0.800348025639128,
+    0.20762133322971385,
+    -0.5624379253246229
+   ],
+   [
+    0.8990635126271509,
+    0.12213812674917045,
+    -0.4204367708190289
+   ],
+   [
+    -0.6917519647168419,
+    -0.2562101885183855,
+    0.6751559513251457
+   ],
+   [
+    0.3757097440071294,
+    0.88195886829755,
+    0.28458872586489115
+   ],
+   [
+    0.10962933743537041,
+    -0.1326097917248836,
+    0.9850868243521302
+   ],
+   [
+    -0.32373272592570945,
+    0.5659500259391612,
+    -0.7582200803883872
+   ],
+   [
+    -0.2164510454505914,
+    -0.8700158468173443,
+    0.44296881516653674
+   ],
+   [
+    -0.43065317546221576,
+    0.22938243010501777,
+    0.8728811735989193
+   ],
+   [
+    -0.3606302208330362,
+    -0.6589776995328848,
+    0.660071386548654
+   ],
+   [
+    -0.7836961589264019,
+    -0.48079575758636983,
+    -0.3932629781341648
+   ],
+   [
+    0.3660243386758451,
+    -0.5299673944570227,
+    0.7649580016637154
+   ],
+   [
+    -0.8476230763315352,
+    -0.5304935866064687,
+    0.010567641159200837
+   ],
+   [
+    0.016650981414250473,
+    0.36477107016970456,
+    -0.9309483396973168
+   ],
+   [
+    -0.6901522939672605,
+    0.4121803795407587,
+    0.5948084951086057
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "sphere_points",
+  "points": [
+   [
+    0.40672682871053545,
+    -0.012012409625841837,
+    0.913470847275408
+   ],
+   [
+    -0.24252293554611754,
+    -0.13632220161065667,
+    0.9605201107119608
+   ],
+   [
+    -0.05080283044734033,
+    0.4824609472540246,
+    0.8744429694344212
+   ],
+   [
+    0.4519024117952442,
+    -0.6042903972791829,
+    0.656214390248956
+   ],
+   [
+    -0.7185800264290574,
+    0.27490603459527796,
+    0.6388031134554021
+   ],
+   [
+    0.6971059170684383,
+    0.4465962298852038,
+    0.5608878210841219
+   ],
+   [
+    -0.1859152907330982,
+    -0.7143346387878385,
+    0.6746566004268216
+   ],
+   [
+    -0.4352385546233682,
+    0.8058014005917962,
+    0.40156133201998073
+   ],
+   [
+    0.8991482711866225,
+    -0.18314885067002265,
+    0.397478156532353
+   ],
+   [
+    -0.7470961910307515,
+    -0.36613782435258185,
+    0.554788585792553
+   ],
+   [
+    0.2282454982661139,
+    0.8735007179169545,
+    0.43000056781336765
+   ],
+   [
+    0.13006438444638369,
+    -0.9831587191984101,
+    0.12838297691954798
+   ],
+   [
+    -0.8413639913679467,
+    0.539791132851998,
+    -0.027058583180840277
+   ],
+   [
+    0.9547184279161032,
+    0.2950483780529723,
+    -0.0381991885478622
+   ],
+   [
+    -0.5592362488273959,
+    -0.8184408169069954,
+    0.13194486431109428
+   ],
+   [
+    -0.11406605591015392,
+    0.9847108972142924,
+    -0.13165630936846534
+   ],
+   [
+    0.7078369989567012,
+    -0.7053421504170472,
+    0.038199918233246574
+   ],
+   [
+    -0.9959006861421943,
+    -0.08632042054969706,
+    0.02702976762071826
+   ],
+   [
+    0.5725311491126838,
+    0.8097697724143011,
+    -0.12837834311051421
+   ],
+   [
+    -0.2043257244574235,
+    -0.8794071006579491,
+    -0.42999319719889617
+   ],
+   [
+    -0.4909176137632565,
+    0.6716329694200565,
+    -0.554895531505695
+   ],
+   [
+    0.8811222979355516,
+    -0.256193801420208,
+    -0.39747733544774116
+   ],
+   [
+    -0.7600623598182571,
+    -0.5111191687271722,
+    -0.4013258084737969
+   ],
+   [
+    0.16777495807213758,
+    0.7188393886357942,
+    -0.6746269315626306
+   ],
+   [
+    0.4093035096832953,
+    -0.7196291342908595,
+    -0.5608961989893715
+   ],
+   [
+    -0.763941792418616,
+    0.09090639544773536,
+    -0.6388497202495532
+   ],
+   [
+    0.6811481664748329,
+    0.32467298657450194,
+    -0.6562199532906378
+   ],
+   [
+    -0.26944117722667504,
+    -0.40342880918809343,
+    -0.874440762963267
+   ],
+   [
+    -0.15123420479631022,
+    0.23352527955924363,
+    -0.9605176516370768
+   ],
+   [
+    0.3656121951905896,
+    -0.17858677536981843,
+    -0.9134738564353817
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 62.4,
+ "p90_call_seconds": 145.2,
+ "prompt_tokens_per_s": 3438.2,
+ "gen_tokens_per_s": 161.9,
+ "mean_prompt_tokens": 4996,
+ "mean_gen_tokens": 11315,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}
