@@ -1,0 +1,407 @@
+{
+ "schema": 4,
+ "example": "circle_packing_26",
+ "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-06T10:51:16",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 61.9,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 2.0,
+ "improvement": 1.3421900141382404,
+ "llm_calls": 37,
+ "mean_llm_seconds": 99.9,
+ "attempts": 37,
+ "ok": 6,
+ "statuses": {
+  "ok": 6,
+  "edit_error": 18,
+  "invalid": 12,
+  "duplicate": 1
+ },
+ "sweeps": 4,
+ "sweep_variants": 46,
+ "improvements": 3,
+ "minutes_to_best": 31.0,
+ "best_idea": "tuned COLS=6, OVERLAP_ITERS=5 on top of: Increase the grid width and overlap iterations while tightening the radius bound to allow larger circles and more refinement, which should raise the total sum ",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   9.82,
+   1.6040642515667702
+  ],
+  [
+   18.43,
+   1.857142857142857
+  ],
+  [
+   31.0,
+   2.0
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 5.96,
+   "score": null,
+   "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+   "mode": "exploit/rewrite/tune",
+   "status": "invalid",
+   "idea": "Introduce sweepable grid width and multiple overlap\u2011resolution passes to let the engine discover a better arrangement and tighter radius constraints, raising the total sum of radii."
+  },
+  {
+   "minutes": 18.43,
+   "score": 1.857142857142857,
+   "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Define construct_packing inside the OMEGA\u2011BLOCK using the COLS constant to generate a feasible grid of 26 circles with a suitable radius."
+  },
+  {
+   "minutes": 31.0,
+   "score": 1.857142857142857,
+   "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+   "mode": "best/rewrite/tune",
+   "status": "ok",
+   "idea": "Increase the grid width and overlap iterations while tightening the radius bound to allow larger circles and more refinement, which should raise the total sum of radii."
+  },
+  {
+   "minutes": 31.0,
+   "score": 2.0,
+   "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+   "mode": "sweep/best/rewrite/tune",
+   "status": "ok",
+   "idea": "tuned COLS=6, OVERLAP_ITERS=5 on top of: Increase the grid width and overlap iterations while tightening the radius bound to allow larger circles and more refinement, which should raise the total sum of radii."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -7,29 +7,22 @@\n import math\n \n # OMEGA-BLOCK-START\n-def construct_packing(n=26):\n-    \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n-    cols = math.ceil(math.sqrt(n))\n-    rows = math.ceil(n / cols)\n-    centers = []\n-    for k in range(n):\n-        i, j = k % cols, k // cols\n-        centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n-    radii = max_radii(centers)\n-    return [(x, y, r) for (x, y), r in zip(centers, radii)]\n-\n-\n-def max_radii(centers):\n-    \"\"\"Largest radii for fixed centers: limit by walls, then shrink overlapping pairs.\"\"\"\n-    radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n-    for a in range(len(centers)):\n-        for b in range(a + 1, len(centers)):\n-            d = math.dist(centers[a], centers[b])\n-            if radii[a] + radii[b] > d:\n-                s = d / (radii[a] + radii[b])\n-                radii[a] *= s\n-                radii[b] *= s\n-    return radii\n+COLS = 6                     # grid width (swept)\n+OVERLAP_ITERS = 5            # overlap resolution passes (swept)\n+def construct_packing(n):\n+    cols = COLS\n+    rows = (n + cols - 1) // cols\n+    # compute radius ensuring circles fit within square for any placement\n+    r = min(0.5 / cols, 1.0 / (2 * (rows + 1)), 1.0 / (2 * cols + 1))\n+    circles = []\n+    for i in range(rows):\n+        for j in range(cols):\n+            if len(circles) >= n:\n+                return circles\n+            x = r + (j + 0.5) * 2 * r\n+            y = r + (i + 0.5) * 2 * r\n+            circles.append((x, y, r))\n+    return circles[:n]\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.083333,
+    0.1,
+    0.060545
+   ],
+   [
+    0.25,
+    0.1,
+    0.039234
+   ],
+   [
+    0.416667,
+    0.1,
+    0.034262
+   ],
+   [
+    0.583333,
+    0.1,
+    0.040566
+   ],
+   [
+    0.75,
+    0.1,
+    0.05694
+   ],
+   [
+    0.916667,
+    0.1,
+    0.080973
+   ],
+   [
+    0.083333,
+    0.3,
+    0.047978
+   ],
+   [
+    0.25,
+    0.3,
+    0.032893
+   ],
+   [
+    0.416667,
+    0.3,
+    0.029299
+   ],
+   [
+    0.583333,
+    0.3,
+    0.040366
+   ],
+   [
+    0.75,
+    0.3,
+    0.058083
+   ],
+   [
+    0.916667,
+    0.3,
+    0.076636
+   ],
+   [
+    0.083333,
+    0.5,
+    0.05004
+   ],
+   [
+    0.25,
+    0.5,
+    0.036525
+   ],
+   [
+    0.416667,
+    0.5,
+    0.03396
+   ],
+   [
+    0.583333,
+    0.5,
+    0.041209
+   ],
+   [
+    0.75,
+    0.5,
+    0.058085
+   ],
+   [
+    0.916667,
+    0.5,
+    0.076976
+   ],
+   [
+    0.083333,
+    0.7,
+    0.059259
+   ],
+   [
+    0.25,
+    0.7,
+    0.06822
+   ],
+   [
+    0.416667,
+    0.7,
+    0.065257
+   ],
+   [
+    0.583333,
+    0.7,
+    0.069461
+   ],
+   [
+    0.75,
+    0.7,
+    0.089736
+   ],
+   [
+    0.916667,
+    0.7,
+    0.07693
+   ],
+   [
+    0.083333,
+    0.9,
+    0.075758
+   ],
+   [
+    0.25,
+    0.9,
+    0.090909
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.153846,
+    0.153846,
+    0.076923
+   ],
+   [
+    0.307692,
+    0.153846,
+    0.076923
+   ],
+   [
+    0.461538,
+    0.153846,
+    0.076923
+   ],
+   [
+    0.615385,
+    0.153846,
+    0.076923
+   ],
+   [
+    0.769231,
+    0.153846,
+    0.076923
+   ],
+   [
+    0.923077,
+    0.153846,
+    0.076923
+   ],
+   [
+    0.153846,
+    0.307692,
+    0.076923
+   ],
+   [
+    0.307692,
+    0.307692,
+    0.076923
+   ],
+   [
+    0.461538,
+    0.307692,
+    0.076923
+   ],
+   [
+    0.615385,
+    0.307692,
+    0.076923
+   ],
+   [
+    0.769231,
+    0.307692,
+    0.076923
+   ],
+   [
+    0.923077,
+    0.307692,
+    0.076923
+   ],
+   [
+    0.153846,
+    0.461538,
+    0.076923
+   ],
+   [
+    0.307692,
+    0.461538,
+    0.076923
+   ],
+   [
+    0.461538,
+    0.461538,
+    0.076923
+   ],
+   [
+    0.615385,
+    0.461538,
+    0.076923
+   ],
+   [
+    0.769231,
+    0.461538,
+    0.076923
+   ],
+   [
+    0.923077,
+    0.461538,
+    0.076923
+   ],
+   [
+    0.153846,
+    0.615385,
+    0.076923
+   ],
+   [
+    0.307692,
+    0.615385,
+    0.076923
+   ],
+   [
+    0.461538,
+    0.615385,
+    0.076923
+   ],
+   [
+    0.615385,
+    0.615385,
+    0.076923
+   ],
+   [
+    0.769231,
+    0.615385,
+    0.076923
+   ],
+   [
+    0.923077,
+    0.615385,
+    0.076923
+   ],
+   [
+    0.153846,
+    0.769231,
+    0.076923
+   ],
+   [
+    0.307692,
+    0.769231,
+    0.076923
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 65.6,
+ "p90_call_seconds": 226.9,
+ "prompt_tokens_per_s": 4663.4,
+ "gen_tokens_per_s": 106.2,
+ "mean_prompt_tokens": 2701,
+ "mean_gen_tokens": 10548,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

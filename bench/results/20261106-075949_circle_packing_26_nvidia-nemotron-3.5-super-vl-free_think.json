@@ -1,0 +1,424 @@
+{
+ "schema": 4,
+ "example": "circle_packing_26",
+ "model": "nvidia/nemotron-3.5-super-vl:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-06T07:59:49",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 34.5,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 2.537158371138059,
+ "improvement": 1.7026743150143733,
+ "llm_calls": 24,
+ "mean_llm_seconds": 85.3,
+ "attempts": 24,
+ "ok": 15,
+ "statuses": {
+  "ok": 15,
+  "invalid": 2,
+  "edit_error": 4,
+  "llm_error": 2,
+  "duplicate": 1
+ },
+ "sweeps": 14,
+ "sweep_variants": 210,
+ "improvements": 5,
+ "minutes_to_best": 26.78,
+ "best_idea": "tuned POLISH_ROUNDS=6, POLISH_STEP=0.004 on top of: Add a center-polishing phase after the penalty optimization: greedily move each circle away from its binding constraint (wall or neighbor), re-proje",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   4.38,
+   2.074311032867273
+  ],
+  [
+   4.38,
+   2.471984577970007
+  ],
+  [
+   10.61,
+   2.505430816203313
+  ],
+  [
+   22.31,
+   2.5350706055538246
+  ],
+  [
+   26.78,
+   2.537158371138059
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 15.45,
+   "score": 1.6593362212627665,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the square grid + naive pairwise shrink with a hexagonal initial layout, multiple jittered restarts, and Gauss-Seidel radius projection over several vertex orderings to extract much larger feasible radii."
+  },
+  {
+   "minutes": 22.31,
+   "score": 2.4613246941751696,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Replace the fixed-hex-center radius-only projection with a penalty-based joint gradient ascent on centers and radii (momentum + clipped steps), then an exact multi-ordering feasible-radius projection over jittered warm-started restarts, directly optimizing the sum-of-radii objective instead of accepting a static lattice."
+  },
+  {
+   "minutes": 22.31,
+   "score": 2.5350706055538246,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "sweep/exploit/diff/bold",
+   "status": "ok",
+   "idea": "tuned OPT_ITERS=5000, OPT_STEP=0.015, RESTARTS=4, JITTER=0.03 on top of: Replace the fixed-hex-center radius-only projection with a penalty-based joint gradient ascent on centers and radii (momentum + clipped steps), then an exact multi-ordering feasible-radius projection over jittered warm-started"
+  },
+  {
+   "minutes": 26.78,
+   "score": 2.5350706055538246,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Add a center-polishing phase after the penalty optimization: greedily move each circle away from its binding constraint (wall or neighbor), re-project exact radii after every sweep, and keep the best layout. This directly improves the center layout found by the penalty method, which is the current bottleneck."
+  },
+  {
+   "minutes": 26.78,
+   "score": 2.537158371138059,
+   "model": "nvidia/nemotron-3.5-super-vl:free",
+   "mode": "sweep/best/diff/refine",
+   "status": "ok",
+   "idea": "tuned POLISH_ROUNDS=6, POLISH_STEP=0.004 on top of: Add a center-polishing phase after the penalty optimization: greedily move each circle away from its binding constraint (wall or neighbor), re-project exact radii after every sweep, and keep the best layout. This directly improves the center layout"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -7,29 +7,368 @@\n import math\n \n # OMEGA-BLOCK-START\n+OPT_ITERS = 5000\n+OPT_STEP = 0.015\n+RESTARTS = 4\n+RHO0 = 1.0\n+RHO_GROWTH = 1.5\n+JITTER = 0.03\n+LR_DECAY = 0.9995\n+MOMENTUM = 0.5\n+POLISH_ROUNDS = 6\n+POLISH_STEP = 0.004\n+\n+\n def construct_packing(n=26):\n-    \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n+    \"\"\"Pack n circles in the unit square maximizing the sum of radii.\n+\n+    Penalty-based joint gradient ascent on centers and radii, then an exact\n+    feasible-radius projection; best result over jittered warm-started\n+    restarts is kept.\n+    \"\"\"\n+    best = None\n+    best_sum = -1.0\n+    best_centers = None\n+    for seed in range(RESTARTS):\n+        if best_centers is None:\n+            centers = _hex_init(n, jitter=JITTER, seed=seed)\n+        else:\n+            centers = _warm_start(best_centers, JITTER, seed)\n+        xs = [c[0] for c in centers]\n+        ys = [c[1] for c in centers]\n+        r = [min(x, 1.0 - x, y, 1.0 - y) for (x, y) in centers]\n+        pairs = [(i, j) for i in range(n) for j in range(i + 1, n)]\n+        vx = [0.0] * n\n+        vy = [0.0] * n\n+        vr = [0.0] * n\n+        rho = RHO0\n+        lr = OPT_STEP\n+        for _ in range(OPT_ITERS):\n+            gr = [1.0] * n\n+            gx = [0.0] * n\n+            gy = [0.0] * n\n+            for i in range(n):\n+                ri = r[i]\n+                xi = xs[i]\n+                yi = ys[i]\n+                v = ri - xi\n+                if v > 0.0:\n+                    t = 2.0 * rho * v\n+                    gr[i] -= t\n+                    gx[i] += t\n+                w = ri - (1.0 - xi)\n+                if w > 0.0:\n+                    t = 2.0 * rho * w\n+                    gr[i] -= t\n+                    gx[i] -= t\n+                c = ri - yi\n+                if c > 0.0:\n+                    t = 2.0 * rho * c\n+                    gr[i] -= t\n+                    gy[i] += t\n+                z = ri - (1.0 - yi)\n+                if z > 0.0:\n+                    t = 2.0 * rho * z\n+                    gr[i] -= t\n+                    gy[i] -= t\n+            for (i, j) in pairs:\n+                dx = xs[i] - xs[j]\n+                dy = ys[i] - ys[j]\n+                dd = dx * dx + dy * dy\n+                if dd <= 0.0:\n+                    d = 1e-12\n+                else:\n+                    d = math.sqrt(dd)\n+                viol = r[i] + r[j] - d\n+                if viol > 0.0:\n+                    term = 2.0 * rho * viol\n+                    inv_d = 1.0 / d\n+                    gr[i] -= term\n+                    gr[j] -= term\n+                    gx[i] += term * dx * inv_d\n+                    gx[j] -= term * dx * inv_d\n+                    gy[i] += term * dy * inv_d\n+                    gy[j] -= term * dy * inv_d\n+            for i in range(n):\n+                g = gr[i]\n+                if g > 2.0:\n+                    g = 2.0\n+                elif g < -2.0:\n+                    g = -2.0\n+                vr[i] = MOMENTUM * vr[i] + lr * g\n+                r[i] += vr[i]\n+                if r[i] < 0.0:\n+                    r[i] = 0.0\n+                g = gx[i]\n+                if g > 2.0:\n+                    g = 2.0\n+                elif g < -2.0:\n+                    g = -2.0\n+                vx[i] = MOMENTUM * vx[i] + lr * g\n+                xs[i] += vx[i]\n+                if xs[i] < 0.0:\n+                    xs[i] = 0.0\n+                elif xs[i] > 1.0:\n+                    xs[i] = 1.0\n+                g = gy[i]\n+                if g > 2.0:\n+                    g = 2.0\n+                elif g < -2.0:\n+                    g = -2.0\n+                vy[i] = MOMENTUM * vy[i] + lr * g\n+                ys[i] += vy[i]\n+                if ys[i] < 0.0:\n+                    ys[i] = 0.0\n+                elif ys[i] > 1.0:\n+                    ys[i] = 1.0\n+            rho *= RHO_GROWTH\n+            if rho > 1e6:\n+                rho = 1e6\n+            lr *= LR_DECAY\n+        centers = list(zip(xs, ys))\n+        best_centers = centers\n+        rproj = _project_radii(centers, num_orders=4)\n+        pol_centers, pol_radii = _polish_centers(centers, rproj,\n+                                                 rounds=POLISH_ROUNDS,\n+                                                 step=POLISH_STEP)\n+        total = 0.0\n+        for v in pol_radii:\n+            total += v\n+        if total > best_sum:\n+            best_sum = total\n+            best = [(pol_centers[i][0], pol_centers[i][1], pol_radii[i])\n+                    for i in range(n)]\n+    return best\n+\n+\n+def _hex_init(n, jitter, seed):\n     cols = math.ceil(math.sqrt(n))\n-    rows = math.ceil(n / cols)\n-    centers = []\n-    for k in range(n):\n-        i, j = k % cols, k // cols\n-        centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n-    radii = max_radii(centers)\n-    return [(x, y, r) for (x, y), r in zip(centers, radii)]\n-\n-\n-def max_radii(centers):\n-    \"\"\"Largest radii for fixed centers: limit by walls, then shrink overlapping pairs.\"\"\"\n-    radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n-    for a in range(len(centers)):\n-        for b in range(a + 1, len(centers)):\n-            d = math.dist(centers[a], centers[b])\n-            if radii[a] + radii[b] > d:\n-                s = d / (radii[a] + radii[b])\n-                radii[a] *= s\n-                radii[b] *= s\n-    return radii\n+    rows = (n + cols - 1) // cols\n+    margin = 0.06\n+    sx = (1.0 - 2.0 * margin) / (cols - 1) if cols > 1 else 1.0\n+    sy = sx * math.sqrt(3.0) / 2.0\n+    if rows > 1 and (rows - 1) * sy > 1.0 - 2.0 * margin:\n+        sy = (1.0 - 2.0 * margin) / (rows - 1)\n+        sx = sy * 2.0 / math.sqrt(3.0)\n+    pts = []\n+    idx = 0\n+    for j in range(rows):\n+        y = margin + j * sy\n+        off = sx * 0.5 if (j % 2 == 1) else 0.0\n+        for i in range(cols):\n+            if idx >= n:\n+                break\n+            x = margin + i * sx + off\n+            if jitter:\n+                x += jitter * math.sin(idx * 1.7 + seed * 0.31)\n+                y += jitter * math.cos(idx * 2.3 + seed * 0.47)\n+            if x < 0.0:\n+                x = 0.0\n+            elif x > 1.0:\n+                x = 1.0\n+            if y < 0.0:\n+                y = 0.0\n+            elif y > 1.0:\n+                y = 1.0\n+            pts.append((x, y))\n+            idx += 1\n+        if idx >= n:\n+            break\n+    return pts\n+\n+\n+def _warm_start(centers, jitter, seed):\n+    \"\"\"Start the next restart from the incumbent best, perturbed by jitter.\"\"\"\n+    pts = []\n+    for k, (x, y) in enumerate(centers):\n+        x += jitter * math.sin(k * 1.7 + seed * 0.31)\n+        y += jitter * math.cos(k * 2.3 + seed * 0.47)\n+        if x < 0.0:\n+            x = 0.0\n+        elif x > 1.0:\n+            x = 1.0\n+        if y < 0.0:\n+            y = 0.0\n+        elif y > 1.0:\n+            y = 1.0\n+        pts.append((x, y))\n+    return pts\n+\n+\n+def _project_radii(centers, num_orders=4):\n+    \"\"\"Largest feasible radii for fixed centers, trying several vertex orderings.\"\"\"\n+    n = len(centers)\n+    wall = [min(x, 1.0 - x, y, 1.0 - y) for (x, y) in centers]\n+    dist = [[0.0] * n for _ in range(n)]\n+    for i in range(n):\n+        xi, yi = centers[i]\n+        for j in range(i + 1, n):\n+            d = math.hypot(xi - centers[j][0], yi - centers[j][1])\n+            dist[i][j] = d\n+            dist[j][i] = d\n+\n+    def relax(order, r):\n+        for _ in range(200):\n+            changed = False\n+            for i in order:\n+                best = wall[i]\n+                for j in range(n):\n+                    if j != i:\n+                        v = dist[i][j] - r[j]\n+                        if v < best:\n+                            best = v\n+                if best < 0.0:\n+                    best = 0.0\n+                if best != r[i]:\n+                    changed = True\n+                    r[i] = best\n+            if not changed:\n+                break\n+\n+    orders = [list(range(n)), list(range(n - 1, -1, -1))]\n+    for k in range(2, max(0, num_orders)):\n+        order = list(range(n))\n+        for i in range(n - 1, 0, -1):\n+            j = ((k * 1009 + i * 3) * 2654435761) % (i + 1)\n+            order[i], order[j] = order[j], order[i]\n+        orders.append(order)\n+    orders = orders[:num_orders]\n+\n+    best_r = list(wall)\n+    best_sum = -1.0\n+    for order in orders:\n+        r = list(wall)\n+        relax(order, r)\n+        s = sum(r)\n+        if s > best_sum:\n+            best_sum = s\n+            best_r = r\n+\n+    # Safety: remove any tiny overlap left by floating point.\n+    for _ in range(30):\n+        viol = False\n+        for i in range(n):\n+            for j in range(i + 1, n):\n+                s = best_r[i] + best_r[j]\n+                d = dist[i][j]\n+                if s > d + 1e-12:\n+                    f = d / s\n+                    best_r[i] *= f\n+                    best_r[j] *= f\n+                    viol = True\n+        if not viol:\n+            break\n+    for i in range(n):\n+        if best_r[i] > wall[i]:\n+            best_r[i] = wall[i]\n+        elif best_r[i] < 0.0:\n+            best_r[i] = 0.0\n+    return best_r\n+\n+\n+def _polish_centers(centers, radii, rounds=12, step=0.008):\n+    \"\"\"Improve center positions by moving each circle away from its binding\n+    constraint, re-projecting exact radii after every sweep.\"\"\"\n+    n = len(centers)\n+    pts = [[c[0], c[1]] for c in centers]\n+    rs = list(radii)\n+\n+    def dist_mat():\n+        d = [[0.0] * n for _ in range(n)]\n+        for i in range(n):\n+            xi, yi = pts[i]\n+            for j in range(i + 1, n):\n+                dij = math.hypot(xi - pts[j][0], yi - pts[j][1])\n+                d[i][j] = d[j][i] = dij\n+        return d\n+\n+    def walls():\n+        return [min(x, 1.0 - x, y, 1.0 - y) for (x, y) in pts]\n+\n+    best_pts = [p[:] for p in pts]\n+    best_rs = list(rs)\n+    best_sum = sum(rs)\n+\n+    dm = dist_mat()\n+    wl = walls()\n+\n+    for _ in range(rounds):\n+        rs = _project_radii(pts, num_orders=2)\n+        s = sum(rs)\n+        if s > best_sum:\n+            best_sum = s\n+            best_pts = [p[:] for p in pts]\n+            best_rs = list(rs)\n+        dm = dist_mat()\n+        wl = walls()\n+\n+        moved = False\n+        for i in range(n):\n+            xi, yi = pts[i]\n+            best_limit = wl[i]\n+            btype = 'wall'\n+            bdx, bdy = 0.0, 0.0\n+\n+            if abs(xi - best_limit) <= 1e-9:\n+                btype = 'wall_left'\n+            if abs(1.0 - xi - best_limit) <= 1e-9:\n+                btype = 'wall_right'\n+            if abs(yi - best_limit) <= 1e-9:\n+                btype = 'wall_bottom'\n+            if abs(1.0 - yi - best_limit) <= 1e-9:\n+                btype = 'wall_top'\n+            for j in range(n):\n+                if j == i:\n+                    continue\n+                lim = dm[i][j] - rs[j]\n+                if lim < best_limit - 1e-12:\n+                    best_limit = lim\n+                    btype = 'circle'\n+                    bdx = xi - pts[j][0]\n+                    bdy = yi - pts[j][1]\n+\n+            mx, my = 0.0, 0.0\n+            if btype == 'wall_left':\n+                mx = step\n+            elif btype == 'wall_right':\n+                mx = -step\n+            elif btype == 'wall_bottom':\n+                my = step\n+            elif btype == 'wall_top':\n+                my = -step\n+            elif btype == 'circle':\n+                dd = math.hypot(bdx, bdy)\n+                if dd > 1e-12:\n+                    mx = step * bdx / dd\n+                    my = step * bdy / dd\n+\n+            nx = xi + mx\n+            ny = yi + my\n+            if nx < 0.0:\n+                nx = 0.0\n+            elif nx > 1.0:\n+                nx = 1.0\n+            if ny < 0.0:\n+                ny = 0.0\n+            elif ny > 1.0:\n+                ny = 1.0\n+\n+            if abs(nx - xi) > 1e-14 or abs(ny - yi) > 1e-14:\n+                pts[i][0] = nx\n+                pts[i][1] = ny\n+                moved = True\n+\n+        if not moved:\n+            break\n+\n+    rs = _project_radii(pts, num_orders=4)\n+    s = sum(rs)\n+    if s > best_sum:\n+        best_sum = s\n+        best_pts = [p[:] for p in pts]\n+        best_rs = list(rs)\n+\n+    return best_pts, best_rs\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.083333,
+    0.1,
+    0.060545
+   ],
+   [
+    0.25,
+    0.1,
+    0.039234
+   ],
+   [
+    0.416667,
+    0.1,
+    0.034262
+   ],
+   [
+    0.583333,
+    0.1,
+    0.040566
+   ],
+   [
+    0.75,
+    0.1,
+    0.05694
+   ],
+   [
+    0.916667,
+    0.1,
+    0.080973
+   ],
+   [
+    0.083333,
+    0.3,
+    0.047978
+   ],
+   [
+    0.25,
+    0.3,
+    0.032893
+   ],
+   [
+    0.416667,
+    0.3,
+    0.029299
+   ],
+   [
+    0.583333,
+    0.3,
+    0.040366
+   ],
+   [
+    0.75,
+    0.3,
+    0.058083
+   ],
+   [
+    0.916667,
+    0.3,
+    0.076636
+   ],
+   [
+    0.083333,
+    0.5,
+    0.05004
+   ],
+   [
+    0.25,
+    0.5,
+    0.036525
+   ],
+   [
+    0.416667,
+    0.5,
+    0.03396
+   ],
+   [
+    0.583333,
+    0.5,
+    0.041209
+   ],
+   [
+    0.75,
+    0.5,
+    0.058085
+   ],
+   [
+    0.916667,
+    0.5,
+    0.076976
+   ],
+   [
+    0.083333,
+    0.7,
+    0.059259
+   ],
+   [
+    0.25,
+    0.7,
+    0.06822
+   ],
+   [
+    0.416667,
+    0.7,
+    0.065257
+   ],
+   [
+    0.583333,
+    0.7,
+    0.069461
+   ],
+   [
+    0.75,
+    0.7,
+    0.089736
+   ],
+   [
+    0.916667,
+    0.7,
+    0.07693
+   ],
+   [
+    0.083333,
+    0.9,
+    0.075758
+   ],
+   [
+    0.25,
+    0.9,
+    0.090909
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.110802,
+    0.276755,
+    0.110802
+   ],
+   [
+    0.624838,
+    0.129333,
+    0.129333
+   ],
+   [
+    0.081439,
+    0.084872,
+    0.081439
+   ],
+   [
+    0.334532,
+    0.890857,
+    0.109143
+   ],
+   [
+    0.317732,
+    0.335283,
+    0.104246
+   ],
+   [
+    0.44688,
+    0.212489,
+    0.067095
+   ],
+   [
+    0.543696,
+    0.378873,
+    0.118223
+   ],
+   [
+    0.166651,
+    0.493058,
+    0.112595
+   ],
+   [
+    0.441142,
+    0.064685,
+    0.064685
+   ],
+   [
+    0.725197,
+    0.51837,
+    0.099309
+   ],
+   [
+    0.878717,
+    0.876946,
+    0.115255
+   ],
+   [
+    0.87314,
+    0.121939,
+    0.112086
+   ],
+   [
+    0.556198,
+    0.580683,
+    0.076445
+   ],
+   [
+    0.386363,
+    0.530056,
+    0.099974
+   ],
+   [
+    0.269233,
+    0.115391,
+    0.108818
+   ],
+   [
+    0.116714,
+    0.864468,
+    0.110267
+   ],
+   [
+    0.673723,
+    0.738904,
+    0.120649
+   ],
+   [
+    0.759354,
+    0.313553,
+    0.098772
+   ],
+   [
+    0.454092,
+    0.723784,
+    0.093217
+   ],
+   [
+    0.075628,
+    0.664456,
+    0.075628
+   ],
+   [
+    0.908633,
+    0.444809,
+    0.086074
+   ],
+   [
+    0.693471,
+    0.929415,
+    0.06626
+   ],
+   [
+    0.931851,
+    0.292344,
+    0.068149
+   ],
+   [
+    0.887748,
+    0.651237,
+    0.110635
+   ],
+   [
+    0.258533,
+    0.690486,
+    0.105157
+   ],
+   [
+    0.53598,
+    0.906403,
+    0.092904
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 62.4,
+ "p90_call_seconds": 175.7,
+ "prompt_tokens_per_s": 4967.1,
+ "gen_tokens_per_s": 130.0,
+ "mean_prompt_tokens": 8065,
+ "mean_gen_tokens": 10709,
+ "stopped_calls": 2,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

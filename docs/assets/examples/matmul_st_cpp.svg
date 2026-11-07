@@ -17,19 +17,19 @@
 <text x="16.00" y="154.00" font-size="11" fill="#5d6178" text-anchor="start" font-weight="normal">each element of C: a row of A times a column of B; one product = 2n³ = 0.906 GFLOP · one core, CPU time</text>
 <g transform="translate(0 188.00)">
 <rect x="0.5" y="0.5" width="399" height="419" rx="10" fill="#fbfbfe" stroke="#dcdfea"/>
-<text x="16" y="26" font-size="15" font-weight="600" fill="#1d2033">Starting program · score 1.41257</text>
-<text x="16" y="46" font-size="12" fill="#5d6178">1.413 GFLOP/s · 641 ms for one 768×768 product</text>
+<text x="16" y="26" font-size="15" font-weight="600" fill="#1d2033">Starting program · score 0.93369</text>
+<text x="16" y="46" font-size="12" fill="#5d6178">0.9337 GFLOP/s · 970 ms for one 768×768 product</text>
 <rect x="40.00" y="76.00" width="270.00" height="270.00" fill="#fff" stroke="#1d2033" stroke-width="1.2"/>
-<rect x="40.00" y="76.00" width="270.00" height="8.44" fill="#7b6cff" fill-opacity="0.75"/>
-<rect x="40.00" y="84.44" width="22.80" height="4.22" fill="#7b6cff" fill-opacity="0.75"/>
+<rect x="40.00" y="76.00" width="270.00" height="4.22" fill="#7b6cff" fill-opacity="0.75"/>
+<rect x="40.00" y="80.22" width="80.83" height="4.22" fill="#7b6cff" fill-opacity="0.75"/>
 <text x="175.00" y="71.00" font-size="11" fill="#5d6178" text-anchor="middle" font-weight="normal">C</text>
-<text x="200.00" y="376.00" font-size="11" fill="#1d2033" text-anchor="middle" font-weight="normal">within 20.9 ms, the faster program's time: 3.3% done</text>
+<text x="200.00" y="376.00" font-size="11" fill="#1d2033" text-anchor="middle" font-weight="normal">within 19.7 ms, the faster program's time: 2% done</text>
 <rect x="420.5" y="0.5" width="399" height="419" rx="10" fill="#fbfbfe" stroke="#dcdfea"/>
-<text x="436" y="26" font-size="15" font-weight="600" fill="#1d2033">Best · score 43.3708</text>
-<text x="436" y="46" font-size="12" fill="#5d6178">43.37 GFLOP/s · 20.9 ms for one 768×768 product</text>
+<text x="436" y="26" font-size="15" font-weight="600" fill="#1d2033">Best · score 45.9885</text>
+<text x="436" y="46" font-size="12" fill="#5d6178">45.99 GFLOP/s · 19.7 ms for one 768×768 product</text>
 <rect x="460.00" y="76.00" width="270.00" height="270.00" fill="#fff" stroke="#1d2033" stroke-width="1.2"/>
 <rect x="460.00" y="76.00" width="270.00" height="270.00" fill="#7b6cff" fill-opacity="0.75"/>
 <text x="595.00" y="71.00" font-size="11" fill="#5d6178" text-anchor="middle" font-weight="normal">C</text>
-<text x="620.00" y="376.00" font-size="11" fill="#1d2033" text-anchor="middle" font-weight="normal">within 20.9 ms, the faster program's time: all done</text>
+<text x="620.00" y="376.00" font-size="11" fill="#1d2033" text-anchor="middle" font-weight="normal">within 19.7 ms, the faster program's time: all done</text>
 </g>
 </svg>

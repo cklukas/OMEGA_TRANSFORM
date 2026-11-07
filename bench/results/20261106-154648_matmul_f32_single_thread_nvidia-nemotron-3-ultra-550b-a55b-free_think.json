@@ -1,0 +1,194 @@
+{
+ "schema": 4,
+ "example": "matmul_f32_single_thread",
+ "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-06T15:46:48",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 69.7,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 0.933689,
+ "best_score": 45.9885,
+ "improvement": 49.25462332746771,
+ "llm_calls": 44,
+ "mean_llm_seconds": 90.5,
+ "attempts": 44,
+ "ok": 31,
+ "statuses": {
+  "compile_error": 6,
+  "ok": 31,
+  "duplicate": 4,
+  "edit_error": 1,
+  "invalid": 2
+ },
+ "sweeps": 24,
+ "sweep_variants": 298,
+ "improvements": 11,
+ "minutes_to_best": 52.95,
+ "best_idea": "tuned TI=93, KB=64, UNROLL_K=8 on top of: Increase UNROLL_K to 8 and adjust KB upward to better amortize unroll overhead, then sweep TI, KB, UNROLL_K together to find the optimal combination for the t",
+ "progress": [
+  [
+   0.0,
+   0.933689
+  ],
+  [
+   2.72,
+   17.6372
+  ],
+  [
+   8.35,
+   17.7606
+  ],
+  [
+   15.93,
+   19.3752
+  ],
+  [
+   18.74,
+   20.5203
+  ],
+  [
+   28.08,
+   24.2862
+  ],
+  [
+   32.64,
+   30.4454
+  ],
+  [
+   33.86,
+   32.1413
+  ],
+  [
+   39.77,
+   38.2384
+  ],
+  [
+   44.64,
+   42.9246
+  ],
+  [
+   50.89,
+   44.4232
+  ],
+  [
+   52.95,
+   45.9885
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.933689,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.72,
+   "score": 17.6372,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Reorder loops to i-k-j for better memory access patterns and add cache blocking on k dimension to reuse A elements and stream B/C rows"
+  },
+  {
+   "minutes": 33.86,
+   "score": 32.1413,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Add i-dimension cache blocking (two-level tiling) to reuse B panels across multiple i rows, keeping C tiles hot in L1, and sweep both tile sizes TI and KB for optimal performance."
+  },
+  {
+   "minutes": 39.77,
+   "score": 30.0542,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Add k-loop unrolling (UNROLL_K) to the existing two-level cache blocking (i-tiling + k-tiling) to keep C elements in registers across multiple k iterations, reducing C load/store traffic and improving ILP while maintaining B-panel reuse across i-tiles."
+  },
+  {
+   "minutes": 39.77,
+   "score": 38.2384,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "sweep/explore/diff/bold",
+   "status": "ok",
+   "idea": "tuned TI=112, KB=48, UNROLL_K=4 on top of: Add k-loop unrolling (UNROLL_K) to the existing two-level cache blocking (i-tiling + k-tiling) to keep C elements in registers across multiple k iterations, reducing C load/store traffic and improving ILP while maintaining B-panel reuse across i-tiles."
+  },
+  {
+   "minutes": 52.95,
+   "score": 29.5067,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Increase UNROLL_K to 8 and adjust KB upward to better amortize unroll overhead, then sweep TI, KB, UNROLL_K together to find the optimal combination for the two-level blocked i-k-j kernel."
+  },
+  {
+   "minutes": 52.95,
+   "score": 45.9885,
+   "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "mode": "sweep/exploit/diff/refine",
+   "status": "ok",
+   "idea": "tuned TI=93, KB=64, UNROLL_K=8 on top of: Increase UNROLL_K to 8 and adjust KB upward to better amortize unroll overhead, then sweep TI, KB, UNROLL_K together to find the optimal combination for the two-level blocked i-k-j kernel."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -23,12 +23,52 @@\n // OMEGA-BLOCK-START\n // Computes C = A * B on the calling thread. C is NOT zeroed by the caller.\n // n is any size from 1 to 2048.\n-extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+extern \"C\" void matmul(int n, const float* __restrict A, const float* __restrict B, float* __restrict C) {\n+    constexpr int TI = 93;      // blocking factor for i dimension (tile height)\n+    constexpr int KB = 64;       // blocking factor for k dimension (tile depth)\n+    constexpr int UNROLL_K = 8;  // unroll factor for inner k-loop\n+    \n+    // Zero C first\n+    for (int i = 0; i < n * n; ++i) C[i] = 0.0f;\n+    \n+    for (int ii = 0; ii < n; ii += TI) {\n+        int i_end = ii + TI < n ? ii + TI : n;\n+        for (int kk = 0; kk < n; kk += KB) {\n+            int k_end = kk + KB < n ? kk + KB : n;\n+            for (int i = ii; i < i_end; ++i) {\n+                const float* A_i = A + i * n;\n+                float* C_i = C + i * n;\n+                int k = kk;\n+                // Unrolled k-loop: process UNROLL_K iterations at a time\n+                for (; k <= k_end - UNROLL_K; k += UNROLL_K) {\n+                    float a_ik[UNROLL_K];\n+                    for (int u = 0; u < UNROLL_K; ++u) {\n+                        a_ik[u] = A_i[k + u];\n+                    }\n+                    const float* B_k[UNROLL_K];\n+                    for (int u = 0; u < UNROLL_K; ++u) {\n+                        B_k[u] = B + (k + u) * n;\n+                    }\n+                    #pragma unroll\n+                    for (int j = 0; j < n; ++j) {\n+                        float sum = 0.0f;\n+                        for (int u = 0; u < UNROLL_K; ++u) {\n+                            sum += a_ik[u] * B_k[u][j];\n+                        }\n+                        C_i[j] += sum;\n+                    }\n+                }\n+                // Remainder k iterations\n+                for (; k < k_end; ++k) {\n+                    float a_ik = A_i[k];\n+                    const float* B_k = B + k * n;\n+                    #pragma unroll(4)\n+                    for (int j = 0; j < n; ++j) {\n+                        C_i[j] += a_ik * B_k[j];\n+                    }\n+                }\n+            }\n         }\n+    }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 768,
+  "cores": "one core, CPU time"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 768,
+  "cores": "one core, CPU time"
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 53.3,
+ "p90_call_seconds": 168.6,
+ "prompt_tokens_per_s": 3535.2,
+ "gen_tokens_per_s": 33.8,
+ "mean_prompt_tokens": 6280,
+ "mean_gen_tokens": 2993,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

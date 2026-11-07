@@ -1,0 +1,137 @@
+{
+ "schema": 4,
+ "example": "log_compressor",
+ "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+ "variant": "think",
+ "model_size_gb": 17.8,
+ "model_params": "27.3B",
+ "started": "2026-11-06T22:29:24",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 81.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 11.28605206956168,
+ "best_score": 24.753415490994257,
+ "improvement": 2.193274967936207,
+ "llm_calls": 3,
+ "mean_llm_seconds": 1593.8,
+ "attempts": 3,
+ "ok": 1,
+ "statuses": {
+  "edit_error": 2,
+  "ok": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 79.72,
+ "best_idea": "Switch from zlib level 1 to a columnar LZMA scheme that parses the log into 9 fields, compresses each field column independently to exploit locality and repetition, and falls back to raw LZMA if parsi",
+ "progress": [
+  [
+   0.0,
+   11.28605206956168
+  ],
+  [
+   79.72,
+   24.753415490994257
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 11.28605206956168,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 79.72,
+   "score": 24.753415490994257,
+   "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Switch from zlib level 1 to a columnar LZMA scheme that parses the log into 9 fields, compresses each field column independently to exploit locality and repetition, and falls back to raw LZMA if parsing or round-trip verification fails."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -10,23 +10,65 @@\n import zlib\n \n # OMEGA-BLOCK-START\n+import lzma\n+import re\n+import struct\n+\n+LINE_RE = re.compile(\n+    r'^(\\S+) \\S+ \\S+ \\[([^\\]]+)\\] \"(\\S+) (\\S+) (\\S+)\" (\\d{3}) (\\S+) \"([^\"]*)\" \"([^\"]*)\"$'\n+)\n+\n def compress(data: bytes) -> bytes:\n-    \"\"\"Compress arbitrary bytes losslessly and return the compressed blob.\n-\n-    decompress(compress(data)) must equal data exactly for EVERY input, including\n-    b\"\" and non-text bytes. The main input is an access log, one request per line:\n-      IP - - [DD/Mon/YYYY:HH:MM:SS +0000] \"METHOD PATH HTTP/1.1\" STATUS SIZE \"REFERER\" \"USER-AGENT\"\n-    Only the Python standard library may be used (zlib, lzma, bz2, struct, re, ...).\n-    Compress plus decompress of the main input must stay within 20 CPU seconds.\n-\n-    Current method: plain zlib at level 1.\n-    \"\"\"\n-    return zlib.compress(data, 1)\n+    try:\n+        text = data.decode('utf-8')\n+        lines = text.splitlines()\n+        if not lines:\n+            return b'\\x00\\x00\\x00\\x00\\x00'\n+        cols = [[], [], [], [], [], [], [], [], []]\n+        for line in lines:\n+            m = LINE_RE.match(line)\n+            if not m:\n+                raise ValueError(\"bad line\")\n+            for i in range(9):\n+                cols[i].append(m.group(i+1))\n+                \n+        out = bytearray()\n+        out.append(0)\n+        out.extend(struct.pack(\">I\", len(lines)))\n+        for c in cols:\n+            blob = '\\n'.join(c).encode('utf-8')\n+            cdata = lzma.compress(blob, preset=9)\n+            out.extend(struct.pack(\">I\", len(cdata)))\n+            out.extend(cdata)\n+            \n+        if decompress(bytes(out)) != data:\n+            raise ValueError(\"roundtrip failed\")\n+        return bytes(out)\n+    except Exception:\n+        return b'\\x01' + lzma.compress(data, preset=9)\n \n \n def decompress(blob: bytes) -> bytes:\n-    \"\"\"Invert compress() exactly.\"\"\"\n-    return zlib.decompress(blob)\n+    if not blob:\n+        return b''\n+    if blob[0] == 1:\n+        return lzma.decompress(blob[1:])\n+    idx = 1\n+    num = struct.unpack(\">I\", blob[idx:idx+4])[0]; idx += 4\n+    if num == 0:\n+        return b''\n+    cols = []\n+    for _ in range(9):\n+        clen = struct.unpack(\">I\", blob[idx:idx+4])[0]; idx += 4\n+        cols.append(lzma.decompress(blob[idx:idx+clen]).decode('utf-8').split('\\n'))\n+        idx += clen\n+    lines = []\n+    for i in range(num):\n+        lines.append(\n+            f\"{cols[0][i]} - - [{cols[1][i]}] \\\"{cols[2][i]} {cols[3][i]} {cols[4][i]}\\\" \"\n+            f\"{cols[5][i]} {cols[6][i]} \\\"{cols[7][i]}\\\" \\\"{cols[8][i]}\\\"\"\n+        )\n+    return '\\n'.join(lines).encode() + b'\\n'\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "compression",
+  "input": "web server access log",
+  "head": [
+   "203.242.94.172 - - [04/Oct/2024:09:52:35 +0000] \"GET /search?q=novel&page=1 HTTP/1.1\" 200 13481 \"https://search.example.net/?q=shop\" \"Mozilla/5.0 (compatible; ExampleBot/2.1; +http://bot.example.org/info)\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/155 HTTP/1.1\" 200 23584 \"https://www.example.com/\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/books/203?ref=search HTTP/1.1\" 200 25206 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/106 HTTP/1.1\" 404 24868 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\""
+  ],
+  "lines": 2000,
+  "original_bytes": 443903,
+  "compressed_bytes": 39332,
+  "references": {
+   "zlib -9": 25176,
+   "bz2 -9": 16530,
+   "lzma -9e": 20656
+  }
+ },
+ "best_solution": {
+  "kind": "compression",
+  "input": "web server access log",
+  "head": [
+   "203.242.94.172 - - [04/Oct/2024:09:52:35 +0000] \"GET /search?q=novel&page=1 HTTP/1.1\" 200 13481 \"https://search.example.net/?q=shop\" \"Mozilla/5.0 (compatible; ExampleBot/2.1; +http://bot.example.org/info)\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/155 HTTP/1.1\" 200 23584 \"https://www.example.com/\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/books/203?ref=search HTTP/1.1\" 200 25206 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\"",
+   "198.57.41.122 - - [04/Oct/2024:09:52:36 +0000] \"GET /products/music/106 HTTP/1.1\" 404 24868 \"-\" \"Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1\""
+  ],
+  "lines": 2000,
+  "original_bytes": 443903,
+  "compressed_bytes": 17933,
+  "references": {
+   "zlib -9": 25176,
+   "bz2 -9": 16530,
+   "lzma -9e": 20656
+  }
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": 20.4,
+ "model_gpu_memory_gb": 14.9,
+ "context_length": 40960,
+ "load_seconds": 0.1,
+ "median_call_seconds": 2031.3,
+ "p90_call_seconds": 2224.2,
+ "prompt_tokens_per_s": 226.5,
+ "gen_tokens_per_s": 5.1,
+ "mean_prompt_tokens": 1902,
+ "mean_gen_tokens": 8141,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

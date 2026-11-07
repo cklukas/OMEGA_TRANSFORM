@@ -107,9 +107,9 @@ The developer's best single model, the mean share over all its models, and the m
 
 | Developer | Models | Best model | Released | Best model's share | Mean over its models | Best per example |
 |---|--:|---|---|--:|--:|--:|
-| NVIDIA | 8 | nvidia/nemotron-3.5-super-vl:free (think) | 2026-10-15 | **73%** | 50% | 100% |
-| other | 5 | dots-studio/dots-3-note-preview:free (no-think) | 2026-08-14 | **62%** | 41% | 76% |
-| Cohere | 2 | cohere/north-mini-code:free (think) | 2026-06-17 | **59%** | 50% | 61% |
+| NVIDIA | 8 | nvidia/nemotron-3.5-super-vl:free (think) | 2026-10-15 | **73%** | 48% | 100% |
+| other | 5 | dots-studio/dots-3-note-preview:free (no-think) | 2026-08-14 | **58%** | 38% | 77% |
+| Cohere | 2 | cohere/north-mini-code:free (think) | 2026-06-17 | **54%** | 47% | 61% |
 
 ### Progress over time
 
@@ -117,11 +117,11 @@ Each developer's ranked models by release date (the original publication on Hugg
 
 | Developer | Size class | Released | Model | Parameters | Share |
 |---|---|---|---|--:|--:|
-| Cohere | 15B and up | 2026-06-17 | cohere/north-mini-code:free (think) | 30B | 59% |
-| NVIDIA | 15B and up | 2026-04-28 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | 30B | 34% |
-| NVIDIA | 15B and up | 2026-06-04 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | 550B | 71% |
-| NVIDIA | size unknown | 2026-08-11 | nvidia/nemotron-3.5-lightning:free (think) | ? | 42% |
+| Cohere | 15B and up | 2026-06-17 | cohere/north-mini-code:free (think) | 30B | 54% |
+| NVIDIA | 15B and up | 2026-04-28 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | 30B | 33% |
+| NVIDIA | 15B and up | 2026-06-04 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | 550B | 70% |
+| NVIDIA | size unknown | 2026-08-11 | nvidia/nemotron-3.5-lightning:free (think) | ? | 38% |
 | NVIDIA | size unknown | 2026-10-15 | nvidia/nemotron-3.5-super-vl:free (think) | ? | 73% |
-| other | 15B and up | 2026-10-16 | xingchen-agi/xing4.0-29b-a4b:free (think) | 29B | 33% |
-| other | size unknown | 2026-08-14 | dots-studio/dots-3-note-preview:free (no-think) | ? | 62% |
+| other | 15B and up | 2026-10-16 | xingchen-agi/xing4.0-29b-a4b:free (think) | 29B | 28% |
+| other | size unknown | 2026-08-14 | dots-studio/dots-3-note-preview:free (no-think) | ? | 58% |
 | other | size unknown | 2026-10-21 | recursive/flint-v1.0:free (think) | ? | 53% |

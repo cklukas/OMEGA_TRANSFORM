@@ -70,9 +70,9 @@ extern "C" void matmul(int n, const float* A, const float* B, float* C) {
 
 ## Benchmark results
 
-The best result so far comes from **gemma4:26b-a4b-it-qat (no-think)**, run locally with Ollama on 2026-11-05: a score of **43.3708** (×30.70 the starting program's 1.41257), reached after 40.44 of 60 minutes with 64 model requests.
+The best result so far comes from **nvidia/nemotron-3-ultra-550b-a55b:free (think)**, run through OpenRouter on 2026-11-06: a score of **45.9885** (×49.25 the starting program's 0.93369), reached after 52.95 of 60 minutes with 44 model requests.
 
-What the starting program produces (left) and what the best program by gemma4:26b-a4b-it-qat (no-think) produces (right):
+What the starting program produces (left) and what the best program by nvidia/nemotron-3-ultra-550b-a55b:free (think) produces (right):
 
 ![matmul_st_cpp: the starting program's solution and the best one](../assets/examples/matmul_st_cpp.svg)
 
@@ -82,10 +82,13 @@ The best program's ancestry, from the starting program on. "Edit" and "rewrite" 
 
 | Step | Minute | Score | Kind | Idea |
 |--:|--:|--:|---|---|
-| 0 | 0.0 | 1.41257 | start | initial program |
-| 1 | 2.2 | 20.1170 | edit | Change loop order to i-k-j to improve cache locality and enable contiguous memory access for B and C, which is essential for vectorization. |
-| 2 | 5.1 | 21.6815 | edit | Implement a micro-kernel with SIMD vectorization and loop unrolling to process multiple elements of C per step, improving instruction throughput. |
-| 3 | 40.4 | 43.3708 | edit | Implement a 4-row micro-kernel with register blocking to maximize the reuse of $B$ elements loaded into registers and reduce the ratio of loads/stores of $C$ per $k$-iteration. |
+| 0 | 0.0 | 0.93369 | start | initial program |
+| 1 | 2.7 | 17.6372 | edit | Reorder loops to i-k-j for better memory access patterns and add cache blocking on k dimension to reuse A elements and stream B/C rows |
+| 2 | 33.9 | 32.1413 | edit | Add i-dimension cache blocking (two-level tiling) to reuse B panels across multiple i rows, keeping C tiles hot in L1, and sweep both tile sizes TI and KB for optimal performance. |
+| 3 | 39.8 | 30.0542 | edit | Add k-loop unrolling (UNROLL_K) to the existing two-level cache blocking (i-tiling + k-tiling) to keep C elements in registers across multiple k iterations, reducing C load/store traffic and improving ILP while maintaining B-panel reuse across i-tiles. |
+| 4 | 39.8 | 38.2384 | parameter sweep | tuned TI=112, KB=48, UNROLL_K=4 on top of: Add k-loop unrolling (UNROLL_K) to the existing two-level cache blocking (i-tiling + k-tiling) to keep C elements in registers across multiple k iterations, reducing C load/store traffic and improving ILP while … |
+| 5 | 53.0 | 29.5067 | edit | Increase UNROLL_K to 8 and adjust KB upward to better amortize unroll overhead, then sweep TI, KB, UNROLL_K together to find the optimal combination for the two-level blocked i-k-j kernel. |
+| 6 | 53.0 | 45.9885 | parameter sweep | tuned TI=93, KB=64, UNROLL_K=8 on top of: Increase UNROLL_K to 8 and adjust KB upward to better amortize unroll overhead, then sweep TI, KB, UNROLL_K together to find the optimal combination for the two-level blocked i-k-j kernel. |
 
 ### The best program
 
@@ -94,85 +97,62 @@ What changed compared with the starting program:
 ```diff
 --- initial
 +++ best
-@@ -24,11 +24,76 @@
+@@ -23,12 +23,52 @@
+ // OMEGA-BLOCK-START
  // Computes C = A * B on the calling thread. C is NOT zeroed by the caller.
  // n is any size from 1 to 2048.
- extern "C" void matmul(int n, const float* A, const float* B, float* C) {
+-extern "C" void matmul(int n, const float* A, const float* B, float* C) {
 -    for (int i = 0; i < n; ++i)
 -        for (int j = 0; j < n; ++j) {
 -            float s = 0.0f;
 -            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];
 -            C[i * n + j] = s;
++extern "C" void matmul(int n, const float* __restrict A, const float* __restrict B, float* __restrict C) {
++    constexpr int TI = 93;      // blocking factor for i dimension (tile height)
++    constexpr int KB = 64;       // blocking factor for k dimension (tile depth)
++    constexpr int UNROLL_K = 8;  // unroll factor for inner k-loop
++    
++    // Zero C first
 +    for (int i = 0; i < n * n; ++i) C[i] = 0.0f;
-+    int i = 0;
-+    for (; i <= n - 4; i += 4) {
-+        float* c0 = &C[i * n];
-+        float* c1 = &C[(i + 1) * n];
-+        float* c2 = &C[(i + 2) * n];
-+        float* c3 = &C[(i + 3) * n];
-+        for (int k = 0; k < n; ++k) {
-+            float a0 = A[i * n + k];
-+            float a1 = A[(i + 1) * n + k];
-+            float a2 = A[(i + 2) * n + k];
-+            float a3 = A[(i + 3) * n + k];
-+            const float* b_row = &B[k * n];
-+#if defined(__ARM_NEON)
-+            float32x4_t va0 = vdupq_n_f32(a0);
-+            float32x4_t va1 = vdupq_n_f32(a1);
-+            float32x4_t va2 = vdupq_n_f32(a2);
-+            float32x4_t va3 = vdupq_n_f32(a3);
-+            int j = 0;
-+            for (; j <= n - 4; j += 4) {
-+                float32x4_t vb = vld1q_f32(&b_row[j]);
-+                float32x4_t vc0 = vld1q_f32(&c0[j]);
-+                float32x4_t vc1 = vld1q_f32(&c1[j]);
-+                float32x4_t vc2 = vld1q_f32(&c2[j]);
-+                float32x4_t vc3 = vld1q_f32(&c3[j]);
-+                vc0 = vfmaq_f32(vc0, va0, vb);
-+                vc1 = vfmaq_f32(vc1, va1, vb);
-+                vc2 = vfmaq_f32(vc2, va2, vb);
-+                vc3 = vfmaq_f32(vc3, va3, vb);
-+                vst1q_f32(&c0[j], vc0);
-+                vst1q_f32(&c1[j], vc1);
-+                vst1q_f32(&c2[j], vc2);
-+                vst1q_f32(&c3[j], vc3);
++    
++    for (int ii = 0; ii < n; ii += TI) {
++        int i_end = ii + TI < n ? ii + TI : n;
++        for (int kk = 0; kk < n; kk += KB) {
++            int k_end = kk + KB < n ? kk + KB : n;
++            for (int i = ii; i < i_end; ++i) {
++                const float* A_i = A + i * n;
++                float* C_i = C + i * n;
++                int k = kk;
++                // Unrolled k-loop: process UNROLL_K iterations at a time
++                for (; k <= k_end - UNROLL_K; k += UNROLL_K) {
++                    float a_ik[UNROLL_K];
++                    for (int u = 0; u < UNROLL_K; ++u) {
++                        a_ik[u] = A_i[k + u];
++                    }
++                    const float* B_k[UNROLL_K];
++                    for (int u = 0; u < UNROLL_K; ++u) {
++                        B_k[u] = B + (k + u) * n;
++                    }
++                    #pragma unroll
++                    for (int j = 0; j < n; ++j) {
++                        float sum = 0.0f;
++                        for (int u = 0; u < UNROLL_K; ++u) {
++                            sum += a_ik[u] * B_k[u][j];
++                        }
++                        C_i[j] += sum;
++                    }
++                }
++                // Remainder k iterations
++                for (; k < k_end; ++k) {
++                    float a_ik = A_i[k];
++                    const float* B_k = B + k * n;
++                    #pragma unroll(4)
++                    for (int j = 0; j < n; ++j) {
++                        C_i[j] += a_ik * B_k[j];
++                    }
++                }
 +            }
-+            for (; j < n; ++j) {
-+                c0[j] += a0 * b_row[j];
-+                c1[j] += a1 * b_row[j];
-+                c2[j] += a2 * b_row[j];
-+                c3[j] += a3 * b_row[j];
-+            }
-+#else
-+            for (int j = 0; j < n; ++j) {
-+                c0[j] += a0 * b_row[j];
-+                c1[j] += a1 * b_row[j];
-+                c2[j] += a2 * b_row[j];
-+                c3[j] += a3 * b_row[j];
-+            }
-+#endif
          }
-+    }
-+    // Handle remaining rows
-+    for (; i < n; ++i) {
-+        float* c_row = &C[i * n];
-+        for (int k = 0; k < n; ++k) {
-+            float a = A[i * n + k];
-+            const float* b_row = &B[k * n];
-+            int j = 0;
-+#if defined(__ARM_NEON)
-+            float32x4_t va = vdupq_n_f32(a);
-+            for (; j <= n - 4; j += 4) {
-+                float32x4_t vb = vld1q_f32(&b_row[j]);
-+                float32x4_t vc = vld1q_f32(&c_row[j]);
-+                vc = vfmaq_f32(vc, va, vb);
-+                vst1q_f32(&c_row[j], vc);
-+            }
-+#endif
-+            for (; j < n; ++j) {
-+                c_row[j] += a * b_row[j];
-+            }
-+        }
 +    }
  }
  // OMEGA-BLOCK-END
@@ -184,15 +164,20 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/matmu
 
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|
+| nvidia/nemotron-3-ultra-550b-a55b:free (think) | cloud | 45.9885 | ×49.25 | 53.0 | 11 |
 | gemma4:26b-a4b-it-qat (no-think) | local | 43.3708 | ×30.70 | 40.4 | 9 |
 | gemma4:12b-it-qat (no-think) | local | 36.3552 | ×25.59 | 21.1 | 5 |
 | gpt-oss:20b (no-think) | local | 33.1122 | ×24.49 | 23.4 | 6 |
+| recursive/flint-v1.0:free (think) | cloud | 26.2322 | ×21.00 | 39.7 | 5 |
 | qwen3.5:latest (no-think) | local | 25.5709 | ×20.49 | 10.3 | 1 |
 | dots-studio/dots-3-note-preview:free (no-think) | cloud | 25.3679 | ×19.71 | 4.5 | 1 |
+| nvidia/nemotron-3.5-super-vl:free (think) | cloud | 24.7910 | ×26.48 | 25.8 | 3 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 23.8871 | ×21.89 | 10.0 | 5 |
 | gemma4:latest (no-think) | local | 22.2128 | ×15.63 | 1.5 | 2 |
+| cohere/north-mini-code:free (think) | cloud | 21.7794 | ×22.48 | 53.9 | 7 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 21.2526 | ×15.53 | 19.8 | 3 |
 | gemma4:e4b-it-qat (no-think) | local | 20.3136 | ×15.17 | 2.7 | 1 |
+| nvidia/nemotron-3.5-lightning:free (think) | cloud | 16.8036 | ×13.74 | 10.4 | 1 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 4.47988 | ×3.24 | 7.6 | 1 |
 | underdog-saluki-27b:iq2-mix (no-think) | local | 1.4541 | ×1.00 | - | 0 |
 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | 1.41454 | ×1.00 | - | 0 |
@@ -205,9 +190,12 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/matmu
 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | 1.35459 | ×1.00 | - | 0 |
 | gemma4:e2b (no-think) | local | 1.31572 | ×1.00 | - | 0 |
 | qwen2.5-coder:7b (no-think) | local | 1.31214 | ×1.00 | - | 0 |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | cloud | 1.27118 | ×1.00 | - | 0 |
 | glm-4.7-flash:latest (no-think) | local | 1.25269 | ×1.00 | - | 0 |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | 1.21895 | ×1.00 | - | 0 |
 | xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 1.2102 | ×1.00 | - | 0 |
 | nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | 1.19245 | ×1.00 | - | 0 |
+| dots-studio/dots-3-note-preview:free (think) | cloud | 1.19046 | ×1.00 | - | 0 |
 | nvidia/nemotron-3.5-lightning:free (no-think) | cloud | 1.18856 | ×1.00 | - | 0 |
+| xingchen-agi/xing4.0-29b-a4b:free (think) | cloud | | | | failed: all 9 model requests failed … |
 | cohere/north-mini-code:free (no-think) | cloud | 1.15687 | ×1.00 | - | 0 |

@@ -315,19 +315,30 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/log_c
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|
 | gpt-oss:20b (no-think) | local | 29.6153 | ×2.62 | 18.3 | 3 |
+| qwen3.5:latest (think) | local | 26.8544 | ×2.38 | 10.6 | 2 |
+| gemma4:latest (think) | local | 26.8544 | ×2.38 | 6.5 | 3 |
+| gpt-oss:20b (think) | local | 26.8544 | ×2.38 | 3.3 | 2 |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | 24.7534 | ×2.19 | 79.7 | 1 |
 | nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | 21.4986 | ×1.90 | 1.4 | 1 |
 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | 21.4903 | ×1.90 | 1.1 | 1 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 21.4903 | ×1.90 | 23.4 | 3 |
 | gemma4:e2b (no-think) | local | 21.4570 | ×1.90 | 1.4 | 2 |
+| gemma4:e2b (think) | local | 21.4570 | ×1.90 | 4.1 | 2 |
+| gemma4:e4b-it-qat (think) | local | 21.4570 | ×1.90 | 4.2 | 2 |
 | glm-4.7-flash:latest (no-think) | local | 21.4560 | ×1.90 | 19.2 | 2 |
 | richardyoung/frognano-4b-2609:latest (no-think) | local | 19.6626 | ×1.74 | 2.1 | 1 |
 | qwen3.5:latest (no-think) | local | 19.6626 | ×1.74 | 1.1 | 2 |
 | gemma4:12b-it-qat (no-think) | local | 19.6626 | ×1.74 | 6.6 | 1 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (think) | local | 19.6626 | ×1.74 | 17.4 | 2 |
+| richardyoung/frognano-4b-2609:latest (think) | local | 19.6626 | ×1.74 | 4.4 | 1 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | 19.6626 | ×1.74 | 3.3 | 1 |
 | gemma4:latest (no-think) | local | 19.6617 | ×1.74 | 1.1 | 1 |
 | dots-studio/dots-3-note-preview:free (no-think) | cloud | 19.6617 | ×1.74 | 4.6 | 1 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 19.6617 | ×1.74 | 4.5 | 1 |
+| gemma4:26b-a4b-it-qat (think) | local | 19.6617 | ×1.74 | 56.4 | 1 |
 | gemma4:e4b-it-qat (no-think) | local | 17.6320 | ×1.56 | 1.4 | 1 |
 | underdog-saluki-27b:iq2-mix (no-think) | local | 17.6320 | ×1.56 | 8.7 | 1 |
+| frob/sarvam:30b (think) | local | 17.6320 | ×1.56 | 38.5 | 1 |
 | gemma4:26b-a4b-it-qat (no-think) | local | 17.6313 | ×1.56 | 11.0 | 1 |
 | nemotron-3-nano:4b (no-think) | local | 11.2861 | ×1.00 | - | 0 |
 | qwen2.5-coder:7b (no-think) | local | 11.2861 | ×1.00 | - | 0 |
@@ -349,3 +360,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/log_c
 | nvidia/nemotron-3.5-lightning:free (think) | cloud | | | | failed: all 6 model requests failed … |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | cloud | | | | failed: all 6 model requests failed … |
 | recursive/flint-v1.0:free (think) | cloud | | | | failed: all 6 model requests failed: recursive/flint-v1.0:free … |
+| nemotron-3-nano:4b (think) | local | 11.2861 | ×1.00 | - | 0 |
+| gemma4:12b-it-qat (think) | local | 11.2861 | ×1.00 | - | 0 |
+| underdog-saluki-27b:iq2-mix (think) | local | 11.2861 | ×1.00 | - | 0 |
+| glm-4.7-flash:latest (think) | local | 11.2861 | ×1.00 | - | 0 |

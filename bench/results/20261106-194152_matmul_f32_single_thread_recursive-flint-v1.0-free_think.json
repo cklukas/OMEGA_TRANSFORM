@@ -1,0 +1,146 @@
+{
+ "schema": 4,
+ "example": "matmul_f32_single_thread",
+ "model": "recursive/flint-v1.0:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-06T19:41:52",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 62.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 1.24918,
+ "best_score": 26.2322,
+ "improvement": 20.999535695416192,
+ "llm_calls": 39,
+ "mean_llm_seconds": 93.3,
+ "attempts": 39,
+ "ok": 16,
+ "statuses": {
+  "ok": 16,
+  "compile_error": 11,
+  "edit_error": 5,
+  "duplicate": 6,
+  "llm_error": 1
+ },
+ "sweeps": 6,
+ "sweep_variants": 77,
+ "improvements": 5,
+ "minutes_to_best": 39.7,
+ "best_idea": "tuned MATMUL_TILE=7 on top of: Add a tunable cache-blocking tile size for the k loop to improve B row reuse and let the sweep find the optimal value.",
+ "progress": [
+  [
+   0.0,
+   1.24918
+  ],
+  [
+   0.85,
+   19.489
+  ],
+  [
+   1.03,
+   21.843
+  ],
+  [
+   24.69,
+   22.1563
+  ],
+  [
+   28.7,
+   24.7712
+  ],
+  [
+   39.7,
+   26.2322
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.24918,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 0.85,
+   "score": 19.489,
+   "model": "recursive/flint-v1.0:free",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Switch the matmul loop order to i-k-j so each k step streams one row of B and one row of C, improving cache reuse before adding vectorization."
+  },
+  {
+   "minutes": 39.7,
+   "score": 23.292,
+   "model": "recursive/flint-v1.0:free",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Add a tunable cache-blocking tile size for the k loop to improve B row reuse and let the sweep find the optimal value."
+  },
+  {
+   "minutes": 39.7,
+   "score": 26.2322,
+   "model": "recursive/flint-v1.0:free",
+   "mode": "sweep/exploit/diff/tune",
+   "status": "ok",
+   "idea": "tuned MATMUL_TILE=7 on top of: Add a tunable cache-blocking tile size for the k loop to improve B row reuse and let the sweep find the optimal value."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -23,12 +23,19 @@\n // OMEGA-BLOCK-START\n // Computes C = A * B on the calling thread. C is NOT zeroed by the caller.\n // n is any size from 1 to 2048.\n+constexpr int MATMUL_TILE = 7;\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+    for (int i = 0; i < n; ++i) {\n+        int row = i * n;\n+        for (int j = 0; j < n; ++j) C[row + j] = 0.0f;\n+        for (int k0 = 0; k0 < n; k0 += MATMUL_TILE) {\n+            int k1 = std::min(k0 + MATMUL_TILE, n);\n+            for (int k = k0; k < k1; ++k) {\n+                float a = A[row + k];\n+                int brow = k * n;\n+                for (int j = 0; j < n; ++j) C[row + j] += a * B[brow + j];\n+            }\n         }\n+    }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 768,
+  "cores": "one core, CPU time"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 768,
+  "cores": "one core, CPU time"
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 80.6,
+ "p90_call_seconds": 180.7,
+ "prompt_tokens_per_s": 6316.8,
+ "gen_tokens_per_s": 131.7,
+ "mean_prompt_tokens": 3834,
+ "mean_gen_tokens": 11653,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

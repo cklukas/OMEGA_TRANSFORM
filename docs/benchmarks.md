@@ -25,14 +25,14 @@ it was doing, so machines are compared through their own shares only.
 | [Models by country](benchmarks/countries.md) | the best model of each country |
 | [Model check](benchmarks/model-check.md) | which installed models were usable before the benchmark |
 | [bin_packing_1d](benchmarks/bin_packing_1d.md) | 50 models on this example: scores, speed, memory and progress over time |
-| [circle_packing_26](benchmarks/circle_packing_26.md) | 27 models on this example: scores, speed, memory and progress over time |
-| [circles_in_circle_21](benchmarks/circles_in_circle_21.md) | 38 models on this example: scores, speed, memory and progress over time |
-| [feature_engineering](benchmarks/feature_engineering.md) | 35 models on this example: scores, speed, memory and progress over time |
+| [circle_packing_26](benchmarks/circle_packing_26.md) | 35 models on this example: scores, speed, memory and progress over time |
+| [circles_in_circle_21](benchmarks/circles_in_circle_21.md) | 50 models on this example: scores, speed, memory and progress over time |
+| [feature_engineering](benchmarks/feature_engineering.md) | 43 models on this example: scores, speed, memory and progress over time |
 | [float_parse_single_thread](benchmarks/float_parse_single_thread.md) | 35 models on this example: scores, speed, memory and progress over time |
 | [heilbronn_13](benchmarks/heilbronn_13.md) | 35 models on this example: scores, speed, memory and progress over time |
-| [log_compressor](benchmarks/log_compressor.md) | 35 models on this example: scores, speed, memory and progress over time |
+| [log_compressor](benchmarks/log_compressor.md) | 50 models on this example: scores, speed, memory and progress over time |
 | [matmul_f32](benchmarks/matmul_f32.md) | 35 models on this example: scores, speed, memory and progress over time |
-| [matmul_f32_single_thread](benchmarks/matmul_f32_single_thread.md) | 27 models on this example: scores, speed, memory and progress over time |
+| [matmul_f32_single_thread](benchmarks/matmul_f32_single_thread.md) | 35 models on this example: scores, speed, memory and progress over time |
 | [max_cut](benchmarks/max_cut.md) | 35 models on this example: scores, speed, memory and progress over time |
 | [prefix_sum_histogram_single_thread](benchmarks/prefix_sum_histogram_single_thread.md) | 35 models on this example: scores, speed, memory and progress over time |
 | [sort_u32_single_thread](benchmarks/sort_u32_single_thread.md) | 35 models on this example: scores, speed, memory and progress over time |
@@ -40,7 +40,7 @@ it was doing, so machines are compared through their own shares only.
 | [tammes_30](benchmarks/tammes_30.md) | 35 models on this example: scores, speed, memory and progress over time |
 | [tsp_heuristic](benchmarks/tsp_heuristic.md) | 35 models on this example: scores, speed, memory and progress over time |
 
-Machines: **i7-8700K**: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz (MS-7A98), 12 cores, 64 GB, 1 runs; **i7-8700K + 2x GTX 1080 Ti**: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz (MS-7A98), 12 cores, 64 GB, 2x NVIDIA GeForce GTX 1080 Ti, 11264 MiB, 526 runs.
+Machines: **i7-8700K**: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz (MS-7A98), 12 cores, 64 GB, 1 runs; **i7-8700K + 2x GTX 1080 Ti**: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz (MS-7A98), 12 cores, 64 GB, 2x NVIDIA GeForce GTX 1080 Ti, 11264 MiB, 577 runs.
 
 ## Overall ranking
 
@@ -70,21 +70,21 @@ Scores of different examples cannot be added up (a matrix multiply gains ×80, a
 | 18 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 2025-08-13 | **12%** | ×1.16 | 0 | 8 | 15 | 15 |
 | 19 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | 2026-10-23 | **2%** | ×1.01 | 0 | 14 | 15 (3 failed) | 15 |
 | 20 | nemotron-3-nano:4b (no-think) | 2026-03-07 | **2%** | ×1.09 | 0 | 13 | 15 | 15 |
-| – | gemma4:e2b (think) | 2026-03-02 | **99%** | ×1.20 | 0 | 0 | 1 | 1 |
-| – | gemma4:e4b-it-qat (think) | 2026-03-02 | **99%** | ×1.20 | 0 | 0 | 1 | 1 |
-| – | qwen3.5:latest (think) | 2026-02-27 | **99%** | ×1.20 | 0 | 0 | 1 | 1 |
-| – | gemma4:latest (think) | 2026-03-02 | **99%** | ×1.20 | 0 | 0 | 1 | 1 |
-| – | gemma4:12b-it-qat (think) | 2026-05-23 | **99%** | ×1.20 | 0 | 0 | 1 | 1 |
-| – | gpt-oss:20b (think) | 2025-08-04 | **99%** | ×1.20 | 0 | 0 | 1 | 1 |
-| – | gemma4:26b-a4b-it-qat (think) | 2026-03-11 | **99%** | ×1.20 | 0 | 0 | 1 | 1 |
-| – | qwen3.6:27b-coding-mtp-q4_K_M (think) | 2026-04-21 | **99%** | ×1.20 | 0 | 0 | 1 | 1 |
-| – | qwen3:30b-a3b-instruct-2507-q4_K_M (think) | 2025-07-28 | **99%** | ×1.20 | 0 | 0 | 1 | 1 |
-| – | glm-4.7-flash:latest (think) | 2026-01-19 | **99%** | ×1.20 | 0 | 0 | 1 | 1 |
-| – | nemotron-3-nano:4b (think) | 2026-03-07 | **97%** | ×1.23 | 0 | 0 | 2 | 2 |
-| – | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (think) | 2026-10-23 | **71%** | ×1.16 | 0 | 0 | 2 | 2 |
-| – | richardyoung/frognano-4b-2609:latest (think) | 2026-09-17 | **0%** | ×1.00 | 0 | 2 | 2 | 2 |
-| – | underdog-saluki-27b:iq2-mix (think) | 2026-10-08 | **0%** | ×1.00 | 0 | 1 | 1 | 1 |
-| – | frob/sarvam:30b (think) | 2026-03-03 | **0%** | ×1.00 | 0 | 1 | 1 | 1 |
+| – | gemma4:latest (think) | 2026-03-02 | **87%** | ×1.49 | 0 | 0 | 4 | 4 |
+| – | gpt-oss:20b (think) | 2025-08-04 | **83%** | ×1.50 | 0 | 0 | 3 | 3 |
+| – | qwen3:30b-a3b-instruct-2507-q4_K_M (think) | 2025-07-28 | **80%** | ×1.38 | 0 | 0 | 3 | 3 |
+| – | qwen3.6:27b-coding-mtp-q4_K_M (think) | 2026-04-21 | **79%** | ×1.46 | 0 | 0 | 3 | 3 |
+| – | gemma4:26b-a4b-it-qat (think) | 2026-03-11 | **79%** | ×1.38 | 0 | 0 | 3 | 3 |
+| – | gemma4:e4b-it-qat (think) | 2026-03-02 | **73%** | ×1.38 | 0 | 0 | 4 | 4 |
+| – | qwen3.5:latest (think) | 2026-02-27 | **67%** | ×1.42 | 0 | 1 | 4 | 4 |
+| – | gemma4:12b-it-qat (think) | 2026-05-23 | **65%** | ×1.19 | 0 | 1 | 4 | 4 |
+| – | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (think) | 2026-10-23 | **62%** | ×1.32 | 0 | 0 | 4 | 4 |
+| – | nemotron-3-nano:4b (think) | 2026-03-07 | **58%** | ×1.16 | 0 | 1 | 4 | 4 |
+| – | glm-4.7-flash:latest (think) | 2026-01-19 | **50%** | ×1.11 | 0 | 1 | 3 | 3 |
+| – | gemma4:e2b (think) | 2026-03-02 | **45%** | ×1.27 | 0 | 1 | 4 | 4 |
+| – | richardyoung/frognano-4b-2609:latest (think) | 2026-09-17 | **26%** | ×1.22 | 0 | 2 | 4 | 4 |
+| – | frob/sarvam:30b (think) | 2026-03-03 | **24%** | ×1.20 | 0 | 1 | 3 | 3 |
+| – | underdog-saluki-27b:iq2-mix (think) | 2026-10-08 | **0%** | ×1.00 | 0 | 3 | 3 | 3 |
 
 ```mermaid
 xychart-beta
@@ -102,54 +102,54 @@ Results come from several machines. Raw scores are not pooled: timing examples d
 
 | # | Model | Released | Share of best gain | On i7-8700K + 2x GTX 1080 Ti | Geometric-mean gain | Wins | No gain | Runs | Examples |
 |--:|---|---|--:|--:|--:|--:|--:|--:|--:|
-| 1 | nvidia/nemotron-3.5-super-vl:free (think) | 2026-10-15 | **73%** | 73% | ×2.88 | 5 | 2 | 13 (2 failed) | 13 (13 cells) |
-| 2 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | 2026-06-04 | **71%** | 71% | ×2.75 | 4 | 3 | 13 (3 failed) | 13 (13 cells) |
-| 3 | nvidia/nemotron-3.5-super-vl:free (no-think) | 2026-10-15 | **68%** | 68% | ×2.56 | 3 | 2 | 15 | 15 (15 cells) |
-| 4 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | 2026-06-04 | **63%** | 63% | ×2.74 | 3 | 3 | 15 | 15 (15 cells) |
-| 5 | dots-studio/dots-3-note-preview:free (no-think) | 2026-08-14 | **62%** | 62% | ×2.11 | 0 | 2 | 15 | 15 (15 cells) |
-| 6 | cohere/north-mini-code:free (think) | 2026-06-17 | **59%** | 59% | ×1.91 | 0 | 3 | 13 (2 failed) | 13 (13 cells) |
-| 7 | recursive/flint-v1.0:free (think) | 2026-10-21 | **53%** | 53% | ×2.42 | 0 | 3 | 13 (3 failed) | 13 (13 cells) |
-| 8 | dots-studio/dots-3-note-preview:free (think) | 2026-08-14 | **44%** | 44% | ×2.16 | 0 | 5 | 13 (3 failed) | 13 (13 cells) |
-| 9 | cohere/north-mini-code:free (no-think) | 2026-06-17 | **42%** | 42% | ×1.59 | 0 | 4 | 15 | 15 (15 cells) |
-| 10 | nvidia/nemotron-3.5-lightning:free (think) | 2026-08-11 | **42%** | 42% | ×2.15 | 0 | 4 | 13 (3 failed) | 13 (13 cells) |
-| 11 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | 2026-04-28 | **34%** | 34% | ×1.70 | 0 | 5 | 12 (3 failed) | 12 (12 cells) |
-| 12 | xingchen-agi/xing4.0-29b-a4b:free (think) | 2026-10-16 | **33%** | 33% | ×1.71 | 0 | 5 | 13 (1 failed) | 13 (13 cells) |
-| 13 | nvidia/nemotron-3.5-lightning:free (no-think) | 2026-08-11 | **28%** | 28% | ×1.27 | 0 | 9 | 15 | 15 (15 cells) |
-| 14 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | 2026-04-28 | **21%** | 21% | ×1.66 | 0 | 8 | 15 | 15 (15 cells) |
+| 1 | nvidia/nemotron-3.5-super-vl:free (think) | 2026-10-15 | **73%** | 73% | ×3.22 | 6 | 2 | 15 (2 failed) | 15 (15 cells) |
+| 2 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | 2026-06-04 | **70%** | 70% | ×3.16 | 5 | 3 | 15 (3 failed) | 15 (15 cells) |
+| 3 | nvidia/nemotron-3.5-super-vl:free (no-think) | 2026-10-15 | **65%** | 65% | ×2.56 | 2 | 2 | 15 | 15 (15 cells) |
+| 4 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | 2026-06-04 | **60%** | 60% | ×2.74 | 2 | 3 | 15 | 15 (15 cells) |
+| 5 | dots-studio/dots-3-note-preview:free (no-think) | 2026-08-14 | **58%** | 58% | ×2.11 | 0 | 2 | 15 | 15 (15 cells) |
+| 6 | cohere/north-mini-code:free (think) | 2026-06-17 | **54%** | 54% | ×2.16 | 0 | 4 | 15 (2 failed) | 15 (15 cells) |
+| 7 | recursive/flint-v1.0:free (think) | 2026-10-21 | **53%** | 53% | ×2.70 | 0 | 3 | 15 (3 failed) | 15 (15 cells) |
+| 8 | cohere/north-mini-code:free (no-think) | 2026-06-17 | **40%** | 40% | ×1.59 | 0 | 4 | 15 | 15 (15 cells) |
+| 9 | dots-studio/dots-3-note-preview:free (think) | 2026-08-14 | **39%** | 39% | ×1.95 | 0 | 6 | 15 (3 failed) | 15 (15 cells) |
+| 10 | nvidia/nemotron-3.5-lightning:free (think) | 2026-08-11 | **38%** | 38% | ×2.31 | 0 | 4 | 15 (3 failed) | 15 (15 cells) |
+| 11 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | 2026-04-28 | **33%** | 33% | ×1.61 | 0 | 6 | 14 (3 failed) | 14 (14 cells) |
+| 12 | xingchen-agi/xing4.0-29b-a4b:free (think) | 2026-10-16 | **28%** | 28% | ×1.59 | 0 | 7 | 15 (2 failed) | 15 (15 cells) |
+| 13 | nvidia/nemotron-3.5-lightning:free (no-think) | 2026-08-11 | **26%** | 26% | ×1.27 | 0 | 9 | 15 | 15 (15 cells) |
+| 14 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | 2026-04-28 | **20%** | 20% | ×1.66 | 0 | 8 | 15 | 15 (15 cells) |
 | 15 | xingchen-agi/xing4.0-29b-a4b:free (no-think) | 2026-10-16 | **13%** | 13% | ×1.15 | 0 | 12 | 15 | 15 (15 cells) |
 
 ```mermaid
 xychart-beta
     title "Overall, cloud, all machines: mean share (%)"
-    x-axis ["nemotron-3.5-super-vl:free (think)", "nemotron-3-ultra-550b-a55b:free (think)", "nemotron-3.5-super-vl:free (no-think)", "nemotron-3-ultra-550b-a55b:free (no-think)", "dots-3-note-preview:free (no-think)", "north-mini-code:free (think)", "flint-v1.0:free (think)", "dots-3-note-preview:free (think)", "north-mini-code:free (no-think)", "nemotron-3.5-lightning:free (think)", "nemotron-3-nano-omni-30b-a3b-reasoning:free (think)", "xing4.0-29b-a4b:free (think)", "nemotron-3.5-lightning:free (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think)", "xing4.0-29b-a4b:free (no-think)"]
-    y-axis "% of the best gain" 0 --> 79.87
-    bar [72.61, 70.57, 67.98, 63.45, 61.51, 59.05, 53.11, 43.98, 41.87, 41.85, 34.39, 32.84, 27.6, 20.6, 13.35]
+    x-axis ["nemotron-3.5-super-vl:free (think)", "nemotron-3-ultra-550b-a55b:free (think)", "nemotron-3.5-super-vl:free (no-think)", "nemotron-3-ultra-550b-a55b:free (no-think)", "dots-3-note-preview:free (no-think)", "north-mini-code:free (think)", "flint-v1.0:free (think)", "north-mini-code:free (no-think)", "dots-3-note-preview:free (think)", "nemotron-3.5-lightning:free (think)", "nemotron-3-nano-omni-30b-a3b-reasoning:free (think)", "xing4.0-29b-a4b:free (think)", "nemotron-3.5-lightning:free (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think)", "xing4.0-29b-a4b:free (no-think)"]
+    y-axis "% of the best gain" 0 --> 80.42
+    bar [73.11, 69.61, 65.02, 59.67, 58.13, 54.14, 53.43, 39.62, 38.75, 38.06, 32.96, 28.46, 25.77, 20.02, 13.35]
 ```
 
 #### On i7-8700K + 2x GTX 1080 Ti
 
 | # | Model | Released | Share of best gain | Geometric-mean gain | Wins | No gain | Runs | Examples |
 |--:|---|---|--:|--:|--:|--:|--:|--:|
-| 1 | nvidia/nemotron-3.5-super-vl:free (think) | 2026-10-15 | **73%** | ×2.88 | 5 | 2 | 13 (2 failed) | 13 |
-| 2 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | 2026-06-04 | **71%** | ×2.75 | 4 | 3 | 13 (3 failed) | 13 |
-| 3 | nvidia/nemotron-3.5-super-vl:free (no-think) | 2026-10-15 | **68%** | ×2.56 | 3 | 2 | 15 | 15 |
-| 4 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | 2026-06-04 | **63%** | ×2.74 | 3 | 3 | 15 | 15 |
-| 5 | dots-studio/dots-3-note-preview:free (no-think) | 2026-08-14 | **62%** | ×2.11 | 0 | 2 | 15 | 15 |
-| 6 | cohere/north-mini-code:free (think) | 2026-06-17 | **59%** | ×1.91 | 0 | 3 | 13 (2 failed) | 13 |
-| 7 | recursive/flint-v1.0:free (think) | 2026-10-21 | **53%** | ×2.42 | 0 | 3 | 13 (3 failed) | 13 |
-| 8 | dots-studio/dots-3-note-preview:free (think) | 2026-08-14 | **44%** | ×2.16 | 0 | 5 | 13 (3 failed) | 13 |
-| 9 | cohere/north-mini-code:free (no-think) | 2026-06-17 | **42%** | ×1.59 | 0 | 4 | 15 | 15 |
-| 10 | nvidia/nemotron-3.5-lightning:free (think) | 2026-08-11 | **42%** | ×2.15 | 0 | 4 | 13 (3 failed) | 13 |
-| 11 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | 2026-04-28 | **34%** | ×1.70 | 0 | 5 | 12 (3 failed) | 12 |
-| 12 | xingchen-agi/xing4.0-29b-a4b:free (think) | 2026-10-16 | **33%** | ×1.71 | 0 | 5 | 13 (1 failed) | 13 |
-| 13 | nvidia/nemotron-3.5-lightning:free (no-think) | 2026-08-11 | **28%** | ×1.27 | 0 | 9 | 15 | 15 |
-| 14 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | 2026-04-28 | **21%** | ×1.66 | 0 | 8 | 15 | 15 |
+| 1 | nvidia/nemotron-3.5-super-vl:free (think) | 2026-10-15 | **73%** | ×3.22 | 6 | 2 | 15 (2 failed) | 15 |
+| 2 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | 2026-06-04 | **70%** | ×3.16 | 5 | 3 | 15 (3 failed) | 15 |
+| 3 | nvidia/nemotron-3.5-super-vl:free (no-think) | 2026-10-15 | **65%** | ×2.56 | 2 | 2 | 15 | 15 |
+| 4 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | 2026-06-04 | **60%** | ×2.74 | 2 | 3 | 15 | 15 |
+| 5 | dots-studio/dots-3-note-preview:free (no-think) | 2026-08-14 | **58%** | ×2.11 | 0 | 2 | 15 | 15 |
+| 6 | cohere/north-mini-code:free (think) | 2026-06-17 | **54%** | ×2.16 | 0 | 4 | 15 (2 failed) | 15 |
+| 7 | recursive/flint-v1.0:free (think) | 2026-10-21 | **53%** | ×2.70 | 0 | 3 | 15 (3 failed) | 15 |
+| 8 | cohere/north-mini-code:free (no-think) | 2026-06-17 | **40%** | ×1.59 | 0 | 4 | 15 | 15 |
+| 9 | dots-studio/dots-3-note-preview:free (think) | 2026-08-14 | **39%** | ×1.95 | 0 | 6 | 15 (3 failed) | 15 |
+| 10 | nvidia/nemotron-3.5-lightning:free (think) | 2026-08-11 | **38%** | ×2.31 | 0 | 4 | 15 (3 failed) | 15 |
+| 11 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | 2026-04-28 | **33%** | ×1.61 | 0 | 6 | 14 (3 failed) | 14 |
+| 12 | xingchen-agi/xing4.0-29b-a4b:free (think) | 2026-10-16 | **28%** | ×1.59 | 0 | 7 | 15 (2 failed) | 15 |
+| 13 | nvidia/nemotron-3.5-lightning:free (no-think) | 2026-08-11 | **26%** | ×1.27 | 0 | 9 | 15 | 15 |
+| 14 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | 2026-04-28 | **20%** | ×1.66 | 0 | 8 | 15 | 15 |
 | 15 | xingchen-agi/xing4.0-29b-a4b:free (no-think) | 2026-10-16 | **13%** | ×1.15 | 0 | 12 | 15 | 15 |
 
 ```mermaid
 xychart-beta
     title "Overall, cloud, i7-8700K + 2x GTX 1080 Ti: mean share (%)"
-    x-axis ["nemotron-3.5-super-vl:free (think)", "nemotron-3-ultra-550b-a55b:free (think)", "nemotron-3.5-super-vl:free (no-think)", "nemotron-3-ultra-550b-a55b:free (no-think)", "dots-3-note-preview:free (no-think)", "north-mini-code:free (think)", "flint-v1.0:free (think)", "dots-3-note-preview:free (think)", "north-mini-code:free (no-think)", "nemotron-3.5-lightning:free (think)", "nemotron-3-nano-omni-30b-a3b-reasoning:free (think)", "xing4.0-29b-a4b:free (think)", "nemotron-3.5-lightning:free (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think)", "xing4.0-29b-a4b:free (no-think)"]
-    y-axis "% of the best gain" 0 --> 79.87
-    bar [72.61, 70.57, 67.98, 63.45, 61.51, 59.05, 53.11, 43.98, 41.87, 41.85, 34.39, 32.84, 27.6, 20.6, 13.35]
+    x-axis ["nemotron-3.5-super-vl:free (think)", "nemotron-3-ultra-550b-a55b:free (think)", "nemotron-3.5-super-vl:free (no-think)", "nemotron-3-ultra-550b-a55b:free (no-think)", "dots-3-note-preview:free (no-think)", "north-mini-code:free (think)", "flint-v1.0:free (think)", "north-mini-code:free (no-think)", "dots-3-note-preview:free (think)", "nemotron-3.5-lightning:free (think)", "nemotron-3-nano-omni-30b-a3b-reasoning:free (think)", "xing4.0-29b-a4b:free (think)", "nemotron-3.5-lightning:free (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think)", "xing4.0-29b-a4b:free (no-think)"]
+    y-axis "% of the best gain" 0 --> 80.42
+    bar [73.11, 69.61, 65.02, 59.67, 58.13, 54.14, 53.43, 39.62, 38.75, 38.06, 32.96, 28.46, 25.77, 20.02, 13.35]
 ```

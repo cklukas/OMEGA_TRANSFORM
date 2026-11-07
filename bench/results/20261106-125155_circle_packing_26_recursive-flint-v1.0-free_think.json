@@ -1,0 +1,419 @@
+{
+ "schema": 4,
+ "example": "circle_packing_26",
+ "model": "recursive/flint-v1.0:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-06T12:51:55",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 51.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 2.2181021927201066,
+ "improvement": 1.488557306703531,
+ "llm_calls": 33,
+ "mean_llm_seconds": 91.7,
+ "attempts": 33,
+ "ok": 25,
+ "statuses": {
+  "llm_error": 1,
+  "edit_error": 5,
+  "ok": 25,
+  "invalid": 2
+ },
+ "sweeps": 17,
+ "sweep_variants": 122,
+ "improvements": 6,
+ "minutes_to_best": 34.2,
+ "best_idea": "tuned INIT_R=0.11, STEPS=8000, T0=0.005, PERTURB=0.01 on top of: I will use a deterministic simulated annealing search over circle centers to jointly maximize the sum of radii.",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   5.61,
+   1.6040642515667702
+  ],
+  [
+   18.82,
+   2.0681039472198024
+  ],
+  [
+   18.82,
+   2.076120480835108
+  ],
+  [
+   24.59,
+   2.12216735236049
+  ],
+  [
+   34.2,
+   2.140318465272852
+  ],
+  [
+   34.2,
+   2.2181021927201066
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 5.61,
+   "score": 1.6040642515667702,
+   "model": "recursive/flint-v1.0:free",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Change the grid from an over-wide 6-column layout to a more square 5-column layout to reduce overlaps and increase the sum of radii."
+  },
+  {
+   "minutes": 22.62,
+   "score": 1.6040642515667702,
+   "model": "recursive/flint-v1.0:free",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Expose the grid dimensions and radius scale as named constants so the engine can sweep better rectangular grid packings."
+  },
+  {
+   "minutes": 34.2,
+   "score": 2.140318465272852,
+   "model": "recursive/flint-v1.0:free",
+   "mode": "exploit/rewrite/bold",
+   "status": "ok",
+   "idea": "I will use a deterministic simulated annealing search over circle centers to jointly maximize the sum of radii."
+  },
+  {
+   "minutes": 34.2,
+   "score": 2.2181021927201066,
+   "model": "recursive/flint-v1.0:free",
+   "mode": "sweep/exploit/rewrite/bold",
+   "status": "ok",
+   "idea": "tuned INIT_R=0.11, STEPS=8000, T0=0.005, PERTURB=0.01 on top of: I will use a deterministic simulated annealing search over circle centers to jointly maximize the sum of radii."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -7,20 +7,41 @@\n import math\n \n # OMEGA-BLOCK-START\n+INIT_R = 0.11\n+STEPS = 8000\n+T0 = 0.005\n+PERTURB = 0.01\n+\n def construct_packing(n=26):\n-    \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n-    cols = math.ceil(math.sqrt(n))\n-    rows = math.ceil(n / cols)\n-    centers = []\n-    for k in range(n):\n-        i, j = k % cols, k // cols\n-        centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n+    centers = hex_init(n, INIT_R)\n     radii = max_radii(centers)\n-    return [(x, y, r) for (x, y), r in zip(centers, radii)]\n-\n+    best_c = [list(c) for c in centers]\n+    best_r = list(radii)\n+    best_t = sum(radii)\n+    cur_c = [list(c) for c in centers]\n+    cur_r = list(radii)\n+    cur_t = best_t\n+    T = T0\n+    for step in range(STEPS):\n+        T = max(0.0002, T0 * (1 - step / STEPS))\n+        nc = [list(c) for c in cur_c]\n+        idx = step % n\n+        cx, cy = cur_c[idx]\n+        nc[idx][0] = cx + math.sin(step * 1.7) * PERTURB\n+        nc[idx][1] = cy + math.cos(step * 2.3) * PERTURB\n+        nr = max_radii(nc)\n+        nt = sum(nr)\n+        if nt > cur_t or math.exp((nt - cur_t) / T) > math.sin(step * 0.3) * 0.5 + 0.5:\n+            cur_c = nc\n+            cur_r = nr\n+            cur_t = nt\n+            if nt > best_t:\n+                best_t = nt\n+                best_c = [list(c) for c in nc]\n+                best_r = list(nr)\n+    return [(x, y, r) for (x, y), r in zip(best_c, best_r)]\n \n def max_radii(centers):\n-    \"\"\"Largest radii for fixed centers: limit by walls, then shrink overlapping pairs.\"\"\"\n     radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n     for a in range(len(centers)):\n         for b in range(a + 1, len(centers)):\n@@ -30,6 +51,25 @@\n                 radii[a] *= s\n                 radii[b] *= s\n     return radii\n+\n+def hex_init(n, r):\n+    dx = 2 * r\n+    dy = math.sqrt(3) * r\n+    pts = []\n+    j = -5\n+    while len(pts) < n and j <= 5:\n+        y = 0.5 + j * dy\n+        xoff = r if (j % 2) else 0.0\n+        i = -5\n+        while len(pts) < n and i <= 5:\n+            x = 0.5 + i * dx + xoff\n+            if -0.01 <= x <= 1.01 and -0.01 <= y <= 1.01:\n+                pts.append((min(0.99, max(0.01, x)), min(0.99, max(0.01, y))))\n+            i += 1\n+        j += 1\n+    while len(pts) < n:\n+        pts.append((0.5, 0.5))\n+    return pts[:n]\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.083333,
+    0.1,
+    0.060545
+   ],
+   [
+    0.25,
+    0.1,
+    0.039234
+   ],
+   [
+    0.416667,
+    0.1,
+    0.034262
+   ],
+   [
+    0.583333,
+    0.1,
+    0.040566
+   ],
+   [
+    0.75,
+    0.1,
+    0.05694
+   ],
+   [
+    0.916667,
+    0.1,
+    0.080973
+   ],
+   [
+    0.083333,
+    0.3,
+    0.047978
+   ],
+   [
+    0.25,
+    0.3,
+    0.032893
+   ],
+   [
+    0.416667,
+    0.3,
+    0.029299
+   ],
+   [
+    0.583333,
+    0.3,
+    0.040366
+   ],
+   [
+    0.75,
+    0.3,
+    0.058083
+   ],
+   [
+    0.916667,
+    0.3,
+    0.076636
+   ],
+   [
+    0.083333,
+    0.5,
+    0.05004
+   ],
+   [
+    0.25,
+    0.5,
+    0.036525
+   ],
+   [
+    0.416667,
+    0.5,
+    0.03396
+   ],
+   [
+    0.583333,
+    0.5,
+    0.041209
+   ],
+   [
+    0.75,
+    0.5,
+    0.058085
+   ],
+   [
+    0.916667,
+    0.5,
+    0.076976
+   ],
+   [
+    0.083333,
+    0.7,
+    0.059259
+   ],
+   [
+    0.25,
+    0.7,
+    0.06822
+   ],
+   [
+    0.416667,
+    0.7,
+    0.065257
+   ],
+   [
+    0.583333,
+    0.7,
+    0.069461
+   ],
+   [
+    0.75,
+    0.7,
+    0.089736
+   ],
+   [
+    0.916667,
+    0.7,
+    0.07693
+   ],
+   [
+    0.083333,
+    0.9,
+    0.075758
+   ],
+   [
+    0.25,
+    0.9,
+    0.090909
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.07337,
+    0.068273,
+    0.061981
+   ],
+   [
+    0.317926,
+    0.101368,
+    0.061413
+   ],
+   [
+    0.53722,
+    0.052904,
+    0.051984
+   ],
+   [
+    0.840055,
+    0.053744,
+    0.051247
+   ],
+   [
+    0.939312,
+    0.045234,
+    0.043905
+   ],
+   [
+    0.142144,
+    0.246486,
+    0.073222
+   ],
+   [
+    0.257261,
+    0.422194,
+    0.027849
+   ],
+   [
+    0.692454,
+    0.105687,
+    0.082823
+   ],
+   [
+    0.912859,
+    0.16851,
+    0.082177
+   ],
+   [
+    0.072096,
+    0.372989,
+    0.065913
+   ],
+   [
+    0.076023,
+    0.517981,
+    0.074451
+   ],
+   [
+    0.609921,
+    0.501153,
+    0.026099
+   ],
+   [
+    0.726028,
+    0.405902,
+    0.066209
+   ],
+   [
+    0.893126,
+    0.357643,
+    0.106874
+   ],
+   [
+    0.093832,
+    0.745611,
+    0.093158
+   ],
+   [
+    0.421273,
+    0.763528,
+    0.091464
+   ],
+   [
+    0.592696,
+    0.758948,
+    0.077096
+   ],
+   [
+    0.813763,
+    0.633138,
+    0.177264
+   ],
+   [
+    0.073207,
+    0.92603,
+    0.073172
+   ],
+   [
+    0.254803,
+    0.883597,
+    0.113317
+   ],
+   [
+    0.521254,
+    0.912036,
+    0.087563
+   ],
+   [
+    0.707829,
+    0.901394,
+    0.098606
+   ],
+   [
+    0.903274,
+    0.903822,
+    0.096178
+   ],
+   [
+    0.516369,
+    0.591826,
+    0.104183
+   ],
+   [
+    0.490373,
+    0.294336,
+    0.193628
+   ],
+   [
+    0.274713,
+    0.588334,
+    0.136327
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 92.1,
+ "p90_call_seconds": 160.6,
+ "prompt_tokens_per_s": 3816.1,
+ "gen_tokens_per_s": 149.0,
+ "mean_prompt_tokens": 3769,
+ "mean_gen_tokens": 13216,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}

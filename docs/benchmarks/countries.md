@@ -22,5 +22,5 @@ Each country is represented by its best model in the [overall ranking](../benchm
 | # | Country | Best model | Released | Developer | Share | Lag behind #1 | Models |
 |--:|---|---|---|---|--:|--:|--:|
 | 1 | USA | nvidia/nemotron-3.5-super-vl:free (think) | 2026-10-15 | NVIDIA | **73%** | – | 8 |
-| 2 | unknown | dots-studio/dots-3-note-preview:free (no-think) | 2026-08-14 | other | **62%** | −15% | 5 |
-| 3 | Canada | cohere/north-mini-code:free (think) | 2026-06-17 | Cohere | **59%** | −19% | 2 |
+| 2 | unknown | dots-studio/dots-3-note-preview:free (no-think) | 2026-08-14 | other | **58%** | −20% | 5 |
+| 3 | Canada | cohere/north-mini-code:free (think) | 2026-06-17 | Cohere | **54%** | −26% | 2 |

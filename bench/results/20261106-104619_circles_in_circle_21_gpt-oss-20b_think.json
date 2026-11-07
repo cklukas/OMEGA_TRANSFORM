@@ -1,0 +1,347 @@
+{
+ "schema": 4,
+ "example": "circles_in_circle_21",
+ "model": "gpt-oss:20b",
+ "variant": "think",
+ "model_size_gb": 13.8,
+ "model_params": "20.9B",
+ "started": "2026-11-06T10:46:19",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 16.1,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 3.1890454825108625,
+ "best_score": 3.7556048637374806,
+ "improvement": 1.177657980839001,
+ "llm_calls": 17,
+ "mean_llm_seconds": 50.9,
+ "attempts": 17,
+ "ok": 15,
+ "statuses": {
+  "ok": 15,
+  "invalid": 2
+ },
+ "sweeps": 8,
+ "sweep_variants": 111,
+ "improvements": 3,
+ "minutes_to_best": 6.74,
+ "best_idea": "tuned NUM_RESTARTS=21, NUM_ITER=598, STEP=0.125 on top of: Replace the deterministic ring reduction with a randomized restart algorithm that iteratively perturbs circle centers and recomputes optimal ",
+ "progress": [
+  [
+   0.0,
+   3.1890454825108625
+  ],
+  [
+   0.8,
+   3.4551118130306047
+  ],
+  [
+   5.03,
+   3.60268926582405
+  ],
+  [
+   6.74,
+   3.7556048637374806
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.1890454825108625,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.91,
+   "score": 2.8810545809389545,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Perform a local reduction of circle radii starting from the maximum container limits, iterating over a small grid of ring radii to find a configuration that yields a larger sum of radii. The reduction algorithm decreases only the larger of a conflicting pair, ensuring feasibility while preserving as much radius as possible."
+  },
+  {
+   "minutes": 6.74,
+   "score": 3.60268926582405,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Replace the deterministic ring reduction with a randomized restart algorithm that iteratively perturbs circle centers and recomputes optimal radii, using a fixed seed for reproducibility and a small shrink factor to maintain feasibility."
+  },
+  {
+   "minutes": 6.74,
+   "score": 3.7556048637374806,
+   "model": "gpt-oss:20b",
+   "mode": "sweep/exploit/diff/bold",
+   "status": "ok",
+   "idea": "tuned NUM_RESTARTS=21, NUM_ITER=598, STEP=0.125 on top of: Replace the deterministic ring reduction with a randomized restart algorithm that iteratively perturbs circle centers and recomputes optimal radii, using a fixed seed for reproducibility and a small shrink factor to maintain feasibility."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -4,24 +4,71 @@\n import math\n \n # OMEGA-BLOCK-START\n+# Parameters for the randomized restart search\n+NUM_RESTARTS = 21\n+NUM_ITER = 598\n+STEP = 0.12501647457957007\n+\n def construct(n=21):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit circle (center (0,0),\n-    radius 1) without overlaps.\n+    radius 1) maximizing the sum of radii via a randomized coordinate descent\n+    with fixed seed and shrinking to ensure feasibility.\"\"\"\n+    import random, math\n+    random.seed(0)\n \n-    This start places one circle at the center and two concentric rings of 7 and\n-    13 circles, all with the same radius: the largest one that keeps every pair\n-    apart and every circle inside the container.\n-    \"\"\"\n-    centers = [(0.0, 0.0)]\n-    for count, ring in ((7, 0.35), (n - 8, 0.75)):\n-        centers += [(ring * math.cos(2 * math.pi * k / count),\n-                     ring * math.sin(2 * math.pi * k / count)) for k in range(count)]\n-    r = min(1.0 - math.hypot(x, y) for x, y in centers)\n-    for a in range(n):\n-        for b in range(a + 1, n):\n-            r = min(r, math.dist(centers[a], centers[b]) / 2)\n-    r *= 1 - 1e-12  # stay strictly feasible despite rounding\n-    return [(x, y, r) for x, y in centers]\n+    def compute_radii(centers):\n+        \"\"\"Given fixed centers, compute the maximal radii that fit.\"\"\"\n+        m = len(centers)\n+        radii = [0.0] * m\n+        for i, (xi, yi) in enumerate(centers):\n+            rim = 1.0 - math.hypot(xi, yi)\n+            for j, (xj, yj) in enumerate(centers):\n+                if i == j:\n+                    continue\n+                d = math.hypot(xi - xj, yi - yj) / 2.0\n+                if d < rim:\n+                    rim = d\n+            radii[i] = rim if rim > 0 else 0.0\n+        return radii\n+\n+    best_centers = None\n+    best_sum = -1.0\n+\n+    m = n\n+    for _ in range(NUM_RESTARTS):\n+        # Random initial centers inside unit circle\n+        centers = []\n+        while len(centers) < m:\n+            x = random.uniform(-1, 1)\n+            y = random.uniform(-1, 1)\n+            if x*x + y*y <= 1.0:\n+                centers.append((x, y))\n+        radii = compute_radii(centers)\n+        cur_sum = sum(radii)\n+\n+        for _ in range(NUM_ITER):\n+            i = random.randrange(m)\n+            xi, yi = centers[i]\n+            nx = xi + random.uniform(-STEP, STEP)\n+            ny = yi + random.uniform(-STEP, STEP)\n+            if nx*nx + ny*ny > 1.0:\n+                continue\n+            new_centers = centers[:]\n+            new_centers[i] = (nx, ny)\n+            new_radii = compute_radii(new_centers)\n+            new_sum = sum(new_radii)\n+            if new_sum > cur_sum:\n+                centers = new_centers\n+                radii = new_radii\n+                cur_sum = new_sum\n+\n+        if cur_sum > best_sum:\n+            best_sum = cur_sum\n+            best_centers = centers\n+\n+    final_radii = compute_radii(best_centers)\n+    final_radii = [r * (1 - 1e-12) for r in final_radii]\n+    return [(x, y, r) for (x, y), r in zip(best_centers, final_radii)]\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.0,
+    0.0,
+    0.151859
+   ],
+   [
+    0.35,
+    0.0,
+    0.151859
+   ],
+   [
+    0.218221,
+    0.273641,
+    0.151859
+   ],
+   [
+    -0.077882,
+    0.341225,
+    0.151859
+   ],
+   [
+    -0.315339,
+    0.151859,
+    0.151859
+   ],
+   [
+    -0.315339,
+    -0.151859,
+    0.151859
+   ],
+   [
+    -0.077882,
+    -0.341225,
+    0.151859
+   ],
+   [
+    0.218221,
+    -0.273641,
+    0.151859
+   ],
+   [
+    0.75,
+    0.0,
+    0.151859
+   ],
+   [
+    0.664092,
+    0.348542,
+    0.151859
+   ],
+   [
+    0.426049,
+    0.617238,
+    0.151859
+   ],
+   [
+    0.090403,
+    0.744532,
+    0.151859
+   ],
+   [
+    -0.265954,
+    0.701262,
+    0.151859
+   ],
+   [
+    -0.561383,
+    0.497342,
+    0.151859
+   ],
+   [
+    -0.728206,
+    0.179487,
+    0.151859
+   ],
+   [
+    -0.728206,
+    -0.179487,
+    0.151859
+   ],
+   [
+    -0.561383,
+    -0.497342,
+    0.151859
+   ],
+   [
+    -0.265954,
+    -0.701262,
+    0.151859
+   ],
+   [
+    0.090403,
+    -0.744532,
+    0.151859
+   ],
+   [
+    0.426049,
+    -0.617238,
+    0.151859
+   ],
+   [
+    0.664092,
+    -0.348542,
+    0.151859
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    -0.460733,
+    0.669939,
+    0.172782
+   ],
+   [
+    -0.146629,
+    0.463766,
+    0.176609
+   ],
+   [
+    -0.715916,
+    0.343994,
+    0.199753
+   ],
+   [
+    -0.688602,
+    -0.075207,
+    0.202128
+   ],
+   [
+    0.463445,
+    0.71098,
+    0.150428
+   ],
+   [
+    0.219864,
+    0.469347,
+    0.17155
+   ],
+   [
+    0.817508,
+    0.03999,
+    0.179715
+   ],
+   [
+    0.582896,
+    -0.610841,
+    0.155669
+   ],
+   [
+    0.678142,
+    0.475955,
+    0.159163
+   ],
+   [
+    0.761053,
+    -0.314979,
+    0.172681
+   ],
+   [
+    -0.148012,
+    0.81698,
+    0.1679
+   ],
+   [
+    -0.357077,
+    0.168383,
+    0.181341
+   ],
+   [
+    -0.651118,
+    -0.477721,
+    0.192428
+   ],
+   [
+    0.187502,
+    0.830853,
+    0.148253
+   ],
+   [
+    0.098628,
+    -0.504867,
+    0.165647
+   ],
+   [
+    0.36764,
+    -0.193235,
+    0.205841
+   ],
+   [
+    0.453951,
+    0.212588,
+    0.172933
+   ],
+   [
+    0.083378,
+    -0.83581,
+    0.160041
+   ],
+   [
+    -0.252312,
+    -0.241704,
+    0.211629
+   ],
+   [
+    0.047671,
+    0.081322,
+    0.207003
+   ],
+   [
+    -0.291317,
+    -0.684159,
+    0.202111
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 13.9,
+ "model_gpu_memory_gb": 13.9,
+ "context_length": 40960,
+ "load_seconds": 0.0,
+ "median_call_seconds": 40.6,
+ "p90_call_seconds": 113.3,
+ "prompt_tokens_per_s": 1696.1,
+ "gen_tokens_per_s": 51.0,
+ "mean_prompt_tokens": 3677,
+ "mean_gen_tokens": 2375,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

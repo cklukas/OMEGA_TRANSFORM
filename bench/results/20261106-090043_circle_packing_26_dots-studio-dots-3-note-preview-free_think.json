@@ -1,0 +1,381 @@
+{
+ "schema": 4,
+ "example": "circle_packing_26",
+ "model": "dots-studio/dots-3-note-preview:free",
+ "variant": "think",
+ "model_size_gb": 0.0,
+ "model_params": "",
+ "started": "2026-11-06T09:00:43",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 61.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 1.5901641185748985,
+ "improvement": 1.0671512003960828,
+ "llm_calls": 14,
+ "mean_llm_seconds": 262.2,
+ "attempts": 14,
+ "ok": 2,
+ "statuses": {
+  "edit_error": 12,
+  "ok": 2
+ },
+ "sweeps": 1,
+ "sweep_variants": 16,
+ "improvements": 1,
+ "minutes_to_best": 49.9,
+ "best_idea": "tuned LEARNING_RATE=0.00157, PENALTY=20.33, ITERATIONS=133, INIT_RADIUS=0.2 on top of: Replace the static grid layout with a gradient-descent optimization that jointly adjusts circle centers and radii",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   49.9,
+   1.5901641185748985
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 49.9,
+   "score": 1.3656475508709638,
+   "model": "dots-studio/dots-3-note-preview:free",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Replace the static grid layout with a gradient-descent optimization that jointly adjusts circle centers and radii to maximize the sum of radii while penalizing overlaps and boundary violations, and expose the key hyperparameters for the engine to sweep."
+  },
+  {
+   "minutes": 49.9,
+   "score": 1.5901641185748985,
+   "model": "dots-studio/dots-3-note-preview:free",
+   "mode": "sweep/exploit/diff/tune",
+   "status": "ok",
+   "idea": "tuned LEARNING_RATE=0.00157, PENALTY=20.33, ITERATIONS=133, INIT_RADIUS=0.2 on top of: Replace the static grid layout with a gradient-descent optimization that jointly adjusts circle centers and radii to maximize the sum of radii while penalizing overlaps and boundary violations, and expose the key"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -7,28 +7,118 @@\n import math\n \n # OMEGA-BLOCK-START\n+import random\n+\n+# Hyperparameters (subject to sweep)\n+LEARNING_RATE = 0.0015701051425847214\n+PENALTY = 20.327916722652276\n+ITERATIONS = 133\n+INIT_RADIUS = 0.2\n+\n def construct_packing(n=26):\n-    \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n+    # Initialize centers on a grid with small random perturbations\n     cols = math.ceil(math.sqrt(n))\n     rows = math.ceil(n / cols)\n     centers = []\n     for k in range(n):\n         i, j = k % cols, k // cols\n-        centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n-    radii = max_radii(centers)\n-    return [(x, y, r) for (x, y), r in zip(centers, radii)]\n+        x = (i + 0.5) / cols + random.uniform(-0.05, 0.05)\n+        y = (j + 0.5) / rows + random.uniform(-0.05, 0.05)\n+        x = max(0.0, min(1.0, x))\n+        y = max(0.0, min(1.0, y))\n+        centers.append([x, y])\n+    radii = [INIT_RADIUS] * n\n+\n+    # Gradient descent on centers and radii\n+    for _ in range(ITERATIONS):\n+        grad_x = [0.0] * n\n+        grad_y = [0.0] * n\n+        grad_r = [0.0] * n\n+        loss = -sum(radii)\n+\n+        # Wall violations\n+        for i in range(n):\n+            x, y = centers[i]\n+            r = radii[i]\n+            # left wall\n+            v = max(0.0, r - x)\n+            if v > 0:\n+                loss += PENALTY * v * v\n+                grad_r[i] += 2 * PENALTY * v\n+                grad_x[i] += 2 * PENALTY * v * (-1)\n+            # right wall\n+            v = max(0.0, r - (1 - x))\n+            if v > 0:\n+                loss += PENALTY * v * v\n+                grad_r[i] += 2 * PENALTY * v\n+                grad_x[i] += 2 * PENALTY * v\n+            # bottom wall\n+            v = max(0.0, r - y)\n+            if v > 0:\n+                loss += PENALTY * v * v\n+                grad_r[i] += 2 * PENALTY * v\n+                grad_y[i] += 2 * PENALTY * v * (-1)\n+            # top wall\n+            v = max(0.0, r - (1 - y))\n+            if v > 0:\n+                loss += PENALTY * v * v\n+                grad_r[i] += 2 * PENALTY * v\n+                grad_y[i] += 2 * PENALTY * v\n+\n+        # Pairwise overlaps\n+        for i in range(n):\n+            for j in range(i + 1, n):\n+                xi, yi = centers[i]\n+                xj, yj = centers[j]\n+                dx = xi - xj\n+                dy = yi - yj\n+                d = math.sqrt(dx * dx + dy * dy)\n+                if d < 1e-12:\n+                    continue\n+                v = max(0.0, radii[i] + radii[j] - d)\n+                if v > 0:\n+                    loss += PENALTY * v * v\n+                    grad_r[i] += 2 * PENALTY * v\n+                    grad_r[j] += 2 * PENALTY * v\n+                    grad_x[i] += 2 * PENALTY * v * (-dx / d)\n+                    grad_x[j] += 2 * PENALTY * v * (dx / d)\n+                    grad_y[i] += 2 * PENALTY * v * (-dy / d)\n+                    grad_y[j] += 2 * PENALTY * v * (dy / d)\n+\n+        # Update parameters\n+        for i in range(n):\n+            centers[i][0] -= LEARNING_RATE * grad_x[i]\n+            centers[i][1] -= LEARNING_RATE * grad_y[i]\n+            radii[i] -= LEARNING_RATE * grad_r[i]\n+            if radii[i] < 0:\n+                radii[i] = 0.0\n+            # Keep centers inside square\n+            if centers[i][0] < 0:\n+                centers[i][0] = 0.0\n+            if centers[i][0] > 1:\n+                centers[i][0] = 1.0\n+            if centers[i][1] < 0:\n+                centers[i][1] = 0.0\n+            if centers[i][1] > 1:\n+                centers[i][1] = 1.0\n+\n+    # Compute feasible radii for the final centers\n+    feasible_radii = max_radii(centers)\n+    return [(x, y, r) for (x, y), r in zip(centers, feasible_radii)]\n \n \n def max_radii(centers):\n     \"\"\"Largest radii for fixed centers: limit by walls, then shrink overlapping pairs.\"\"\"\n     radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n-    for a in range(len(centers)):\n-        for b in range(a + 1, len(centers)):\n-            d = math.dist(centers[a], centers[b])\n-            if radii[a] + radii[b] > d:\n-                s = d / (radii[a] + radii[b])\n-                radii[a] *= s\n-                radii[b] *= s\n+    # Iterative refinement to resolve overlaps\n+    for _ in range(10):\n+        for a in range(len(centers)):\n+            for b in range(a + 1, len(centers)):\n+                d = math.dist(centers[a], centers[b])\n+                if radii[a] + radii[b] > d:\n+                    s = d / (radii[a] + radii[b])\n+                    radii[a] *= s\n+                    radii[b] *= s\n     return radii\n # OMEGA-BLOCK-END\n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.083333,
+    0.1,
+    0.060545
+   ],
+   [
+    0.25,
+    0.1,
+    0.039234
+   ],
+   [
+    0.416667,
+    0.1,
+    0.034262
+   ],
+   [
+    0.583333,
+    0.1,
+    0.040566
+   ],
+   [
+    0.75,
+    0.1,
+    0.05694
+   ],
+   [
+    0.916667,
+    0.1,
+    0.080973
+   ],
+   [
+    0.083333,
+    0.3,
+    0.047978
+   ],
+   [
+    0.25,
+    0.3,
+    0.032893
+   ],
+   [
+    0.416667,
+    0.3,
+    0.029299
+   ],
+   [
+    0.583333,
+    0.3,
+    0.040366
+   ],
+   [
+    0.75,
+    0.3,
+    0.058083
+   ],
+   [
+    0.916667,
+    0.3,
+    0.076636
+   ],
+   [
+    0.083333,
+    0.5,
+    0.05004
+   ],
+   [
+    0.25,
+    0.5,
+    0.036525
+   ],
+   [
+    0.416667,
+    0.5,
+    0.03396
+   ],
+   [
+    0.583333,
+    0.5,
+    0.041209
+   ],
+   [
+    0.75,
+    0.5,
+    0.058085
+   ],
+   [
+    0.916667,
+    0.5,
+    0.076976
+   ],
+   [
+    0.083333,
+    0.7,
+    0.059259
+   ],
+   [
+    0.25,
+    0.7,
+    0.06822
+   ],
+   [
+    0.416667,
+    0.7,
+    0.065257
+   ],
+   [
+    0.583333,
+    0.7,
+    0.069461
+   ],
+   [
+    0.75,
+    0.7,
+    0.089736
+   ],
+   [
+    0.916667,
+    0.7,
+    0.07693
+   ],
+   [
+    0.083333,
+    0.9,
+    0.075758
+   ],
+   [
+    0.25,
+    0.9,
+    0.090909
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.073245,
+    0.10807,
+    0.056111
+   ],
+   [
+    0.236418,
+    0.079451,
+    0.047453
+   ],
+   [
+    0.408928,
+    0.09573,
+    0.039269
+   ],
+   [
+    0.58726,
+    0.100906,
+    0.042876
+   ],
+   [
+    0.777276,
+    0.073969,
+    0.060267
+   ],
+   [
+    0.927451,
+    0.122288,
+    0.072549
+   ],
+   [
+    0.088856,
+    0.302477,
+    0.042899
+   ],
+   [
+    0.26628,
+    0.282401,
+    0.035557
+   ],
+   [
+    0.439163,
+    0.337302,
+    0.023639
+   ],
+   [
+    0.598844,
+    0.317813,
+    0.038769
+   ],
+   [
+    0.745913,
+    0.300999,
+    0.061083
+   ],
+   [
+    0.910985,
+    0.308533,
+    0.079848
+   ],
+   [
+    0.078511,
+    0.487584,
+    0.066663
+   ],
+   [
+    0.253044,
+    0.459136,
+    0.063563
+   ],
+   [
+    0.394328,
+    0.559377,
+    0.029995
+   ],
+   [
+    0.569848,
+    0.481147,
+    0.055281
+   ],
+   [
+    0.768648,
+    0.524577,
+    0.078087
+   ],
+   [
+    0.924305,
+    0.496479,
+    0.0598
+   ],
+   [
+    0.070486,
+    0.682012,
+    0.046804
+   ],
+   [
+    0.223817,
+    0.737593,
+    0.082564
+   ],
+   [
+    0.415241,
+    0.759492,
+    0.089528
+   ],
+   [
+    0.59974,
+    0.679926,
+    0.080224
+   ],
+   [
+    0.783516,
+    0.784336,
+    0.117688
+   ],
+   [
+    0.938172,
+    0.706421,
+    0.055486
+   ],
+   [
+    0.082137,
+    0.902287,
+    0.082137
+   ],
+   [
+    0.263578,
+    0.917976,
+    0.082024
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": null,
+ "model_gpu_memory_gb": null,
+ "context_length": null,
+ "load_seconds": 0,
+ "median_call_seconds": 281.3,
+ "p90_call_seconds": 288.7,
+ "prompt_tokens_per_s": 1054.8,
+ "gen_tokens_per_s": 89.2,
+ "mean_prompt_tokens": 1784,
+ "mean_gen_tokens": 23131,
+ "stopped_calls": 0,
+ "provider": "openrouter",
+ "cost_usd": 0
+}
