@@ -1,0 +1,222 @@
+{
+ "schema": 4,
+ "example": "feature_engineering",
+ "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+ "variant": "think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-11-07T09:54:17",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 7.7,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 0.623,
+ "best_score": 0.871,
+ "improvement": 1.3980738362760834,
+ "llm_calls": 17,
+ "mean_llm_seconds": 20.8,
+ "attempts": 17,
+ "ok": 12,
+ "statuses": {
+  "ok": 12,
+  "invalid": 4,
+  "edit_error": 1
+ },
+ "sweeps": 6,
+ "sweep_variants": 84,
+ "improvements": 2,
+ "minutes_to_best": 1.55,
+ "best_idea": "Replace raw pairwise products with sign-based quadrant indicators to capture nonlinearity in decision boundaries without amplifying noise from small input values.",
+ "progress": [
+  [
+   0.0,
+   0.623
+  ],
+  [
+   0.51,
+   0.795
+  ],
+  [
+   1.55,
+   0.871
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.623,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 0.51,
+   "score": 0.795,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Transform the right-skewed x3 using log to normalize its distribution and add pairwise interactions between x1, x2, x4, x5 to capture nonlinear decision boundaries that are axis-aligned or quadrant-based, which are often missed by raw inputs."
+  },
+  {
+   "minutes": 1.55,
+   "score": 0.871,
+   "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+   "mode": "exploit/diff/bold",
+   "status": "ok",
+   "idea": "Replace raw pairwise products with sign-based quadrant indicators to capture nonlinearity in decision boundaries without amplifying noise from small input values."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -10,16 +10,31 @@\n \n # OMEGA-BLOCK-START\n def features(row):\n-    \"\"\"Return the feature vector (a list of at most 30 finite floats) for one row.\n-\n-    row: list of 6 floats [x1, x2, x3, x4, x5, x6]. Roughly: x1, x2, x6 are\n-    standard-normal-like, x3 is positive and right-skewed (lognormal-like), x4 and x5\n-    lie in [-2, 2]. The label is a hidden NONLINEAR function of the inputs plus noise.\n-    Every row must give the same number of features. The classifier is linear in the\n-    features (they are standardized and a bias is added), so nonlinear structure only\n-    helps if a feature expresses it. Only the Python standard library may be used.\n-\n-    Current method: the raw inputs.\n-    \"\"\"\n-    return list(row)\n+    \"\"\"Return a richer feature vector with log-transformed x3 and pairwise interactions.\"\"\"\n+    x1, x2, x3, x4, x5, x6 = row\n+    # Log-transform the right-skewed x3 to reduce skew and improve linearity\n+    log_x3 = math.log(x3 + 1e-6)  # avoid log(0) with small epsilon\n+    # Pairwise products to capture XOR-like or quadrant patterns\n+    s12 = 1.0 if x1 * x2 > 0 else -1.0\n+    s14 = 1.0 if x1 * x4 > 0 else -1.0\n+    s15 = 1.0 if x1 * x5 > 0 else -1.0\n+    s24 = 1.0 if x2 * x4 > 0 else -1.0\n+    s25 = 1.0 if x2 * x5 > 0 else -1.0\n+    s45 = 1.0 if x4 * x5 > 0 else -1.0\n+    # Add the log-transformed x3 and raw x6\n+    # Also include squared terms for circular-like regions\n+    x1_sq = x1 * x1\n+    x2_sq = x2 * x2\n+    x4_sq = x4 * x4\n+    x5_sq = x5 * x5\n+    # Radius-like features for circular regions\n+    r12 = x1_sq + x2_sq\n+    r45 = x4_sq + x5_sq\n+    # Combine all features\n+    return [\n+        x1, x2, log_x3, x4, x5, x6,\n+        s12, s14, s15, s24, s25, s45,\n+        x1_sq, x2_sq, x4_sq, x5_sq,\n+        r12, r45\n+    ]\n # OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "classification",
+  "columns": [
+   "x1",
+   "x2",
+   "x3",
+   "x4",
+   "x5",
+   "x6"
+  ],
+  "head": [
+   [
+    0.14,
+    1.08,
+    1.79,
+    -0.66,
+    1.01,
+    -0.54
+   ],
+   [
+    -1.03,
+    -0.71,
+    0.47,
+    1.72,
+    0.77,
+    -0.69
+   ],
+   [
+    0.36,
+    -0.3,
+    0.1,
+    -2.0,
+    0.57,
+    -0.15
+   ],
+   [
+    1.13,
+    1.16,
+    1.34,
+    1.26,
+    1.29,
+    0.92
+   ]
+  ],
+  "head_labels": [
+   1,
+   1,
+   0,
+   1
+  ],
+  "train_rows": 1000,
+  "num_features": 6,
+  "test_correct": "1110101111000101011111011010101001101100111100110111111101011110101110011011001101101000011100011010111110110111011110000011111111011100100110111110101000001001110101111110101010111011101101000010010100000101110011000100110001010111011001101100110011110111111010101001011101111011110101110011100101100100011011010011101011000101100100110110111110100101101111110111101100011110111111110110111111101100010111110011111011001100001101010011101100101011010111110000111000010111111111100111110101010101111011001000111110111101110001011111011110011101010011011101111101001101110110101100001110001001101010001011011001111110111110101111110110110110101010111001011111101111111101101111001111001000101101001000000100100101111111111011011101110111110101111110001111001101111101111101011111111011111111111111111000111001001110010010010000110000101111110101001111101111000111011000111111101111101111000111011111010001001101100011000110110111000010111110110001111111111101001111101100011100101100101011101110111010"
+ },
+ "best_solution": {
+  "kind": "classification",
+  "columns": [
+   "x1",
+   "x2",
+   "x3",
+   "x4",
+   "x5",
+   "x6"
+  ],
+  "head": [
+   [
+    0.14,
+    1.08,
+    1.79,
+    -0.66,
+    1.01,
+    -0.54
+   ],
+   [
+    -1.03,
+    -0.71,
+    0.47,
+    1.72,
+    0.77,
+    -0.69
+   ],
+   [
+    0.36,
+    -0.3,
+    0.1,
+    -2.0,
+    0.57,
+    -0.15
+   ],
+   [
+    1.13,
+    1.16,
+    1.34,
+    1.26,
+    1.29,
+    0.92
+   ]
+  ],
+  "head_labels": [
+   1,
+   1,
+   0,
+   1
+  ],
+  "train_rows": 1000,
+  "num_features": 18,
+  "test_correct": "1111111111111111011111011111101001111111111101110001111011111111111110111101111111111111110111111010101111111110111111110111111111111111111111010111101110011111111111111011111111011111101111110101011101111011111111111111111111010011111011111110111111111111111100111111111011111100111111011011111111111110001111111111111111000111111111100111111111111101111111011111111111111111110110110011101111110111111111111110111010111011101101101111111111110111111111011111111110011111111111111111111101111111111011011011111111111101111111111111111111010111111111111111111111110110110111111011111111111001111011111111111010111111111011111101111000110111101111011101111111111101111111010111111111011000111101111111111111011111111111111111010111111101101111111111101111111111111111111111111111111011111111111111111010101111111110111111110111011111111111111111011111111111111111111111111111011111110111001111111111111110101101111111111111111111010111111111111011111111111111111111111111111011111111111111111110111111"
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 23.0,
+ "model_gpu_memory_gb": 19.0,
+ "context_length": 40960,
+ "load_seconds": 0.0,
+ "median_call_seconds": 18.9,
+ "p90_call_seconds": 29.5,
+ "prompt_tokens_per_s": 646.3,
+ "gen_tokens_per_s": 27.3,
+ "mean_prompt_tokens": 3222,
+ "mean_gen_tokens": 369,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

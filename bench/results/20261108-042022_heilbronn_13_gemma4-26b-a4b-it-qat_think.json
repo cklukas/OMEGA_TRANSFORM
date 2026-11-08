@@ -1,0 +1,216 @@
+{
+ "schema": 4,
+ "example": "heilbronn_13",
+ "model": "gemma4:26b-a4b-it-qat",
+ "variant": "think",
+ "model_size_gb": 15.6,
+ "model_params": "25.2B",
+ "started": "2026-11-08T04:20:22",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 66.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 0.004790811518724618,
+ "best_score": 0.020919947968180856,
+ "improvement": 4.366681487346437,
+ "llm_calls": 9,
+ "mean_llm_seconds": 432.5,
+ "attempts": 9,
+ "ok": 7,
+ "statuses": {
+  "edit_error": 1,
+  "ok": 7,
+  "invalid": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 14.19,
+ "best_idea": "Implement a hill-climbing algorithm with restarts that focuses on moving vertices of the smallest-area triangles to maximize the minimum triangle area.",
+ "progress": [
+  [
+   0.0,
+   0.004790811518724618
+  ],
+  [
+   14.19,
+   0.020919947968180856
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.004790811518724618,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 14.19,
+   "score": 0.020919947968180856,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Implement a hill-climbing algorithm with restarts that focuses on moving vertices of the smallest-area triangles to maximize the minimum triangle area."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -6,16 +6,67 @@\n \n # OMEGA-BLOCK-START\n def construct(n=13):\n-    \"\"\"Return a list of n points (x, y) inside the closed unit square [0,1]^2.\n+    \"\"\"Return a list of n points (x, y) inside the closed unit square [0,1]^2.\"\"\"\n+    import math\n+    import random\n \n-    The score is the smallest area among all triangles with corners at three of\n-    the points, so no three points may be (nearly) collinear. This start puts\n-    the points on a regular polygon on a small circle around the center, which\n-    avoids collinear triples but wastes most of the square.\n-    \"\"\"\n-    radius = 0.3\n-    return [(0.5 + radius * math.cos(2 * math.pi * k / n),\n-             0.5 + radius * math.sin(2 * math.pi * k / n)) for k in range(n)]\n+    triangles = []\n+    for i in range(n):\n+        for j in range(i + 1, n):\n+            for k in range(j + 1, n):\n+                triangles.append((i, j, k))\n+\n+    def get_min_area_info(pts, tris):\n+        m = 1e18\n+        min_tri = []\n+        for i, j, k in tris:\n+            p1x, p1y = pts[i]\n+            p2x, p2y = pts[j]\n+            p3x, p3y = pts[k]\n+            a = abs(p1x * (p2y - p3y) + p2x * (p3y - p1y) + p3x * (p1y - p2y)) * 0.5\n+            if a < m:\n+                m = a\n+                min_tri = [i, j, k]\n+        return m, min_tri\n+\n+    random.seed(42)\n+    best_overall_min_area = 0\n+    best_overall_points = []\n+\n+    for restart in range(2):\n+        points = [[random.random(), random.random()] for _ in range(n)]\n+        # Start with some points on the boundaries to cover the square\n+        for i in range(4):\n+            points[i] = [(0.0 if i % 2 == 0 else 1.0), (0.0 if i < 2 else 1.0)]\n+        \n+        current_min_area, min_tri = get_min_area_info(points, triangles)\n+        \n+        for i in range(10000):\n+            step = 0.5 * (1.0 - i / 10000)\n+            # 70% chance to move a vertex of the current smallest triangle\n+            if random.random() < 0.7 and min_tri:\n+                idx = random.choice(min_tri)\n+            else:\n+                idx = random.randint(0, n-1)\n+            \n+            old_x, old_y = points[idx]\n+            points[idx][0] = max(0.0, min(1.0, old_x + random.uniform(-step, step)))\n+            points[idx][1] = max(0.0, min(1.0, old_y + random.uniform(-step, step)))\n+            \n+            new_min_area, new_min_tri = get_min_area_info(points, triangles)\n+            \n+            if new_min_area > current_min_area:\n+                current_min_area, min_tri = new_min_area, new_min_tri\n+            elif new_min_area >= current_min_area - 1e-15 and random.random() < 0.5:\n+                current_min_area, min_tri = new_min_area, new_min_tri\n+            else:\n+                points[idx][0], points[idx][1] = old_x, old_y\n+            \n+            if current_min_area > best_overall_min_area:\n+                best_overall_min_area = current_min_area\n+                best_overall_points = [p[:] for p in points]\n+                \n+    return best_overall_points\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "heilbronn",
+  "points": [
+   [
+    0.8,
+    0.5
+   ],
+   [
+    0.765636807695963,
+    0.6394169516131305
+   ],
+   [
+    0.6704194240193467,
+    0.7468951597680968
+   ],
+   [
+    0.536161004076597,
+    0.7978126622294162
+   ],
+   [
+    0.3936185338872394,
+    0.7805048728056244
+   ],
+   [
+    0.27544677554866964,
+    0.6989367974722386
+   ],
+   [
+    0.2087174547721844,
+    0.5717946992862672
+   ],
+   [
+    0.2087174547721844,
+    0.42820530071373275
+   ],
+   [
+    0.2754467755486696,
+    0.30106320252776153
+   ],
+   [
+    0.3936185338872392,
+    0.21949512719437558
+   ],
+   [
+    0.536161004076597,
+    0.20218733777058384
+   ],
+   [
+    0.6704194240193464,
+    0.25310484023190294
+   ],
+   [
+    0.765636807695963,
+    0.3605830483868695
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "heilbronn",
+  "points": [
+   [
+    0.06912338843097793,
+    0.050627934294352896
+   ],
+   [
+    1.0,
+    0.29328478707903266
+   ],
+   [
+    0.0,
+    0.6808862390566306
+   ],
+   [
+    0.7888824261070356,
+    0.9970140901815624
+   ],
+   [
+    0.9118385450162831,
+    0.8734107614660758
+   ],
+   [
+    0.6964731837413122,
+    0.11896775921597265
+   ],
+   [
+    0.9468443042601761,
+    0.04805529170883209
+   ],
+   [
+    0.2377478709685605,
+    0.0
+   ],
+   [
+    0.5402838264924723,
+    0.842635749885148
+   ],
+   [
+    0.1865851057789036,
+    0.45466061348387465
+   ],
+   [
+    0.03965507354295657,
+    0.9256960445399913
+   ],
+   [
+    0.22253419083857762,
+    0.9996009685233824
+   ],
+   [
+    0.6822982757845947,
+    0.45849309094215457
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": 16.1,
+ "model_gpu_memory_gb": 14.4,
+ "context_length": 40960,
+ "load_seconds": 0.0,
+ "median_call_seconds": 427.1,
+ "p90_call_seconds": 522.7,
+ "prompt_tokens_per_s": 782.7,
+ "gen_tokens_per_s": 33.1,
+ "mean_prompt_tokens": 2897,
+ "mean_gen_tokens": 14108,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

@@ -10,12 +10,12 @@ Each country is represented by its best model in the [overall ranking](../benchm
 
 | # | Country | Best model | Released | Developer | Share | Lag behind #1 | Models |
 |--:|---|---|---|---|--:|--:|--:|
-| 1 | USA | gpt-oss:20b (no-think) | 2025-08-04 | OpenAI | **82%** | – | 10 |
-| 2 | China | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 2026-04-21 | Alibaba (Qwen) | **73%** | −11% | 6 |
-| 3 | India | frob/sarvam:30b (no-think) | 2026-03-03 | Sarvam AI | **33%** | −59% | 1 |
+| 1 | USA | gpt-oss:20b (no-think) | 2025-08-04 | OpenAI | **80%** | – | 10 |
+| 2 | China | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 2026-04-21 | Alibaba (Qwen) | **72%** | −10% | 6 |
+| 3 | India | frob/sarvam:30b (no-think) | 2026-03-03 | Sarvam AI | **32%** | −59% | 1 |
 | 4 | Russia | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 2025-03-28 | Yandex | **22%** | −73% | 1 |
 | 5 | Japan | llm-jp-4-8b-omega:q4_k_m (no-think) | 2026-03-16 | NII (LLM-jp) | **13%** | −84% | 1 |
-| 6 | Switzerland | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 2025-08-13 | Swiss AI Initiative | **12%** | −85% | 1 |
+| 6 | Switzerland | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 2025-08-13 | Swiss AI Initiative | **12%** | −86% | 1 |
 
 ## Cloud models (OpenRouter)
 

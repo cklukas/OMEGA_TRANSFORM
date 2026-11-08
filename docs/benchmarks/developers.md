@@ -51,18 +51,18 @@ The developer's best single model, the mean share over all its models, and the m
 
 | Developer | Models | Best model | Released | Best model's share | Mean over its models | Best per example |
 |---|--:|---|---|--:|--:|--:|
-| OpenAI | 1 | gpt-oss:20b (no-think) | 2025-08-04 | **82%** | 82% | 82% |
-| Alibaba (Qwen) | 5 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 2026-04-21 | **73%** | 46% | 84% |
-| Google | 5 | gemma4:12b-it-qat (no-think) | 2026-05-23 | **70%** | 54% | 87% |
-| Conway | 1 | underdog-saluki-27b:iq2-mix (no-think) | 2026-10-08 | **42%** | 42% | 42% |
-| Sarvam AI | 1 | frob/sarvam:30b (no-think) | 2026-03-03 | **33%** | 33% | 33% |
-| Z.ai | 1 | glm-4.7-flash:latest (no-think) | 2026-01-19 | **33%** | 33% | 33% |
+| OpenAI | 1 | gpt-oss:20b (no-think) | 2025-08-04 | **80%** | 80% | 80% |
+| Alibaba (Qwen) | 5 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 2026-04-21 | **72%** | 45% | 82% |
+| Google | 5 | gemma4:12b-it-qat (no-think) | 2026-05-23 | **69%** | 53% | 86% |
+| Conway | 1 | underdog-saluki-27b:iq2-mix (no-think) | 2026-10-08 | **41%** | 41% | 41% |
+| Sarvam AI | 1 | frob/sarvam:30b (no-think) | 2026-03-03 | **32%** | 32% | 32% |
+| Z.ai | 1 | glm-4.7-flash:latest (no-think) | 2026-01-19 | **32%** | 32% | 32% |
 | Yandex | 1 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 2025-03-28 | **22%** | 22% | 22% |
-| Microsoft | 1 | richardyoung/frognano-4b-2609:latest (no-think) | 2026-09-17 | **20%** | 20% | 20% |
+| Microsoft | 1 | richardyoung/frognano-4b-2609:latest (no-think) | 2026-09-17 | **19%** | 19% | 19% |
 | NII (LLM-jp) | 1 | llm-jp-4-8b-omega:q4_k_m (no-think) | 2026-03-16 | **13%** | 13% | 13% |
 | Swiss AI Initiative | 1 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 2025-08-13 | **12%** | 12% | 12% |
-| Liquid AI | 1 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | 2026-10-23 | **2%** | 2% | 2% |
 | NVIDIA | 1 | nemotron-3-nano:4b (no-think) | 2026-03-07 | **2%** | 2% | 2% |
+| Liquid AI | 1 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | 2026-10-23 | **2%** | 2% | 2% |
 
 ### Progress over time
 
@@ -70,33 +70,33 @@ Each developer's ranked models by release date (the original publication on Hugg
 
 | Developer | Size class | Released | Model | Parameters | Share |
 |---|---|---|---|--:|--:|
-| Alibaba (Qwen) | under 15B | 2024-09-17 | qwen2.5-coder:7b (no-think) | 7.6B | 28% |
-| Alibaba (Qwen) | under 15B | 2026-02-27 | qwen3.5:latest (no-think) | 9.7B | 44% |
-| Alibaba (Qwen) | 15B and up | 2025-07-28 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | 30.5B | 49% |
-| Alibaba (Qwen) | 15B and up | 2025-07-31 | qwen3-coder:30b (no-think) | 30.5B | 35% |
-| Alibaba (Qwen) | 15B and up | 2026-04-21 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 27.3B | 73% |
-| Conway | 15B and up | 2026-10-08 | underdog-saluki-27b:iq2-mix (no-think) | 26.9B | 42% |
+| Alibaba (Qwen) | under 15B | 2024-09-17 | qwen2.5-coder:7b (no-think) | 7.6B | 27% |
+| Alibaba (Qwen) | under 15B | 2026-02-27 | qwen3.5:latest (no-think) | 9.7B | 43% |
+| Alibaba (Qwen) | 15B and up | 2025-07-28 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | 30.5B | 48% |
+| Alibaba (Qwen) | 15B and up | 2025-07-31 | qwen3-coder:30b (no-think) | 30.5B | 34% |
+| Alibaba (Qwen) | 15B and up | 2026-04-21 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 27.3B | 72% |
+| Conway | 15B and up | 2026-10-08 | underdog-saluki-27b:iq2-mix (no-think) | 26.9B | 41% |
 | Google | under 15B | 2026-03-02 | gemma4:e2b (no-think) | 5.1B | 32% |
-| Google | under 15B | 2026-03-02 | gemma4:e4b-it-qat (no-think) | 7.5B | 43% |
-| Google | under 15B | 2026-03-02 | gemma4:latest (no-think) | 8.1B | 64% |
-| Google | under 15B | 2026-05-23 | gemma4:12b-it-qat (no-think) | 11.9B | 70% |
-| Google | 15B and up | 2026-03-11 | gemma4:26b-a4b-it-qat (no-think) | 25.2B | 61% |
+| Google | under 15B | 2026-03-02 | gemma4:e4b-it-qat (no-think) | 7.5B | 42% |
+| Google | under 15B | 2026-03-02 | gemma4:latest (no-think) | 8.1B | 63% |
+| Google | under 15B | 2026-05-23 | gemma4:12b-it-qat (no-think) | 11.9B | 69% |
+| Google | 15B and up | 2026-03-11 | gemma4:26b-a4b-it-qat (no-think) | 25.2B | 60% |
 | Liquid AI | under 15B | 2026-10-23 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | 1.73B | 2% |
-| Microsoft | under 15B | 2026-09-17 | richardyoung/frognano-4b-2609:latest (no-think) | 4.3B | 20% |
+| Microsoft | under 15B | 2026-09-17 | richardyoung/frognano-4b-2609:latest (no-think) | 4.3B | 19% |
 | NII (LLM-jp) | under 15B | 2026-03-16 | llm-jp-4-8b-omega:q4_k_m (no-think) | 8.6B | 13% |
 | NVIDIA | under 15B | 2026-03-07 | nemotron-3-nano:4b (no-think) | 4B | 2% |
-| OpenAI | 15B and up | 2025-08-04 | gpt-oss:20b (no-think) | 20.9B | 82% |
-| Sarvam AI | 15B and up | 2026-03-03 | frob/sarvam:30b (no-think) | 32.2B | 33% |
+| OpenAI | 15B and up | 2025-08-04 | gpt-oss:20b (no-think) | 20.9B | 80% |
+| Sarvam AI | 15B and up | 2026-03-03 | frob/sarvam:30b (no-think) | 32.2B | 32% |
 | Swiss AI Initiative | under 15B | 2025-08-13 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 8.1B | 12% |
 | Yandex | under 15B | 2025-03-28 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 8B | 22% |
-| Z.ai | 15B and up | 2026-01-19 | glm-4.7-flash:latest (no-think) | 29.9B | 33% |
+| Z.ai | 15B and up | 2026-01-19 | glm-4.7-flash:latest (no-think) | 29.9B | 32% |
 
 ```mermaid
 xychart-beta
     title "Alibaba (Qwen), local, 15B and up: share by release date"
     x-axis ["qwen3:30b-a3b-instruct-2507-q4_K_M (2025-07)", "qwen3-coder:30b (2025-07)", "qwen3.6:27b-coding-mtp-q4_K_M (2026-04)"]
     y-axis "% of the best gain" 0 --> 100
-    line [48.83, 34.59, 73.22]
+    line [47.51, 33.58, 71.89]
 ```
 
 ## Cloud models (OpenRouter)

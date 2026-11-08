@@ -1,0 +1,131 @@
+{
+ "schema": 4,
+ "example": "float_parse_single_thread",
+ "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+ "variant": "think",
+ "model_size_gb": 17.8,
+ "model_params": "27.3B",
+ "started": "2026-11-07T19:28:09",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 88.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 70.2712,
+ "best_score": 91.1492,
+ "improvement": 1.2971060690581633,
+ "llm_calls": 2,
+ "mean_llm_seconds": 2579.0,
+ "attempts": 2,
+ "ok": 1,
+ "statuses": {
+  "compile_error": 1,
+  "ok": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 86.46,
+ "best_idea": "Replace the naive `std::strtod` loop with a custom digit accumulator that applies Clinger's fast path for short mantissas and small exponents, falling back to `std::strtod` only for long mantissas, la",
+ "progress": [
+  [
+   0.0,
+   70.2712
+  ],
+  [
+   86.46,
+   91.1492
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 70.2712,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 86.46,
+   "score": 91.1492,
+   "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the naive `std::strtod` loop with a custom digit accumulator that applies Clinger's fast path for short mantissas and small exponents, falling back to `std::strtod` only for long mantissas, large exponents, or edge cases, guaranteeing exact correctness while drastically reducing CPU time."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -25,19 +25,75 @@\n \n // OMEGA-BLOCK-START\n // Parses the numbers in buf[0..len) into out[0..) and returns how many there are.\n-// Every number is followed by exactly one '\\n'; buf[len] is '\\0'. Grammar of a\n-// number: optional '-', one or more digits, optionally '.' and one or more digits,\n-// optionally 'e' or 'E', an optional '+' or '-', and one or more digits. No\n-// spaces, no '+' sign on the mantissa, no inf/nan/hex. Every value must be\n-// bit-identical to std::strtod (correctly rounded, round-half-to-even).\n+// Uses a fast path for Clinger's exact range, falls back to std::strtod otherwise.\n+static constexpr double POW10_D[] = {\n+    1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14,\n+    1e15, 1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22\n+};\n+\n extern \"C\" size_t parse_doubles(const char* buf, size_t len, double* out) {\n     const char* p = buf;\n     const char* end = buf + len;\n     size_t count = 0;\n     while (p < end) {\n-        char* next;\n-        out[count++] = std::strtod(p, &next);\n-        p = next;\n+        const char* start = p;\n+        bool neg = (*p == '-');\n+        if (neg) ++p;\n+\n+        uint64_t m = 0;\n+        int exp = 0;\n+        int digits = 0;\n+        bool long_mantissa = false;\n+\n+        while (p < end && *p >= '0' && *p <= '9') {\n+            if (digits < 19) {\n+                m = m * 10 + (*p - '0');\n+                digits++;\n+            } else if (!long_mantissa) {\n+                long_mantissa = true;\n+            }\n+            ++p;\n+        }\n+        if (p < end && *p == '.') {\n+            ++p;\n+            while (p < end && *p >= '0' && *p <= '9') {\n+                if (digits < 19) {\n+                    m = m * 10 + (*p - '0');\n+                    digits++;\n+                    --exp;\n+                } else if (!long_mantissa) {\n+                    long_mantissa = true;\n+                }\n+                ++p;\n+            }\n+        }\n+        if (p < end && (*p == 'e' || *p == 'E')) {\n+            ++p;\n+            bool exp_neg = (*p == '-');\n+            if (exp_neg || *p == '+') ++p;\n+            int e = 0;\n+            while (p < end && *p >= '0' && *p <= '9') {\n+                e = e * 10 + (*p - '0');\n+                ++p;\n+            }\n+            exp += exp_neg ? -e : e;\n+        }\n+\n+        if (long_mantissa || digits == 0) {\n+            char* next;\n+            out[count++] = std::strtod(start, &next);\n+            p = next;\n+        } else if (m == 0) {\n+            out[count++] = neg ? -0.0 : 0.0;\n+        } else if (exp >= 0 && exp <= 22 && m < (uint64_t(1) << 53)) {\n+            out[count++] = neg ? -((double)m * POW10_D[exp]) : ((double)m * POW10_D[exp]);\n+        } else if (exp < 0 && exp >= -22 && m < (uint64_t(1) << 53)) {\n+            out[count++] = neg ? -((double)m / POW10_D[-exp]) : ((double)m / POW10_D[-exp]);\n+        } else {\n+            char* next;\n+            out[count++] = std::strtod(start, &next);\n+            p = next;\n+        }\n         while (p < end && *p == '\\n') ++p;\n     }\n     return count;\n",
+ "initial_solution": {
+  "kind": "parse",
+  "count": 2000000,
+  "text_mb": 28.39,
+  "head": [
+   "0",
+   "-0",
+   "1",
+   "-1.5",
+   "0.1",
+   "1e23",
+   "9007199254740993",
+   "4.9e-324"
+  ]
+ },
+ "best_solution": {
+  "kind": "parse",
+  "count": 2000000,
+  "text_mb": 28.39,
+  "head": [
+   "0",
+   "-0",
+   "1",
+   "-1.5",
+   "0.1",
+   "1e23",
+   "9007199254740993",
+   "4.9e-324"
+  ]
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": 20.4,
+ "model_gpu_memory_gb": 14.9,
+ "context_length": 40960,
+ "load_seconds": 0.0,
+ "median_call_seconds": 2993.9,
+ "p90_call_seconds": 2993.9,
+ "prompt_tokens_per_s": 308.2,
+ "gen_tokens_per_s": 4.4,
+ "mean_prompt_tokens": 5235,
+ "mean_gen_tokens": 11179,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}
