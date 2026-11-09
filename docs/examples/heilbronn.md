@@ -370,3 +370,5 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/heilb
 | qwen3.5:latest (think) | local | 0.00479 | ×1.00 | - | 0 |
 | underdog-saluki-27b:iq2-mix (think) | local | 0.00479 | ×1.00 | - | 0 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | 0.00479 | ×1.00 | - | 0 |
+| glm-4.7-flash:latest (think) | local | 0.00479 | ×1.00 | - | 0 |
+| frob/sarvam:30b (think) | local | 0.00479 | ×1.00 | - | 0 |

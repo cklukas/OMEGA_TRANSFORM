@@ -1,0 +1,134 @@
+{
+ "schema": 4,
+ "example": "prefix_sum_histogram_single_thread",
+ "model": "gemma4:26b-a4b-it-qat",
+ "variant": "think",
+ "model_size_gb": 15.6,
+ "model_params": "25.2B",
+ "started": "2026-11-09T01:10:24",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 69.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 5.38272,
+ "best_score": 5.6116,
+ "improvement": 1.0425212531954104,
+ "llm_calls": 11,
+ "mean_llm_seconds": 367.7,
+ "attempts": 11,
+ "ok": 9,
+ "statuses": {
+  "ok": 9,
+  "duplicate": 1,
+  "edit_error": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 33.74,
+ "best_idea": "Use a `s[4][256]` layout to ensure that increments to the same bin are spread across different cache lines, reducing cache line contention and RMW-related stalls on hot bins.",
+ "progress": [
+  [
+   0.0,
+   5.38272
+  ],
+  [
+   33.74,
+   5.6116
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 5.38272,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 17.82,
+   "score": 4.98618,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Use 4 sub-histograms in a `s[256][4]` layout to ensure that consecutive increments of the same bin hit different elements within the same cache line, breaking the store-to-load dependency chain on hot bins."
+  },
+  {
+   "minutes": 33.74,
+   "score": 5.6116,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Use a `s[4][256]` layout to ensure that increments to the same bin are spread across different cache lines, reducing cache line contention and RMW-related stalls on hot bins."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -28,12 +28,32 @@\n // hist is zeroed by the caller. n is any size from 0 to 20'000'000; the sums\n // never overflow int64.\n extern \"C\" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, uint64_t* hist) {\n-    for (int b = 0; b < 256; ++b) hist[b] = 0;\n+    uint32_t s[4][256] = {0};\n     int64_t sum = 0;\n-    for (size_t i = 0; i < n; ++i) {\n-        sum += in[i];\n+    size_t i = 0;\n+    // Use 4 sub-histograms spread across cache lines to break RMW dependency\n+    for (; i + 3 < n; i += 4) {\n+        int64_t v0 = in[i];\n+        sum += v0; out[i] = sum; s[0][v0 & 255]++;\n+        int64_t v1 = in[i+1];\n+        sum += v1; out[i+1] = sum; s[1][v1 & 255]++;\n+        int64_t v2 = in[i+2];\n+        sum += v2; out[i+2] = sum; s[2][v2 & 255]++;\n+        int64_t v3 = in[i+3];\n+        sum += v3; out[i+3] = sum; s[3][v3 & 255]++;\n+    }\n+    // Handle remainder\n+    size_t s_idx = 0;\n+    for (; i < n; ++i) {\n+        int64_t v = in[i];\n+        sum += v;\n         out[i] = sum;\n-        hist[in[i] & 255]++;\n+        s[s_idx][v & 255]++;\n+        s_idx = (s_idx + 1) & 3;\n+    }\n+    // Finalize histogram\n+    for (int b = 0; b < 256; ++b) {\n+        hist[b] = (uint64_t)s[0][b] + s[1][b] + s[2][b] + s[3][b];\n     }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "best_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": 16.1,
+ "model_gpu_memory_gb": 14.4,
+ "context_length": 40960,
+ "load_seconds": 0.1,
+ "median_call_seconds": 342.4,
+ "p90_call_seconds": 453.8,
+ "prompt_tokens_per_s": 824.8,
+ "gen_tokens_per_s": 35.0,
+ "mean_prompt_tokens": 5131,
+ "mean_gen_tokens": 12562,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

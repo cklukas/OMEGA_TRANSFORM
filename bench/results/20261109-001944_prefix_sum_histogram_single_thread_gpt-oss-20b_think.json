@@ -1,0 +1,193 @@
+{
+ "schema": 4,
+ "example": "prefix_sum_histogram_single_thread",
+ "model": "gpt-oss:20b",
+ "variant": "think",
+ "model_size_gb": 13.8,
+ "model_params": "20.9B",
+ "started": "2026-11-09T00:19:44",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 50.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 5.22511,
+ "best_score": 6.55077,
+ "improvement": 1.253709491283437,
+ "llm_calls": 49,
+ "mean_llm_seconds": 58.0,
+ "attempts": 49,
+ "ok": 33,
+ "statuses": {
+  "ok": 33,
+  "compile_error": 7,
+  "edit_error": 6,
+  "invalid": 1,
+  "llm_error": 1,
+  "duplicate": 1
+ },
+ "sweeps": 8,
+ "sweep_variants": 105,
+ "improvements": 7,
+ "minutes_to_best": 34.01,
+ "best_idea": "tuned PREFETCH_DIST=97 on top of: Expose the prefetch distance as a named constant and use a larger default (96) to better hide memory latency for the 10 M element benchmark.",
+ "progress": [
+  [
+   0.0,
+   5.22511
+  ],
+  [
+   0.99,
+   5.35457
+  ],
+  [
+   11.19,
+   5.5059
+  ],
+  [
+   13.45,
+   6.01114
+  ],
+  [
+   23.39,
+   6.1501
+  ],
+  [
+   30.44,
+   6.21268
+  ],
+  [
+   32.41,
+   6.26547
+  ],
+  [
+   34.01,
+   6.55077
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 5.22511,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 0.99,
+   "score": 5.35457,
+   "model": "gpt-oss:20b",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Replace the na\u00efve loop with a sub\u2011histogram technique that reduces write\u2011back contention and unroll the loop to process multiple elements per iteration, keeping the prefix sum in a register and accumulating sub\u2011histograms in small 32\u2011bit counters before merging into the final 64\u2011bit histogram."
+  },
+  {
+   "minutes": 6.62,
+   "score": 5.28331,
+   "model": "gpt-oss:20b",
+   "mode": "explore/rewrite/bold",
+   "status": "ok",
+   "idea": "Use 16 sub\u2011histograms to spread hot bins and an 8\u2011element loop unroll to reduce loop overhead, keeping the prefix sum in a single register and merging the sub\u2011histograms at the end."
+  },
+  {
+   "minutes": 13.66,
+   "score": null,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/refine",
+   "status": "compile_error",
+   "idea": "Add prefetching to hide memory latency, use pointer restrict qualifiers for aliasing freedom, and expose SUB as a swept constant for fine\u2011tuning sub\u2011histogram count."
+  },
+  {
+   "minutes": 19.75,
+   "score": 5.62105,
+   "model": "gpt-oss:20b",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Remove the non\u2011standard `restrict` qualifiers from the function signature so the code compiles under C++."
+  },
+  {
+   "minutes": 34.01,
+   "score": 5.56897,
+   "model": "gpt-oss:20b",
+   "mode": "exploit/diff/tune",
+   "status": "ok",
+   "idea": "Expose the prefetch distance as a named constant and use a larger default (96) to better hide memory latency for the 10 M element benchmark."
+  },
+  {
+   "minutes": 34.01,
+   "score": 6.55077,
+   "model": "gpt-oss:20b",
+   "mode": "sweep/exploit/diff/tune",
+   "status": "ok",
+   "idea": "tuned PREFETCH_DIST=97 on top of: Expose the prefetch distance as a named constant and use a larger default (96) to better hide memory latency for the 10 M element benchmark."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -23,17 +23,77 @@\n #endif\n \n // OMEGA-BLOCK-START\n-// Computes, on the calling thread, out[i] = in[0] + ... + in[i] for i < n, and\n-// hist[b] = number of i < n with (in[i] & 255) == b for b < 256. Neither out nor\n-// hist is zeroed by the caller. n is any size from 0 to 20'000'000; the sums\n-// never overflow int64.\n+#include <cstddef>\n+#define SUB 16                       // number of sub\u2011histograms (power of two)\n+#define PREFETCH_DIST 97             // distance in elements for prefetching\n+static_assert(SUB > 0 && SUB <= 32, \"SUB must be between 1 and 32\");\n+\n extern \"C\" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, uint64_t* hist) {\n-    for (int b = 0; b < 256; ++b) hist[b] = 0;\n+    // local sub\u2011histograms: [SUB][256] of uint32_t, zeroed automatically\n+    uint32_t sub_hist[SUB][256] = {};\n+\n     int64_t sum = 0;\n-    for (size_t i = 0; i < n; ++i) {\n-        sum += in[i];\n+    size_t i = 0;\n+    const size_t step = 8;           // unroll factor\n+\n+    // main loop, unrolled by 8\n+    for (; i + step <= n; i += step) {\n+        const int64_t v0 = in[i];\n+        sum += v0;\n         out[i] = sum;\n-        hist[in[i] & 255]++;\n+        sub_hist[i & (SUB - 1)][static_cast<uint8_t>(v0 & 255)]++;\n+\n+        const int64_t v1 = in[i + 1];\n+        sum += v1;\n+        out[i + 1] = sum;\n+        sub_hist[(i + 1) & (SUB - 1)][static_cast<uint8_t>(v1 & 255)]++;\n+\n+        const int64_t v2 = in[i + 2];\n+        sum += v2;\n+        out[i + 2] = sum;\n+        sub_hist[(i + 2) & (SUB - 1)][static_cast<uint8_t>(v2 & 255)]++;\n+\n+        const int64_t v3 = in[i + 3];\n+        sum += v3;\n+        out[i + 3] = sum;\n+        sub_hist[(i + 3) & (SUB - 1)][static_cast<uint8_t>(v3 & 255)]++;\n+\n+        const int64_t v4 = in[i + 4];\n+        sum += v4;\n+        out[i + 4] = sum;\n+        sub_hist[(i + 4) & (SUB - 1)][static_cast<uint8_t>(v4 & 255)]++;\n+\n+        const int64_t v5 = in[i + 5];\n+        sum += v5;\n+        out[i + 5] = sum;\n+        sub_hist[(i + 5) & (SUB - 1)][static_cast<uint8_t>(v5 & 255)]++;\n+\n+        const int64_t v6 = in[i + 6];\n+        sum += v6;\n+        out[i + 6] = sum;\n+        sub_hist[(i + 6) & (SUB - 1)][static_cast<uint8_t>(v6 & 255)]++;\n+\n+        const int64_t v7 = in[i + 7];\n+        sum += v7;\n+        out[i + 7] = sum;\n+        sub_hist[(i + 7) & (SUB - 1)][static_cast<uint8_t>(v7 & 255)]++;\n+        __builtin_prefetch(in + i + PREFETCH_DIST, 0, 1);\n+        __builtin_prefetch(out + i + PREFETCH_DIST, 1, 1);\n+    }\n+\n+    // tail processing\n+    for (; i < n; ++i) {\n+        const int64_t v = in[i];\n+        sum += v;\n+        out[i] = sum;\n+        sub_hist[i & (SUB - 1)][static_cast<uint8_t>(v & 255)]++;\n+    }\n+\n+    // merge sub\u2011histograms into final 64\u2011bit histogram\n+    for (int b = 0; b < 256; ++b) {\n+        uint64_t total = 0;\n+        for (int s = 0; s < SUB; ++s) total += sub_hist[s][b];\n+        hist[b] = total;\n     }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "best_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 13.9,
+ "model_gpu_memory_gb": 13.9,
+ "context_length": 40960,
+ "load_seconds": 0.0,
+ "median_call_seconds": 53.2,
+ "p90_call_seconds": 92.1,
+ "prompt_tokens_per_s": 2308.5,
+ "gen_tokens_per_s": 51.7,
+ "mean_prompt_tokens": 6137,
+ "mean_gen_tokens": 2769,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

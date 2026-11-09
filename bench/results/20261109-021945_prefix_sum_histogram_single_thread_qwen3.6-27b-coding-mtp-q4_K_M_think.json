@@ -1,0 +1,125 @@
+{
+ "schema": 4,
+ "example": "prefix_sum_histogram_single_thread",
+ "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+ "variant": "think",
+ "model_size_gb": 17.8,
+ "model_params": "27.3B",
+ "started": "2026-11-09T02:19:45",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 69.0,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 5.29855,
+ "best_score": 5.99269,
+ "improvement": 1.1310056524898322,
+ "llm_calls": 2,
+ "mean_llm_seconds": 2005.9,
+ "attempts": 2,
+ "ok": 1,
+ "statuses": {
+  "invalid": 1,
+  "ok": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 67.2,
+ "best_idea": "Introduce multiple private uint32_t sub-histograms to eliminate store-to-load forwarding stalls on hot bins, unroll the main loop 8x to reduce branch overhead, and accumulate the sub-histograms into t",
+ "progress": [
+  [
+   0.0,
+   5.29855
+  ],
+  [
+   67.2,
+   5.99269
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 5.29855,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 67.2,
+   "score": 5.99269,
+   "model": "qwen3.6:27b-coding-mtp-q4_K_M",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Introduce multiple private uint32_t sub-histograms to eliminate store-to-load forwarding stalls on hot bins, unroll the main loop 8x to reduce branch overhead, and accumulate the sub-histograms into the final array at the end."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -23,17 +23,49 @@\n #endif\n \n // OMEGA-BLOCK-START\n-// Computes, on the calling thread, out[i] = in[0] + ... + in[i] for i < n, and\n-// hist[b] = number of i < n with (in[i] & 255) == b for b < 256. Neither out nor\n-// hist is zeroed by the caller. n is any size from 0 to 20'000'000; the sums\n-// never overflow int64.\n+constexpr int NHIST = 8;\n extern \"C\" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, uint64_t* hist) {\n-    for (int b = 0; b < 256; ++b) hist[b] = 0;\n+    uint32_t sub_hist[NHIST][256] = {};\n     int64_t sum = 0;\n-    for (size_t i = 0; i < n; ++i) {\n+    size_t i = 0;\n+    size_t lane = 0;\n+    size_t mask = NHIST - 1;\n+\n+    for (; i + 7 < n; i += 8) {\n+        int64_t v0 = in[i], v1 = in[i+1], v2 = in[i+2], v3 = in[i+3];\n+        int64_t v4 = in[i+4], v5 = in[i+5], v6 = in[i+6], v7 = in[i+7];\n+\n+        sum += v0; out[i] = sum;\n+        sum += v1; out[i+1] = sum;\n+        sum += v2; out[i+2] = sum;\n+        sum += v3; out[i+3] = sum;\n+        sum += v4; out[i+4] = sum;\n+        sum += v5; out[i+5] = sum;\n+        sum += v6; out[i+6] = sum;\n+        sum += v7; out[i+7] = sum;\n+\n+        sub_hist[lane & mask][v0 & 255]++;\n+        sub_hist[(lane+1) & mask][v1 & 255]++;\n+        sub_hist[(lane+2) & mask][v2 & 255]++;\n+        sub_hist[(lane+3) & mask][v3 & 255]++;\n+        sub_hist[(lane+4) & mask][v4 & 255]++;\n+        sub_hist[(lane+5) & mask][v5 & 255]++;\n+        sub_hist[(lane+6) & mask][v6 & 255]++;\n+        sub_hist[(lane+7) & mask][v7 & 255]++;\n+        lane += 8;\n+    }\n+\n+    for (; i < n; ++i) {\n         sum += in[i];\n         out[i] = sum;\n-        hist[in[i] & 255]++;\n+        sub_hist[lane & mask][in[i] & 255]++;\n+        lane++;\n+    }\n+\n+    for (int b = 0; b < 256; ++b) {\n+        uint64_t h = 0;\n+        for (int k = 0; k < NHIST; ++k) h += sub_hist[k][b];\n+        hist[b] = h;\n     }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "best_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": 20.4,
+ "model_gpu_memory_gb": 14.9,
+ "context_length": 40960,
+ "load_seconds": 0.0,
+ "median_call_seconds": 2096.2,
+ "p90_call_seconds": 2096.2,
+ "prompt_tokens_per_s": 305.3,
+ "gen_tokens_per_s": 5.2,
+ "mean_prompt_tokens": 3661,
+ "mean_gen_tokens": 10258,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

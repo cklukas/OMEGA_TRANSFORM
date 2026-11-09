@@ -183,16 +183,30 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/prefi
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|
 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | cloud | 6.67211 | ×1.38 | 38.3 | 7 |
+| gpt-oss:20b (think) | local | 6.55077 | ×1.25 | 34.0 | 7 |
+| gemma4:12b-it-qat (think) | local | 6.02293 | ×1.13 | 64.1 | 2 |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | 5.99269 | ×1.13 | 67.2 | 1 |
 | nvidia/nemotron-3.5-super-vl:free (think) | cloud | 5.82027 | ×1.12 | 12.0 | 3 |
+| qwen3.5:latest (think) | local | 5.62669 | ×1.09 | 15.4 | 2 |
+| gemma4:26b-a4b-it-qat (think) | local | 5.6116 | ×1.04 | 33.7 | 1 |
 | recursive/flint-v1.0:free (think) | cloud | 5.5055 | ×1.09 | 38.2 | 3 |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | cloud | 5.47409 | ×1.26 | 19.6 | 1 |
+| richardyoung/frognano-4b-2609:latest (think) | local | 5.40658 | ×1.00 | - | 0 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (think) | local | 5.39561 | ×1.00 | - | 0 |
+| gemma4:latest (think) | local | 5.3948 | ×1.00 | - | 0 |
 | glm-4.7-flash:latest (no-think) | local | 5.31132 | ×1.00 | - | 0 |
 | frob/sarvam:30b (no-think) | local | 5.30545 | ×1.00 | - | 0 |
+| frob/sarvam:30b (think) | local | 5.28396 | ×1.00 | - | 0 |
 | xingchen-agi/xing4.0-29b-a4b:free (think) | cloud | 5.28155 | ×1.20 | 58.9 | 2 |
 | cohere/north-mini-code:free (think) | cloud | 5.22357 | ×1.19 | 22.3 | 2 |
 | qwen3-coder:30b (no-think) | local | 5.20055 | ×1.00 | - | 0 |
+| gemma4:e4b-it-qat (think) | local | 5.198 | ×1.00 | - | 0 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 5.19129 | ×1.22 | 16.0 | 5 |
+| nemotron-3-nano:4b (think) | local | 5.1615 | ×1.00 | - | 0 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 5.07887 | ×1.11 | 28.2 | 1 |
+| underdog-saluki-27b:iq2-mix (think) | local | 5.07165 | ×1.00 | - | 0 |
+| glm-4.7-flash:latest (think) | local | 5.07005 | ×1.07 | 15.0 | 1 |
+| gemma4:e2b (think) | local | 4.99717 | ×1.00 | - | 0 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 4.99407 | ×1.00 | - | 0 |
 | qwen2.5-coder:7b (no-think) | local | 4.97865 | ×1.05 | 4.6 | 1 |
 | gemma4:latest (no-think) | local | 4.95586 | ×1.10 | 5.4 | 1 |
@@ -215,5 +229,6 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/prefi
 | nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | 4.45235 | ×1.00 | - | 0 |
 | gemma4:e2b (no-think) | local | 4.3636 | ×1.00 | - | 0 |
 | dots-studio/dots-3-note-preview:free (think) | cloud | 4.16299 | ×1.00 | - | 0 |
+| qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | 4.10543 | ×1.00 | - | 0 |
 | cohere/north-mini-code:free (no-think) | cloud | 3.99453 | ×1.00 | - | 0 |
 | gemma4:26b-a4b-it-qat (no-think) | local | | | | failed: RuntimeError: the initial program does not pass the … |
