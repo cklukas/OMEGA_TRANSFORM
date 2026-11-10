@@ -65,9 +65,9 @@ def run():
 
 ## Benchmark results
 
-The best result so far comes from **nvidia/nemotron-3.5-super-vl:free (think)**, run through OpenRouter on 2026-11-02: a score of **38.5034** (×12.03 the starting program's 3.20136), reached after 19.57 of 60 minutes with 15 model requests.
+The best result so far comes from **gemma4:e4b-it-qat (think)**, run locally with Ollama on 2026-11-10: a score of **38.5963** (×12.06 the starting program's 3.20136), reached after 7.55 of 60 minutes with 17 model requests.
 
-What the starting program produces (left) and what the best program by nvidia/nemotron-3.5-super-vl:free (think) produces (right):
+What the starting program produces (left) and what the best program by gemma4:e4b-it-qat (think) produces (right):
 
 ![tammes: the starting program's solution and the best one](../assets/examples/tammes.svg)
 
@@ -78,11 +78,9 @@ The best program's ancestry, from the starting program on. "Edit" and "rewrite" 
 | Step | Minute | Score | Kind | Idea |
 |--:|--:|--:|---|---|
 | 0 | 0.0 | 3.20136 | start | initial program |
-| 1 | 6.8 | 12.0267 | edit | Replace the uniform-random initializer with a Fibonacci (golden-spiral) sphere start, then run multi-stage Thomson-style repulsion energy minimization with tangent-projected gradients and increasing exponent, followed by a shrinking-step max-min polish that … |
-| 2 | 6.8 | 31.9613 | parameter sweep | tuned STEP=0.1, POLISH=1000 on top of: Replace the uniform-random initializer with a Fibonacci (golden-spiral) sphere start, then run multi-stage Thomson-style repulsion energy minimization with tangent-projected gradients and increasing exponent, followed by … |
-| 3 | 13.4 | 35.7015 | edit | Tune the energy learning rate and polish initial step together, since the leaderboard shows LR_BASE=0.2 with STEP0=0.02 substantially outperforms the current STEP=0.1 with the hardcoded 0.06 polish step; expose both as constants and sweep them. |
-| 4 | 19.6 | 37.5846 | edit | Replace the greedy single-pair max-min polish with a simulated-annealing phase that directly minimizes the worst pairwise dot product (maximizes the minimum angle), using an incremental dot-matrix for O(n) proposed moves and geometric cooling, keeping the … |
-| 5 | 19.6 | 38.5034 | parameter sweep | tuned SA_ITERS=100000, SA_T0=0.001, SA_STEP0=0.05, SA_STEP_DECAY=1 on top of: Replace the greedy single-pair max-min polish with a simulated-annealing phase that directly minimizes the worst pairwise dot product (maximizes the minimum angle), using an … |
+| 1 | 3.9 | 38.5961 | edit | Implement a targeted min-angle polish algorithm that iteratively finds the closest pair(s) and pushes them apart using a decreasing step size, which is a specialized refinement strategy derived from the hints to maximize the minimum angular separation … |
+| 2 | 7.5 | 38.5961 | edit | Sweep the initial step size and the step size decay factor to find optimal parameters for the targeted min-angle polish algorithm, which should lead to better convergence and a higher minimum angle. |
+| 3 | 7.5 | 38.5963 | parameter sweep | tuned INITIAL_STEP_SIZE=0.3, DECAY_FACTOR=0.995 on top of: Sweep the initial step size and the step size decay factor to find optimal parameters for the targeted min-angle polish algorithm, which should lead to better convergence and a higher minimum angle. |
 
 ### The best program
 
@@ -91,210 +89,9 @@ What changed compared with the starting program:
 ```diff
 --- initial
 +++ best
-@@ -6,22 +6,232 @@
- import random
+@@ -7,20 +7,100 @@
  
  # OMEGA-BLOCK-START
-+STEP = 0.2
-+SA_ITERS = 100000
-+SA_T0 = 0.001
-+SA_STEP0 = 0.05
-+SA_STEP_DECAY = 0.99997
-+
-+def _unit(p):
-+    x, y, z = p
-+    m = math.sqrt(x*x + y*y + z*z)
-+    if m <= 0.0:
-+        return (1.0, 0.0, 0.0)
-+    return (x/m, y/m, z/m)
-+
-+def _min_angle_deg(pts):
-+    n = len(pts)
-+    best = 1.0
-+    for i in range(n):
-+        pi = pts[i]
-+        xi, yi, zi = pi
-+        for j in range(i+1, n):
-+            pj = pts[j]
-+            d = xi*pj[0] + yi*pj[1] + zi*pj[2]
-+            if d > best:
-+                best = d
-+    if best > 1.0:
-+        best = 1.0
-+    elif best < -1.0:
-+        best = -1.0
-+    return math.degrees(math.acos(best))
-+
-+def _fibonacci(n):
-+    pts = []
-+    phi = math.pi * (3.0 - math.sqrt(5.0))
-+    for i in range(n):
-+        z = 1.0 - 2.0 * (i + 0.5) / n
-+        r = math.sqrt(1.0 - z*z)
-+        t = phi * i
-+        pts.append((r*math.cos(t), r*math.sin(t), z))
-+    return pts
-+
-+def _energy_optimize(pts, schedule):
-+    pts = [list(p) for p in pts]
-+    n = len(pts)
-+    for s, base_step, iters in schedule:
-+        for _ in range(iters):
-+            forces = [[0.0, 0.0, 0.0] for _ in range(n)]
-+            maxf = 0.0
-+            for i in range(n):
-+                pi = pts[i]
-+                xi, yi, zi = pi
-+                fx = fy = fz = 0.0
-+                for j in range(n):
-+                    if i == j:
-+                        continue
-+                    pj = pts[j]
-+                    dx = xi - pj[0]
-+                    dy = yi - pj[1]
-+                    dz = zi - pj[2]
-+                    d2 = dx*dx + dy*dy + dz*dz
-+                    if d2 < 1e-20:
-+                        continue
-+                    d = math.sqrt(d2)
-+                    coef = s / (d ** (s + 2.0))
-+                    fx += coef*dx
-+                    fy += coef*dy
-+                    fz += coef*dz
-+                dotf = fx*xi + fy*yi + fz*zi
-+                fx -= dotf*xi
-+                fy -= dotf*yi
-+                fz -= dotf*zi
-+                f2 = fx*fx + fy*fy + fz*fz
-+                if f2 > maxf:
-+                    maxf = f2
-+                forces[i] = (fx, fy, fz)
-+            if maxf <= 0.0:
-+                break
-+            scale = base_step / math.sqrt(maxf)
-+            for i in range(n):
-+                fx, fy, fz = forces[i]
-+                pi = pts[i]
-+                pi[0] += scale*fx
-+                pi[1] += scale*fy
-+                pi[2] += scale*fz
-+                m = math.sqrt(pi[0]*pi[0] + pi[1]*pi[1] + pi[2]*pi[2])
-+                if m > 1e-12:
-+                    pi[0] /= m
-+                    pi[1] /= m
-+                    pi[2] /= m
-+    return [(p[0], p[1], p[2]) for p in pts]
-+
-+def _sa_polish(pts, iters, t0, step0, step_decay, seed):
-+    pts = [list(p) for p in pts]
-+    n = len(pts)
-+    rng = random.Random(987654321 + seed)
-+    D = [[0.0] * n for _ in range(n)]
-+    row_max = [0.0] * n
-+    for i in range(n):
-+        pi = pts[i]
-+        rmax = -2.0
-+        for j in range(n):
-+            if i == j:
-+                continue
-+            pj = pts[j]
-+            d = pi[0] * pj[0] + pi[1] * pj[1] + pi[2] * pj[2]
-+            D[i][j] = d
-+            if d > rmax:
-+                rmax = d
-+        row_max[i] = rmax
-+    cur = row_max[0]
-+    for v in row_max[1:]:
-+        if v > cur:
-+            cur = v
-+    best = cur
-+    best_pts = [p[:] for p in pts]
-+    t1 = t0 * 0.001
-+    T = t0
-+    step = step0
-+    cooling = math.pow(t1 / t0, 1.0 / iters)
-+    for _ in range(iters):
-+        i = rng.randrange(n)
-+        pi = pts[i]
-+        ax = rng.gauss(0.0, 1.0)
-+        ay = rng.gauss(0.0, 1.0)
-+        az = rng.gauss(0.0, 1.0)
-+        dot = ax * pi[0] + ay * pi[1] + az * pi[2]
-+        ax -= dot * pi[0]
-+        ay -= dot * pi[1]
-+        az -= dot * pi[2]
-+        nm = math.sqrt(ax * ax + ay * ay + az * az)
-+        if nm < 1e-14:
-+            T *= cooling
-+            step *= step_decay
-+            continue
-+        inv = step / nm
-+        nx = pi[0] + ax * inv
-+        ny = pi[1] + ay * inv
-+        nz = pi[2] + az * inv
-+        nn = math.sqrt(nx * nx + ny * ny + nz * nz)
-+        nx /= nn
-+        ny /= nn
-+        nz /= nn
-+        new_row = [0.0] * n
-+        nmax = -2.0
-+        for j in range(n):
-+            if j == i:
-+                continue
-+            pj = pts[j]
-+            d = nx * pj[0] + ny * pj[1] + nz * pj[2]
-+            new_row[j] = d
-+            if d > nmax:
-+                nmax = d
-+        old_row = D[i]
-+        D[i] = new_row
-+        saved = row_max[:]
-+        row_max[i] = nmax
-+        for j in range(n):
-+            if j == i:
-+                continue
-+            oj = old_row[j]
-+            nj = new_row[j]
-+            D[j][i] = nj
-+            if nj > row_max[j]:
-+                row_max[j] = nj
-+            elif oj == row_max[j] and nj < oj:
-+                rmax = -2.0
-+                Dj = D[j]
-+                for k in range(n):
-+                    if k == j:
-+                        continue
-+                    d = Dj[k]
-+                    if d > rmax:
-+                        rmax = d
-+                row_max[j] = rmax
-+        newcur = row_max[0]
-+        for v in row_max[1:]:
-+            if v > newcur:
-+                newcur = v
-+        accept = False
-+        if newcur <= cur:
-+            accept = True
-+        elif rng.random() < math.exp((cur - newcur) / T):
-+            accept = True
-+        if accept:
-+            cur = newcur
-+            pts[i] = (nx, ny, nz)
-+            if cur < best:
-+                best = cur
-+                best_pts = [p[:] for p in pts]
-+        else:
-+            D[i] = old_row
-+            row_max = saved
-+            for j in range(n):
-+                if j != i:
-+                    D[j][i] = old_row[j]
-+        T *= cooling
-+        step *= step_decay
-+        if T < 1e-15:
-+            break
-+    return [(p[0], p[1], p[2]) for p in best_pts]
-+
  def construct(n=30):
 -    """Return a list of n points (x, y, z) on the unit sphere.
 -
@@ -303,39 +100,102 @@ What changed compared with the starting program:
 -    start draws uniformly random points with a fixed seed, so some pairs end up
 -    close together.
 -    """
--    rng = random.Random(1)
--    points = []
--    for _ in range(n):
--        z = rng.uniform(-1.0, 1.0)
--        phi = rng.uniform(0.0, 2 * math.pi)
--        s = math.sqrt(1.0 - z * z)
++    """Return a list of n points (x, y, z) on the unit sphere."""
+     rng = random.Random(1)
++    
++    # Initial random placement
+     points = []
+     for _ in range(n):
+         z = rng.uniform(-1.0, 1.0)
+         phi = rng.uniform(0.0, 2 * math.pi)
+         s = math.sqrt(1.0 - z * z)
 -        points.append((s * math.cos(phi), s * math.sin(phi), z))
--    return points
-+    schedule = [
-+        (1.0, STEP, 80),
-+        (2.0, STEP/2.0, 80),
-+        (4.0, STEP/4.0, 100),
-+        (8.0, STEP/10.0, 120),
-+    ]
-+    best_pts = None
-+    best_score = -1.0
-+    for seed in range(3):
-+        pts = _fibonacci(n)
-+        rng = random.Random(seed)
-+        jit = 0.003
-+        pts = [(
-+            p[0] + rng.uniform(-jit, jit),
-+            p[1] + rng.uniform(-jit, jit),
-+            p[2] + rng.uniform(-jit, jit),
-+        ) for p in pts]
-+        pts = [_unit(p) for p in pts]
-+        pts = _energy_optimize(pts, schedule)
-+        pts = _sa_polish(pts, SA_ITERS, SA_T0, SA_STEP0, SA_STEP_DECAY, seed)
-+        score = _min_angle_deg(pts)
-+        if score > best_score:
-+            best_score = score
-+            best_pts = pts
-+    return best_pts
++        points.append([s * math.cos(phi), s * math.sin(phi), z])
++
++    # Min-angle polish optimization
++    INITIAL_STEP_SIZE = 0.3
++    DECAY_FACTOR = 0.995
++    max_iterations = 10000
++    
++    step_size = INITIAL_STEP_SIZE
++    for iteration in range(max_iterations):
++        
++        # Find minimum squared distance and closest pair indices
++        min_dist_sq = float('inf')
++        closest_pairs = []
++        
++        for i in range(n):
++            for j in range(i + 1, n):
++                dx = points[i][0] - points[j][0]
++                dy = points[i][1] - points[j][1]
++                dz = points[i][2] - points[j][2]
++                dist_sq = dx*dx + dy*dy + dz*dz
++                
++                if dist_sq < min_dist_sq:
++                    min_dist_sq = dist_sq
++                    closest_pairs = [(i, j)]
++                elif abs(dist_sq - min_dist_sq) < 1e-12:
++                    closest_pairs.append((i, j))
++
++        if not closest_pairs:
++            break # Should not happen for n>1
++
++        new_points = [list(p) for p in points]
++        
++        # Apply repulsive force only to closest pairs
++        for i, j in closest_pairs:
++            Pi = points[i]
++            Pj = points[j]
++            
++            # Vector pointing from Pj to Pi
++            dx = Pi[0] - Pj[0]
++            dy = Pi[1] - Pj[1]
++            dz = Pi[2] - Pj[2]
++            
++            # Normalize direction vector (unit distance)
++            mag = math.sqrt(dx*dx + dy*dy + dz*dz)
++            if mag < 1e-12: continue
++            
++            # Calculate movement vector (normalized direction * step_size)
++            # We push points away from each other along the chord direction.
++            # For Pi, displacement is proportional to (Pi - Pj).
++            # For Pj, displacement is proportional to (Pj - Pi).
++            
++            # Calculate displacement scaled by step size
++            # We use a simple linear push proportional to the current step size.
++            d_i = (dx/mag) * step_size
++            d_j = -(dx/mag) * step_size
++
++            # Update coordinates: Pi moves away from Pj
++            new_points[i] = (Pi[0] + d_i, Pi[1] + d_i, Pi[2] + d_i) # Note: This needs refinement, d_i should be a vector (dx/mag * step_size)
++            
++            # Correct vector updates (using tuples for clarity in calculation)
++            
++            # Displacement for Pi (Away from Pj)
++            disp_i = (dx/mag * step_size, dy/mag * step_size, dz/mag * step_size)
++            new_points[i] = (Pi[0] + disp_i[0], Pi[1] + disp_i[1], Pi[2] + disp_i[2])
++
++            # Displacement for Pj (Away from Pi)
++            disp_j = (-dx/mag * step_size, -dy/mag * step_size, -dz/mag * step_size)
++            new_points[j] = (Pj[0] + disp_j[0], Pj[1] + disp_j[1], Pj[2] + disp_j[2])
++
++        points = new_points
++        
++        # Renormalize all points after updates
++        for i in range(n):
++            p = points[i]
++            mag_sq = p[0]**2 + p[1]**2 + p[2]**2
++            mag = math.sqrt(mag_sq)
++            if mag > 1e-9:
++                points[i] = (p[0]/mag, p[1]/mag, p[2]/mag)
++            else:
++                # Safety fallback
++                points[i] = (1.0, 0.0, 0.0)
++
++        # Decrease step size for convergence
++        step_size *= 0.999
++
+     return points
  # OMEGA-BLOCK-END
 ```
 
@@ -345,22 +205,28 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/tamme
 
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|
+| gemma4:e4b-it-qat (think) | local | 38.5963 | ×12.06 | 7.5 | 4 |
 | nvidia/nemotron-3.5-super-vl:free (think) | cloud | 38.5034 | ×12.03 | 19.6 | 4 |
 | dots-studio/dots-3-note-preview:free (no-think) | cloud | 38.4693 | ×12.02 | 15.7 | 10 |
 | gemma4:26b-a4b-it-qat (no-think) | local | 38.3889 | ×11.99 | 15.1 | 4 |
 | cohere/north-mini-code:free (think) | cloud | 38.3608 | ×11.98 | 60.7 | 5 |
 | nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | 38.2850 | ×11.96 | 5.2 | 8 |
 | gpt-oss:20b (no-think) | local | 38.2397 | ×11.94 | 50.1 | 12 |
+| gpt-oss:20b (think) | local | 37.8364 | ×11.82 | 22.0 | 6 |
 | recursive/flint-v1.0:free (think) | cloud | 37.7404 | ×11.79 | 35.4 | 12 |
+| gemma4:latest (think) | local | 37.2435 | ×11.63 | 20.3 | 5 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | cloud | 37.1262 | ×11.60 | 26.6 | 5 |
 | cohere/north-mini-code:free (no-think) | cloud | 37.0540 | ×11.57 | 1.0 | 4 |
+| gemma4:12b-it-qat (think) | local | 37.0497 | ×11.57 | 45.6 | 2 |
 | gemma4:latest (no-think) | local | 36.8186 | ×11.50 | 8.7 | 7 |
 | nvidia/nemotron-3.5-lightning:free (think) | cloud | 36.3532 | ×11.36 | 23.0 | 5 |
 | frob/sarvam:30b (no-think) | local | 34.5838 | ×10.80 | 32.4 | 2 |
+| hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (think) | local | 33.5039 | ×10.47 | 63.2 | 6 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 32.7402 | ×10.23 | 6.2 | 2 |
 | nvidia/nemotron-3.5-lightning:free (no-think) | cloud | 32.7402 | ×10.23 | 6.3 | 2 |
 | qwen2.5-coder:7b (no-think) | local | 32.7402 | ×10.23 | 0.8 | 1 |
 | qwen3.5:latest (no-think) | local | 32.7402 | ×10.23 | 9.1 | 2 |
+| qwen3.5:latest (think) | local | 32.7402 | ×10.23 | 0.5 | 1 |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | 32.7402 | ×10.23 | 0.3 | 1 |
 | qwen3-coder:30b (no-think) | local | 30.2470 | ×9.45 | 14.4 | 5 |
 | xingchen-agi/xing4.0-29b-a4b:free (think) | cloud | 29.5239 | ×9.22 | 34.0 | 3 |
@@ -372,11 +238,15 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/tamme
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | cloud | 21.4033 | ×6.69 | 14.7 | 3 |
 | gemma4:e4b-it-qat (no-think) | local | 21.0395 | ×6.57 | 1.0 | 2 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 14.3393 | ×4.48 | 8.3 | 5 |
+| richardyoung/frognano-4b-2609:latest (think) | local | 13.6948 | ×4.28 | 0.9 | 1 |
 | underdog-saluki-27b:iq2-mix (no-think) | local | 12.9182 | ×4.04 | 14.8 | 1 |
 | xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 12.8503 | ×4.01 | 8.2 | 1 |
+| nemotron-3-nano:4b (think) | local | 12.0000 | ×3.75 | 2.5 | 1 |
+| gemma4:e2b (think) | local | 10.3782 | ×3.24 | 1.3 | 3 |
 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | 9.80576 | ×3.06 | 6.8 | 3 |
 | gemma4:e2b (no-think) | local | 9.55566 | ×2.98 | 1.0 | 3 |
 | nemotron-3-nano:4b (no-think) | local | 9.50191 | ×2.97 | 2.5 | 1 |
 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | 3.20136 | ×1.00 | - | 0 |
 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | local | 3.20136 | ×1.00 | - | 0 |
 | llm-jp-4-8b-omega:q4_k_m (no-think) | local | 3.20136 | ×1.00 | - | 0 |
+| underdog-saluki-27b:iq2-mix (think) | local | 3.20136 | ×1.00 | - | 0 |

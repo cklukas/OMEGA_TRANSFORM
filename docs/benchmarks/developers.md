@@ -53,7 +53,7 @@ The developer's best single model, the mean share over all its models, and the m
 |---|--:|---|---|--:|--:|--:|
 | OpenAI | 1 | gpt-oss:20b (no-think) | 2025-08-04 | **77%** | 77% | 77% |
 | Alibaba (Qwen) | 5 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 2026-04-21 | **68%** | 43% | 78% |
-| Google | 5 | gemma4:12b-it-qat (no-think) | 2026-05-23 | **66%** | 51% | 83% |
+| Google | 5 | gemma4:12b-it-qat (no-think) | 2026-05-23 | **66%** | 51% | 82% |
 | Conway | 1 | underdog-saluki-27b:iq2-mix (no-think) | 2026-10-08 | **38%** | 38% | 38% |
 | Sarvam AI | 1 | frob/sarvam:30b (no-think) | 2026-03-03 | **32%** | 32% | 32% |
 | Z.ai | 1 | glm-4.7-flash:latest (no-think) | 2026-01-19 | **32%** | 32% | 32% |
@@ -73,10 +73,10 @@ Each developer's ranked models by release date (the original publication on Hugg
 | Alibaba (Qwen) | under 15B | 2024-09-17 | qwen2.5-coder:7b (no-think) | 7.6B | 25% |
 | Alibaba (Qwen) | under 15B | 2026-02-27 | qwen3.5:latest (no-think) | 9.7B | 41% |
 | Alibaba (Qwen) | 15B and up | 2025-07-28 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | 30.5B | 47% |
-| Alibaba (Qwen) | 15B and up | 2025-07-31 | qwen3-coder:30b (no-think) | 30.5B | 34% |
+| Alibaba (Qwen) | 15B and up | 2025-07-31 | qwen3-coder:30b (no-think) | 30.5B | 33% |
 | Alibaba (Qwen) | 15B and up | 2026-04-21 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 27.3B | 68% |
 | Conway | 15B and up | 2026-10-08 | underdog-saluki-27b:iq2-mix (no-think) | 26.9B | 38% |
-| Google | under 15B | 2026-03-02 | gemma4:e2b (no-think) | 5.1B | 32% |
+| Google | under 15B | 2026-03-02 | gemma4:e2b (no-think) | 5.1B | 31% |
 | Google | under 15B | 2026-03-02 | gemma4:e4b-it-qat (no-think) | 7.5B | 39% |
 | Google | under 15B | 2026-03-02 | gemma4:latest (no-think) | 8.1B | 59% |
 | Google | under 15B | 2026-05-23 | gemma4:12b-it-qat (no-think) | 11.9B | 66% |
@@ -96,7 +96,7 @@ xychart-beta
     title "Alibaba (Qwen), local, 15B and up: share by release date"
     x-axis ["qwen3:30b-a3b-instruct-2507-q4_K_M (2025-07)", "qwen3-coder:30b (2025-07)", "qwen3.6:27b-coding-mtp-q4_K_M (2026-04)"]
     y-axis "% of the best gain" 0 --> 100
-    line [47.47, 33.54, 68.02]
+    line [47.3, 33.17, 67.67]
 ```
 
 ## Cloud models (OpenRouter)

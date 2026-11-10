@@ -1,0 +1,124 @@
+{
+ "schema": 4,
+ "example": "sort_u32_single_thread",
+ "model": "frob/sarvam:30b",
+ "variant": "think",
+ "model_size_gb": 19.6,
+ "model_params": "32.2B",
+ "started": "2026-11-09T15:11:32",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 70.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 21.44659339503638,
+ "best_score": 69.68833360272828,
+ "improvement": 3.249389416729326,
+ "llm_calls": 7,
+ "mean_llm_seconds": 580.6,
+ "attempts": 7,
+ "ok": 1,
+ "statuses": {
+  "llm_error": 1,
+  "edit_error": 5,
+  "ok": 1
+ },
+ "sweeps": 1,
+ "sweep_variants": 16,
+ "improvements": 1,
+ "minutes_to_best": 40.03,
+ "best_idea": "Use an in-place 8\u2011bit LSD radix sort with insertion sort for tiny arrays to maximize throughput.",
+ "progress": [
+  [
+   0.0,
+   21.44659339503638
+  ],
+  [
+   40.03,
+   69.68833360272828
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 21.44659339503638,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 40.03,
+   "score": 69.68833360272828,
+   "model": "frob/sarvam:30b",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "Use an in-place 8\u2011bit LSD radix sort with insertion sort for tiny arrays to maximize throughput."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,22 +19,52 @@\n #endif\n \n // OMEGA-BLOCK-START\n-// Sorts a[0..n) ascending, in place, on the calling thread. n is any size from\n-// 0 to 2'000'000. Extra memory may be allocated freely.\n-static void merge_sort_rec(uint32_t* a, uint32_t* tmp, size_t lo, size_t hi) {\n-    if (hi - lo < 2) return;\n-    size_t mid = lo + (hi - lo) / 2;\n-    merge_sort_rec(a, tmp, lo, mid);\n-    merge_sort_rec(a, tmp, mid, hi);\n-    size_t i = lo, j = mid, k = lo;\n-    while (i < mid && j < hi) tmp[k++] = (a[j] < a[i]) ? a[j++] : a[i++];\n-    while (i < mid) tmp[k++] = a[i++];\n-    while (j < hi) tmp[k++] = a[j++];\n-    for (size_t t = lo; t < hi; ++t) a[t] = tmp[t];\n+constexpr size_t BIT_PASS = 8;\n+constexpr size_t PASS_COUNT = 4;\n+constexpr size_t INSERTION_SORT_THRESHOLD = 64;\n+\n+static void insertion_sort(uint32_t* a, size_t n) {\n+    for (size_t i = 1; i < n; ++i) {\n+        uint32_t key = a[i];\n+        size_t j = i;\n+        while (j > 0 && a[j-1] > key) {\n+            a[j] = a[j-1];\n+            --j;\n+        }\n+        a[j] = key;\n+    }\n+}\n+\n+static void radix_sort_8bit(uint32_t* a, size_t n) {\n+    std::vector<uint32_t> tmp(n);\n+    const size_t mask = (1ULL << BIT_PASS) - 1;\n+    for (size_t pass = 0; pass < PASS_COUNT; ++pass) {\n+        std::vector<size_t> histogram(1 << BIT_PASS, 0);\n+        for (size_t i = 0; i < n; ++i) {\n+            uint32_t byte = (a[i] >> (pass * BIT_PASS)) & mask;\n+            ++histogram[byte];\n+        }\n+        size_t sum = 0;\n+        for (size_t i = 0; i < (1 << BIT_PASS); ++i) {\n+            size_t next = sum;\n+            sum += histogram[i];\n+            histogram[i] = next;\n+        }\n+        size_t pos = 0;\n+        for (size_t i = 0; i < n; ++i) {\n+            uint32_t byte = (a[i] >> (pass * BIT_PASS)) & mask;\n+            pos = histogram[byte]++;\n+            tmp[pos] = a[i];\n+        }\n+        std::swap_ranges(a, a+n, tmp.begin());\n+    }\n }\n \n extern \"C\" void sort_u32(uint32_t* a, size_t n) {\n-    std::vector<uint32_t> tmp(n);\n-    merge_sort_rec(a, tmp.data(), 0, n);\n+    if (n <= INSERTION_SORT_THRESHOLD) {\n+        insertion_sort(a, n);\n+    } else {\n+        radix_sort_8bit(a, n);\n+    }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "best_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": 21.2,
+ "model_gpu_memory_gb": 18.7,
+ "context_length": 40960,
+ "load_seconds": 0.0,
+ "median_call_seconds": 606.6,
+ "p90_call_seconds": 690.7,
+ "prompt_tokens_per_s": 2609.9,
+ "gen_tokens_per_s": 39.1,
+ "mean_prompt_tokens": 4222,
+ "mean_gen_tokens": 22787,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}

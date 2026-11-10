@@ -1,0 +1,132 @@
+{
+ "schema": 4,
+ "example": "sort_u32_single_thread",
+ "model": "gemma4:26b-a4b-it-qat",
+ "variant": "think",
+ "model_size_gb": 15.6,
+ "model_params": "25.2B",
+ "started": "2026-11-09T11:37:36",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 65.3,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 21.747607977698234,
+ "best_score": 156.26176487546672,
+ "improvement": 7.185239178290792,
+ "llm_calls": 10,
+ "mean_llm_seconds": 374.3,
+ "attempts": 10,
+ "ok": 7,
+ "statuses": {
+  "ok": 7,
+  "compile_error": 2,
+  "edit_error": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 3,
+ "minutes_to_best": 63.55,
+ "best_idea": "Replace the inefficient recursive merge sort with a high-performance 4-pass 8-bit LSD Radix Sort with early exits for sorted and reverse-sorted arrays.",
+ "progress": [
+  [
+   0.0,
+   21.747607977698234
+  ],
+  [
+   8.6,
+   133.00245463114013
+  ],
+  [
+   24.02,
+   136.285061517629
+  ],
+  [
+   63.55,
+   156.26176487546672
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 21.747607977698234,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 63.55,
+   "score": 156.26176487546672,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Replace the inefficient recursive merge sort with a high-performance 4-pass 8-bit LSD Radix Sort with early exits for sorted and reverse-sorted arrays."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -21,20 +21,58 @@\n // OMEGA-BLOCK-START\n // Sorts a[0..n) ascending, in place, on the calling thread. n is any size from\n // 0 to 2'000'000. Extra memory may be allocated freely.\n-static void merge_sort_rec(uint32_t* a, uint32_t* tmp, size_t lo, size_t hi) {\n-    if (hi - lo < 2) return;\n-    size_t mid = lo + (hi - lo) / 2;\n-    merge_sort_rec(a, tmp, lo, mid);\n-    merge_sort_rec(a, tmp, mid, hi);\n-    size_t i = lo, j = mid, k = lo;\n-    while (i < mid && j < hi) tmp[k++] = (a[j] < a[i]) ? a[j++] : a[i++];\n-    while (i < mid) tmp[k++] = a[i++];\n-    while (j < hi) tmp[k++] = a[j++];\n-    for (size_t t = lo; t < hi; ++t) a[t] = tmp[t];\n-}\n+extern \"C\" void sort_u32(uint32_t* a, size_t n) {\n+    if (n < 2) return;\n \n-extern \"C\" void sort_u32(uint32_t* a, size_t n) {\n-    std::vector<uint32_t> tmp(n);\n-    merge_sort_rec(a, tmp.data(), 0, n);\n+    bool sorted = true;\n+    bool reverse_sorted = true;\n+    for (size_t i = 1; i < n; ++i) {\n+        if (a[i] < a[i - 1]) sorted = false;\n+        else if (a[i] > a[i - 1]) reverse_sorted = false;\n+        if (!sorted && !reverse_sorted) break;\n+    }\n+    if (sorted) return;\n+    if (reverse_sorted) {\n+        std::reverse(a, a + n);\n+        return;\n+    }\n+\n+    if (n < 1024) {\n+        std::sort(a, a + n);\n+        return;\n+    }\n+\n+    uint32_t* tmp = static_cast<uint32_t*>(std::malloc(n * sizeof(uint32_t)));\n+    if (!tmp) {\n+        std::sort(a, a + n);\n+        return;\n+    }\n+\n+    uint32_t* src = a;\n+    uint32_t* dst = tmp;\n+\n+    for (int pass = 0; pass < 4; ++pass) {\n+        uint32_t count[256] = {0};\n+        int shift = pass << 3;\n+        for (size_t i = 0; i < n; ++i) {\n+            count[(src[i] >> shift) & 0xFF]++;\n+        }\n+\n+        uint32_t offset[256];\n+        offset[0] = 0;\n+        for (int i = 1; i < 256; ++i) {\n+            offset[i] = offset[i - 1] + count[i - 1];\n+        }\n+\n+        for (size_t i = 0; i < n; ++i) {\n+            dst[offset[(src[i] >> shift) & 0xFF]++] = src[i];\n+        }\n+        std::swap(src, dst);\n+    }\n+\n+    if (src != a) {\n+        std::memcpy(a, src, n * sizeof(uint32_t));\n+    }\n+    std::free(tmp);\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "best_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": 16.1,
+ "model_gpu_memory_gb": 14.4,
+ "context_length": 40960,
+ "load_seconds": 0.0,
+ "median_call_seconds": 339.0,
+ "p90_call_seconds": 599.9,
+ "prompt_tokens_per_s": 815.0,
+ "gen_tokens_per_s": 33.1,
+ "mean_prompt_tokens": 5107,
+ "mean_gen_tokens": 12076,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}
