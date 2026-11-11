@@ -1,0 +1,142 @@
+{
+ "schema": 4,
+ "example": "matmul_f32",
+ "model": "gemma4:latest",
+ "variant": "think",
+ "model_size_gb": 6.6,
+ "model_params": "7.5B",
+ "started": "2026-11-11T01:59:10",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 24.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 0.854489,
+ "best_score": 22.1222,
+ "improvement": 25.889391203397583,
+ "llm_calls": 24,
+ "mean_llm_seconds": 48.7,
+ "attempts": 24,
+ "ok": 9,
+ "statuses": {
+  "compile_error": 10,
+  "invalid": 1,
+  "ok": 9,
+  "edit_error": 1,
+  "duplicate": 3
+ },
+ "sweeps": 1,
+ "sweep_variants": 8,
+ "improvements": 4,
+ "minutes_to_best": 22.0,
+ "best_idea": "Wrap the entire matmul function implementation inside `#if defined(__ARM_NEON)` to ensure that the NEON intrinsics and related types are only compiled when the target architecture supports them, resol",
+ "progress": [
+  [
+   0.0,
+   0.854489
+  ],
+  [
+   6.83,
+   13.9622
+  ],
+  [
+   6.85,
+   14.7854
+  ],
+  [
+   7.31,
+   20.676
+  ],
+  [
+   22.0,
+   22.1222
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.854489,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 6.83,
+   "score": 13.9622,
+   "model": "gemma4:latest",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Reorder the loops to i-k-j to improve data locality for B and C, as the inner loop (j) will then stream contiguous rows of B and C, and explicitly initialize C to ensure correctness during accumulation."
+  },
+  {
+   "minutes": 16.94,
+   "score": null,
+   "model": "gemma4:latest",
+   "mode": "exploit/diff/refine",
+   "status": "compile_error",
+   "idea": "Vectorize the innermost accumulation loop using ARM NEON intrinsics to exploit SIMD parallelism, which is critical for maximizing GFLOPS on Apple Silicon."
+  },
+  {
+   "minutes": 22.0,
+   "score": 22.1222,
+   "model": "gemma4:latest",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Wrap the entire matmul function implementation inside `#if defined(__ARM_NEON)` to ensure that the NEON intrinsics and related types are only compiled when the target architecture supports them, resolving the compilation error."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,14 +19,47 @@\n #endif\n \n // OMEGA-BLOCK-START\n-// Computes C = A * B. C is NOT zeroed by the caller. Any number of threads may be\n-// used (std::thread is available); n is any size from 1 to 2048.\n+#if defined(__ARM_NEON)\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+    // Initialize C to zero efficiently\n+    std::memset(C, 0, n * n * sizeof(float));\n+\n+    // Loop order i-k-j for better cache locality\n+    for (int i = 0; i < n; ++i) {\n+        for (int k = 0; k < n; ++k) {\n+            float Aik = A[i * n + k];\n+            __float32x4_t vAik = vdupq_n_f32(Aik);\n+            int j = 0;\n+            // Vectorized inner loop (j)\n+            for (; j <= n - 4; j += 4) {\n+                // Load 4 elements of B\n+                __float32x4_t vB = vld1q_f32(B + k * n + j);\n+                // Compute product: vAik * vB\n+                __float32x4_t vProduct = vmulq_f32(vAik, vB);\n+                // Load 4 elements of C, accumulate, and store back\n+                __float32x4_t vC = vld1q_f32(C + i * n + j);\n+                vC = vaddq_f32(vC, vProduct);\n+                vst1q_f32(C + i * n + j, vC);\n+            }\n+            // Handle remainder elements\n+            for (; j < n; ++j) {\n+                C[i * n + j] += Aik * B[k * n + j];\n+            }\n         }\n+    }\n }\n+#else\n+extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n+    // Scalar implementation for non-NEON platforms\n+    std::memset(C, 0, n * n * sizeof(float));\n+    for (int i = 0; i < n; ++i) {\n+        for (int k = 0; k < n; ++k) {\n+            float Aik = A[i * n + k];\n+            for (int j = 0; j < n; ++j) {\n+                C[i * n + j] += Aik * B[k * n + j];\n+            }\n+        }\n+    }\n+}\n+#endif\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 3.3,
+ "model_gpu_memory_gb": 3.3,
+ "context_length": 40960,
+ "load_seconds": 0.3,
+ "median_call_seconds": 45.8,
+ "p90_call_seconds": 65.3,
+ "prompt_tokens_per_s": 1588.6,
+ "gen_tokens_per_s": 53.7,
+ "mean_prompt_tokens": 3093,
+ "mean_gen_tokens": 2395,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

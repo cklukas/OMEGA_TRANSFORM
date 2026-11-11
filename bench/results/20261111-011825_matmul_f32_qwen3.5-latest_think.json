@@ -1,0 +1,126 @@
+{
+ "schema": 4,
+ "example": "matmul_f32",
+ "model": "qwen3.5:latest",
+ "variant": "think",
+ "model_size_gb": 6.6,
+ "model_params": "9.0B",
+ "started": "2026-11-11T01:18:25",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 40.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 0.974697,
+ "best_score": 10.3521,
+ "improvement": 10.62083909153306,
+ "llm_calls": 19,
+ "mean_llm_seconds": 118.2,
+ "attempts": 19,
+ "ok": 3,
+ "statuses": {
+  "invalid": 6,
+  "compile_error": 6,
+  "duplicate": 1,
+  "edit_error": 3,
+  "ok": 3
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 2,
+ "minutes_to_best": 38.43,
+ "best_idea": "fix constexpr to regular int for hardware_concurrency(), and fix join() calls to use thread handle",
+ "progress": [
+  [
+   0.0,
+   0.974697
+  ],
+  [
+   38.07,
+   9.89886
+  ],
+  [
+   38.43,
+   10.3521
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.974697,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 14.7,
+   "score": null,
+   "model": "qwen3.5:latest",
+   "mode": "exploit/diff/refine",
+   "status": "compile_error",
+   "idea": "Zero-initialize C to fix accumulation semantics for i-k-j loop order, change loop order to stream B rows (i-k-j), and add multithreading over row blocks to utilize all 10 cores."
+  },
+  {
+   "minutes": 38.43,
+   "score": 10.3521,
+   "model": "qwen3.5:latest",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "fix constexpr to regular int for hardware_concurrency(), and fix join() calls to use thread handle"
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -22,11 +22,37 @@\n // Computes C = A * B. C is NOT zeroed by the caller. Any number of threads may be\n // used (std::thread is available); n is any size from 1 to 2048.\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n-        }\n+    std::fill(C, C + (size_t)n * n, 0.0f);\n+    const int NUM_THREADS = std::thread::hardware_concurrency();\n+    if (NUM_THREADS <= 0) return;\n+    \n+    std::vector<std::thread> threads;\n+    const int stride = (n + NUM_THREADS - 1) / NUM_THREADS; // Rows per thread\n+    \n+    for (int t = 0; t < NUM_THREADS; ++t) {\n+        int start_i = t * stride;\n+        int end_i = std::min((t + 1) * stride, n);\n+        \n+        threads.emplace_back([&, start_i, end_i] () {\n+            for (int i = start_i; i < end_i; ++i) {\n+                const float* rowA = A + (size_t)i * n;\n+                float* rowC = C + (size_t)i * n;\n+                \n+                // Use i-k-j loop order: iterate k then j to stream B rows\n+                for (int k = 0; k < n; ++k) {\n+                    const float a = rowA[k];\n+                    const float* rowB = B + (size_t)k * n;\n+                    \n+                    // Vectorized accumulation via compiler auto-vectorization\n+                    // Accesses rowC[j] and rowB[j] contiguously in inner loop\n+                    for (int j = 0; j < n; ++j) {\n+                        rowC[j] += a * rowB[j];\n+                    }\n+                }\n+            }\n+        });\n+    }\n+    \n+    for (auto& t : threads) t.join();\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 9.4,
+ "model_gpu_memory_gb": 9.4,
+ "context_length": 40960,
+ "load_seconds": 0.0,
+ "median_call_seconds": 42.7,
+ "p90_call_seconds": 458.6,
+ "prompt_tokens_per_s": 1141.6,
+ "gen_tokens_per_s": 35.4,
+ "mean_prompt_tokens": 2568,
+ "mean_gen_tokens": 4025,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

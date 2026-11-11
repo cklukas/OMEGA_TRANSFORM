@@ -1,0 +1,127 @@
+{
+ "schema": 4,
+ "example": "matmul_f32",
+ "model": "hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M",
+ "variant": "think",
+ "model_size_gb": 1.1,
+ "model_params": "1.73B",
+ "started": "2026-11-10T22:58:59",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 66.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 1.08009,
+ "best_score": 13.0653,
+ "improvement": 12.096491959003417,
+ "llm_calls": 22,
+ "mean_llm_seconds": 172.1,
+ "attempts": 22,
+ "ok": 4,
+ "statuses": {
+  "edit_error": 5,
+  "llm_error": 2,
+  "invalid": 6,
+  "compile_error": 3,
+  "duplicate": 2,
+  "ok": 4
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 2,
+ "minutes_to_best": 63.39,
+ "best_idea": "Clear the output buffer before overwriting and use unsigned indices for the flat write loop, while preserving the i\u2011k\u2011j order that streams B rows contiguously; this fixes the previous zero/garbage iss",
+ "progress": [
+  [
+   0.0,
+   1.08009
+  ],
+  [
+   51.25,
+   9.11506
+  ],
+  [
+   63.39,
+   13.0653
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.08009,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 20.79,
+   "score": null,
+   "model": "hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M",
+   "mode": "exploit/diff/refine",
+   "status": "invalid",
+   "idea": "Reorder the loops to i\u2011k\u2011j and compute each C[i][j] directly as `C[i*n+j] += A[i*n+k]*B[k*n+j]`, which reads B rows contiguously for every (i,k) and removes the temporary accumulator, dramatically improving cache locality and enabling SIMD on NEON/ARM."
+  },
+  {
+   "minutes": 63.39,
+   "score": 13.0653,
+   "model": "hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Clear the output buffer before overwriting and use unsigned indices for the flat write loop, while preserving the i\u2011k\u2011j order that streams B rows contiguously; this fixes the previous zero/garbage issue and lets the inner j-loop be auto\u2011vectorized on NEON/SIMD."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -22,11 +22,15 @@\n // Computes C = A * B. C is NOT zeroed by the caller. Any number of threads may be\n // used (std::thread is available); n is any size from 1 to 2048.\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+    // Zero the output buffer before overwriting.\n+    for (size_t idx = 0; idx < (size_t)n * n; ++idx) C[idx] = 0.0f;\n+    for (int i = 0; i < n; ++i) {\n+        for (int k = 0; k < n; ++k) {\n+            const float a = A[i * n + k];\n+            for (int j = 0; j < n; ++j) {\n+                C[i * n + j] += a * B[k * n + j];\n+            }\n         }\n+    }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": 1.5,
+ "model_gpu_memory_gb": 1.5,
+ "context_length": 40960,
+ "load_seconds": 17.5,
+ "median_call_seconds": 194.0,
+ "p90_call_seconds": 239.4,
+ "prompt_tokens_per_s": 4450.8,
+ "gen_tokens_per_s": 97.2,
+ "mean_prompt_tokens": 2436,
+ "mean_gen_tokens": 15582,
+ "stopped_calls": 1,
+ "provider": "ollama",
+ "cost_usd": 0
+}
