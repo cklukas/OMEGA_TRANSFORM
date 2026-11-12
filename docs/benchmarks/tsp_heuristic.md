@@ -14,7 +14,7 @@ Ollama on this machine.
 
 | Model | Params | Initial | Best | Gain | LLM calls | s/call | Valid | New bests | Min to best | Minutes | Stopped by |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|---|
-| gemma4:26b-a4b-it-qat (think) | 25.2B | 1 | **1.1686** | ×1.17 | 9 | 407 | 89% | 4 | 61.2 | 62.6 | time limit |
+| gemma4:26b-a4b-it-qat (think) | 25.2B | 1 | **1.16584** | ×1.17 | 9 | 407 | 89% | 3 | 54.9 | 62.6 | time limit |
 | gemma4:12b-it-qat (think) | 11.9B | 1 | **1.14333** | ×1.14 | 7 | 569 | 86% | 4 | 56.3 | 67.4 | time limit |
 | gemma4:12b-it-qat (no-think) | 11.9B | 1 | **1.13768** | ×1.14 | 17 | 64 | 71% | 2 | 3.2 | 18.8 | no progress |
 | gemma4:e4b-it-qat (no-think) | 7.5B | 1 | **1.13508** | ×1.14 | 43 | 39 | 49% | 5 | 19.5 | 28.9 | no progress |
@@ -54,8 +54,8 @@ Ollama on this machine.
 xychart-beta
     title "tsp_heuristic, local: best score"
     x-axis ["gemma4:26b-a4b-it-qat (think)", "gemma4:12b-it-qat (think)", "gemma4:12b-it-qat (no-think)", "gemma4:e4b-it-qat (no-think)", "gemma4:e4b-it-qat (think)", "gpt-oss:20b (think)", "gemma4:26b-a4b-it-qat (no-think)", "gemma4:e2b (think)", "gemma4 (no-think)", "gemma4 (think)", "gpt-oss:20b (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "LFM3-1.7B-GGUF:Q4_K_M (think)", "qwen3.5 (think)", "LFM3-1.7B-GGUF:Q4_K_M (no-think)", "nemotron-3-nano:4b (no-think)", "frognano-4b-2609 (no-think)", "gemma4:e2b (no-think)", "qwen2.5-coder:7b (no-think)", "YandexGPT-5-Lite-8B-instruct-GGUF (no-think)", "apertus:8b-instruct-2509-q4_k_m (no-think)", "llm-jp-4-8b-omega:q4_k_m (no-think)", "qwen3.5 (no-think)", "underdog-saluki-27b:iq2-mix (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3-coder:30b (no-think)", "glm-4.7-flash (no-think)", "sarvam:30b (no-think)", "nemotron-3-nano:4b (think)", "frognano-4b-2609 (think)", "underdog-saluki-27b:iq2-mix (think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "glm-4.7-flash (think)", "sarvam:30b (think)"]
-    y-axis "score" 0 --> 1.285
-    bar [1.169, 1.143, 1.138, 1.135, 1.12, 1.104, 1.094, 1.09, 1.089, 1.089, 1.086, 1.039, 1.006, 1.004, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    y-axis "score" 0 --> 1.282
+    bar [1.166, 1.143, 1.138, 1.135, 1.12, 1.104, 1.094, 1.09, 1.089, 1.089, 1.086, 1.039, 1.006, 1.004, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 ```
 
 ```mermaid
@@ -214,7 +214,6 @@ xychart-beta
 
 ### Best idea per model
 
-- **gemma4:26b-a4b-it-qat (think)**: Implement a 2-opt local search with a candidate list of the 20 nearest neighbors and an Iterated Local Search (ILS) mechanism using random 2-opt kicks to escape local optima.
 - **gemma4:12b-it-qat (think)**: I will implement a 2-opt local search with a precomputed distance matrix and a candidate neighbor list of 30 nearest neighbors for each city.
 - **gemma4:12b-it-qat (no-think)**: Implement a greedy tour construction that chooses the best starting city (nearest neighbors) and then performs a 2-opt local search to improve the tour.
 - **gemma4:e4b-it-qat (no-think)**: Implement an iterative improvement strategy by restarting the 2-opt search from the beginning after any improvement is found, instead of breaking out of the inner loops …
@@ -256,7 +255,7 @@ Free OpenRouter models; times include the network and the provider's queue.
 
 | Model | Params | Initial | Best | Gain | LLM calls | s/call | Valid | New bests | Min to best | Minutes | Stopped by |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|---|
-| nvidia/nemotron-3-ultra-550b-a55b:free (think) |  | 1 | **1.18849** | ×1.19 | 36 | 99 | 69% | 9 | 60.5 | 60.7 | time limit |
+| nvidia/nemotron-3-ultra-550b-a55b:free (think) |  | 1 | **1.18663** | ×1.19 | 36 | 99 | 69% | 8 | 53.9 | 60.7 | time limit |
 | nvidia/nemotron-3.5-super-vl:free (no-think) |  | 1 | **1.16709** | ×1.17 | 24 | 15 | 46% | 5 | 2.6 | 6.0 | no progress |
 | cohere/north-mini-code:free (think) |  | 1 | **1.16178** | ×1.16 | 18 | 202 | 33% | 2 | 33.6 | 60.8 | time limit |
 | dots-studio/dots-3-note-preview:free (no-think) |  | 1 | **1.14974** | ×1.15 | 25 | 19 | 36% | 2 | 3.6 | 8.1 | no progress |
@@ -276,8 +275,8 @@ Free OpenRouter models; times include the network and the provider's queue.
 xychart-beta
     title "tsp_heuristic, cloud: best score"
     x-axis ["nemotron-3-ultra-550b-a55b (think)", "nemotron-3.5-super-vl (no-think)", "north-mini-code (think)", "dots-3-note-preview (no-think)", "flint-v1.0 (think)", "nemotron-3.5-super-vl (think)", "nemotron-3.5-lightning (think)", "dots-3-note-preview (think)", "nemotron-3-nano-omni-30b-a3b-reasoning (think)", "xing4.0-29b-a4b (think)", "xing4.0-29b-a4b (no-think)", "north-mini-code (no-think)", "nemotron-3-ultra-550b-a55b (no-think)", "nemotron-3.5-lightning (no-think)", "nemotron-3-nano-omni-30b-a3b-reasoning (no-think)"]
-    y-axis "score" 0 --> 1.307
-    bar [1.188, 1.167, 1.162, 1.15, 1.119, 1.095, 1.087, 1, 1, 1, 1, 1, 1, 1, 1]
+    y-axis "score" 0 --> 1.305
+    bar [1.187, 1.167, 1.162, 1.15, 1.119, 1.095, 1.087, 1, 1, 1, 1, 1, 1, 1, 1]
 ```
 
 ```mermaid
@@ -368,7 +367,6 @@ xychart-beta
 
 ### Best idea per model
 
-- **nvidia/nemotron-3-ultra-550b-a55b:free (think)**: Replace the full-tour 2-opt reoptimization after each kick with a localized 2-opt that only examines edges incident to the perturbed segment and their neighbors, dramatically …
 - **nvidia/nemotron-3.5-super-vl:free (no-think)**: tuned CELL=0.08, K_CAND=15 on top of: Restrict 2-opt to candidate edges using each city's nearest grid-searched neighbours (candidate list + don't-look bits) so O(n²) edge scans …
 - **cohere/north-mini-code:free (think)**: Replace the O(n^2) global nearest‑neighbour candidate construction with a fast grid‑based local candidate selection (K=24, neighbor radius 2) to improve locality and reduce …
 - **dots-studio/dots-3-note-preview:free (no-think)**: tuned K=12 on top of: Replace the naive nearest-neighbour start with a greedy edge-matching construction and add a fast 2-opt local search using a grid-based candidate neighbour …

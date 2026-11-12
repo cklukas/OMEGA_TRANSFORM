@@ -81,9 +81,9 @@ extern "C" size_t parse_doubles(const char* buf, size_t len, double* out) {
 
 ## Benchmark results
 
-The best result so far comes from **qwen3.6:27b-coding-mtp-q4_K_M (think)**, run locally with Ollama on 2026-11-07: a score of **91.1492** (×1.30 the starting program's 70.2712), reached after 86.46 of 60 minutes with 2 model requests.
+The best result so far comes from **nvidia/nemotron-3-ultra-550b-a55b:free (no-think)**, run through OpenRouter on 2026-11-03: a score of **77.5919** (×1.44 the starting program's 53.8025), reached after 4.79 of 60 minutes with 33 model requests.
 
-What the starting program produces (left) and what the best program by qwen3.6:27b-coding-mtp-q4_K_M (think) produces (right):
+What the starting program produces (left) and what the best program by nvidia/nemotron-3-ultra-550b-a55b:free (no-think) produces (right):
 
 ![float_parse_cpp: the starting program's solution and the best one](../assets/examples/float_parse_cpp.svg)
 
@@ -93,8 +93,10 @@ The best program's ancestry, from the starting program on. "Edit" and "rewrite" 
 
 | Step | Minute | Score | Kind | Idea |
 |--:|--:|--:|---|---|
-| 0 | 0.0 | 70.2712 | start | initial program |
-| 1 | 86.5 | 91.1492 | edit | Replace the naive `std::strtod` loop with a custom digit accumulator that applies Clinger's fast path for short mantissas and small exponents, falling back to `std::strtod` only for long mantissas, large exponents, or edge cases, guaranteeing exact … |
+| 0 | 0.0 | 53.8025 | start | initial program |
+| 1 | 0.5 | invalid | edit | Implement a fast path for integers and simple decimals using direct parsing with 64-bit integer accumulation, falling back to strtod only when necessary. This avoids strtod's overhead for the common cases while maintaining exact correctness. |
+| 2 | 2.4 | 62.8008 | fix-up | Fix the fast path to correctly handle numbers with more than 19 significant digits by falling back to strtod, and ensure the exponent calculation accounts for all digits when mantissa is truncated. |
+| 3 | 4.8 | 77.5919 | edit | Add a fast path for scientific notation with small exponents using Clinger's algorithm, and increase the mantissa digit limit to 19 to handle more cases without fallback. |
 
 ### The best program
 
@@ -103,90 +105,139 @@ What changed compared with the starting program:
 ```diff
 --- initial
 +++ best
-@@ -25,19 +25,75 @@
- 
- // OMEGA-BLOCK-START
- // Parses the numbers in buf[0..len) into out[0..) and returns how many there are.
--// Every number is followed by exactly one '\n'; buf[len] is '\0'. Grammar of a
--// number: optional '-', one or more digits, optionally '.' and one or more digits,
--// optionally 'e' or 'E', an optional '+' or '-', and one or more digits. No
--// spaces, no '+' sign on the mantissa, no inf/nan/hex. Every value must be
--// bit-identical to std::strtod (correctly rounded, round-half-to-even).
-+// Uses a fast path for Clinger's exact range, falls back to std::strtod otherwise.
-+static constexpr double POW10_D[] = {
-+    1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14,
-+    1e15, 1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22
+@@ -30,15 +30,128 @@
+ // optionally 'e' or 'E', an optional '+' or '-', and one or more digits. No
+ // spaces, no '+' sign on the mantissa, no inf/nan/hex. Every value must be
+ // bit-identical to std::strtod (correctly rounded, round-half-to-even).
++#include <cstdint>
++#include <cmath>
++
++namespace {
++
++// Powers of 10 for fast path (exactly representable up to 10^22)
++constexpr double POW10[23] = {
++    1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9,
++    1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19,
++    1e20, 1e21, 1e22
 +};
++
++// Maximum significant digits for fast path
++constexpr int MAX_FAST_DIGITS = 19;
++
++// Fast path: parse integer, simple decimal, or scientific notation with small exponent
++// Returns true if successfully parsed, false if fallback needed
++bool parse_fast(const char*& p, const char* end, double& result) {
++    const char* start = p;
++    bool neg = false;
++    if (p < end && *p == '-') {
++        neg = true;
++        ++p;
++    }
++    if (p >= end || *p < '0' || *p > '9') return false;
++    
++    uint64_t mantissa = 0;
++    int total_digits = 0;
++    int digits_after_dot = 0;
++    int exp10 = 0;
++    bool has_dot = false;
++    bool has_exp = false;
++    
++    // Parse digits before decimal point
++    while (p < end && *p >= '0' && *p <= '9') {
++        if (total_digits < MAX_FAST_DIGITS) {
++            mantissa = mantissa * 10 + (*p - '0');
++        }
++        ++total_digits;
++        ++p;
++    }
++    
++    // Parse fractional part
++    if (p < end && *p == '.') {
++        has_dot = true;
++        ++p;
++        while (p < end && *p >= '0' && *p <= '9') {
++            if (total_digits < MAX_FAST_DIGITS) {
++                mantissa = mantissa * 10 + (*p - '0');
++            }
++            ++total_digits;
++            ++digits_after_dot;
++            ++p;
++        }
++    }
++    
++    // Parse exponent
++    if (p < end && (*p == 'e' || *p == 'E')) {
++        has_exp = true;
++        ++p;
++        bool exp_neg = false;
++        if (p < end && *p == '+') {
++            ++p;
++        } else if (p < end && *p == '-') {
++            exp_neg = true;
++            ++p;
++        }
++        if (p >= end || *p < '0' || *p > '9') return false;
++        int exp_val = 0;
++        while (p < end && *p >= '0' && *p <= '9') {
++            exp_val = exp_val * 10 + (*p - '0');
++            if (exp_val > 350) return false; // Too large for fast path
++            ++p;
++        }
++        exp10 = exp_neg ? -exp_val : exp_val;
++    }
++    
++    // Skip trailing newline
++    if (p >= end || *p != '\n') return false;
++    ++p;
++    
++    // If we have more than MAX_FAST_DIGITS significant digits, we cannot use fast path
++    if (total_digits > MAX_FAST_DIGITS) return false;
++    
++    // Adjust exponent for decimal point
++    exp10 -= digits_after_dot;
++    
++    // Clinger's fast path: mantissa < 2^53 and |exp10| <= 22
++    if (mantissa < (1ull << 53) && exp10 >= -22 && exp10 <= 22) {
++        double val = (double)mantissa;
++        if (exp10 < 0) {
++            val /= POW10[-exp10];
++        } else if (exp10 > 0) {
++            val *= POW10[exp10];
++        }
++        result = neg ? -val : val;
++        return true;
++    }
++    
++    return false;
++}
++
++} // namespace
 +
  extern "C" size_t parse_doubles(const char* buf, size_t len, double* out) {
      const char* p = buf;
      const char* end = buf + len;
      size_t count = 0;
++    
      while (p < end) {
 -        char* next;
 -        out[count++] = std::strtod(p, &next);
 -        p = next;
+-        while (p < end && *p == '\n') ++p;
 +        const char* start = p;
-+        bool neg = (*p == '-');
-+        if (neg) ++p;
-+
-+        uint64_t m = 0;
-+        int exp = 0;
-+        int digits = 0;
-+        bool long_mantissa = false;
-+
-+        while (p < end && *p >= '0' && *p <= '9') {
-+            if (digits < 19) {
-+                m = m * 10 + (*p - '0');
-+                digits++;
-+            } else if (!long_mantissa) {
-+                long_mantissa = true;
-+            }
-+            ++p;
-+        }
-+        if (p < end && *p == '.') {
-+            ++p;
-+            while (p < end && *p >= '0' && *p <= '9') {
-+                if (digits < 19) {
-+                    m = m * 10 + (*p - '0');
-+                    digits++;
-+                    --exp;
-+                } else if (!long_mantissa) {
-+                    long_mantissa = true;
-+                }
-+                ++p;
-+            }
-+        }
-+        if (p < end && (*p == 'e' || *p == 'E')) {
-+            ++p;
-+            bool exp_neg = (*p == '-');
-+            if (exp_neg || *p == '+') ++p;
-+            int e = 0;
-+            while (p < end && *p >= '0' && *p <= '9') {
-+                e = e * 10 + (*p - '0');
-+                ++p;
-+            }
-+            exp += exp_neg ? -e : e;
-+        }
-+
-+        if (long_mantissa || digits == 0) {
-+            char* next;
-+            out[count++] = std::strtod(start, &next);
-+            p = next;
-+        } else if (m == 0) {
-+            out[count++] = neg ? -0.0 : 0.0;
-+        } else if (exp >= 0 && exp <= 22 && m < (uint64_t(1) << 53)) {
-+            out[count++] = neg ? -((double)m * POW10_D[exp]) : ((double)m * POW10_D[exp]);
-+        } else if (exp < 0 && exp >= -22 && m < (uint64_t(1) << 53)) {
-+            out[count++] = neg ? -((double)m / POW10_D[-exp]) : ((double)m / POW10_D[-exp]);
++        double val;
++        if (parse_fast(p, end, val)) {
++            out[count++] = val;
 +        } else {
++            // Fallback to strtod
 +            char* next;
-+            out[count++] = std::strtod(start, &next);
++            val = std::strtod(start, &next);
++            out[count++] = val;
 +            p = next;
++            while (p < end && *p == '\n') ++p;
 +        }
-         while (p < end && *p == '\n') ++p;
      }
      return count;
+ }
 ```
 
 ### All models
@@ -195,7 +246,6 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/float
 
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|
-| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | 91.1492 | ×1.30 | 86.5 | 1 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 77.5919 | ×1.44 | 4.8 | 3 |
 | qwen3-coder:30b (no-think) | local | 76.3399 | ×1.12 | 50.0 | 5 |
 | gpt-oss:20b (no-think) | local | 75.2210 | ×1.23 | 12.0 | 1 |
@@ -205,6 +255,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/float
 | frob/sarvam:30b (think) | local | 72.7228 | ×1.00 | - | 0 |
 | dots-studio/dots-3-note-preview:free (no-think) | cloud | 71.5623 | ×1.27 | 16.4 | 7 |
 | gemma4:26b-a4b-it-qat (think) | local | 70.6776 | ×1.00 | - | 0 |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | 70.2712 | ×1.00 | - | 0 |
 | gpt-oss:20b (think) | local | 70.0098 | ×1.01 | 15.6 | 1 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 69.7649 | ×1.24 | 39.3 | 1 |
 | gemma4:12b-it-qat (think) | local | 68.9567 | ×1.00 | - | 0 |

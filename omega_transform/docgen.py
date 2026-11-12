@@ -272,6 +272,9 @@ def example_page(name: str, category: str, cfg, results: list[dict]) -> str:
                        "program:\n\n" f"{_fence(diff)}diff\n{diff.rstrip()}\n{_fence(diff)}\n")
         elif len(steps) == 1:
             out.append("\nNo model improved on the starting program.\n")
+        elif not steps and best.get("cut_at_budget"):
+            out.append("\nThe program behind this score was not kept: the run's later best "
+                       "came after the time limit, which does not count.\n")
         elif not steps:
             out.append("\nThe path to this result was not recorded (its run predates it).\n")
     rows = sorted((aggregate(rs) for rs in run_groups(mine).get(cfg.name, {}).values()),

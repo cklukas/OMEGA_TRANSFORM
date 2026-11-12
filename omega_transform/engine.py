@@ -26,7 +26,7 @@ from .blocks import (EditError, apply_answer, editable_text, parse_response, str
 from .config import ANSWER_ROOM, ProblemConfig
 from .database import Database, Program, code_hash, new_id
 from .evaluator import Evaluator
-from .llm import LLM, Ensemble, LLMError
+from .llm import LLM, Ensemble, LLMError, TimeUp
 from .policy import Policy
 from .prompt import (Context, build_insights_messages, build_messages, fmt_score, journal_line,
                      recurring_errors)
@@ -247,7 +247,14 @@ class Engine:
                             mode=f"{ctx.selection}/{ctx.edit}/{ctx.style}")
             t0 = time.monotonic()
             try:
-                text, model = self.llm.complete(messages, rng, max_chars=self._answer_budget(parent))
+                text, model = self.llm.complete(messages, rng, max_chars=self._answer_budget(parent),
+                                                deadline=self._deadline)
+            except TimeUp as e:
+                # The time limit came mid-answer: the run is over, and the cut-off
+                # answer is not the model's failure, so it is not recorded.
+                self.log(f"  {e}")
+                self._halt("time limit")
+                return None
             except LLMError as e:
                 text, model = None, ""
                 child.status, child.feedback = "llm_error", str(e)[:500]

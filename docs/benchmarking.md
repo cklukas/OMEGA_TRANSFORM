@@ -33,6 +33,14 @@ going. The answer's character limit is twice the program plus 24,000
 characters; a reasoning model may think for eight times that before its answer
 counts as a runaway and is stopped.
 
+The time limit is a hard one. An answer the model is still writing when the
+hour is up is abandoned: the request is closed, so the server stops generating,
+and the run ends with `time limit`. The cut-off answer does not count against
+the model. The report also counts every run with the best score it had at its
+time limit, so that results from before this cut-off (which let a slow model
+finish its last answer) compare fairly; when such a run's best came after the
+limit, the example page shows its best at the limit without that program's diff.
+
 Before a local run, the benchmark loads the model and compares the context
 window Ollama reports with the request (or with the model's own maximum, when
 that is smaller); when it is shorter, it unloads and tries again, and ends the

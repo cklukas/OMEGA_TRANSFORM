@@ -59,9 +59,9 @@ def run():
 
 ## Benchmark results
 
-The best result so far comes from **nvidia/nemotron-3.5-super-vl:free (think)**, run through OpenRouter on 2026-11-01: a score of **0.02296** (×4.79 the starting program's 0.00479), reached after 68.87 of 60 minutes with 25 model requests.
+The best result so far comes from **nvidia/nemotron-3-ultra-550b-a55b:free (think)**, run through OpenRouter on 2026-11-01: a score of **0.0224** (×4.68 the starting program's 0.00479), reached after 38.54 of 60 minutes with 35 model requests.
 
-What the starting program produces (left) and what the best program by nvidia/nemotron-3.5-super-vl:free (think) produces (right):
+What the starting program produces (left) and what the best program by nvidia/nemotron-3-ultra-550b-a55b:free (think) produces (right):
 
 ![heilbronn: the starting program's solution and the best one](../assets/examples/heilbronn.svg)
 
@@ -72,10 +72,9 @@ The best program's ancestry, from the starting program on. "Edit" and "rewrite" 
 | Step | Minute | Score | Kind | Idea |
 |--:|--:|--:|---|---|
 | 0 | 0.0 | 0.00479 | start | initial program |
-| 1 | 8.4 | 0.01392 | edit | Replace the tiny-circle seed with a simulated-annealing / greedy local search that directly maximizes the minimum triangle area, using point-symmetric and boundary-biased restarts, incremental recomputation of only affected triangles, clamping to the square … |
-| 2 | 47.1 | 0.01812 | rewrite | Adopt the sweep-validated hyperparameters (STEP0=0.08, T0=0.002, COOL=0.995, ITERS=1800) that raised the score from 0.01392 to ~0.01812, exposed as named constants so the engine can sweep around them; the annealing/polish structure is unchanged. |
-| 3 | 68.9 | 0.00581 | edit | Replace simulated annealing with active-constraint projected ascent: at each step, identify the smallest triangles (within a tolerance of the current minimum), compute the analytic area-gradient push for each (moving each vertex away from its opposite edge) … |
-| 4 | 68.9 | 0.02296 | parameter sweep | tuned LR0=0.12, ACTIVE_TOL=0.05, ITERS=2000 on top of: Replace simulated annealing with active-constraint projected ascent: at each step, identify the smallest triangles (within a tolerance of the current minimum), compute the analytic area-gradient push for … |
+| 1 | 2.2 | 0.00627 | edit | Replace the circle-based construction with a symmetric boundary-interior layout and add simulated annealing optimization to maximize the minimum triangle area. |
+| 2 | 38.5 | 0.01294 | rewrite | Replace simulated annealing with Differential Evolution (population-based evolutionary optimization) using a soft-min objective with annealed sharpness, multiple restarts, and a final greedy polish on the worst triangles; this explores the search space more … |
+| 3 | 38.5 | 0.0224 | parameter sweep | tuned POP_SIZE=12, MAX_GENERATIONS=800, DE_F=0.6, BETA_END=5000 on top of: Replace simulated annealing with Differential Evolution (population-based evolutionary optimization) using a soft-min objective with annealed sharpness, multiple restarts, and a final … |
 
 ### The best program
 
@@ -84,23 +83,221 @@ What changed compared with the starting program:
 ```diff
 --- initial
 +++ best
-@@ -5,17 +5,222 @@
+@@ -5,17 +5,238 @@
  import math
  
  # OMEGA-BLOCK-START
 +import random
-+import time
-+import math
 +
-+# Active-constraint projected ascent: push vertices of the currently smallest
-+# triangles away from their opposite edges, with equal weight per constraint,
-+# projecting back into the square after every step.
-+LR0 = 0.12
-+LR_DECAY = 0.999
-+ACTIVE_TOL = 0.05
-+ITERS = 2000
-+TIME_LIMIT = 50.0
-+SEED = 20240607
++# Differential Evolution parameters
++POP_SIZE = 12
++MAX_GENERATIONS = 800
++DE_F = 0.6          # mutation scale factor
++DE_CR = 0.85        # crossover probability
++NUM_RESTARTS = 6
++
++# Soft-min annealing schedule
++BETA_START = 20.0
++BETA_END = 5000
++
++# Polish phase
++POLISH_ITERATIONS = 800
++POLISH_STEP = 0.015
++
++# Triangle cache (indices of all 286 triangles for n=13)
++TRIANGLES_13 = [(i, j, k) for i in range(13) for j in range(i+1, 13) for k in range(j+1, 13)]
++
++def triangle_area(p1, p2, p3):
++    """Return the absolute area of triangle formed by three points."""
++    return abs((p1[0]*(p2[1]-p3[1]) + p2[0]*(p3[1]-p1[1]) + p3[0]*(p1[1]-p2[1])) * 0.5)
++
++def all_areas(points):
++    """Return list of all triangle areas for given points."""
++    return [triangle_area(points[i], points[j], points[k]) for i, j, k in TRIANGLES_13]
++
++def softmin_objective(points, beta):
++    """Smooth approximation of min area: -1/beta * log(sum(exp(-beta * area)))."""
++    areas = all_areas(points)
++    # Log-sum-exp trick for numerical stability
++    max_val = max(-beta * a for a in areas)
++    s = sum(math.exp(-beta * a - max_val) for a in areas)
++    return -(math.log(s) + max_val) / beta
++
++def min_area(points):
++    """Return the true minimum triangle area."""
++    return min(all_areas(points))
++
++def clamp_point(p):
++    """Clamp point coordinates to [0, 1]."""
++    return (max(0.0, min(1.0, p[0])), max(0.0, min(1.0, p[1])))
++
++def clamp_points(pts):
++    return [clamp_point(p) for p in pts]
++
++def initial_layout_13():
++    """Symmetric boundary-interior layout for 13 points (point-symmetric about center)."""
++    pts = []
++    # 4 corners
++    pts += [(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)]
++    # 4 edge midpoints
++    pts += [(0.5, 0.0), (1.0, 0.5), (0.5, 1.0), (0.0, 0.5)]
++    # 4 symmetric interior points (45-degree axes)
++    r = 0.22
++    for k in range(4):
++        angle = math.pi/4 + k * math.pi/2
++        pts.append((0.5 + r*math.cos(angle), 0.5 + r*math.sin(angle)))
++    # 1 center point
++    pts.append((0.5, 0.5))
++    return pts
++
++def random_symmetric_config(seed):
++    """Generate a random point-symmetric configuration (pairs + center)."""
++    random.seed(seed)
++    pts = [(0.5, 0.5)]  # center fixed
++    # 6 symmetric pairs
++    for _ in range(6):
++        x = random.random()
++        y = random.random()
++        pts.append((x, y))
++        pts.append((1.0-x, 1.0-y))
++    return pts
++
++def mutate_individual(target, a, b, c, f):
++    """DE/rand/1 mutation: a + F*(b - c)."""
++    mutated = []
++    for d in range(26):  # 13 points * 2 coordinates
++        mutated.append(a[d] + f * (b[d] - c[d]))
++    return mutated
++
++def crossover(target, mutant, cr):
++    """Binomial crossover."""
++    trial = []
++    for d in range(26):
++        if random.random() < cr or d == random.randrange(26):
++            trial.append(mutant[d])
++        else:
++            trial.append(target[d])
++    return trial
++
++def vector_to_points(vec):
++    """Flattened 26-vector -> list of 13 (x,y) tuples, clamped."""
++    pts = []
++    for i in range(13):
++        x = max(0.0, min(1.0, vec[2*i]))
++        y = max(0.0, min(1.0, vec[2*i+1]))
++        pts.append((x, y))
++    return pts
++
++def points_to_vector(pts):
++    """List of 13 (x,y) tuples -> flattened 26-vector."""
++    vec = []
++    for x, y in pts:
++        vec.append(x)
++        vec.append(y)
++    return vec
++
++def differential_evolution_restart(seed):
++    """Run one DE restart, return best points and its soft-min score at final beta."""
++    random.seed(seed)
++    
++    # Initialize population
++    pop = []
++    # 1: symmetric boundary-interior layout + noise
++    base = initial_layout_13()
++    for _ in range(POP_SIZE // 3):
++        noisy = [(x + random.uniform(-0.05, 0.05), y + random.uniform(-0.05, 0.05)) for x, y in base]
++        pop.append(points_to_vector(clamp_points(noisy)))
++    # 2: random symmetric configs
++    for i in range(POP_SIZE // 3):
++        pop.append(points_to_vector(random_symmetric_config(seed*100 + i)))
++    # 3: fully random
++    for _ in range(POP_SIZE - 2*(POP_SIZE//3)):
++        pop.append(points_to_vector([(random.random(), random.random()) for _ in range(13)]))
++    
++    # Evaluate initial population at starting beta
++    beta = BETA_START
++    fitness = [softmin_objective(vector_to_points(ind), beta) for ind in pop]
++    
++    best_idx = max(range(POP_SIZE), key=lambda i: fitness[i])
++    best_ind = pop[best_idx][:]
++    best_fit = fitness[best_idx]
++    
++    for gen in range(MAX_GENERATIONS):
++        # Anneal beta
++        t = gen / MAX_GENERATIONS
++        beta = BETA_START * (BETA_END / BETA_START) ** t
++        
++        for i in range(POP_SIZE):
++            # Select 3 distinct individuals != i
++            idxs = list(range(POP_SIZE))
++            idxs.remove(i)
++            a_idx, b_idx, c_idx = random.sample(idxs, 3)
++            
++            # Mutation
++            mutant = mutate_individual(pop[i], pop[a_idx], pop[b_idx], pop[c_idx], DE_F)
++            
++            # Crossover
++            trial = crossover(pop[i], mutant, DE_CR)
++            
++            # Selection
++            trial_pts = vector_to_points(trial)
++            trial_fit = softmin_objective(trial_pts, beta)
++            
++            if trial_fit > fitness[i]:
++                pop[i] = trial
++                fitness[i] = trial_fit
++                if trial_fit > best_fit:
++                    best_fit = trial_fit
++                    best_ind = trial[:]
++    
++    best_pts = vector_to_points(best_ind)
++    return best_pts, best_fit
++
++def greedy_polish(points):
++    """Local improvement: repeatedly move vertices of worst triangles to increase min area."""
++    pts = [list(p) for p in points]
++    n = 13
++    
++    for _ in range(POLISH_ITERATIONS):
++        areas = all_areas(pts)
++        min_a = min(areas)
++        # Collect triangles within 2% of minimum
++        threshold = min_a * 1.02
++        worst = []
++        for idx, (i, j, k) in enumerate(TRIANGLES_13):
++            if areas[idx] <= threshold:
++                worst.append((i, j, k))
++        if not worst:
++            break
++        
++        # Pick a random worst triangle and a random vertex from it
++        i, j, k = random.choice(worst)
++        idx = random.choice([i, j, k])
++        
++        old_x, old_y = pts[idx]
++        best_local_min = min_a
++        best_move = (old_x, old_y)
++        
++        # Try several random moves, keep the best
++        for _ in range(12):
++            nx = max(0.0, min(1.0, old_x + random.uniform(-POLISH_STEP, POLISH_STEP)))
++            ny = max(0.0, min(1.0, old_y + random.uniform(-POLISH_STEP, POLISH_STEP)))
++            pts[idx] = [nx, ny]
++            new_min = min(all_areas(pts))
++            if new_min > best_local_min:
++                best_local_min = new_min
++                best_move = (nx, ny)
++            pts[idx] = [old_x, old_y]
++        
++        if best_move != (old_x, old_y):
++            pts[idx] = list(best_move)
++        else:
++            # No improvement found, try a tiny random nudge anyway (escape plateaus)
++            nx = max(0.0, min(1.0, old_x + random.uniform(-POLISH_STEP*0.3, POLISH_STEP*0.3)))
++            ny = max(0.0, min(1.0, old_y + random.uniform(-POLISH_STEP*0.3, POLISH_STEP*0.3)))
++            pts[idx] = [nx, ny]
++    
++    return [(p[0], p[1]) for p in pts]
 +
  def construct(n=13):
 -    """Return a list of n points (x, y) inside the closed unit square [0,1]^2.
@@ -109,210 +306,29 @@ What changed compared with the starting program:
 -    the points, so no three points may be (nearly) collinear. This start puts
 -    the points on a regular polygon on a small circle around the center, which
 -    avoids collinear triples but wastes most of the square.
-+    """Return n points in [0,1]^2 maximizing the smallest triangle area.
-+
-+    Repeatedly identifies the active (smallest) triangles, computes the analytic
-+    gradient of each active triangle's area with respect to its three vertices,
-+    normalizes each constraint to unit strength, averages the pushes at shared
-+    vertices, and takes a clamped ascent step. A greedy polish refines the best
-+    result. Runs under a fixed time budget.
-     """
+-    """
 -    radius = 0.3
 -    return [(0.5 + radius * math.cos(2 * math.pi * k / n),
 -             0.5 + radius * math.sin(2 * math.pi * k / n)) for k in range(n)]
-+    tris = []
-+    for i in range(n):
-+        for j in range(i + 1, n):
-+            for k in range(j + 1, n):
-+                tris.append((i, j, k))
-+    ntri = len(tris)
-+    tri_of = [[] for _ in range(n)]
-+    for t in range(ntri):
-+        i, j, k = tris[t]
-+        tri_of[i].append(t)
-+        tri_of[j].append(t)
-+        tri_of[k].append(t)
-+
-+    def all_areas(xs, ys):
-+        a = [0.0] * ntri
-+        for t in range(ntri):
-+            i, j, k = tris[t]
-+            a[t] = 0.5 * abs((xs[j] - xs[i]) * (ys[k] - ys[i])
-+                             - (ys[j] - ys[i]) * (xs[k] - xs[i]))
-+        return a
-+
-+    def clamp(v):
-+        if v < 0.0:
-+            return 0.0
-+        if v > 1.0:
-+            return 1.0
-+        return v
-+
-+    rng = random.Random(SEED)
-+    start = time.perf_counter()
-+    deadline = start + TIME_LIMIT
-+
-+    best_xs = None
-+    best_ys = None
-+    best_val = 0.0
-+
-+    def note(xs, ys, arr):
-+        nonlocal best_val, best_xs, best_ys
-+        m = min(arr)
-+        if m > best_val:
-+            best_val = m
-+            best_xs = list(xs)
-+            best_ys = list(ys)
-+
-+    restart = 0
-+    while time.perf_counter() < deadline:
-+        xs = [0.0] * n
-+        ys = [0.0] * n
-+        kind = restart % 3
-+        if kind == 0:
-+            # Point-symmetric seed: centre plus 6 opposite pairs.
-+            xs[n - 1] = 0.5
-+            ys[n - 1] = 0.5
-+            r = 0.42
-+            for m in range(6):
-+                ang = 2.0 * math.pi * m / 6.0 + 0.25
-+                xs[m] = 0.5 + r * math.cos(ang)
-+                ys[m] = 0.5 + r * math.sin(ang)
-+                xs[6 + m] = 0.5 - r * math.cos(ang)
-+                ys[6 + m] = 0.5 - r * math.sin(ang)
-+        elif kind == 1:
-+            # Boundary-biased seed: most points lie on the square edges.
-+            for i in range(n):
-+                if rng.random() < 0.7:
-+                    e = rng.randrange(4)
-+                    if e == 0:
-+                        xs[i] = rng.random()
-+                        ys[i] = 0.0
-+                    elif e == 1:
-+                        xs[i] = rng.random()
-+                        ys[i] = 1.0
-+                    elif e == 2:
-+                        xs[i] = 0.0
-+                        ys[i] = rng.random()
-+                    else:
-+                        xs[i] = 1.0
-+                        ys[i] = rng.random()
-+                else:
-+                    xs[i] = rng.random()
-+                    ys[i] = rng.random()
-+        else:
-+            for i in range(n):
-+                xs[i] = rng.random()
-+                ys[i] = rng.random()
-+
-+        arr = all_areas(xs, ys)
-+        note(xs, ys, arr)
-+        lr = LR0
-+        for _ in range(ITERS):
-+            if time.perf_counter() > deadline:
-+                break
-+            amin = min(arr)
-+            # Active set: worst triangle plus every triangle within tolerance.
-+            order = sorted(range(ntri), key=arr.__getitem__)
-+            active = [order[0]]
-+            tol_limit = amin * (1.0 + ACTIVE_TOL)
-+            for t in order[1:]:
-+                if arr[t] <= tol_limit:
-+                    active.append(t)
-+                else:
-+                    break
-+            gx = [0.0] * n
-+            gy = [0.0] * n
-+            cnt = [0] * n
-+            for t in active:
-+                i, j, k = tris[t]
-+                c = (xs[j] - xs[i]) * (ys[k] - ys[i]) - (ys[j] - ys[i]) * (xs[k] - xs[i])
-+                if c == 0.0:
-+                    continue
-+                sgn = 1.0 if c > 0.0 else -1.0
-+                gi = (0.5 * sgn * (ys[j] - ys[k]), 0.5 * sgn * (xs[k] - xs[j]))
-+                gj = (0.5 * sgn * (ys[k] - ys[i]), 0.5 * sgn * (xs[i] - xs[k]))
-+                gk = (0.5 * sgn * (ys[i] - ys[j]), 0.5 * sgn * (xs[j] - xs[i]))
-+                norm = math.sqrt(gi[0] * gi[0] + gi[1] * gi[1]
-+                                 + gj[0] * gj[0] + gj[1] * gj[1]
-+                                 + gk[0] * gk[0] + gk[1] * gk[1])
-+                if norm == 0.0:
-+                    continue
-+                inv = 1.0 / norm
-+                for v, g in ((i, gi), (j, gj), (k, gk)):
-+                    gx[v] += g[0] * inv
-+                    gy[v] += g[1] * inv
-+                    cnt[v] += 1
-+            for i in range(n):
-+                if cnt[i]:
-+                    xs[i] = clamp(xs[i] + lr * gx[i] / cnt[i])
-+                    ys[i] = clamp(ys[i] + lr * gy[i] / cnt[i])
-+            arr = all_areas(xs, ys)
-+            note(xs, ys, arr)
-+            lr *= LR_DECAY
-+
-+        # Greedy polish: accept only moves that do not lower the minimum area.
-+        step = 0.02
-+        cur = min(arr)
-+        for _ in range(1500):
-+            if time.perf_counter() > deadline:
-+                break
-+            p = rng.randrange(n)
-+            ox = xs[p]
-+            oy = ys[p]
-+            nx = clamp(ox + rng.uniform(-step, step))
-+            ny = clamp(oy + rng.uniform(-step, step))
-+            xs[p] = nx
-+            ys[p] = ny
-+            new_arr = list(arr)
-+            for ti in tri_of[p]:
-+                i, j, k = tris[ti]
-+                new_arr[ti] = 0.5 * abs((xs[j] - xs[i]) * (ys[k] - ys[i])
-+                                        - (ys[j] - ys[i]) * (xs[k] - xs[i]))
-+            new_min = min(new_arr)
-+            if new_min >= cur:
-+                arr = new_arr
-+                cur = new_min
-+                note(xs, ys, arr)
-+            else:
-+                xs[p] = ox
-+                ys[p] = oy
-+            step *= 0.999
-+        restart += 1
-+
-+    # Final dedicated polish of the best solution found.
-+    if best_xs is not None:
-+        xs = list(best_xs)
-+        ys = list(best_ys)
-+        arr = all_areas(xs, ys)
-+        cur = min(arr)
-+        step = 0.01
-+        for _ in range(4000):
-+            if time.perf_counter() > deadline:
-+                break
-+            p = rng.randrange(n)
-+            ox = xs[p]
-+            oy = ys[p]
-+            nx = clamp(ox + rng.uniform(-step, step))
-+            ny = clamp(oy + rng.uniform(-step, step))
-+            xs[p] = nx
-+            ys[p] = ny
-+            new_arr = list(arr)
-+            for ti in tri_of[p]:
-+                i, j, k = tris[ti]
-+                new_arr[ti] = 0.5 * abs((xs[j] - xs[i]) * (ys[k] - ys[i])
-+                                        - (ys[j] - ys[i]) * (xs[k] - xs[i]))
-+            new_min = min(new_arr)
-+            if new_min >= cur:
-+                arr = new_arr
-+                cur = new_min
-+                note(xs, ys, arr)
-+            else:
-+                xs[p] = ox
-+                ys[p] = oy
-+            step *= 0.999
-+
-+    return [(best_xs[i], best_ys[i]) for i in range(n)]
++    """Return optimized 13-point configuration for Heilbronn problem."""
++    if n != 13:
++        radius = 0.3
++        return [(0.5 + radius * math.cos(2 * math.pi * k / n),
++                 0.5 + radius * math.sin(2 * math.pi * k / n)) for k in range(n)]
++    
++    best_overall = None
++    best_score = -1.0
++    
++    for restart in range(NUM_RESTARTS):
++        points, score = differential_evolution_restart(restart * 1000 + 42)
++        # Polish the DE result
++        points = greedy_polish(points)
++        final_score = min_area(points)  # true min area for final ranking
++        if final_score > best_score:
++            best_score = final_score
++            best_overall = points
++    
++    return best_overall
  # OMEGA-BLOCK-END
 ```
 
@@ -322,18 +338,18 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/heilb
 
 | Model | Where | Best | Gain | Minutes to best | New bests |
 |---|---|--:|--:|--:|--:|
-| nvidia/nemotron-3.5-super-vl:free (think) | cloud | 0.02296 | ×4.79 | 68.9 | 7 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (think) | cloud | 0.0224 | ×4.68 | 38.5 | 6 |
-| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | 0.0223 | ×4.66 | 87.2 | 2 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 0.02194 | ×4.58 | 2.8 | 1 |
 | dots-studio/dots-3-note-preview:free (think) | cloud | 0.02114 | ×4.41 | 23.1 | 2 |
 | gemma4:26b-a4b-it-qat (think) | local | 0.02092 | ×4.37 | 14.2 | 1 |
 | gemma4:12b-it-qat (think) | local | 0.02055 | ×4.29 | 49.5 | 4 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | local | 0.01957 | ×4.09 | 18.7 | 6 |
+| nvidia/nemotron-3.5-super-vl:free (think) | cloud | 0.01909 | ×3.99 | 37.8 | 4 |
 | nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | 0.0186 | ×3.88 | 6.5 | 4 |
 | gemma4:12b-it-qat (no-think) | local | 0.01815 | ×3.79 | 14.8 | 6 |
 | gemma4:26b-a4b-it-qat (no-think) | local | 0.01517 | ×3.17 | 15.0 | 6 |
 | cohere/north-mini-code:free (think) | cloud | 0.0137 | ×2.86 | 20.9 | 2 |
+| qwen3.6:27b-coding-mtp-q4_K_M (think) | local | 0.01345 | ×2.81 | 27.9 | 1 |
 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | 0.01331 | ×2.78 | 13.8 | 6 |
 | gpt-oss:20b (no-think) | local | 0.01331 | ×2.78 | 16.6 | 2 |
 | glm-4.7-flash:latest (no-think) | local | 0.01331 | ×2.78 | 2.0 | 3 |

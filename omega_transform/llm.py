@@ -30,10 +30,17 @@ class LLMError(Exception):
         self.partial = partial  # what arrived before a runaway answer was stopped
 
 
+class TimeUp(LLMError):
+    """The run's time limit came while the answer was still being written."""
+
+
 class LLM(Protocol):
     def complete(self, messages: Messages, rng: random.Random,
-                 model: str | None = None, max_chars: int = 0) -> tuple[str, str]:
-        """Return (response text, model name used)."""
+                 model: str | None = None, max_chars: int = 0,
+                 deadline: float | None = None) -> tuple[str, str]:
+        """Return (response text, model name used). At ``deadline`` (a
+        ``time.monotonic()`` value) an answer still being written is abandoned
+        with ``TimeUp``."""
         ...
 
 
@@ -217,8 +224,10 @@ class Ensemble:
         return rng.choices(specs, weights=[max(s.weight, 0.0) for s in specs])[0]
 
     def complete(self, messages: Messages, rng: random.Random,
-                 model: str | None = None, max_chars: int = 0) -> tuple[str, str]:
-        """``max_chars`` > 0 stops a runaway answer early (streamed; the server is told)."""
+                 model: str | None = None, max_chars: int = 0,
+                 deadline: float | None = None) -> tuple[str, str]:
+        """``max_chars`` > 0 stops a runaway answer early (streamed; the server is told);
+        so does ``deadline``, with ``TimeUp``."""
         spec = self.pick(rng)
         if model is not None:
             spec = next((s for s in self.cfg.models if s.name == model), None) or \
@@ -229,23 +238,26 @@ class Ensemble:
         self._local.stats = CallStats(name, provider=provider)
         t_start = time.monotonic()
         try:
-            return self._complete(messages, spec, name, provider, base, max_chars, model, t_start)
+            return self._complete(messages, spec, name, provider, base, max_chars, model, t_start,
+                                  deadline)
         finally:
             # Failed requests cost time too; record it.
             if not self._local.stats.total_seconds:
                 self._local.stats.total_seconds = time.monotonic() - t_start
 
     def _complete(self, messages: Messages, spec, name: str, provider: str, base: str,
-                  max_chars: int, model: str | None, t_start: float) -> tuple[str, str]:
+                  max_chars: int, model: str | None, t_start: float,
+                  deadline: float | None = None) -> tuple[str, str]:
         temp = spec.temperature if (spec.temperature is not None and model is None) \
             else self.cfg.temperature
         last: Exception | None = None
         for attempt in range(4):
+            self._check_deadline(name, deadline)
             try:
                 if provider == "ollama":
-                    text = self._ollama(messages, name, temp, max_chars, base)
+                    text = self._ollama(messages, name, temp, max_chars, base, deadline)
                 elif provider in ("openai", "openrouter"):
-                    text = self._openai(messages, name, temp, max_chars, base, provider)
+                    text = self._openai(messages, name, temp, max_chars, base, provider, deadline)
                 else:
                     raise LLMError(f"unknown provider {provider!r}")
                 self._local.stats.total_seconds = time.monotonic() - t_start
@@ -256,6 +268,7 @@ class Ensemble:
                 raise LLMError(f"{name}: answer stopped: {e}", e.partial) from None
             except (urllib.error.URLError, TimeoutError, ConnectionError, json.JSONDecodeError) as e:
                 last = e
+                self._check_deadline(name, deadline)
                 if isinstance(e, urllib.error.HTTPError) and e.code in (400, 401, 402, 403, 404):
                     detail = e.read().decode(errors="replace")[:300]
                     raise LLMError(f"{name}: HTTP {e.code}: {detail}") from None
@@ -268,7 +281,7 @@ class Ensemble:
                         wait = float(e.headers.get("Retry-After") or 0)
                     except (TypeError, ValueError):
                         wait = 0.0
-                    time.sleep(min(120.0, wait or 10.0 * 2 ** attempt))
+                    time.sleep(min(120.0, wait or 10.0 * 2 ** attempt, self._left(deadline)))
                     continue
                 if _is_timeout(e):
                     # Retrying would restart a model load that was merely slow, from scratch.
@@ -276,6 +289,21 @@ class Ensemble:
                                    "(model still loading, or too slow)") from None
                 time.sleep(2 * (attempt + 1))
         raise LLMError(f"{name}: request failed after retries: {last}")
+
+    def _left(self, deadline: float | None) -> float:
+        """Seconds until ``deadline``; the request timeout when there is none."""
+        if deadline is None:
+            return self.cfg.timeout
+        return max(0.0, deadline - time.monotonic())
+
+    def _check_deadline(self, model: str, deadline: float | None, partial: str = "") -> None:
+        if deadline is not None and time.monotonic() >= deadline:
+            raise TimeUp(f"{model}: answer abandoned at the time limit", partial)
+
+    def _wait(self, deadline: float | None) -> float:
+        """How long a read may wait for data: the request timeout, but never much
+        past the deadline."""
+        return max(1.0, min(self.cfg.timeout, self._left(deadline)))
 
     def _reasoning_limit(self, max_chars: int) -> int:
         """Characters of reasoning allowed before an answer counts as a runaway."""
@@ -289,7 +317,7 @@ class Ensemble:
             raise Runaway("the answer started repeating itself", "".join(parts))
 
     def _ollama(self, messages: Messages, model: str, temp: float, max_chars: int = 0,
-                base: str | None = None) -> str:
+                base: str | None = None, deadline: float | None = None) -> str:
         body = {
             "model": model, "messages": messages, "stream": True,
             "keep_alive": self.cfg.keep_alive,
@@ -301,7 +329,8 @@ class Ensemble:
             body["think"] = self.cfg.think
         parts: list[str] = []
         thinking = 0
-        for line in _stream_lines(f"{base or self.base}/api/chat", body, self.cfg.timeout):
+        for line in _stream_lines(f"{base or self.base}/api/chat", body, self._wait(deadline)):
+            self._check_deadline(model, deadline, "".join(parts))
             r = json.loads(line)
             if r.get("error"):
                 raise LLMError(f"{model}: {r['error']}")
@@ -328,7 +357,8 @@ class Ensemble:
         return decode_byte_tokens("".join(parts))
 
     def _openai(self, messages: Messages, model: str, temp: float, max_chars: int = 0,
-                base: str | None = None, provider: str = "openai") -> str:
+                base: str | None = None, provider: str = "openai",
+                deadline: float | None = None) -> str:
         """OpenAI-compatible chat completions, streamed (also OpenRouter)."""
         if provider == "openrouter":
             key = openrouter_key(self.cfg)
@@ -354,7 +384,9 @@ class Ensemble:
         reasoning = 0
         t0 = time.monotonic()
         first = last = None
-        for line in _stream_lines(f"{base}/chat/completions", body, self.cfg.timeout, headers):
+        for line in _stream_lines(f"{base}/chat/completions", body, self._wait(deadline),
+                                  headers):
+            self._check_deadline(model, deadline, "".join(parts))
             if not line.startswith("data:"):
                 continue  # SSE comments, e.g. OpenRouter's keep-alive ": OPENROUTER PROCESSING"
             data = line[5:].strip()
@@ -462,7 +494,8 @@ class ScriptedLLM:
         self.tokens_in = self.tokens_out = 0
 
     def complete(self, messages: Messages, rng: random.Random,
-                 model: str | None = None, max_chars: int = 0) -> tuple[str, str]:
+                 model: str | None = None, max_chars: int = 0,
+                 deadline: float | None = None) -> tuple[str, str]:
         return self.fn(messages), self.name
 
     def check(self, reserve_gb: float = 0.0, measured=None) -> list[str]:

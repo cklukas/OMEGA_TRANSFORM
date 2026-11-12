@@ -32,6 +32,8 @@ Each row is one OMEGA TRANSFORM search with the same budget and settings, with
 only the model changed: at most 60 minutes, ended earlier once 15 model answers
 in a row brought no new best that is at least 0.1% better, and the same token
 limits per answer with and without reasoning, for local and cloud models alike.
+A run counts with the best score it had at 60 minutes, even where a slow
+model's last answer ended later.
 The numbers come from the committed result files in `bench/results/`; rerun
 `omega bench` to add new ones (see [Benchmarking models](benchmarking.md)).
 
@@ -62,8 +64,37 @@ def load_results(results_dir) -> list[dict]:
                 or "example" not in r or "model" not in r:
             continue
         r["_file"] = p.name
-        out.append(r)
+        out.append(within_budget(r))
     return out
+
+
+def within_budget(r: dict) -> dict:
+    """The run as it stood at its time limit. The limit is checked between model
+    answers, so a slow model's last answer could end past it; what the run found
+    after the limit does not count. When the best program came after the limit,
+    its ancestor at the limit takes its place (its diff and drawing were not kept,
+    so they are dropped). Marks such runs with ``cut_at_budget``."""
+    budget = r.get("minutes_budget")
+    progress = r.get("progress") or []
+    kept = [pt for pt in progress if pt[0] <= budget] if budget else progress
+    if len(kept) == len(progress):
+        return r
+    r["cut_at_budget"] = True
+    r["progress"] = kept
+    best = kept[-1][1] if kept else r.get("initial_score")
+    r["best_score"] = best
+    init = r.get("initial_score")
+    r["improvement"] = best / init if best is not None and init else None
+    r["improvements"] = max(0, len(kept) - 1)
+    r["minutes_to_best"] = kept[-1][0] if len(kept) > 1 else None
+    lineage = r.get("best_lineage") or []
+    at = next((i for i in range(len(lineage) - 1, -1, -1)
+               if lineage[i].get("minutes", 0) <= budget and lineage[i].get("score") == best), None)
+    r["best_lineage"] = lineage[:at + 1] if at is not None else []
+    r["best_idea"] = lineage[at].get("idea", "") if at is not None else ""
+    r["best_diff"] = ""
+    r["best_solution"] = None
+    return r
 
 
 def label(r: dict) -> str:

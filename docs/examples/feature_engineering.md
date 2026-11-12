@@ -159,8 +159,8 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/featu
 |---|---|--:|--:|--:|--:|
 | nvidia/nemotron-3.5-super-vl:free (think) | cloud | 0.957 | ×1.54 | 8.4 | 6 |
 | gpt-oss:20b (think) | local | 0.945 | ×1.52 | 3.6 | 3 |
-| nvidia/nemotron-3-ultra-550b-a55b:free (think) | cloud | 0.936 | ×1.50 | 64.1 | 10 |
 | cohere/north-mini-code:free (think) | cloud | 0.934 | ×1.50 | 37.5 | 5 |
+| nvidia/nemotron-3-ultra-550b-a55b:free (think) | cloud | 0.933 | ×1.50 | 50.2 | 9 |
 | gpt-oss:20b (no-think) | local | 0.929 | ×1.49 | 15.6 | 4 |
 | frob/sarvam:30b (no-think) | local | 0.928 | ×1.49 | 30.4 | 3 |
 | xingchen-agi/xing4.0-29b-a4b:free (no-think) | cloud | 0.914 | ×1.47 | 34.6 | 6 |
