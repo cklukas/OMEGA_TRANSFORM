@@ -1,0 +1,385 @@
+{
+ "schema": 4,
+ "example": "circle_packing_26",
+ "model": "gemma4:26b-a4b-it-qat",
+ "variant": "think",
+ "model_size_gb": 15.6,
+ "model_params": "25.2B",
+ "started": "2026-11-11T15:36:56",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 65.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 2.395585023252207,
+ "improvement": 1.6076651481141182,
+ "llm_calls": 7,
+ "mean_llm_seconds": 548.5,
+ "attempts": 7,
+ "ok": 4,
+ "statuses": {
+  "edit_error": 3,
+  "ok": 4
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 2,
+ "minutes_to_best": 64.08,
+ "best_idea": "Improve the optimization by adding an initial jitter to the grid-based configuration, using a more efficient iterative radius calculation, and increasing the number of hill-climbing iterations with a ",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   28.9,
+   2.263171860979822
+  ],
+  [
+   64.08,
+   2.395585023252207
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 28.9,
+   "score": 2.263171860979822,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "Use a hill-climbing optimization with an iterative radius calculation to find better circle centers and radii."
+  },
+  {
+   "minutes": 64.08,
+   "score": 2.395585023252207,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "explore/diff/refine",
+   "status": "ok",
+   "idea": "Improve the optimization by adding an initial jitter to the grid-based configuration, using a more efficient iterative radius calculation, and increasing the number of hill-climbing iterations with a decaying step size."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -9,27 +9,82 @@\n # OMEGA-BLOCK-START\n def construct_packing(n=26):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n-    cols = math.ceil(math.sqrt(n))\n-    rows = math.ceil(n / cols)\n+    import random\n+    def get_max_radii(centers, num):\n+        \"\"\"Iteratively find largest radii for fixed centers.\"\"\"\n+        W = [min(c[0], c[1], 1 - c[0], 1 - c[1]) for c in centers]\n+        r = list(W)\n+        for _ in range(15):\n+            for i in range(num):\n+                mi = W[i]\n+                ci = centers[i]\n+                for j in range(num):\n+                    if i == j: continue\n+                    d = math.dist(ci, centers[j])\n+                    if d - r[j] < mi:\n+                        mi = d - r[j]\n+                r[i] = max(0.0, mi)\n+        return r\n+\n+    # Initial centers: a 6x5 grid with jitter\n+    cols, rows = 6, 5\n     centers = []\n     for k in range(n):\n         i, j = k % cols, k // cols\n-        centers.append(((i + 0.5) / cols, (j + 0.5) / rows))\n-    radii = max_radii(centers)\n-    return [(x, y, r) for (x, y), r in zip(centers, radii)]\n+        centers.append([ (i + 0.5) / cols, (j + 0.5) / rows ])\n+    \n+    for i in range(n):\n+        centers[i][0] += (random.random() - 0.5) * 0.1\n+        centers[i][1] += (random.random() - 0.5) * 0.1\n+        centers[i][0] = max(0.01, min(0.99, centers[i][0]))\n+        centers[i][1] = max(0.01, min(0.99, centers[i][1]))\n+\n+    current_r = get_max_radii(centers, n)\n+    current_sum = sum(current_r)\n+\n+    # Optimization: Hill Climbing\n+    for step in range(1200):\n+        idx = random.randint(0, n - 1)\n+        old_pos = list(centers[idx])\n+\n+        scale = 0.3 * (1.0 - step / 1200.0)\n+        centers[idx][0] += (random.random() - 0.5) * scale\n+        centers[idx][1] += (random.random() - 0.5) * scale\n+\n+        if 0 < centers[idx][0] < 1 and 0 < centers[idx][1] < 1:\n+            new_r = get_max_radii(centers, n)\n+            new_sum = sum(new_r)\n+            if new_sum > current_sum:\n+                current_sum = new_sum\n+                current_r = new_r\n+            else:\n+                centers[idx] = old_pos\n+        else:\n+            centers[idx] = old_pos\n+\n+    final_r = get_max_radii(centers, n)\n+    return [(c[0], c[1], r) for c, r in zip(centers, final_r)]\n \n \n def max_radii(centers):\n-    \"\"\"Largest radii for fixed centers: limit by walls, then shrink overlapping pairs.\"\"\"\n-    radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n-    for a in range(len(centers)):\n-        for b in range(a + 1, len(centers)):\n-            d = math.dist(centers[a], centers[b])\n-            if radii[a] + radii[b] > d:\n-                s = d / (radii[a] + radii[b])\n-                radii[a] *= s\n-                radii[b] *= s\n-    return radii\n+    \"\"\"Largest radii for fixed centers (helper for evaluation).\"\"\"\n+    import random\n+    def get_max_radii(centers):\n+        num = len(centers)\n+        W = [min(c[0], c[1], 1 - c[0], 1 - c[1]) for c in centers]\n+        r = list(W)\n+        for _ in range(20):\n+            for i in range(num):\n+                mi = W[i]\n+                ci = centers[i]\n+                for j in range(num):\n+                    if i == j: continue\n+                    d = math.dist(ci, centers[j])\n+                    if d - r[j] < mi:\n+                        mi = d - r[j]\n+                r[i] = max(0.0, mi)\n+        return r\n+    return get_max_radii(centers)\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.083333,
+    0.1,
+    0.060545
+   ],
+   [
+    0.25,
+    0.1,
+    0.039234
+   ],
+   [
+    0.416667,
+    0.1,
+    0.034262
+   ],
+   [
+    0.583333,
+    0.1,
+    0.040566
+   ],
+   [
+    0.75,
+    0.1,
+    0.05694
+   ],
+   [
+    0.916667,
+    0.1,
+    0.080973
+   ],
+   [
+    0.083333,
+    0.3,
+    0.047978
+   ],
+   [
+    0.25,
+    0.3,
+    0.032893
+   ],
+   [
+    0.416667,
+    0.3,
+    0.029299
+   ],
+   [
+    0.583333,
+    0.3,
+    0.040366
+   ],
+   [
+    0.75,
+    0.3,
+    0.058083
+   ],
+   [
+    0.916667,
+    0.3,
+    0.076636
+   ],
+   [
+    0.083333,
+    0.5,
+    0.05004
+   ],
+   [
+    0.25,
+    0.5,
+    0.036525
+   ],
+   [
+    0.416667,
+    0.5,
+    0.03396
+   ],
+   [
+    0.583333,
+    0.5,
+    0.041209
+   ],
+   [
+    0.75,
+    0.5,
+    0.058085
+   ],
+   [
+    0.916667,
+    0.5,
+    0.076976
+   ],
+   [
+    0.083333,
+    0.7,
+    0.059259
+   ],
+   [
+    0.25,
+    0.7,
+    0.06822
+   ],
+   [
+    0.416667,
+    0.7,
+    0.065257
+   ],
+   [
+    0.583333,
+    0.7,
+    0.069461
+   ],
+   [
+    0.75,
+    0.7,
+    0.089736
+   ],
+   [
+    0.916667,
+    0.7,
+    0.07693
+   ],
+   [
+    0.083333,
+    0.9,
+    0.075758
+   ],
+   [
+    0.25,
+    0.9,
+    0.090909
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.116389,
+    0.134758,
+    0.116389
+   ],
+   [
+    0.311783,
+    0.14239,
+    0.079153
+   ],
+   [
+    0.454414,
+    0.083728,
+    0.07507
+   ],
+   [
+    0.613807,
+    0.08427,
+    0.08427
+   ],
+   [
+    0.770188,
+    0.074081,
+    0.072443
+   ],
+   [
+    0.897829,
+    0.193529,
+    0.102171
+   ],
+   [
+    0.067414,
+    0.363524,
+    0.067414
+   ],
+   [
+    0.241916,
+    0.327461,
+    0.110775
+   ],
+   [
+    0.458583,
+    0.278767,
+    0.111297
+   ],
+   [
+    0.584022,
+    0.399404,
+    0.062738
+   ],
+   [
+    0.701044,
+    0.27332,
+    0.109283
+   ],
+   [
+    0.895088,
+    0.406672,
+    0.104912
+   ],
+   [
+    0.095986,
+    0.524266,
+    0.095848
+   ],
+   [
+    0.282535,
+    0.523742,
+    0.089665
+   ],
+   [
+    0.462922,
+    0.458703,
+    0.068691
+   ],
+   [
+    0.439754,
+    0.586477,
+    0.061166
+   ],
+   [
+    0.716755,
+    0.474892,
+    0.084183
+   ],
+   [
+    0.949242,
+    0.555837,
+    0.050758
+   ],
+   [
+    0.126968,
+    0.718445,
+    0.100787
+   ],
+   [
+    0.486552,
+    0.886617,
+    0.112194
+   ],
+   [
+    0.333193,
+    0.697882,
+    0.091221
+   ],
+   [
+    0.631451,
+    0.681269,
+    0.139129
+   ],
+   [
+    0.76613,
+    0.894815,
+    0.103494
+   ],
+   [
+    0.88445,
+    0.710477,
+    0.11555
+   ],
+   [
+    0.074822,
+    0.918666,
+    0.074822
+   ],
+   [
+    0.260519,
+    0.887838,
+    0.112162
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": 16.1,
+ "model_gpu_memory_gb": 14.4,
+ "context_length": 40960,
+ "load_seconds": 0.1,
+ "median_call_seconds": 547.8,
+ "p90_call_seconds": 818.2,
+ "prompt_tokens_per_s": 748.1,
+ "gen_tokens_per_s": 31.0,
+ "mean_prompt_tokens": 2081,
+ "mean_gen_tokens": 16802,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

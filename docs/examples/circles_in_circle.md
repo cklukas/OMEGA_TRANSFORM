@@ -287,3 +287,4 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/circl
 | gemma4:e2b (think) | local | 3.18905 | ×1.00 | - | 0 |
 | qwen3.5:latest (think) | local | 3.18905 | ×1.00 | - | 0 |
 | underdog-saluki-27b:iq2-mix (think) | local | 3.18905 | ×1.00 | - | 0 |
+| hf.co/Colby/apertus-v1.5-8b-text-Q4_K_M-GGUF:Q4_K_M (no-think) | local | 3.18905 | ×1.00 | - | 0 |

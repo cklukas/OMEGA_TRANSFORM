@@ -1,0 +1,386 @@
+{
+ "schema": 4,
+ "example": "circle_packing_26",
+ "model": "hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M",
+ "variant": "think",
+ "model_size_gb": 1.1,
+ "model_params": "1.73B",
+ "started": "2026-11-11T10:05:41",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 64.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 1.9721059287972702,
+ "improvement": 1.3234704422272578,
+ "llm_calls": 19,
+ "mean_llm_seconds": 201.2,
+ "attempts": 19,
+ "ok": 10,
+ "statuses": {
+  "ok": 10,
+  "edit_error": 8,
+  "invalid": 1
+ },
+ "sweeps": 3,
+ "sweep_variants": 29,
+ "improvements": 2,
+ "minutes_to_best": 59.34,
+ "best_idea": "Increase `MAX_ITER` to more passes (60) and slightly raise the tolerance (`OVERLAP_TOL=1e-8`), allowing circles to be shrunk aggressively until a tighter overlap window is reached, which yields larger",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   10.11,
+   1.5940341454014693
+  ],
+  [
+   59.34,
+   1.9721059287972702
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 16.78,
+   "score": 1.4791206890675992,
+   "model": "hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Replace the one\u2011pass radius shrinking with a multi\u2011pass loop (up to 30 iterations) that repeatedly detects and scales overlapping pairs using a small tolerance, letting cascading overlaps be resolved more thoroughly; this should raise the total sum of radii toward the known best ~2.635."
+  },
+  {
+   "minutes": 59.34,
+   "score": 1.9721059287972702,
+   "model": "hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Increase `MAX_ITER` to more passes (60) and slightly raise the tolerance (`OVERLAP_TOL=1e-8`), allowing circles to be shrunk aggressively until a tighter overlap window is reached, which yields larger feasible radii for most circles and pushes the total sum toward the known optimum ~2.635."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -7,6 +7,15 @@\n import math\n \n # OMEGA-BLOCK-START\n+# Copyright (c) 2026 by C. Klukas\n+# SPDX-License-Identifier: MIT\n+\"\"\"Pack 26 non-overlapping circles in the unit square, maximizing the sum of radii.\n+The best known values for n = 26 are about 2.635 to 2.6359.\"\"\"\n+import math\n+\n+MAX_ITER = 60   # number of passes to resolve overlapping pairs\n+OVERLAP_TOL = 1e-8  # tolerance below which circles are considered non-overlapping\n+\n def construct_packing(n=26):\n     \"\"\"Return a list of n circles (x, y, r) inside the unit square without overlaps.\"\"\"\n     cols = math.ceil(math.sqrt(n))\n@@ -18,18 +27,35 @@\n     radii = max_radii(centers)\n     return [(x, y, r) for (x, y), r in zip(centers, radii)]\n \n+def max_radii(centers):\n+    \"\"\"Largest feasible radii for fixed centers: limit by walls then shrink overlapping pairs.\"\"\"\n+    n_c = len(centers)\n+    # initial radius limited by distance to the square walls\n+    radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n+    for _ in range(MAX_ITER):\n+        any_overlap = False\n+        for a in range(n_c):\n+            ra = radii[a]\n+            if ra <= 0:\n+                continue\n+            for b in range(a + 1, n_c):\n+                rb = radii[b]\n+                d = math.dist(centers[a], centers[b])\n+                # detect overlap with tolerance\n+                if ra + rb > d - OVERLAP_TOL:\n+                    s = d / (ra + rb)\n+                    old_ra = ra\n+                    old_rb = rb\n+                    radii[a] = old_ra * s\n+                    radii[b] = old_rb * s\n+                    any_overlap = True\n+        if not any_overlap:\n+            break\n+    return radii\n \n-def max_radii(centers):\n-    \"\"\"Largest radii for fixed centers: limit by walls, then shrink overlapping pairs.\"\"\"\n-    radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n-    for a in range(len(centers)):\n-        for b in range(a + 1, len(centers)):\n-            d = math.dist(centers[a], centers[b])\n-            if radii[a] + radii[b] > d:\n-                s = d / (radii[a] + radii[b])\n-                radii[a] *= s\n-                radii[b] *= s\n-    return radii\n+def run():\n+    \"\"\"Construct the packing of n circles and return a list of (x, y, radius) tuples.\"\"\"\n+    return construct_packing(26)\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.083333,
+    0.1,
+    0.060545
+   ],
+   [
+    0.25,
+    0.1,
+    0.039234
+   ],
+   [
+    0.416667,
+    0.1,
+    0.034262
+   ],
+   [
+    0.583333,
+    0.1,
+    0.040566
+   ],
+   [
+    0.75,
+    0.1,
+    0.05694
+   ],
+   [
+    0.916667,
+    0.1,
+    0.080973
+   ],
+   [
+    0.083333,
+    0.3,
+    0.047978
+   ],
+   [
+    0.25,
+    0.3,
+    0.032893
+   ],
+   [
+    0.416667,
+    0.3,
+    0.029299
+   ],
+   [
+    0.583333,
+    0.3,
+    0.040366
+   ],
+   [
+    0.75,
+    0.3,
+    0.058083
+   ],
+   [
+    0.916667,
+    0.3,
+    0.076636
+   ],
+   [
+    0.083333,
+    0.5,
+    0.05004
+   ],
+   [
+    0.25,
+    0.5,
+    0.036525
+   ],
+   [
+    0.416667,
+    0.5,
+    0.03396
+   ],
+   [
+    0.583333,
+    0.5,
+    0.041209
+   ],
+   [
+    0.75,
+    0.5,
+    0.058085
+   ],
+   [
+    0.916667,
+    0.5,
+    0.076976
+   ],
+   [
+    0.083333,
+    0.7,
+    0.059259
+   ],
+   [
+    0.25,
+    0.7,
+    0.06822
+   ],
+   [
+    0.416667,
+    0.7,
+    0.065257
+   ],
+   [
+    0.583333,
+    0.7,
+    0.069461
+   ],
+   [
+    0.75,
+    0.7,
+    0.089736
+   ],
+   [
+    0.916667,
+    0.7,
+    0.07693
+   ],
+   [
+    0.083333,
+    0.9,
+    0.075758
+   ],
+   [
+    0.25,
+    0.9,
+    0.090909
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.083333,
+    0.1,
+    0.065085
+   ],
+   [
+    0.25,
+    0.1,
+    0.077612
+   ],
+   [
+    0.416667,
+    0.1,
+    0.075066
+   ],
+   [
+    0.583333,
+    0.1,
+    0.079582
+   ],
+   [
+    0.75,
+    0.1,
+    0.06295
+   ],
+   [
+    0.916667,
+    0.1,
+    0.080973
+   ],
+   [
+    0.083333,
+    0.3,
+    0.07628
+   ],
+   [
+    0.25,
+    0.3,
+    0.090387
+   ],
+   [
+    0.416667,
+    0.3,
+    0.063907
+   ],
+   [
+    0.583333,
+    0.3,
+    0.073673
+   ],
+   [
+    0.75,
+    0.3,
+    0.068344
+   ],
+   [
+    0.916667,
+    0.3,
+    0.07706
+   ],
+   [
+    0.083333,
+    0.5,
+    0.065085
+   ],
+   [
+    0.25,
+    0.5,
+    0.098476
+   ],
+   [
+    0.416667,
+    0.5,
+    0.064086
+   ],
+   [
+    0.583333,
+    0.5,
+    0.072967
+   ],
+   [
+    0.75,
+    0.5,
+    0.067668
+   ],
+   [
+    0.916667,
+    0.5,
+    0.077527
+   ],
+   [
+    0.083333,
+    0.7,
+    0.064659
+   ],
+   [
+    0.25,
+    0.7,
+    0.098938
+   ],
+   [
+    0.416667,
+    0.7,
+    0.067729
+   ],
+   [
+    0.583333,
+    0.7,
+    0.070716
+   ],
+   [
+    0.75,
+    0.7,
+    0.089198
+   ],
+   [
+    0.916667,
+    0.7,
+    0.077469
+   ],
+   [
+    0.083333,
+    0.9,
+    0.07617
+   ],
+   [
+    0.25,
+    0.9,
+    0.090496
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": 1.5,
+ "model_gpu_memory_gb": 1.5,
+ "context_length": 40960,
+ "load_seconds": 0.0,
+ "median_call_seconds": 190.9,
+ "p90_call_seconds": 263.9,
+ "prompt_tokens_per_s": 4097.9,
+ "gen_tokens_per_s": 95.3,
+ "mean_prompt_tokens": 2696,
+ "mean_gen_tokens": 18900,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

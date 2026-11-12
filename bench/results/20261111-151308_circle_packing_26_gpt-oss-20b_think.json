@@ -1,0 +1,374 @@
+{
+ "schema": 4,
+ "example": "circle_packing_26",
+ "model": "gpt-oss:20b",
+ "variant": "think",
+ "model_size_gb": 13.8,
+ "model_params": "20.9B",
+ "started": "2026-11-11T15:13:15",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 23.7,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 6,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 1.4901019817854253,
+ "best_score": 2.166666666666667,
+ "improvement": 1.454039181983094,
+ "llm_calls": 16,
+ "mean_llm_seconds": 54.7,
+ "attempts": 16,
+ "ok": 11,
+ "statuses": {
+  "ok": 11,
+  "invalid": 3,
+  "edit_error": 2
+ },
+ "sweeps": 4,
+ "sweep_variants": 13,
+ "improvements": 1,
+ "minutes_to_best": 2.06,
+ "best_idea": "Replace the radius\u2011shrinking rule with an iterative pairwise reduction that only shrinks the larger circle in each overlapping pair, which keeps more radius for the other circles and yields a larger t",
+ "progress": [
+  [
+   0.0,
+   1.4901019817854253
+  ],
+  [
+   2.06,
+   2.166666666666667
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.4901019817854253,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 2.06,
+   "score": 2.166666666666667,
+   "model": "gpt-oss:20b",
+   "mode": "explore/diff/bold",
+   "status": "ok",
+   "idea": "Replace the radius\u2011shrinking rule with an iterative pairwise reduction that only shrinks the larger circle in each overlapping pair, which keeps more radius for the other circles and yields a larger total sum."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -20,15 +20,29 @@\n \n \n def max_radii(centers):\n-    \"\"\"Largest radii for fixed centers: limit by walls, then shrink overlapping pairs.\"\"\"\n+    \"\"\"Largest radii for fixed centers: limit by walls, then iteratively shrink overlapping pairs.\"\"\"\n     radii = [min(x, y, 1 - x, 1 - y) for x, y in centers]\n-    for a in range(len(centers)):\n-        for b in range(a + 1, len(centers)):\n-            d = math.dist(centers[a], centers[b])\n-            if radii[a] + radii[b] > d:\n-                s = d / (radii[a] + radii[b])\n-                radii[a] *= s\n-                radii[b] *= s\n+    # Iteratively enforce pairwise constraints by reducing only the larger radius\n+    max_iter = 2000\n+    for _ in range(max_iter):\n+        changed = False\n+        for a in range(len(centers)):\n+            for b in range(a + 1, len(centers)):\n+                d = math.dist(centers[a], centers[b])\n+                if radii[a] + radii[b] > d + 1e-12:\n+                    # Reduce the larger radius to satisfy the constraint\n+                    if radii[a] > radii[b]:\n+                        radii[a] = max(d - radii[b], 0.0)\n+                    else:\n+                        radii[b] = max(d - radii[a], 0.0)\n+                    changed = True\n+        if not changed:\n+            break\n+    # Ensure radii do not exceed wall limits (numerical safety)\n+    for i, (x, y) in enumerate(centers):\n+        max_wall = min(x, y, 1 - x, 1 - y)\n+        if radii[i] > max_wall:\n+            radii[i] = max_wall\n     return radii\n # OMEGA-BLOCK-END\n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.083333,
+    0.1,
+    0.060545
+   ],
+   [
+    0.25,
+    0.1,
+    0.039234
+   ],
+   [
+    0.416667,
+    0.1,
+    0.034262
+   ],
+   [
+    0.583333,
+    0.1,
+    0.040566
+   ],
+   [
+    0.75,
+    0.1,
+    0.05694
+   ],
+   [
+    0.916667,
+    0.1,
+    0.080973
+   ],
+   [
+    0.083333,
+    0.3,
+    0.047978
+   ],
+   [
+    0.25,
+    0.3,
+    0.032893
+   ],
+   [
+    0.416667,
+    0.3,
+    0.029299
+   ],
+   [
+    0.583333,
+    0.3,
+    0.040366
+   ],
+   [
+    0.75,
+    0.3,
+    0.058083
+   ],
+   [
+    0.916667,
+    0.3,
+    0.076636
+   ],
+   [
+    0.083333,
+    0.5,
+    0.05004
+   ],
+   [
+    0.25,
+    0.5,
+    0.036525
+   ],
+   [
+    0.416667,
+    0.5,
+    0.03396
+   ],
+   [
+    0.583333,
+    0.5,
+    0.041209
+   ],
+   [
+    0.75,
+    0.5,
+    0.058085
+   ],
+   [
+    0.916667,
+    0.5,
+    0.076976
+   ],
+   [
+    0.083333,
+    0.7,
+    0.059259
+   ],
+   [
+    0.25,
+    0.7,
+    0.06822
+   ],
+   [
+    0.416667,
+    0.7,
+    0.065257
+   ],
+   [
+    0.583333,
+    0.7,
+    0.069461
+   ],
+   [
+    0.75,
+    0.7,
+    0.089736
+   ],
+   [
+    0.916667,
+    0.7,
+    0.07693
+   ],
+   [
+    0.083333,
+    0.9,
+    0.075758
+   ],
+   [
+    0.25,
+    0.9,
+    0.090909
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "square",
+  "circles": [
+   [
+    0.083333,
+    0.1,
+    0.083333
+   ],
+   [
+    0.25,
+    0.1,
+    0.083333
+   ],
+   [
+    0.416667,
+    0.1,
+    0.083333
+   ],
+   [
+    0.583333,
+    0.1,
+    0.083333
+   ],
+   [
+    0.75,
+    0.1,
+    0.083333
+   ],
+   [
+    0.916667,
+    0.1,
+    0.083333
+   ],
+   [
+    0.083333,
+    0.3,
+    0.083333
+   ],
+   [
+    0.25,
+    0.3,
+    0.083333
+   ],
+   [
+    0.416667,
+    0.3,
+    0.083333
+   ],
+   [
+    0.583333,
+    0.3,
+    0.083333
+   ],
+   [
+    0.75,
+    0.3,
+    0.083333
+   ],
+   [
+    0.916667,
+    0.3,
+    0.083333
+   ],
+   [
+    0.083333,
+    0.5,
+    0.083333
+   ],
+   [
+    0.25,
+    0.5,
+    0.083333
+   ],
+   [
+    0.416667,
+    0.5,
+    0.083333
+   ],
+   [
+    0.583333,
+    0.5,
+    0.083333
+   ],
+   [
+    0.75,
+    0.5,
+    0.083333
+   ],
+   [
+    0.916667,
+    0.5,
+    0.083333
+   ],
+   [
+    0.083333,
+    0.7,
+    0.083333
+   ],
+   [
+    0.25,
+    0.7,
+    0.083333
+   ],
+   [
+    0.416667,
+    0.7,
+    0.083333
+   ],
+   [
+    0.583333,
+    0.7,
+    0.083333
+   ],
+   [
+    0.75,
+    0.7,
+    0.083333
+   ],
+   [
+    0.916667,
+    0.7,
+    0.083333
+   ],
+   [
+    0.083333,
+    0.9,
+    0.083333
+   ],
+   [
+    0.25,
+    0.9,
+    0.083333
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 13.9,
+ "model_gpu_memory_gb": 13.9,
+ "context_length": 40960,
+ "load_seconds": 0.0,
+ "median_call_seconds": 48.9,
+ "p90_call_seconds": 87.1,
+ "prompt_tokens_per_s": 1576.6,
+ "gen_tokens_per_s": 51.4,
+ "mean_prompt_tokens": 2514,
+ "mean_gen_tokens": 2619,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

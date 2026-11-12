@@ -26,15 +26,15 @@ it was doing, so machines are compared through their own shares only.
 | [Models by developer](benchmarks/developers.md) | who develops each model, the ranking grouped by developer, and each developer's progress over time |
 | [Models by country](benchmarks/countries.md) | the best model of each country |
 | [Model check](benchmarks/model-check.md) | which installed models were usable before the benchmark |
-| [bin_packing_1d](benchmarks/bin_packing_1d.md) | 50 models on this example: scores, speed, memory and progress over time |
-| [circle_packing_26](benchmarks/circle_packing_26.md) | 35 models on this example: scores, speed, memory and progress over time |
-| [circles_in_circle_21](benchmarks/circles_in_circle_21.md) | 50 models on this example: scores, speed, memory and progress over time |
+| [bin_packing_1d](benchmarks/bin_packing_1d.md) | 53 models on this example: scores, speed, memory and progress over time |
+| [circle_packing_26](benchmarks/circle_packing_26.md) | 50 models on this example: scores, speed, memory and progress over time |
+| [circles_in_circle_21](benchmarks/circles_in_circle_21.md) | 51 models on this example: scores, speed, memory and progress over time |
 | [feature_engineering](benchmarks/feature_engineering.md) | 50 models on this example: scores, speed, memory and progress over time |
 | [float_parse_single_thread](benchmarks/float_parse_single_thread.md) | 50 models on this example: scores, speed, memory and progress over time |
 | [heilbronn_13](benchmarks/heilbronn_13.md) | 50 models on this example: scores, speed, memory and progress over time |
 | [log_compressor](benchmarks/log_compressor.md) | 50 models on this example: scores, speed, memory and progress over time |
-| [matmul_f32](benchmarks/matmul_f32.md) | 47 models on this example: scores, speed, memory and progress over time |
-| [matmul_f32_single_thread](benchmarks/matmul_f32_single_thread.md) | 35 models on this example: scores, speed, memory and progress over time |
+| [matmul_f32](benchmarks/matmul_f32.md) | 50 models on this example: scores, speed, memory and progress over time |
+| [matmul_f32_single_thread](benchmarks/matmul_f32_single_thread.md) | 45 models on this example: scores, speed, memory and progress over time |
 | [max_cut](benchmarks/max_cut.md) | 50 models on this example: scores, speed, memory and progress over time |
 | [prefix_sum_histogram_single_thread](benchmarks/prefix_sum_histogram_single_thread.md) | 50 models on this example: scores, speed, memory and progress over time |
 | [sort_u32_single_thread](benchmarks/sort_u32_single_thread.md) | 50 models on this example: scores, speed, memory and progress over time |
@@ -42,7 +42,7 @@ it was doing, so machines are compared through their own shares only.
 | [tammes_30](benchmarks/tammes_30.md) | 50 models on this example: scores, speed, memory and progress over time |
 | [tsp_heuristic](benchmarks/tsp_heuristic.md) | 50 models on this example: scores, speed, memory and progress over time |
 
-Machines: **i7-8700K**: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz (MS-7A98), 12 cores, 64 GB, 1 runs; **i7-8700K + 2x GTX 1080 Ti**: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz (MS-7A98), 12 cores, 64 GB, 2x NVIDIA GeForce GTX 1080 Ti, 11264 MiB, 716 runs.
+Machines: **i7-8700K**: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz (MS-7A98), 12 cores, 64 GB, 1 runs; **i7-8700K + 2x GTX 1080 Ti**: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz (MS-7A98), 12 cores, 64 GB, 2x NVIDIA GeForce GTX 1080 Ti, 11264 MiB, 748 runs.
 
 ## Overall ranking
 
@@ -52,48 +52,51 @@ Scores of different examples cannot be added up (a matrix multiply gains ×80, a
 
 | # | Model | Released | Share of best gain | Geometric-mean gain | Wins | No gain | Runs | Examples |
 |--:|---|---|--:|--:|--:|--:|--:|--:|
-| 1 | gpt-oss:20b (no-think) | 2025-08-04 | **78%** | ×2.98 | 3 | 0 | 15 | 15 |
-| 2 | gpt-oss:20b (think) | 2025-08-04 | **75%** | ×2.56 | 3 | 0 | 13 | 13 |
-| 3 | gemma4:12b-it-qat (no-think) | 2026-05-23 | **66%** | ×2.66 | 0 | 1 | 15 | 15 |
-| 4 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 2026-04-21 | **63%** | ×2.05 | 3 | 2 | 15 | 15 |
-| 5 | gemma4:26b-a4b-it-qat (think) | 2026-03-11 | **60%** | ×1.84 | 2 | 2 | 13 (1 failed) | 13 |
-| 6 | gemma4:26b-a4b-it-qat (no-think) | 2026-03-11 | **60%** | ×2.70 | 1 | 2 | 15 (1 failed) | 15 |
+| 1 | gpt-oss:20b (no-think) | 2025-08-04 | **77%** | ×2.98 | 2 | 0 | 15 | 15 |
+| 2 | gpt-oss:20b (think) | 2025-08-04 | **74%** | ×2.82 | 3 | 0 | 15 | 15 |
+| 3 | gemma4:12b-it-qat (no-think) | 2026-05-23 | **65%** | ×2.66 | 0 | 1 | 15 | 15 |
+| 4 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 2026-04-21 | **62%** | ×2.05 | 3 | 2 | 15 | 15 |
+| 5 | gemma4:26b-a4b-it-qat (think) | 2026-03-11 | **62%** | ×1.82 | 2 | 2 | 14 (1 failed) | 14 |
+| 6 | gemma4:26b-a4b-it-qat (no-think) | 2026-03-11 | **59%** | ×2.70 | 1 | 2 | 15 (1 failed) | 15 |
 | 7 | gemma4:latest (no-think) | 2026-03-02 | **59%** | ×2.80 | 1 | 2 | 15 | 15 |
-| 8 | gemma4:12b-it-qat (think) | 2026-05-23 | **56%** | ×1.61 | 0 | 4 | 13 (1 failed) | 13 |
-| 9 | gemma4:latest (think) | 2026-03-02 | **55%** | ×2.25 | 0 | 2 | 13 | 13 |
-| 10 | gemma4:e4b-it-qat (think) | 2026-03-02 | **53%** | ×2.16 | 1 | 2 | 13 | 13 |
-| 11 | qwen3:30b-a3b-instruct-2507-q4_K_M (think) | 2025-07-28 | **50%** | ×1.56 | 0 | 4 | 12 | 12 |
-| 12 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | 2025-07-28 | **48%** | ×2.15 | 0 | 3 | 15 | 15 |
+| 8 | gemma4:12b-it-qat (think) | 2026-05-23 | **57%** | ×1.87 | 0 | 4 | 15 (1 failed) | 15 |
+| 9 | gemma4:latest (think) | 2026-03-02 | **54%** | ×2.53 | 0 | 3 | 15 | 15 |
+| 10 | gemma4:e4b-it-qat (think) | 2026-03-02 | **49%** | ×2.35 | 1 | 3 | 15 | 15 |
+| 11 | qwen3:30b-a3b-instruct-2507-q4_K_M (no-think) | 2025-07-28 | **48%** | ×2.15 | 0 | 3 | 15 | 15 |
+| 12 | qwen3:30b-a3b-instruct-2507-q4_K_M (think) | 2025-07-28 | **46%** | ×1.87 | 0 | 4 | 14 | 14 |
 | 13 | qwen3.5:latest (no-think) | 2026-02-27 | **41%** | ×1.73 | 0 | 6 | 15 | 15 |
-| 14 | glm-4.7-flash:latest (think) | 2026-01-19 | **40%** | ×1.62 | 0 | 4 | 12 | 12 |
-| 15 | underdog-saluki-27b:iq2-mix (no-think) | 2026-10-08 | **38%** | ×1.44 | 0 | 4 | 15 | 15 |
-| 16 | gemma4:e4b-it-qat (no-think) | 2026-03-02 | **38%** | ×1.96 | 0 | 4 | 15 | 15 |
-| 17 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (think) | 2026-10-23 | **38%** | ×1.79 | 0 | 2 | 13 | 13 |
-| 18 | gemma4:e2b (think) | 2026-03-02 | **35%** | ×1.70 | 0 | 3 | 13 | 13 |
+| 14 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (think) | 2026-10-23 | **40%** | ×2.04 | 0 | 2 | 15 | 15 |
+| 15 | gemma4:e4b-it-qat (no-think) | 2026-03-02 | **38%** | ×1.96 | 0 | 4 | 15 | 15 |
+| 16 | underdog-saluki-27b:iq2-mix (no-think) | 2026-10-08 | **38%** | ×1.44 | 0 | 4 | 15 | 15 |
+| 17 | glm-4.7-flash:latest (think) | 2026-01-19 | **37%** | ×1.53 | 0 | 5 | 14 | 14 |
+| 18 | qwen3.6:27b-coding-mtp-q4_K_M (think) | 2026-04-21 | **36%** | ×1.45 | 2 | 6 | 14 | 14 |
 | 19 | qwen3-coder:30b (no-think) | 2025-07-31 | **34%** | ×1.52 | 0 | 6 | 15 | 15 |
 | 20 | frob/sarvam:30b (no-think) | 2026-03-03 | **33%** | ×1.47 | 0 | 7 | 15 | 15 |
 | 21 | glm-4.7-flash:latest (no-think) | 2026-01-19 | **32%** | ×1.38 | 0 | 5 | 15 | 15 |
 | 22 | gemma4:e2b (no-think) | 2026-03-02 | **32%** | ×1.45 | 0 | 5 | 15 | 15 |
-| 23 | nemotron-3-nano:4b (think) | 2026-03-07 | **31%** | ×1.31 | 0 | 6 | 13 | 13 |
-| 24 | qwen3.5:latest (think) | 2026-02-27 | **31%** | ×1.63 | 0 | 5 | 13 | 13 |
-| 25 | qwen3.6:27b-coding-mtp-q4_K_M (think) | 2026-04-21 | **31%** | ×1.44 | 1 | 6 | 13 | 13 |
-| 26 | frob/sarvam:30b (think) | 2026-03-03 | **26%** | ×1.46 | 0 | 5 | 12 | 12 |
-| 27 | qwen2.5-coder:7b (no-think) | 2024-09-17 | **25%** | ×1.45 | 0 | 4 | 15 | 15 |
-| 28 | richardyoung/frognano-4b-2609:latest (think) | 2026-09-17 | **25%** | ×1.34 | 0 | 8 | 13 | 13 |
-| 29 | richardyoung/frognano-4b-2609:latest (no-think) | 2026-09-17 | **20%** | ×1.33 | 0 | 7 | 15 | 15 |
+| 23 | qwen3.5:latest (think) | 2026-02-27 | **31%** | ×1.85 | 0 | 6 | 15 | 15 |
+| 24 | gemma4:e2b (think) | 2026-03-02 | **30%** | ×1.58 | 0 | 5 | 15 | 15 |
+| 25 | nemotron-3-nano:4b (think) | 2026-03-07 | **27%** | ×1.26 | 0 | 8 | 15 | 15 |
+| 26 | qwen2.5-coder:7b (no-think) | 2024-09-17 | **25%** | ×1.45 | 0 | 4 | 15 | 15 |
+| 27 | richardyoung/frognano-4b-2609:latest (think) | 2026-09-17 | **23%** | ×1.30 | 0 | 9 | 15 | 15 |
+| 28 | frob/sarvam:30b (think) | 2026-03-03 | **22%** | ×1.39 | 0 | 7 | 14 | 14 |
+| 29 | richardyoung/frognano-4b-2609:latest (no-think) | 2026-09-17 | **19%** | ×1.33 | 0 | 7 | 15 | 15 |
 | 30 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 2025-03-28 | **18%** | ×1.29 | 0 | 7 | 15 | 15 |
 | 31 | llm-jp-4-8b-omega:q4_k_m (no-think) | 2026-03-16 | **13%** | ×1.05 | 0 | 12 | 15 | 15 |
 | 32 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 2025-08-13 | **12%** | ×1.16 | 0 | 8 | 15 | 15 |
 | 33 | nemotron-3-nano:4b (no-think) | 2026-03-07 | **2%** | ×1.09 | 0 | 13 | 15 | 15 |
 | 34 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | 2026-10-23 | **2%** | ×1.01 | 0 | 14 | 15 (3 failed) | 15 |
-| 35 | underdog-saluki-27b:iq2-mix (think) | 2026-10-08 | **1%** | ×1.01 | 0 | 12 | 13 | 13 |
+| 35 | underdog-saluki-27b:iq2-mix (think) | 2026-10-08 | **1%** | ×1.01 | 0 | 14 | 15 | 15 |
+| – | hf.co/mmnga-o/Qwen3-Swallow-30B-A3B-RL-v0.2-gguf:Q4_K_M (no-think) | – | **99%** | ×1.20 | 0 | 0 | 1 | 1 |
+| – | hf.co/Colby/apertus-v1.5-8b-text-Q4_K_M-GGUF:Q4_K_M (no-think) | – | **0%** | ×1.00 | 0 | 2 | 2 | 2 |
+| – | hf.co/llm-jp/llm-jp-4.1-32b-a3b-thinking-gguf:Q4_K_M (no-think) | – | **0%** | ×1.00 | 0 | 1 | 1 | 1 |
 
 ```mermaid
 xychart-beta
     title "Overall, local: mean share of the best gain (%)"
-    x-axis ["gpt-oss:20b (no-think)", "gpt-oss:20b (think)", "gemma4:12b-it-qat (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "gemma4:26b-a4b-it-qat (think)", "gemma4:26b-a4b-it-qat (no-think)", "gemma4:latest (no-think)", "gemma4:12b-it-qat (think)", "gemma4:latest (think)", "gemma4:e4b-it-qat (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3.5:latest (no-think)", "glm-4.7-flash:latest (think)", "underdog-saluki-27b:iq2-mix (no-think)", "gemma4:e4b-it-qat (no-think)", "LFM3-1.7B-GGUF:Q4_K_M (think)", "gemma4:e2b (think)", "qwen3-coder:30b (no-think)", "sarvam:30b (no-think)", "glm-4.7-flash:latest (no-think)", "gemma4:e2b (no-think)", "nemotron-3-nano:4b (think)", "qwen3.5:latest (think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "sarvam:30b (think)", "qwen2.5-coder:7b (no-think)", "frognano-4b-2609:latest (think)", "frognano-4b-2609:latest (no-think)", "YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think)", "llm-jp-4-8b-omega:q4_k_m (no-think)", "apertus:8b-instruct-2509-q4_k_m (no-think)", "nemotron-3-nano:4b (no-think)", "LFM3-1.7B-GGUF:Q4_K_M (no-think)", "underdog-saluki-27b:iq2-mix (think)"]
-    y-axis "% of the best gain" 0 --> 85.42
-    bar [77.65, 75.1, 65.64, 63.04, 60.21, 59.66, 58.74, 55.88, 55.4, 52.86, 50.22, 47.93, 41.05, 40.34, 37.92, 37.73, 37.66, 34.75, 34.24, 32.64, 32.25, 31.85, 31.2, 31.14, 30.96, 25.83, 25.27, 24.96, 19.7, 18.41, 12.54, 11.94, 1.727, 1.656, 1.314]
+    x-axis ["gpt-oss:20b (no-think)", "gpt-oss:20b (think)", "gemma4:12b-it-qat (no-think)", "qwen3.6:27b-coding-mtp-q4_K_M (no-think)", "gemma4:26b-a4b-it-qat (think)", "gemma4:26b-a4b-it-qat (no-think)", "gemma4:latest (no-think)", "gemma4:12b-it-qat (think)", "gemma4:latest (think)", "gemma4:e4b-it-qat (think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (no-think)", "qwen3:30b-a3b-instruct-2507-q4_K_M (think)", "qwen3.5:latest (no-think)", "LFM3-1.7B-GGUF:Q4_K_M (think)", "gemma4:e4b-it-qat (no-think)", "underdog-saluki-27b:iq2-mix (no-think)", "glm-4.7-flash:latest (think)", "qwen3.6:27b-coding-mtp-q4_K_M (think)", "qwen3-coder:30b (no-think)", "sarvam:30b (no-think)", "glm-4.7-flash:latest (no-think)", "gemma4:e2b (no-think)", "qwen3.5:latest (think)", "gemma4:e2b (think)", "nemotron-3-nano:4b (think)", "qwen2.5-coder:7b (no-think)", "frognano-4b-2609:latest (think)", "sarvam:30b (think)", "frognano-4b-2609:latest (no-think)", "YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think)", "llm-jp-4-8b-omega:q4_k_m (no-think)", "apertus:8b-instruct-2509-q4_k_m (no-think)", "nemotron-3-nano:4b (no-think)", "LFM3-1.7B-GGUF:Q4_K_M (no-think)", "underdog-saluki-27b:iq2-mix (think)"]
+    y-axis "% of the best gain" 0 --> 84.49
+    bar [76.81, 73.81, 64.97, 62.47, 61.58, 58.83, 58.74, 56.71, 54.38, 49.45, 47.92, 46.18, 40.59, 39.52, 37.73, 37.52, 36.65, 35.89, 33.9, 32.53, 32.23, 31.85, 30.78, 30.11, 27.04, 25.15, 22.51, 22.14, 19.31, 18.32, 12.54, 11.94, 1.727, 1.656, 1.139]
 ```
 
 ### Cloud models (OpenRouter)
