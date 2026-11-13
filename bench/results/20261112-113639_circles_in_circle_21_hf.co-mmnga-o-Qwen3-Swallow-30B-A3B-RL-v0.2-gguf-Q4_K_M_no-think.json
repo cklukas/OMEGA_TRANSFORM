@@ -1,0 +1,334 @@
+{
+ "schema": 4,
+ "example": "circles_in_circle_21",
+ "model": "hf.co/mmnga-o/Qwen3-Swallow-30B-A3B-RL-v0.2-gguf:Q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-11-12T11:36:45",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 55.4,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 4,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 3.1890454825108625,
+ "best_score": 3.903757378115858,
+ "improvement": 1.2241146761702106,
+ "llm_calls": 29,
+ "mean_llm_seconds": 102.0,
+ "attempts": 29,
+ "ok": 11,
+ "statuses": {
+  "llm_error": 8,
+  "invalid": 4,
+  "edit_error": 4,
+  "ok": 11,
+  "duplicate": 2
+ },
+ "sweeps": 8,
+ "sweep_variants": 120,
+ "improvements": 3,
+ "minutes_to_best": 26.83,
+ "best_idea": "expose the inner\u2011ring and outer\u2011ring radii as sweepable constants, then compute each circle\u2019s maximal feasible radius from the container wall and neighbor distances, and finally adjust pairwise overla",
+ "progress": [
+  [
+   0.0,
+   3.1890454825108625
+  ],
+  [
+   7.86,
+   3.729066889720586
+  ],
+  [
+   13.44,
+   3.8429144388194914
+  ],
+  [
+   26.83,
+   3.903757378115858
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 3.1890454825108625,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 26.83,
+   "score": 3.903757378115858,
+   "model": "hf.co/mmnga-o/Qwen3-Swallow-30B-A3B-RL-v0.2-gguf:Q4_K_M",
+   "mode": "exploit/rewrite/tune",
+   "status": "ok",
+   "idea": "expose the inner\u2011ring and outer\u2011ring radii as sweepable constants, then compute each circle\u2019s maximal feasible radius from the container wall and neighbor distances, and finally adjust pairwise overlaps by shrinking only where necessary; sweeping the two ring radii lets the optimizer find a layout that maximizes the total radius sum."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -8,20 +8,55 @@\n     \"\"\"Return a list of n circles (x, y, r) inside the unit circle (center (0,0),\n     radius 1) without overlaps.\n \n-    This start places one circle at the center and two concentric rings of 7 and\n-    13 circles, all with the same radius: the largest one that keeps every pair\n-    apart and every circle inside the container.\n+    The inner\u2011ring radius R_INNER and outer\u2011ring radius R_OUTER are exposed as\n+    constants; the engine will sweep them to find the layout with the largest\n+    total radius sum.\n     \"\"\"\n+    # ring radii (to be swept)\n+    R_INNER = 0.4\n+    R_OUTER = 0.8\n+\n+    # place one central circle and two rings\n     centers = [(0.0, 0.0)]\n-    for count, ring in ((7, 0.35), (n - 8, 0.75)):\n-        centers += [(ring * math.cos(2 * math.pi * k / count),\n-                     ring * math.sin(2 * math.pi * k / count)) for k in range(count)]\n-    r = min(1.0 - math.hypot(x, y) for x, y in centers)\n-    for a in range(n):\n-        for b in range(a + 1, n):\n-            r = min(r, math.dist(centers[a], centers[b]) / 2)\n-    r *= 1 - 1e-12  # stay strictly feasible despite rounding\n-    return [(x, y, r) for x, y in centers]\n+    centers += [\n+        (R_INNER * math.cos(2 * math.pi * k / 7),\n+         R_INNER * math.sin(2 * math.pi * k / 7))\n+        for k in range(7)\n+    ]\n+    centers += [\n+        (R_OUTER * math.cos(2 * math.pi * k / 13),\n+         R_OUTER * math.sin(2 * math.pi * k / 13))\n+        for k in range(13)\n+    ]\n+\n+    # maximal feasible radius for each circle (limited by wall and neighbors)\n+    radii = []\n+    for i, (x, y) in enumerate(centers):\n+        limit = 1.0 - math.hypot(x, y)\n+        for j, (px, py) in enumerate(centers):\n+            if i == j:\n+                continue\n+            d = math.hypot(x - px, y - py)\n+            limit = min(limit, d / 2.0)\n+        radii.append(limit)\n+\n+    # enforce pairwise non\u2011overlap by shrinking excess only where needed\n+    m = len(centers)\n+    for i in range(m):\n+        for j in range(i + 1, m):\n+            d = math.hypot(centers[i][0] - centers[j][0],\n+                           centers[i][1] - centers[j][1])\n+            excess = radii[i] + radii[j] - d\n+            if excess > 0:\n+                radii[i] -= excess / 2.0\n+                radii[j] -= excess / 2.0\n+\n+    # tiny factor to stay strictly feasible\n+    eps = 1e-12\n+    for i in range(len(radii)):\n+        radii[i] *= (1.0 - eps)\n+\n+    return [(x, y, radii[i]) for i, (x, y) in enumerate(centers)]\n # OMEGA-BLOCK-END\n \n \n",
+ "initial_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.0,
+    0.0,
+    0.151859
+   ],
+   [
+    0.35,
+    0.0,
+    0.151859
+   ],
+   [
+    0.218221,
+    0.273641,
+    0.151859
+   ],
+   [
+    -0.077882,
+    0.341225,
+    0.151859
+   ],
+   [
+    -0.315339,
+    0.151859,
+    0.151859
+   ],
+   [
+    -0.315339,
+    -0.151859,
+    0.151859
+   ],
+   [
+    -0.077882,
+    -0.341225,
+    0.151859
+   ],
+   [
+    0.218221,
+    -0.273641,
+    0.151859
+   ],
+   [
+    0.75,
+    0.0,
+    0.151859
+   ],
+   [
+    0.664092,
+    0.348542,
+    0.151859
+   ],
+   [
+    0.426049,
+    0.617238,
+    0.151859
+   ],
+   [
+    0.090403,
+    0.744532,
+    0.151859
+   ],
+   [
+    -0.265954,
+    0.701262,
+    0.151859
+   ],
+   [
+    -0.561383,
+    0.497342,
+    0.151859
+   ],
+   [
+    -0.728206,
+    0.179487,
+    0.151859
+   ],
+   [
+    -0.728206,
+    -0.179487,
+    0.151859
+   ],
+   [
+    -0.561383,
+    -0.497342,
+    0.151859
+   ],
+   [
+    -0.265954,
+    -0.701262,
+    0.151859
+   ],
+   [
+    0.090403,
+    -0.744532,
+    0.151859
+   ],
+   [
+    0.426049,
+    -0.617238,
+    0.151859
+   ],
+   [
+    0.664092,
+    -0.348542,
+    0.151859
+   ]
+  ]
+ },
+ "best_solution": {
+  "kind": "circles",
+  "container": "circle",
+  "circles": [
+   [
+    0.0,
+    0.0,
+    0.2
+   ],
+   [
+    0.4,
+    0.0,
+    0.173553
+   ],
+   [
+    0.249396,
+    0.312733,
+    0.173553
+   ],
+   [
+    -0.089008,
+    0.389971,
+    0.173553
+   ],
+   [
+    -0.360388,
+    0.173553,
+    0.173553
+   ],
+   [
+    -0.360388,
+    -0.173553,
+    0.173553
+   ],
+   [
+    -0.089008,
+    -0.389971,
+    0.173553
+   ],
+   [
+    0.249396,
+    -0.312733,
+    0.173553
+   ],
+   [
+    0.8,
+    0.0,
+    0.191453
+   ],
+   [
+    0.708365,
+    0.371779,
+    0.191453
+   ],
+   [
+    0.454452,
+    0.658387,
+    0.191453
+   ],
+   [
+    0.096429,
+    0.794167,
+    0.191453
+   ],
+   [
+    -0.283684,
+    0.748013,
+    0.191453
+   ],
+   [
+    -0.598809,
+    0.530498,
+    0.191453
+   ],
+   [
+    -0.776753,
+    0.191453,
+    0.191453
+   ],
+   [
+    -0.776753,
+    -0.191453,
+    0.191453
+   ],
+   [
+    -0.598809,
+    -0.530498,
+    0.191453
+   ],
+   [
+    -0.283684,
+    -0.748013,
+    0.191453
+   ],
+   [
+    0.096429,
+    -0.794167,
+    0.191453
+   ],
+   [
+    0.454452,
+    -0.658387,
+    0.191453
+   ],
+   [
+    0.708365,
+    -0.371779,
+    0.191453
+   ]
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 23.0,
+ "model_gpu_memory_gb": 19.0,
+ "context_length": 40960,
+ "load_seconds": 0.0,
+ "median_call_seconds": 92.8,
+ "p90_call_seconds": 196.5,
+ "prompt_tokens_per_s": 657.5,
+ "gen_tokens_per_s": 33.3,
+ "mean_prompt_tokens": 4261,
+ "mean_gen_tokens": 2481,
+ "stopped_calls": 8,
+ "provider": "ollama",
+ "cost_usd": 0
+}

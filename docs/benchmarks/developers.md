@@ -52,17 +52,17 @@ The developer's best single model, the mean share over all its models, and the m
 | Developer | Models | Best model | Released | Best model's share | Mean over its models | Best per example |
 |---|--:|---|---|--:|--:|--:|
 | OpenAI | 2 | gpt-oss:20b (no-think) | 2025-08-04 | **77%** | 75% | 88% |
-| Google | 10 | gemma4:12b-it-qat (no-think) | 2026-05-23 | **65%** | 50% | 86% |
-| Alibaba (Qwen) | 8 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 2026-04-21 | **62%** | 40% | 80% |
+| Alibaba (Qwen) | 9 | hf.co/mmnga-o/Qwen3-Swallow-30B-A3B-RL-v0.2-gguf:Q4_K_M (no-think) | – | **65%** | 43% | 84% |
+| Google | 10 | gemma4:12b-it-qat (no-think) | 2026-05-23 | **65%** | 51% | 86% |
 | Liquid AI | 2 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (think) | 2026-10-23 | **40%** | 21% | 40% |
 | Conway | 2 | underdog-saluki-27b:iq2-mix (no-think) | 2026-10-08 | **38%** | 19% | 38% |
 | Z.ai | 2 | glm-4.7-flash:latest (think) | 2026-01-19 | **37%** | 34% | 47% |
 | Sarvam AI | 2 | frob/sarvam:30b (no-think) | 2026-03-03 | **33%** | 27% | 37% |
 | NVIDIA | 2 | nemotron-3-nano:4b (think) | 2026-03-07 | **27%** | 14% | 27% |
+| NII (LLM-jp) | 2 | hf.co/llm-jp/llm-jp-4.1-32b-a3b-thinking-gguf:Q4_K_M (no-think) | – | **24%** | 18% | 29% |
 | Microsoft | 2 | richardyoung/frognano-4b-2609:latest (think) | 2026-09-17 | **23%** | 21% | 32% |
 | Yandex | 1 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 2025-03-28 | **18%** | 18% | 18% |
-| NII (LLM-jp) | 1 | llm-jp-4-8b-omega:q4_k_m (no-think) | 2026-03-16 | **13%** | 13% | 13% |
-| Swiss AI Initiative | 1 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 2025-08-13 | **12%** | 12% | 12% |
+| Swiss AI Initiative | 2 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 2025-08-13 | **12%** | 8% | 13% |
 
 ### Progress over time
 

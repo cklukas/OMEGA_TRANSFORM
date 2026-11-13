@@ -260,6 +260,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/max_c
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.74898 | ×1.46 | 54.1 | 6 |
 | underdog-saluki-27b:iq2-mix (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.74766 | ×1.46 | 31.3 | 6 |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (think) | cloud | i7-8700K | 0.7393 | ×1.44 | 34.4 | 3 |
+| hf.co/mmnga-o/Qwen3-Swallow-30B-A3B-RL-v0.2-gguf:Q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.73547 | ×1.44 | 28.6 | 4 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.73531 | ×1.44 | 1.1 | 2 |
 | qwen3.5:latest (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.73495 | ×1.43 | 2.0 | 2 |
 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.73495 | ×1.43 | 9.8 | 1 |
@@ -275,6 +276,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/max_c
 | qwen3-coder:30b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.70701 | ×1.38 | 5.6 | 1 |
 | qwen2.5-coder:7b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.6981 | ×1.36 | 3.2 | 3 |
 | glm-4.7-flash:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.62624 | ×1.22 | 50.4 | 2 |
+| hf.co/llm-jp/llm-jp-4.1-32b-a3b-thinking-gguf:Q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.51626 | ×1.01 | 55.6 | 1 |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |
 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |
 | nemotron-3-nano:4b (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |
@@ -287,3 +289,4 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/max_c
 | qwen3.5:latest (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |
 | underdog-saluki-27b:iq2-mix (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |
 | qwen3.6:27b-coding-mtp-q4_K_M (think) | local | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |
+| hf.co/Colby/apertus-v1.5-8b-text-Q4_K_M-GGUF:Q4_K_M (no-think) | local | i7-8700K + 2x GTX 1080 Ti | 0.51218 | ×1.00 | - | 0 |

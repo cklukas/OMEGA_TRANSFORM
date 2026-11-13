@@ -11,11 +11,11 @@ Each country is represented by its best model in the [overall ranking](../benchm
 | # | Country | Best model | Released | Developer | Share | Lag behind #1 | Models |
 |--:|---|---|---|---|--:|--:|--:|
 | 1 | USA | gpt-oss:20b (no-think) | 2025-08-04 | OpenAI | **77%** | – | 20 |
-| 2 | China | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 2026-04-21 | Alibaba (Qwen) | **62%** | −19% | 10 |
+| 2 | China | hf.co/mmnga-o/Qwen3-Swallow-30B-A3B-RL-v0.2-gguf:Q4_K_M (no-think) | – | Alibaba (Qwen) | **65%** | −15% | 11 |
 | 3 | India | frob/sarvam:30b (no-think) | 2026-03-03 | Sarvam AI | **33%** | −58% | 2 |
-| 4 | Russia | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 2025-03-28 | Yandex | **18%** | −76% | 1 |
-| 5 | Japan | llm-jp-4-8b-omega:q4_k_m (no-think) | 2026-03-16 | NII (LLM-jp) | **13%** | −84% | 1 |
-| 6 | Switzerland | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 2025-08-13 | Swiss AI Initiative | **12%** | −84% | 1 |
+| 4 | Japan | hf.co/llm-jp/llm-jp-4.1-32b-a3b-thinking-gguf:Q4_K_M (no-think) | – | NII (LLM-jp) | **24%** | −69% | 2 |
+| 5 | Russia | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 2025-03-28 | Yandex | **18%** | −76% | 1 |
+| 6 | Switzerland | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 2025-08-13 | Swiss AI Initiative | **12%** | −84% | 2 |
 
 ## Cloud models (OpenRouter)
 

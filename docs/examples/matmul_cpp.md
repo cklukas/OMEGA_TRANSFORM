@@ -168,6 +168,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/matmu
 | xingchen-agi/xing4.0-29b-a4b:free (think) | cloud | 4.6421 | ×7.15 | 60.0 | 1 |
 | gemma4:e2b (think) | local | 3.9014 | ×4.25 | 16.5 | 2 |
 | qwen2.5-coder:7b (no-think) | local | 2.89343 | ×2.52 | 4.2 | 2 |
+| hf.co/Colby/apertus-v1.5-8b-text-Q4_K_M-GGUF:Q4_K_M (no-think) | local | 1.5145 | ×1.00 | - | 0 |
 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | 1.30779 | ×1.11 | 4.6 | 1 |
 | gemma4:e2b (no-think) | local | 1.29868 | ×1.14 | 1.7 | 1 |
 | glm-4.7-flash:latest (no-think) | local | 1.27475 | ×1.11 | 17.6 | 3 |

@@ -1,0 +1,130 @@
+{
+ "schema": 4,
+ "example": "prefix_sum_histogram_single_thread",
+ "model": "gemma4:26b-a4b-it-qat",
+ "variant": "no-think",
+ "model_size_gb": 15.6,
+ "model_params": "25.2B",
+ "started": "2026-11-12T22:11:20",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 15.8,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 5.98586,
+ "best_score": 6.60442,
+ "improvement": 1.1033368638758676,
+ "llm_calls": 18,
+ "mean_llm_seconds": 43.7,
+ "attempts": 18,
+ "ok": 12,
+ "statuses": {
+  "ok": 12,
+  "edit_error": 4,
+  "duplicate": 2
+ },
+ "sweeps": 1,
+ "sweep_variants": 8,
+ "improvements": 2,
+ "minutes_to_best": 13.7,
+ "best_idea": "Use 16-way striping with `uint32_t` sub-histograms and unroll the loop to 16 to maximize instruction-level parallelism and reduce RMW contention on hot bins.",
+ "progress": [
+  [
+   0.0,
+   5.98586
+  ],
+  [
+   0.98,
+   6.38971
+  ],
+  [
+   13.7,
+   6.60442
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 5.98586,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 13.7,
+   "score": 6.60442,
+   "model": "gemma4:26b-a4b-it-qat",
+   "mode": "exploit/diff/refine",
+   "status": "ok",
+   "idea": "Use 16-way striping with `uint32_t` sub-histograms and unroll the loop to 16 to maximize instruction-level parallelism and reduce RMW contention on hot bins."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -29,11 +29,50 @@\n // never overflow int64.\n extern \"C\" void scan_and_histogram(const int64_t* in, int64_t* out, size_t n, uint64_t* hist) {\n     for (int b = 0; b < 256; ++b) hist[b] = 0;\n+    if (n == 0) return;\n+\n+    static constexpr size_t K = 16;\n+    alignas(64) uint32_t sub_hist[K][256] = {0};\n+\n     int64_t sum = 0;\n-    for (size_t i = 0; i < n; ++i) {\n-        sum += in[i];\n+    size_t i = 0;\n+    for (; i + 15 < n; i += 16) {\n+        int64_t v0 = in[i], v1 = in[i+1], v2 = in[i+2], v3 = in[i+3];\n+        int64_t v4 = in[i+4], v5 = in[i+5], v6 = in[i+6], v7 = in[i+7];\n+        int64_t v8 = in[i+8], v9 = in[i+9], v10 = in[i+10], v11 = in[i+11];\n+        int64_t v12 = in[i+12], v13 = in[i+13], v14 = in[i+14], v15 = in[i+15];\n+\n+        sum += v0; out[i]   = sum; sub_hist[0][v0 & 255]++;\n+        sum += v1; out[i+1] = sum; sub_hist[1][v1 & 255]++;\n+        sum += v2; out[i+2] = sum; sub_hist[2][v2 & 255]++;\n+        sum += v3; out[i+3] = sum; sub_hist[3][v3 & 255]++;\n+        sum += v4; out[i+4] = sum; sub_hist[4][v4 & 255]++;\n+        sum += v5; out[i+5] = sum; sub_hist[5][v5 & 255]++;\n+        sum += v6; out[i+6] = sum; sub_hist[6][v6 & 255]++;\n+        sum += v7; out[i+7] = sum; sub_hist[7][v7 & 255]++;\n+        sum += v8; out[i+8] = sum; sub_hist[8][v8 & 255]++;\n+        sum += v9; out[i+9] = sum; sub_hist[9][v9 & 255]++;\n+        sum += v10; out[i+10] = sum; sub_hist[10][v10 & 255]++;\n+        sum += v11; out[i+11] = sum; sub_hist[11][v11 & 255]++;\n+        sum += v12; out[i+12] = sum; sub_hist[12][v12 & 255]++;\n+        sum += v13; out[i+13] = sum; sub_hist[13][v13 & 255]++;\n+        sum += v14; out[i+14] = sum; sub_hist[14][v14 & 255]++;\n+        sum += v15; out[i+15] = sum; sub_hist[15][v15 & 255]++;\n+    }\n+\n+    for (; i < n; ++i) {\n+        int64_t v = in[i];\n+        sum += v;\n         out[i] = sum;\n-        hist[in[i] & 255]++;\n+        sub_hist[i & 15][v & 255]++;\n+    }\n+\n+    for (int b = 0; b < 256; ++b) {\n+        uint64_t count = 0;\n+        for (size_t k = 0; k < K; ++k) {\n+            count += sub_hist[k][b];\n+        }\n+        hist[b] += count;\n     }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "best_solution": {
+  "kind": "scan",
+  "n": 10000000,
+  "head": [
+   -679646643,
+   -1745124352,
+   1324066621,
+   -1358042368,
+   1340538599,
+   289200384
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 16.1,
+ "model_gpu_memory_gb": 14.4,
+ "context_length": 40960,
+ "load_seconds": 0.1,
+ "median_call_seconds": 45.7,
+ "p90_call_seconds": 53.9,
+ "prompt_tokens_per_s": 825.8,
+ "gen_tokens_per_s": 41.2,
+ "mean_prompt_tokens": 5959,
+ "mean_gen_tokens": 1402,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

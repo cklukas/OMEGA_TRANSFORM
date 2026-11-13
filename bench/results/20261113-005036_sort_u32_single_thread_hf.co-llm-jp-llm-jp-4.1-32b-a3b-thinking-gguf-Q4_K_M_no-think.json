@@ -1,0 +1,140 @@
+{
+ "schema": 4,
+ "example": "sort_u32_single_thread",
+ "model": "hf.co/llm-jp/llm-jp-4.1-32b-a3b-thinking-gguf:Q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 21.5,
+ "model_params": "32.1B",
+ "started": "2026-11-13T00:50:36",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 31.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 22.676105123376914,
+ "best_score": 132.29104173764284,
+ "improvement": 5.833940221121277,
+ "llm_calls": 25,
+ "mean_llm_seconds": 67.5,
+ "attempts": 25,
+ "ok": 11,
+ "statuses": {
+  "compile_error": 2,
+  "edit_error": 12,
+  "ok": 11
+ },
+ "sweeps": 3,
+ "sweep_variants": 27,
+ "improvements": 3,
+ "minutes_to_best": 13.43,
+ "best_idea": "Replace the heap\u2011allocated scratch buffer with a fixed\u2011size thread\u2011local array to eliminate per\u2011call allocation overhead and improve cache locality, keeping the existing radix\u2011sort logic unchanged.",
+ "progress": [
+  [
+   0.0,
+   22.676105123376914
+  ],
+  [
+   3.96,
+   95.4867862965071
+  ],
+  [
+   7.97,
+   129.6871883072416
+  ],
+  [
+   13.43,
+   132.29104173764284
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 22.676105123376914,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 9.07,
+   "score": 113.76749254935339,
+   "model": "hf.co/llm-jp/llm-jp-4.1-32b-a3b-thinking-gguf:Q4_K_M",
+   "mode": "explore/rewrite/refine",
+   "status": "ok",
+   "idea": "Replace the O(n log n) merge\u2011sort with a 4\u2011pass 8\u2011bit LSD radix sort (stable, ping\u2011pong buffers) and fall back to insertion sort for very small arrays; this cuts memory traffic and runtime dramatically on all test distributions."
+  },
+  {
+   "minutes": 13.43,
+   "score": 132.29104173764284,
+   "model": "hf.co/llm-jp/llm-jp-4.1-32b-a3b-thinking-gguf:Q4_K_M",
+   "mode": "exploit/rewrite/refine",
+   "status": "ok",
+   "idea": "Replace the heap\u2011allocated scratch buffer with a fixed\u2011size thread\u2011local array to eliminate per\u2011call allocation overhead and improve cache locality, keeping the existing radix\u2011sort logic unchanged."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,22 +19,68 @@\n #endif\n \n // OMEGA-BLOCK-START\n-// Sorts a[0..n) ascending, in place, on the calling thread. n is any size from\n-// 0 to 2'000'000. Extra memory may be allocated freely.\n-static void merge_sort_rec(uint32_t* a, uint32_t* tmp, size_t lo, size_t hi) {\n-    if (hi - lo < 2) return;\n-    size_t mid = lo + (hi - lo) / 2;\n-    merge_sort_rec(a, tmp, lo, mid);\n-    merge_sort_rec(a, tmp, mid, hi);\n-    size_t i = lo, j = mid, k = lo;\n-    while (i < mid && j < hi) tmp[k++] = (a[j] < a[i]) ? a[j++] : a[i++];\n-    while (i < mid) tmp[k++] = a[i++];\n-    while (j < hi) tmp[k++] = a[j++];\n-    for (size_t t = lo; t < hi; ++t) a[t] = tmp[t];\n+// Sorts a[0..n) ascending, in place, on the calling thread.\n+// n is any size from 0 to 2'000'000. Extra memory may be allocated freely.\n+static constexpr size_t MAX_N = 2000000;\n+static constexpr size_t RADIX_BITS   = 8;\n+static constexpr size_t BUCKET_COUNT = 1u << RADIX_BITS;   // 256\n+static constexpr size_t INSERTION_SORT_THRESHOLD = 64;\n+\n+// tiny insertion sort \u2013 in\u2011place, used for n \u2264 INSERTION_SORT_THRESHOLD\n+static void insertion_sort(uint32_t* a, size_t n) {\n+    for (size_t i = 1; i < n; ++i) {\n+        uint32_t key = a[i];\n+        size_t j = i;\n+        while (j > 0 && a[j - 1] > key) {\n+            a[j] = a[j - 1];\n+            --j;\n+        }\n+        a[j] = key;\n+    }\n }\n \n+// 4\u2011pass 8\u2011bit LSD radix sort (stable) \u2013 uses one auxiliary buffer.\n+// After an even number of passes the sorted data ends up in src;\n+// we copy back if necessary.\n extern \"C\" void sort_u32(uint32_t* a, size_t n) {\n-    std::vector<uint32_t> tmp(n);\n-    merge_sort_rec(a, tmp.data(), 0, n);\n+    if (n <= INSERTION_SORT_THRESHOLD) {\n+        insertion_sort(a, n);\n+        return;\n+    }\n+\n+    // Fixed\u2011size thread\u2011local scratch buffer (no per\u2011call allocation)\n+    alignas(16) static thread_local uint32_t scratch[MAX_N];\n+    uint32_t* src = a;\n+    uint32_t* dst = scratch;\n+\n+    for (int pass = 0; pass < 4; ++pass) {\n+        const int shift = pass * RADIX_BITS;\n+        int cnt[BUCKET_COUNT] = {0};\n+\n+        // Counting phase\n+        for (size_t i = 0; i < n; ++i)\n+            ++cnt[(src[i] >> shift) & 0xFF];\n+\n+        // Prefix sum \u2192 start indices\n+        int sum = 0;\n+        for (int i = 0; i < BUCKET_COUNT; ++i) {\n+            int c = cnt[i];\n+            cnt[i] = sum;\n+            sum += c;\n+        }\n+\n+        // Distribution phase\n+        for (size_t i = 0; i < n; ++i)\n+            dst[cnt[(src[i] >> shift) & 0xFF]++] = src[i];\n+\n+        // Swap roles for next pass\n+        std::swap(src, dst);\n+    }\n+\n+    // After an even number of passes the result resides in dst.\n+    // Copy back to the caller's buffer.\n+    if (src != a) {\n+        std::memcpy(a, src, n * sizeof(uint32_t));\n+    }\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "best_solution": {
+  "kind": "sort",
+  "n": 1000000,
+  "distributions": [
+   "uniform",
+   "dups1000",
+   "sorted",
+   "reverse",
+   "nearly_sorted"
+  ]
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 24.9,
+ "model_gpu_memory_gb": 18.8,
+ "context_length": 40960,
+ "load_seconds": 0.0,
+ "median_call_seconds": 61.5,
+ "p90_call_seconds": 109.1,
+ "prompt_tokens_per_s": 674.7,
+ "gen_tokens_per_s": 27.3,
+ "mean_prompt_tokens": 5831,
+ "mean_gen_tokens": 1545,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}
