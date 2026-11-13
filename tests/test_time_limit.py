@@ -40,7 +40,7 @@ class EndlessOllama:
                         self.wfile.write((json.dumps(line) + "\n").encode())
                         self.wfile.flush()
                         time.sleep(0.05)
-                except (BrokenPipeError, ConnectionResetError):
+                except OSError:  # the client left: BrokenPipe, reset, or aborted (Windows)
                     outer.closed.set()
 
             def log_message(self, *args):
