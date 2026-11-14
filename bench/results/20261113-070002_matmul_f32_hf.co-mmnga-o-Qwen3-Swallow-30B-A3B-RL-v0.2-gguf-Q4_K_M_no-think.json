@@ -1,0 +1,122 @@
+{
+ "schema": 4,
+ "example": "matmul_f32",
+ "model": "hf.co/mmnga-o/Qwen3-Swallow-30B-A3B-RL-v0.2-gguf:Q4_K_M",
+ "variant": "no-think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-11-13T07:00:02",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 39.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": false,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 1.53394,
+ "best_score": 11.5147,
+ "improvement": 7.506616947207843,
+ "llm_calls": 16,
+ "mean_llm_seconds": 139.4,
+ "attempts": 16,
+ "ok": 1,
+ "statuses": {
+  "compile_error": 6,
+  "edit_error": 2,
+  "llm_error": 6,
+  "invalid": 1,
+  "ok": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 1,
+ "minutes_to_best": 37.46,
+ "best_idea": "Zero the output matrix before the parallel accumulation so the garbage that the harness writes into\u202fC does not corrupt the result; this fixes the n\u202f=\u202f1 failure and improves correctness without slowing",
+ "progress": [
+  [
+   0.0,
+   1.53394
+  ],
+  [
+   37.46,
+   11.5147
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.53394,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 18.16,
+   "score": null,
+   "model": "hf.co/mmnga-o/Qwen3-Swallow-30B-A3B-RL-v0.2-gguf:Q4_K_M",
+   "mode": "exploit/diff/refine",
+   "status": "invalid",
+   "idea": "Replace the single\u2011threaded triple loop with a multithreaded i\u2011k\u2011j kernel that processes disjoint row blocks. Parallel rows allow full use of the 10\u2011core ARM CPU, and the i\u2011k\u2011j order gives better cache streaming of C and B."
+  },
+  {
+   "minutes": 37.46,
+   "score": 11.5147,
+   "model": "hf.co/mmnga-o/Qwen3-Swallow-30B-A3B-RL-v0.2-gguf:Q4_K_M",
+   "mode": "retry/diff/fix",
+   "status": "ok",
+   "idea": "Zero the output matrix before the parallel accumulation so the garbage that the harness writes into C does not corrupt the result; this fixes the n = 1 failure and improves correctness without slowing performance."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -19,14 +19,29 @@\n #endif\n \n // OMEGA-BLOCK-START\n-// Computes C = A * B. C is NOT zeroed by the caller. Any number of threads may be\n-// used (std::thread is available); n is any size from 1 to 2048.\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n-    for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n-        }\n+    int n_threads = std::thread::hardware_concurrency();\n+    if (n_threads == 0) n_threads = 1;\n+    int rows_per_thread = (n + n_threads - 1) / n_threads;\n+size_t nn = (size_t)n * n;\n+std::fill(C, C + nn, 0.0f);\n+\n+    std::vector<std::thread> workers;\n+    for (int t = 0; t < n_threads; ++t) {\n+        int i0 = t * rows_per_thread;\n+        int i1 = std::min(n, i0 + rows_per_thread);\n+        if (i0 >= n) break;\n+        workers.emplace_back([=]() {\n+            for (int i = i0; i < i1; ++i) {\n+                for (int k = 0; k < n; ++k) {\n+                    float aik = A[i * n + k];\n+                    for (int j = 0; j < n; ++j) {\n+                        C[i * n + j] += aik * B[k * n + j];\n+                    }\n+                }\n+            }\n+        });\n+    }\n+    for (auto &w : workers) w.join();\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 1024,
+  "cores": "all 10 cores"
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 23.0,
+ "model_gpu_memory_gb": 19.0,
+ "context_length": 40960,
+ "load_seconds": 0.0,
+ "median_call_seconds": 134.6,
+ "p90_call_seconds": 232.4,
+ "prompt_tokens_per_s": 927.9,
+ "gen_tokens_per_s": 34.1,
+ "mean_prompt_tokens": 2508,
+ "mean_gen_tokens": 4313,
+ "stopped_calls": 6,
+ "provider": "ollama",
+ "cost_usd": 0
+}

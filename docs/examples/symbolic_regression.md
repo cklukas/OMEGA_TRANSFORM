@@ -546,6 +546,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/symbo
 | gemma4:latest (no-think) | local | 0.99803 | ×3.19 | 2.9 | 4 |
 | qwen3.5:latest (no-think) | local | 0.998 | ×3.19 | 1.1 | 1 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 0.99798 | ×3.19 | 1.8 | 5 |
+| hf.co/mmnga-o/Qwen3-Swallow-30B-A3B-RL-v0.2-gguf:Q4_K_M (think) | local | 0.99761 | ×3.19 | 9.0 | 3 |
 | gemma4:12b-it-qat (no-think) | local | 0.99728 | ×3.19 | 7.5 | 5 |
 | qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | 0.99633 | ×3.18 | 5.6 | 3 |
 | nvidia/nemotron-3.5-lightning:free (think) | cloud | 0.99085 | ×3.17 | 50.2 | 4 |

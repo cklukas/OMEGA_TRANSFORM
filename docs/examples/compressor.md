@@ -367,3 +367,4 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/log_c
 | glm-4.7-flash:latest (think) | local | 11.2861 | ×1.00 | - | 0 |
 | hf.co/Colby/apertus-v1.5-8b-text-Q4_K_M-GGUF:Q4_K_M (no-think) | local | 11.2861 | ×1.00 | - | 0 |
 | hf.co/llm-jp/llm-jp-4.1-32b-a3b-thinking-gguf:Q4_K_M (no-think) | local | 11.2861 | ×1.00 | - | 0 |
+| hf.co/mmnga-o/Qwen3-Swallow-30B-A3B-RL-v0.2-gguf:Q4_K_M (think) | local | 11.2861 | ×1.00 | - | 0 |

@@ -134,6 +134,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/prefi
 | gpt-oss:20b (think) | local | 6.55077 | ×1.25 | 34.0 | 7 |
 | hf.co/llm-jp/llm-jp-4.1-32b-a3b-thinking-gguf:Q4_K_M (no-think) | local | 6.54804 | ×1.00 | - | 0 |
 | hf.co/Colby/apertus-v1.5-8b-text-Q4_K_M-GGUF:Q4_K_M (no-think) | local | 6.2753 | ×1.00 | - | 0 |
+| hf.co/mmnga-o/Qwen3-Swallow-30B-A3B-RL-v0.2-gguf:Q4_K_M (think) | local | 6.24342 | ×1.00 | - | 0 |
 | nvidia/nemotron-3.5-super-vl:free (think) | cloud | 5.82027 | ×1.12 | 12.0 | 3 |
 | qwen3.5:latest (think) | local | 5.62669 | ×1.09 | 15.4 | 2 |
 | gemma4:26b-a4b-it-qat (think) | local | 5.6116 | ×1.04 | 33.7 | 1 |

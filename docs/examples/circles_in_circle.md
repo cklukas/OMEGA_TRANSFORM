@@ -256,6 +256,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/circl
 | qwen3.6:27b-coding-mtp-q4_K_M (think) | local | 3.76625 | ×1.18 | 54.7 | 1 |
 | gpt-oss:20b (think) | local | 3.7556 | ×1.18 | 6.7 | 3 |
 | gemma4:26b-a4b-it-qat (no-think) | local | 3.73964 | ×1.17 | 2.6 | 1 |
+| hf.co/mmnga-o/Qwen3-Swallow-30B-A3B-RL-v0.2-gguf:Q4_K_M (think) | local | 3.69874 | ×1.16 | 2.9 | 1 |
 | glm-4.7-flash:latest (think) | local | 3.64608 | ×1.14 | 31.5 | 1 |
 | gemma4:e2b (no-think) | local | 3.64462 | ×1.14 | 2.7 | 1 |
 | gemma4:latest (no-think) | local | 3.57134 | ×1.12 | 1.7 | 1 |

@@ -248,6 +248,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/sort_
 | dots-studio/dots-3-note-preview:free (think) | cloud | 177.3926 | ×9.65 | 50.2 | 1 |
 | nvidia/nemotron-3.5-super-vl:free (no-think) | cloud | 176.1989 | ×9.78 | 2.3 | 3 |
 | nvidia/nemotron-3.5-lightning:free (think) | cloud | 164.3294 | ×9.17 | 19.0 | 2 |
+| hf.co/mmnga-o/Qwen3-Swallow-30B-A3B-RL-v0.2-gguf:Q4_K_M (think) | local | 161.2733 | ×6.76 | 32.6 | 4 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 158.5411 | ×8.62 | 26.8 | 6 |
 | gemma4:26b-a4b-it-qat (no-think) | local | 151.3881 | ×7.19 | 6.4 | 5 |
 | hf.co/mmnga-o/Qwen3-Swallow-30B-A3B-RL-v0.2-gguf:Q4_K_M (no-think) | local | 149.4041 | ×6.16 | 28.3 | 6 |

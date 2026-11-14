@@ -226,6 +226,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/tamme
 | glm-4.7-flash:latest (think) | local | 34.7958 | ×10.87 | 4.9 | 1 |
 | frob/sarvam:30b (no-think) | local | 34.5838 | ×10.80 | 32.4 | 2 |
 | hf.co/llm-jp/llm-jp-4.1-32b-a3b-thinking-gguf:Q4_K_M (no-think) | local | 34.4235 | ×10.75 | 5.3 | 1 |
+| hf.co/mmnga-o/Qwen3-Swallow-30B-A3B-RL-v0.2-gguf:Q4_K_M (think) | local | 32.7402 | ×10.23 | 1.3 | 1 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 32.7402 | ×10.23 | 6.2 | 2 |
 | nvidia/nemotron-3.5-lightning:free (no-think) | cloud | 32.7402 | ×10.23 | 6.3 | 2 |
 | qwen2.5-coder:7b (no-think) | local | 32.7402 | ×10.23 | 0.8 | 1 |

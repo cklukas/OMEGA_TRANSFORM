@@ -97,6 +97,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/tsp_h
 | gpt-oss:20b (think) | local | 1.10425 | ×1.10 | 15.8 | 5 |
 | nvidia/nemotron-3.5-super-vl:free (think) | cloud | 1.09539 | ×1.10 | 27.3 | 1 |
 | gemma4:26b-a4b-it-qat (no-think) | local | 1.09374 | ×1.09 | 38.1 | 7 |
+| hf.co/mmnga-o/Qwen3-Swallow-30B-A3B-RL-v0.2-gguf:Q4_K_M (think) | local | 1.09326 | ×1.09 | 25.1 | 2 |
 | gemma4:e2b (think) | local | 1.09031 | ×1.09 | 15.5 | 6 |
 | gemma4:latest (no-think) | local | 1.08936 | ×1.09 | 7.7 | 4 |
 | gemma4:latest (think) | local | 1.0889 | ×1.09 | 3.6 | 3 |

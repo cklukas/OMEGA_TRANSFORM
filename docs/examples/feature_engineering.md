@@ -195,6 +195,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/featu
 | gemma4:e4b-it-qat (no-think) | local | 0.79 | ×1.27 | 2.9 | 3 |
 | xingchen-agi/xing4.0-29b-a4b:free (think) | cloud | 0.788 | ×1.26 | 1.6 | 1 |
 | underdog-saluki-27b:iq2-mix (no-think) | local | 0.77 | ×1.24 | 15.1 | 6 |
+| hf.co/mmnga-o/Qwen3-Swallow-30B-A3B-RL-v0.2-gguf:Q4_K_M (think) | local | 0.766 | ×1.23 | 5.4 | 2 |
 | nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (no-think) | cloud | 0.764 | ×1.23 | 2.1 | 2 |
 | qwen3.6:27b-coding-mtp-q4_K_M (think) | local | 0.764 | ×1.23 | 45.7 | 4 |
 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | local | 0.762 | ×1.22 | 41.5 | 6 |

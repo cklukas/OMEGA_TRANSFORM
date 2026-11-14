@@ -1,0 +1,125 @@
+{
+ "schema": 4,
+ "example": "matmul_f32_single_thread",
+ "model": "hf.co/mmnga-o/Qwen3-Swallow-30B-A3B-RL-v0.2-gguf:Q4_K_M",
+ "variant": "think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-11-14T00:28:25",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 66.2,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 1.65756,
+ "best_score": 29.1143,
+ "improvement": 17.564552716040446,
+ "llm_calls": 21,
+ "mean_llm_seconds": 180.3,
+ "attempts": 21,
+ "ok": 7,
+ "statuses": {
+  "compile_error": 4,
+  "edit_error": 5,
+  "invalid": 5,
+  "ok": 7
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 2,
+ "minutes_to_best": 46.39,
+ "best_idea": "Use 32\u202f\u00d7\u202f32 cache\u2011blocking with NEON\u2011vectorized j\u2011updates while preserving the i\u2011k\u2011j loop order, which reduces cache misses and stream\u2011lines memory accesses.",
+ "progress": [
+  [
+   0.0,
+   1.65756
+  ],
+  [
+   33.63,
+   28.2884
+  ],
+  [
+   46.39,
+   29.1143
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 1.65756,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 33.63,
+   "score": 28.2884,
+   "model": "hf.co/mmnga-o/Qwen3-Swallow-30B-A3B-RL-v0.2-gguf:Q4_K_M",
+   "mode": "explore/rewrite/bold",
+   "status": "ok",
+   "idea": "edit: // start with a clean C because A*B must be computed from scratch / std::fill(C, C + (size_t)n * n, 0.0f);"
+  },
+  {
+   "minutes": 46.39,
+   "score": 29.1143,
+   "model": "hf.co/mmnga-o/Qwen3-Swallow-30B-A3B-RL-v0.2-gguf:Q4_K_M",
+   "mode": "exploit/rewrite/bold",
+   "status": "ok",
+   "idea": "Use 32 \u00d7 32 cache\u2011blocking with NEON\u2011vectorized j\u2011updates while preserving the i\u2011k\u2011j loop order, which reduces cache misses and stream\u2011lines memory accesses."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -24,11 +24,53 @@\n // Computes C = A * B on the calling thread. C is NOT zeroed by the caller.\n // n is any size from 1 to 2048.\n extern \"C\" void matmul(int n, const float* A, const float* B, float* C) {\n+    // start with a clean C because A*B must be computed from scratch\n+    std::fill(C, C + (size_t)n * n, 0.0f);\n+\n+#if defined(__ARM_NEON)\n+\n+constexpr int TILE = 32;                     // 32\u2011element tiles fit L1 cache\n+\n+    for (int i0 = 0; i0 < n; i0 += TILE) {\n+        int i1 = std::min(i0 + TILE, n);\n+        for (int k0 = 0; k0 < n; k0 += TILE) {\n+            int k1 = std::min(k0 + TILE, n);\n+            for (int j0 = 0; j0 < n; j0 += TILE) {\n+                int j1 = std::min(j0 + TILE, n);\n+\n+                // tile (i0..i1\u20111, j0..j1\u20111) computed via k\u2011loop\n+                for (int i = i0; i < i1; ++i) {\n+                    for (int k = k0; k < k1; ++k) {\n+                        float a = A[i * n + k];          // scalar A[i][k]\n+\n+                        int j = j0;\n+                        // vectorised j\u2011updates (step of 4)\n+                        for (; j <= j1 - 4; j += 4) {\n+                            float32x4_t b = vld1q_f32(&B[k * n + j]);   // B[k][j..j+3]\n+                            float32x4_t c = vld1q_f32(&C[i * n + j]);   // C[i][j..j+3]\n+                            c = vfmaq_n_f32(c, a, b);                  // C += a * B\n+                            vst1q_f32(&C[i * n + j], c);\n+                        }\n+                        // tail processing for leftover columns (0\u20113)\n+                        for (; j < j1; ++j) {\n+                            C[i * n + j] += a * B[k * n + j];\n+                        }\n+                    }\n+                }\n+            }\n+        }\n+    }\n+\n+#else   // fallback scalar version (only needed on non\u2011ARM platforms)\n+\n+    // naive i\u2011k\u2011j triple loop; kept for completeness\n     for (int i = 0; i < n; ++i)\n-        for (int j = 0; j < n; ++j) {\n-            float s = 0.0f;\n-            for (int k = 0; k < n; ++k) s += A[i * n + k] * B[k * n + j];\n-            C[i * n + j] = s;\n+        for (int k = 0; k < n; ++k) {\n+            float a = A[i * n + k];\n+            for (int j = 0; j < n; ++j)\n+                C[i * n + j] += a * B[k * n + j];\n         }\n+\n+#endif\n }\n // OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "matmul",
+  "n": 768,
+  "cores": "one core, CPU time"
+ },
+ "best_solution": {
+  "kind": "matmul",
+  "n": 768,
+  "cores": "one core, CPU time"
+ },
+ "error": "",
+ "stop_reason": "time limit",
+ "model_memory_gb": 23.0,
+ "model_gpu_memory_gb": 19.0,
+ "context_length": 40960,
+ "load_seconds": 0.0,
+ "median_call_seconds": 161.7,
+ "p90_call_seconds": 347.9,
+ "prompt_tokens_per_s": 844.0,
+ "gen_tokens_per_s": 33.2,
+ "mean_prompt_tokens": 3318,
+ "mean_gen_tokens": 5758,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

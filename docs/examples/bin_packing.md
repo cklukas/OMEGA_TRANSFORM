@@ -472,6 +472,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/bin_p
 | qwen3:30b-a3b-instruct-2507-q4_K_M (think) | local | 0.95128 | ×1.20 | 0.3 | 1 |
 | glm-4.7-flash:latest (think) | local | 0.95128 | ×1.20 | 8.6 | 1 |
 | hf.co/mmnga-o/Qwen3-Swallow-30B-A3B-RL-v0.2-gguf:Q4_K_M (no-think) | local | 0.95128 | ×1.20 | 6.0 | 1 |
+| hf.co/mmnga-o/Qwen3-Swallow-30B-A3B-RL-v0.2-gguf:Q4_K_M (think) | local | 0.95128 | ×1.20 | 1.7 | 1 |
 | nvidia/nemotron-3.5-lightning:free (no-think) | cloud | 0.94863 | ×1.19 | 3.7 | 1 |
 | qwen2.5-coder:7b (no-think) | local | 0.92325 | ×1.16 | 1.3 | 1 |
 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | local | 0.79587 | ×1.00 | 1.3 | 1 |

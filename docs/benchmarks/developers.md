@@ -52,15 +52,15 @@ The developer's best single model, the mean share over all its models, and the m
 | Developer | Models | Best model | Released | Best model's share | Mean over its models | Best per example |
 |---|--:|---|---|--:|--:|--:|
 | OpenAI | 2 | gpt-oss:20b (no-think) | 2025-08-04 | **77%** | 75% | 88% |
-| Alibaba (Qwen) | 9 | hf.co/mmnga-o/Qwen3-Swallow-30B-A3B-RL-v0.2-gguf:Q4_K_M (no-think) | – | **65%** | 43% | 84% |
 | Google | 10 | gemma4:12b-it-qat (no-think) | 2026-05-23 | **65%** | 51% | 86% |
+| Alibaba (Qwen) | 10 | qwen3.6:27b-coding-mtp-q4_K_M (no-think) | 2026-04-21 | **62%** | 42% | 84% |
 | Liquid AI | 2 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (think) | 2026-10-23 | **40%** | 21% | 40% |
 | Conway | 2 | underdog-saluki-27b:iq2-mix (no-think) | 2026-10-08 | **38%** | 19% | 38% |
-| Z.ai | 2 | glm-4.7-flash:latest (think) | 2026-01-19 | **37%** | 34% | 47% |
+| Z.ai | 2 | glm-4.7-flash:latest (think) | 2026-01-19 | **34%** | 33% | 47% |
 | Sarvam AI | 2 | frob/sarvam:30b (no-think) | 2026-03-03 | **33%** | 27% | 37% |
 | NVIDIA | 2 | nemotron-3-nano:4b (think) | 2026-03-07 | **27%** | 14% | 27% |
-| NII (LLM-jp) | 2 | hf.co/llm-jp/llm-jp-4.1-32b-a3b-thinking-gguf:Q4_K_M (no-think) | – | **24%** | 18% | 29% |
 | Microsoft | 2 | richardyoung/frognano-4b-2609:latest (think) | 2026-09-17 | **23%** | 21% | 32% |
+| NII (LLM-jp) | 2 | hf.co/llm-jp/llm-jp-4.1-32b-a3b-thinking-gguf:Q4_K_M (no-think) | – | **20%** | 16% | 29% |
 | Yandex | 1 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 2025-03-28 | **18%** | 18% | 18% |
 | Swiss AI Initiative | 2 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 2025-08-13 | **12%** | 8% | 13% |
 
@@ -80,7 +80,7 @@ Each developer's ranked models by release date (the original publication on Hugg
 | Google | under 15B | 2026-03-02 | gemma4:e4b-it-qat (think) | 7.5B | 49% |
 | Google | under 15B | 2026-03-02 | gemma4:latest (no-think) | 8.1B | 59% |
 | Google | under 15B | 2026-05-23 | gemma4:12b-it-qat (no-think) | 11.9B | 65% |
-| Google | 15B and up | 2026-03-11 | gemma4:26b-a4b-it-qat (think) | 25.2B | 62% |
+| Google | 15B and up | 2026-03-11 | gemma4:26b-a4b-it-qat (no-think) | 25.2B | 62% |
 | Liquid AI | under 15B | 2026-10-23 | hf.co/LiquidAI/LFM3-1.7B-GGUF:Q4_K_M (think) | 1.73B | 40% |
 | Microsoft | under 15B | 2026-09-17 | richardyoung/frognano-4b-2609:latest (think) | 4.3B | 23% |
 | NII (LLM-jp) | under 15B | 2026-03-16 | llm-jp-4-8b-omega:q4_k_m (no-think) | 8.6B | 13% |
@@ -89,7 +89,7 @@ Each developer's ranked models by release date (the original publication on Hugg
 | Sarvam AI | 15B and up | 2026-03-03 | frob/sarvam:30b (no-think) | 32.2B | 33% |
 | Swiss AI Initiative | under 15B | 2025-08-13 | MichelRosselli/apertus:8b-instruct-2509-q4_k_m (no-think) | 8.1B | 12% |
 | Yandex | under 15B | 2025-03-28 | yandex/YandexGPT-5-Lite-8B-instruct-GGUF:latest (no-think) | 8B | 18% |
-| Z.ai | 15B and up | 2026-01-19 | glm-4.7-flash:latest (think) | 29.9B | 37% |
+| Z.ai | 15B and up | 2026-01-19 | glm-4.7-flash:latest (think) | 29.9B | 34% |
 
 ```mermaid
 xychart-beta

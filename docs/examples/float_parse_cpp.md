@@ -98,6 +98,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/float
 | hf.co/Colby/apertus-v1.5-8b-text-Q4_K_M-GGUF:Q4_K_M (no-think) | local | 82.4858 | ×1.00 | - | 0 |
 | hf.co/mmnga-o/Qwen3-Swallow-30B-A3B-RL-v0.2-gguf:Q4_K_M (no-think) | local | 82.2411 | ×1.03 | 30.8 | 1 |
 | hf.co/llm-jp/llm-jp-4.1-32b-a3b-thinking-gguf:Q4_K_M (no-think) | local | 80.2061 | ×1.00 | - | 0 |
+| hf.co/mmnga-o/Qwen3-Swallow-30B-A3B-RL-v0.2-gguf:Q4_K_M (think) | local | 80.0436 | ×1.00 | - | 0 |
 | nvidia/nemotron-3-ultra-550b-a55b:free (no-think) | cloud | 77.5919 | ×1.44 | 4.8 | 3 |
 | qwen3-coder:30b (no-think) | local | 76.3399 | ×1.12 | 50.0 | 5 |
 | gpt-oss:20b (no-think) | local | 75.2210 | ×1.23 | 12.0 | 1 |

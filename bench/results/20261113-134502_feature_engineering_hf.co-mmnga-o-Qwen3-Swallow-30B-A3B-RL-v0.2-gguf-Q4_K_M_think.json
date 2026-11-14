@@ -1,0 +1,216 @@
+{
+ "schema": 4,
+ "example": "feature_engineering",
+ "model": "hf.co/mmnga-o/Qwen3-Swallow-30B-A3B-RL-v0.2-gguf:Q4_K_M",
+ "variant": "think",
+ "model_size_gb": 18.6,
+ "model_params": "30.5B",
+ "started": "2026-11-13T13:45:08",
+ "minutes_budget": 60.0,
+ "patience": 15,
+ "wall_minutes": 29.6,
+ "omega_version": "0.1.0",
+ "omega_commit": "0c1aa03c",
+ "machine": {
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "cpu": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+  "model": "MS-7A98",
+  "cores": "12",
+  "memory_gb": 64,
+  "python": "3.13.14",
+  "gpus": [
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB",
+   "NVIDIA GeForce GTX 1080 Ti, 11264 MiB"
+  ]
+ },
+ "settings": {
+  "think": true,
+  "islands": 3,
+  "llm_concurrency": 1,
+  "eval_concurrency": 4,
+  "sweep_budget": 16,
+  "temperature": 0.8,
+  "min_gain": 0.001,
+  "num_ctx": 40960,
+  "max_tokens": 24576,
+  "max_answer_chars": 0,
+  "answer_room": 24000,
+  "max_reasoning_factor": 8.0
+ },
+ "initial_score": 0.623,
+ "best_score": 0.766,
+ "improvement": 1.2295345104333868,
+ "llm_calls": 19,
+ "mean_llm_seconds": 88.8,
+ "attempts": 19,
+ "ok": 8,
+ "statuses": {
+  "edit_error": 7,
+  "ok": 8,
+  "timeout": 1,
+  "invalid": 2,
+  "duplicate": 1
+ },
+ "sweeps": 0,
+ "sweep_variants": 0,
+ "improvements": 2,
+ "minutes_to_best": 5.37,
+ "best_idea": "add a log\u2011transform of the skewed positive feature and a sign\u2011based interaction term, so the linear model can capture the hidden nonlinear rule.",
+ "progress": [
+  [
+   0.0,
+   0.623
+  ],
+  [
+   4.77,
+   0.726
+  ],
+  [
+   5.37,
+   0.766
+  ]
+ ],
+ "best_lineage": [
+  {
+   "minutes": 0.0,
+   "score": 0.623,
+   "model": "",
+   "mode": "initial",
+   "status": "ok",
+   "idea": "initial program"
+  },
+  {
+   "minutes": 5.37,
+   "score": 0.766,
+   "model": "hf.co/mmnga-o/Qwen3-Swallow-30B-A3B-RL-v0.2-gguf:Q4_K_M",
+   "mode": "best/diff/refine",
+   "status": "ok",
+   "idea": "add a log\u2011transform of the skewed positive feature and a sign\u2011based interaction term, so the linear model can capture the hidden nonlinear rule."
+  }
+ ],
+ "best_diff": "--- initial\n+++ best\n@@ -21,5 +21,19 @@\n \n     Current method: the raw inputs.\n     \"\"\"\n-    return list(row)\n+    # start with the raw inputs\n+    features = list(row)\n+\n+    # log\u2011transform of the right\u2011skewed input x3 (row[2])\n+    log_x3 = math.log(row[2])\n+\n+    # sign of the product of the two normal inputs x1 and x2 (row[0] and row[1])\n+    sign_prod = 1.0 if row[0] * row[1] > 0 else -1.0\n+\n+    # raw product (optional) \u2013 gives a linear term for the interaction\n+    prod = row[0] * row[1]\n+\n+    # extend the feature vector with the new transformed values\n+    features.extend([log_x3, sign_prod, prod])\n+    return features\n # OMEGA-BLOCK-END\n",
+ "initial_solution": {
+  "kind": "classification",
+  "columns": [
+   "x1",
+   "x2",
+   "x3",
+   "x4",
+   "x5",
+   "x6"
+  ],
+  "head": [
+   [
+    0.14,
+    1.08,
+    1.79,
+    -0.66,
+    1.01,
+    -0.54
+   ],
+   [
+    -1.03,
+    -0.71,
+    0.47,
+    1.72,
+    0.77,
+    -0.69
+   ],
+   [
+    0.36,
+    -0.3,
+    0.1,
+    -2.0,
+    0.57,
+    -0.15
+   ],
+   [
+    1.13,
+    1.16,
+    1.34,
+    1.26,
+    1.29,
+    0.92
+   ]
+  ],
+  "head_labels": [
+   1,
+   1,
+   0,
+   1
+  ],
+  "train_rows": 1000,
+  "num_features": 6,
+  "test_correct": "1110101111000101011111011010101001101100111100110111111101011110101110011011001101101000011100011010111110110111011110000011111111011100100110111110101000001001110101111110101010111011101101000010010100000101110011000100110001010111011001101100110011110111111010101001011101111011110101110011100101100100011011010011101011000101100100110110111110100101101111110111101100011110111111110110111111101100010111110011111011001100001101010011101100101011010111110000111000010111111111100111110101010101111011001000111110111101110001011111011110011101010011011101111101001101110110101100001110001001101010001011011001111110111110101111110110110110101010111001011111101111111101101111001111001000101101001000000100100101111111111011011101110111110101111110001111001101111101111101011111111011111111111111111000111001001110010010010000110000101111110101001111101111000111011000111111101111101111000111011111010001001101100011000110110111000010111110110001111111111101001111101100011100101100101011101110111010"
+ },
+ "best_solution": {
+  "kind": "classification",
+  "columns": [
+   "x1",
+   "x2",
+   "x3",
+   "x4",
+   "x5",
+   "x6"
+  ],
+  "head": [
+   [
+    0.14,
+    1.08,
+    1.79,
+    -0.66,
+    1.01,
+    -0.54
+   ],
+   [
+    -1.03,
+    -0.71,
+    0.47,
+    1.72,
+    0.77,
+    -0.69
+   ],
+   [
+    0.36,
+    -0.3,
+    0.1,
+    -2.0,
+    0.57,
+    -0.15
+   ],
+   [
+    1.13,
+    1.16,
+    1.34,
+    1.26,
+    1.29,
+    0.92
+   ]
+  ],
+  "head_labels": [
+   1,
+   1,
+   0,
+   1
+  ],
+  "train_rows": 1000,
+  "num_features": 9,
+  "test_correct": "1111101110101111011111111101111011001111111001110001111110111111111110101101110111110101100011011010100101011110011111110111111111111111111111110110110110011111111111111011110111011001001111111100100101111111110111111101001101111001111111111011110111110110111101111001111011111100011111011000111111111111011100011101111111000001111110101110111111111101110111011111110101100111110010110011101111111111111111111110101011111011101111110111101011110011101111110100110111011111111111001111110101011101111011011111111101110100111111111110101011011111111111111110111110010110011011011001011001011101111111100111010001011011110011111001111001111111111011111101111110111101111111010111011111011010110100111101111110111011011111011111111111111101101111111111101111110011111111110101111111111001111111111110011010101101011110110111110110011001111111101111011111001111111111110111111111001111110111001011111111100110111111111111111111111110010111111101111011011111011101111101101111101000111111111111101100011010"
+ },
+ "error": "",
+ "stop_reason": "no progress",
+ "model_memory_gb": 23.0,
+ "model_gpu_memory_gb": 19.0,
+ "context_length": 40960,
+ "load_seconds": 0.0,
+ "median_call_seconds": 74.3,
+ "p90_call_seconds": 157.2,
+ "prompt_tokens_per_s": 665.5,
+ "gen_tokens_per_s": 34.8,
+ "mean_prompt_tokens": 2616,
+ "mean_gen_tokens": 2870,
+ "stopped_calls": 0,
+ "provider": "ollama",
+ "cost_usd": 0
+}

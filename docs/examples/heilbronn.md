@@ -372,6 +372,7 @@ One run per model and reasoning mode; the [model benchmarks](../benchmarks/heilb
 | gpt-oss:20b (think) | local | 0.01331 | ×2.78 | 2.4 | 1 |
 | hf.co/mmnga-o/Qwen3-Swallow-30B-A3B-RL-v0.2-gguf:Q4_K_M (no-think) | local | 0.01331 | ×2.78 | 2.8 | 1 |
 | hf.co/llm-jp/llm-jp-4.1-32b-a3b-thinking-gguf:Q4_K_M (no-think) | local | 0.01331 | ×2.78 | 3.6 | 2 |
+| hf.co/mmnga-o/Qwen3-Swallow-30B-A3B-RL-v0.2-gguf:Q4_K_M (think) | local | 0.01331 | ×2.78 | 6.3 | 1 |
 | qwen3-coder:30b (no-think) | local | 0.00852 | ×1.78 | 5.9 | 1 |
 | dots-studio/dots-3-note-preview:free (no-think) | cloud | 0.00595 | ×1.24 | 1.6 | 1 |
 | nvidia/nemotron-3.5-lightning:free (no-think) | cloud | 0.00479 | ×1.00 | - | 0 |
